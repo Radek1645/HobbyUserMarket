@@ -1,3 +1,5 @@
+import { Header } from "@/components/layout/Header";
+import { getCurrentUser } from "@/lib/auth/get-user";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -17,17 +19,20 @@ export const metadata: Metadata = {
   description: "Lokální tržiště pro hobby uživatele",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="cs">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-gray-50 text-gray-900 antialiased`}
       >
-        {children}
+        <Header user={user} />
+        <main className="mx-auto max-w-5xl">{children}</main>
       </body>
     </html>
   );
