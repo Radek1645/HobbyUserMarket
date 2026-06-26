@@ -72,13 +72,13 @@ export function Header({ user }: HeaderProps) {
                   />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-600">
-                    {user.fullName?.[0]?.toUpperCase() ??
+                    {user.displayName[0]?.toUpperCase() ??
                       user.email[0]?.toUpperCase()}
                   </div>
                 )}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-gray-900">
-                    {user.fullName ?? "Uživatel"}
+                    {user.displayName}
                   </p>
                   <p className="truncate text-xs text-gray-500">{user.email}</p>
                 </div>

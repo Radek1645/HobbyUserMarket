@@ -19,7 +19,7 @@ export default async function Home() {
           <p className="mt-6 text-sm text-gray-600">
             Přihlášen jako{" "}
             <span className="font-medium text-gray-900">
-              {user.fullName ?? user.email}
+              {user.displayName}
             </span>
             . Profil je synchronizovaný v databázi.
           </p>

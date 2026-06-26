@@ -31,6 +31,9 @@ yarn-error.log*
 # env files
 .env*.local
 
+# slovní popis projektu (lokálně)
+/description_projekt/
+
 # API keys (nikdy do gitu)
 ../Key/
 client_secret_*.json
