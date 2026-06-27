@@ -1,14 +1,16 @@
-# Product Requirement Document (PRD) – Projekt: Local Hobby Market (v0.1)
+# Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.1  
+> **Verze dokumentu:** v3.9  
+> **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-06-26
+> **Datum:** 2026-06-27
 
 ---
 
 ## 1. Produktová vize a cíle
 
-* **Vize:** Lokální peer-to-peer ekosystém pro rychlou inzerci zboží a služeb v bezprostředním okolí uživatele. Místo, kde soused prodá přebytky medu, nabídne sekání trávy, daruje starou skříň za odvoz nebo prodá kolo po dítěti.
+* **Vize:** Lokální peer-to-peer ekosystém pro rychlou inzerci zboží, služeb a lokálních událostí v bezprostředním okolí uživatele. Místo, kde soused prodá přebytky medu, nabídne sekání trávy, daruje starou skříň za odvoz, prodá kolo po dítěti — nebo zveřejní opékání špekáčků na zahradě.
 * **Cílová skupina:** Věk 15–35 let (mobilní, digitálně gramotní, preferující rychlá lokální řešení).
 * **Filozofie vývoje:** Hardcore MVP stavěné metodou AI Vibecodingu (Cursor).
 * **Provozní rozpočet:** Do 1 000 Kč / měsíc. Finance jsou alokovány výhradně do stability infrastruktury, doručení e-mailů a provozu nezbytných API.
@@ -22,6 +24,26 @@ MVP je hotové, když platí všechny body:
 3. **Ochrana kontaktů:** V HTML zdroji detailu inzerátu **není** telefon ani e-mail před kliknutím na „Zobrazit kontakt“ (ověřitelné v DevTools).
 4. **SEO:** Detail inzerátu má server-renderovaný HTML, dynamický Title tag, JSON-LD a je v `sitemap.xml`.
 5. **Moderování:** 3 nahlášení od 3 různých uživatelů skryje inzerát; moderátor ho vidí na `/mod/karantena`.
+
+### 1.2 Definition of Done (v0.1.1 — Volitelná platnost inzerátu)
+
+Modul je hotový, když platí všechny body:
+
+1. **Platnost inzerátu:** Default **30 dní**; uživatel může přepsat (select nebo číselné pole, **ne slider**). Hodnota se ukládá do `listing_duration_days`.
+2. **Persistence:** `expires_at` počítá **DB trigger** z `listing_duration_days` (frontend `expires_at` neposílá).
+3. **Expirovaný inzerát:** Po `expires_at` není veřejně viditelný, ale **zůstává v DB** ve stavu `archived`; majitel ho vidí v klientské sekci a může obnovit.
+4. **Guardrail data v popisu:** Pokud AI/frontend detekuje datum v popisu běžného inzerátu později než `now + listing_duration_days`, zobrazí varování (§9.4).
+5. **Konfigurovatelné limity:** Min/max v `src/config/app.ts` (DB CHECK synchronizovaný s max hodnotou).
+
+### 1.3 Definition of Done (v0.2 — Události)
+
+Modul událostí je hotový, když platí všechny body:
+
+1. **Taxonomie:** V `categories.ts` existuje `category_type = 'udalost'` se 6 podsekcemi; AI guardrail používá dedikovaný `aiPrompt`.
+2. **Založení události:** Přihlášený uživatel zveřejní událost (s AI flow) do **2 minut**; povinné pole **`event_date`** (datum a čas konání); kapacita v popisu (validováno AI dotazníkem).
+3. **Účast bez registrace:** Na detailu události je tlačítko **„Mám zájem o účast“**; odeslání poptávky doručí pořadateli e-mail se jménem a kontaktem účastníka.
+4. **Bez nových tabulek:** Událost je řádek v `posts` s `category_type = 'udalost'`; v DB neexistuje tabulka účastníků.
+5. **SEO:** Detail události má JSON-LD `Schema.org/Event` a je v `sitemap.xml`.
 
 ---
 
@@ -43,6 +65,22 @@ V této verzi se **neimplementuje:**
 - A/B testování
 - Pokročilá anti-fraud ML vrstva nad rámec synchronního AI guardrailu
 - Logování IP adres pro moderování
+- Vlastní audit tabulka `login_events` / duplicitní sloupec `profiles.last_login_at` (viz §4.2)
+- **Modul Události** — plánováno v [§8](#8-modul-události-v02)
+- **Volitelná platnost inzerátu (1–365 dní)** — plánováno v [§9](#9-volitelná-platnost-inzerátu-v011)
+
+---
+
+## 2.1 Mimo rozsah v0.2 (Out of Scope) — Události
+
+I v rámci modulu událostí se **neimplementuje:**
+
+- Vlastní registrační formulář a tabulka účastníků / waitlist
+- Enforcement kapacity (automatické uzavření po naplnění)
+- Systémové follow-up zprávy od pořadatele po registraci
+- Strukturovaná pole `event_starts_at`, `event_ends_at`, `capacity_max` (až v0.3+)
+- Počítadlo registrovaných účastníků v UI
+- Chat mezi pořadatelem a účastníky
 
 ---
 
@@ -56,8 +94,8 @@ V této verzi se **neimplementuje:**
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **cookie consent bannerem** (GTM consent mode) před aktivací měření.
-* **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby`) a `subcategory_slug`.
-* **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu) v `src/config/app.ts`. Výchozí radius: **15 km**.
+* **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2) a `subcategory_slug`.
+* **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1) v `src/config/app.ts`. Výchozí radius: **15 km**. Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max).
 
 ---
 
@@ -77,17 +115,19 @@ posts
   - id, user_id (UUID, FK auth.users ON DELETE RESTRICT)
   - title (TEXT, NOT NULL, max 80 znaků v UI)
   - description (TEXT, max 1000 znaků)
-  - category_type (VARCHAR(10), NOT NULL, CHECK IN ('zbozi', 'sluzby'))
+  - category_type (VARCHAR(10), NOT NULL, CHECK IN ('zbozi', 'sluzby') — v0.2 rozšířeno o 'udalost')
   - subcategory_slug (VARCHAR(50), NOT NULL)
   - price_type (VARCHAR(20), NOT NULL, CHECK IN ('fixed', 'free_pickup', 'negotiable', 'exchange', 'offer'))
   - price_amount (INTEGER, nullable — povinné pouze pokud price_type = 'fixed')
   - condition_label (VARCHAR(20), NOT NULL, CHECK IN (
-      'new', 'like_new', 'used',           -- zboží
+      'new', 'like_new', 'used', 'damaged', -- zboží
       'one_time', 'long_term', 'substitute' -- služby
     ))
   - location_text, location (GEOGRAPHY POINT)
   - status (ENUM: draft | active | archived | hidden | deleted)
   - expires_at, renew_count, payment_status (VARCHAR(20), výchozí: 'free')
+  - listing_duration_days (INTEGER, NOT NULL, DEFAULT 30 — od v0.1.1; viz §9; u `udalost` se nevyužívá)
+  - event_date (TIMESTAMPTZ, NULL — od v0.2; povinné pokud `category_type = 'udalost'`)
   - main_image_url, slug
   - created_at, updated_at
 
@@ -131,9 +171,25 @@ rate_limits (volitelné, pro server-side rate limiting)
 | Zboží | Nové | `new` |
 | Zboží | Jako nové | `like_new` |
 | Zboží | Použité | `used` |
+| Zboží | Poškozené / na díly | `damaged` |
 | Služby | Jednorázově | `one_time` |
 | Služby | Dlouhodobě | `long_term` |
 | Služby | Záskok | `substitute` |
+| Události *(v0.2)* | Jednorázová akce | `one_time` |
+| Události *(v0.2)* | Pravidelná akce | `long_term` |
+
+**Mapování UI → DB pro události *(v0.2)* — reuse existujících sloupců, bez nových tabulek:**
+
+| Pole | Hodnota pro `udalost` | Poznámka |
+|------|----------------------|----------|
+| `category_type` | `'udalost'` | Vyžaduje migraci CHECK constraintu |
+| `subcategory_slug` | `koncert` \| `narozeniny` \| `opekani` \| `sport` \| `workshop` \| `setkani` \| `ostatni` | Definice v `categories.ts` |
+| `condition_label` | `'one_time'` nebo `'long_term'` | UI: „Jednorázová akce“ / „Pravidelná akce“ (pole **Opakování**) |
+| `price_type` | `'free_pickup'` nebo `'offer'` | Vstup zdarma → `free_pickup`; jinak „Nabídni“ |
+| `price_amount` | `NULL` | Cena není primární dimenze |
+| `event_date` | povinné `TIMESTAMPTZ` | Jednorázová: datum akce. Pravidelná: **nejbližší termín** (frekvence v popisu) |
+| Kapacita | v `description` | v0.2 bez strukturovaného pole |
+| `expires_at` | `event_date + 1 den` | **Ne** z `listing_duration_days` — viz §8.4.1 |
 
 ### 4.1 Stavový model inzerátu (`posts.status`)
 
@@ -141,16 +197,48 @@ rate_limits (volitelné, pro server-side rate limiting)
 |------|---------------------|---------|-------------|
 | `draft` | Ne | Ne | Rozpracovaný koncept (volitelné pro MVP) |
 | `active` | Ano | Ano | Po úspěšné publikaci |
-| `archived` | Ne | Ne | Po uplynutí `expires_at` (30 dní) |
+| `archived` | Ne | Ne | Po uplynutí `expires_at` (cron nebo okamžitá neviditelnost — viz §4.1) |
 | `hidden` | Ne | Ne | 3× nahlášení od různých uživatelů nebo akce moderátora/admina |
 | `deleted` | Ne | Ne | Soft delete uživatelem nebo moderátorem |
 
 **Pravidla:**
 
 - Vyhledávání, HP i PostGIS dotazy vracejí pouze `status = 'active'` a `expires_at > now()`.
-- Obnovení inzerátu: `archived` → `active`, reset `expires_at` na +30 dní, inkrement `renew_count`.
-- Sitemap zahrnuje výhradně `active` inzeráty.
+- Obnovení inzerátu: `archived` → `active`, reset `expires_at` na `now() + listing_duration_days`, inkrement `renew_count`. *(v0.1: fixně +30 dní; od v0.1.1: podle uložené volby, s možností změnit délku při obnovení.)*
+- Sitemap zahrnuje výhradně `active` inzeráty s platným `expires_at`.
 - Po editaci: `updated_at` se aktualizuje; **slug se nemění** (stabilita URL).
+
+**Co se stane po expiraci (`expires_at <= now()`):**
+
+| Vrstva | Chování |
+|--------|---------|
+| **Veřejný web** | Inzerát **okamžitě mizí** — HP, vyhledávání, sitemap, detail URL (404 nebo stránka „Inzerát vypršel“). Funkce `is_post_publicly_visible()` vyžaduje `expires_at > now()`. |
+| **Databáze** | Řádek v `posts` **zůstává** — nic se nemazá. Fotky (`post_images`), komentáře, reporty zůstávají navázané. |
+| **Stav `status`** | Denní cron (pg_cron / Edge Function) nastaví `active` → `archived` u expirovaných inzerátů. Do doby cronu může zůstat technicky `active`, ale veřejně stejně neviditelný. |
+| **Majitel (klientská sekce)** | Vidí inzerát v záložce **„Expirované / Archivované“** s datem expirace a tlačítkem **„Obnovit“**. Může editovat, smazat (soft delete → `deleted`) nebo znovu publikovat. |
+| **Smazání** | Soft delete (`deleted`) je samostatná akce uživatele — expirace **nesmaže** data automaticky. |
+
+- **Události *(v0.2)*:** Expirace řízená `event_date` + DB trigger (§8.4.1), ne pole platnosti z §9. Řazení podle `event_date ASC`.
+
+### 4.2 Sledování přihlášení (Auth vs. `profiles`)
+
+Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB schématu pro tento účel není potřeba** — Supabase Auth to řeší nativně.
+
+| Údaj | Kde žije | Kdy se mění |
+|------|----------|-------------|
+| `last_sign_in_at` | `auth.users` (Supabase Auth) | Při každém úspěšném přihlášení (automaticky) |
+| `profiles.updated_at` | `public.profiles` | Při **UPDATE profilu** (jméno, nickname, avatar…) — **ne** při samotném loginu |
+| `profiles.created_at` | `public.profiles` | Při vytvoření profilu (registrace / trigger) |
+
+**Čtení pro aplikaci a GDPR cron:**
+
+- Přes Supabase Auth API: `supabase.auth.getUser()` → pole `last_sign_in_at` v session/JWT metadata.
+- V Supabase Dashboard: **Authentication → Users** → detail uživatele.
+
+**Záměrně se neimplementuje:**
+
+- Kopie `last_sign_in_at` do `profiles` (duplicita, riziko desynchronizace).
+- Vlastní tabulka audit logu přihlášení v MVP.
 
 ---
 
@@ -170,8 +258,8 @@ rate_limits (volitelné, pro server-side rate limiting)
 * **Vyhledávání a filtrace:**
   * Fulltextové vyhledávání: PostgreSQL `tsvector` + GIN index na `posts.title` a `posts.description` (podmínka: minimálně 3 znaky, validace na frontendu i backendu).
   * Vyhledávání pouze v `status = 'active'` a neexpirovaných inzerátech.
-  * Filtry: Fulltextové výrazy (kategorie/služby), lokalita (obec z našeptávače Mapy.cz), profil uživatele, typ ceny, stav/typ nabídky.
-  * Řazení: Kategorie, cena, datum přidání, vzdálenost (pokud je poloha aktivní).
+  * Filtry: Fulltextové výrazy (kategorie zboží/služby/události), lokalita (obec z našeptávače Mapy.cz), profil uživatele, typ ceny, stav/typ nabídky. *(Filtr `udalost` od v0.2.)*
+  * Řazení: Kategorie, cena, datum přidání, vzdálenost (pokud je poloha aktivní). *(Události od v0.2: volitelně řazení podle `event_date` — nejbližší konání první.)*
 * **Header & Footer:**
   * Header: Logotyp, indikace verze (v0.1 Prerelease), stav přihlášení, dominantní CTA tlačítko „Založit inzerát“.
   * Footer: O projektu, podmínky použití, zásady ochrany osobních údajů, AI disclaimer, cookie/privacy info s odkazem na consent nastavení.
@@ -186,6 +274,7 @@ rate_limits (volitelné, pro server-side rate limiting)
   * Při prvním přihlášení povinné zadání **přezdívky (`nickname`)** — unikátní v rámci platformy (DB UNIQUE constraint).
 * **Klientská sekce:**
   * Přehled a kompletní CRUD vlastních inzerátů (Založit, Editovat, Skrýt, Smazat).
+  * **Filtry stavu:** Aktivní / Expirované (archivované) / Skryté / Smazané — majitel vidí i neveřejné inzeráty.
   * **Exit poll:** Při smazání inzerátu povinný dropdown s důvodem (Prodal jsem zde / Prodal jsem jinde / Neprodal jsem / Jiné).
   * Editace profilu: Avatar (max **2 MB**, komprese na klientovi), Jméno, Příjmení, Přezdívka, telefonní číslo (volitelné), změna hesla, smazání účtu (GDPR compliant).
 
@@ -203,6 +292,7 @@ rate_limits (volitelné, pro server-side rate limiting)
   * **Tlačítko „Zobrazit kontakt“:** Telefon a e-mail prodejce nejsou v HTML kódu stránky. Zobrazí se až po kliknutí **přihlášeného** uživatele. Event se loguje do `contact_reveals`.
   * **Rate limit:** Max **20 zobrazení kontaktů / den / uživatel**.
   * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá.
+  * **Události *(v0.2)*:** U `category_type = 'udalost'` se formulář chová jako „registrace zájmu o účast“ — tlačítko **„Mám zájem o účast“**, předmět/tělo e-mailu: *„Uživatel [jméno] se chce zúčastnit vaší akce: [Název] — [kontaktní údaje].“* Pořadatel odpovídá ze svého e-mailu; systém neukládá účastníky do DB.
 * **Komunitní moderování inzerátů:**
   * Tlačítko „Nahlásit inzerát“ (Důvody: Podvod / Nelegální obsah / Nevhodné chování). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky skryje (`hidden`) do karantény.
 * **Automatizované On-Page SEO & Rich Snippets:**
@@ -210,17 +300,20 @@ rate_limits (volitelné, pro server-side rate limiting)
   * **Strukturovaná data (Schema.org):** JSON-LD podle typu kategorie:
     * Pro zboží: `Schema.org/IndividualProduct` (název, cena, měna CZK, stav).
     * Pro služby: `Schema.org/Service` (lokalita, popis) — preferováno před `LocalBusiness` u jednotlivců.
+    * Pro události *(v0.2)*: `Schema.org/Event` (`startDate` z `event_date`, popis, lokalita).
   * **SEO přívětivé URL (Slugs):** Tvar `/inzerat/[id]-[url-slug]`, např. `/inzerat/854-prodam-detske-kolo-velo-brno-lisen`. Slug se generuje z `title` při první publikaci a **nemění se** při editaci.
 
 ### 5.4 Tvorba inzerátu & Synchronní AI Guardrail
 
 * **Formulář (3 kroky):**
-  1. **Kategorie a stav (Řízeno přes TS Config):** Výběr `category_type` (`zbozi` / `sluzby`) a `subcategory_slug` z `src/config/categories.ts`. Povinný štítek stavu (Zboží: Nové / Jako nové / Použité; Služby: Jednorázově / Dlouhodobě / Záskok).
+  1. **Kategorie a stav (Řízeno přes TS Config):** Výběr `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2) a `subcategory_slug` z `src/config/categories.ts`. Povinný štítek stavu (Zboží: Nové / Jako nové / Použité / **Poškozené / na díly** `damaged`; Služby: Jednorázově / Dlouhodobě / Záskok; Události: **Opakování** — Jednorázová akce `one_time` / Pravidelná akce `long_term`).
   2. **Obsah a Cena:**
      * **Název inzerátu:** Povinné pole (max **80 znaků**). Používá se pro SEO Title tag, Open Graph a generování URL slugu.
-     * **Textový popis:** Max 1 000 znaků.
+     * **Textový popis:** Max 1 000 znaků. *(Události v0.2: UI hint — povinně uveď datum, čas a kapacitu; validace přes AI dotazník.)*
      * **Poloha inzerátu (Validace a GPS):** Povinné pole s našeptávačem Mapy.cz. Tlačítko „Použít aktuální polohu“ pro GPS z prohlížeče. Do `posts` se ukládá `location_text` (UI) i PostGIS point `location` (prostorové dotazy).
      * **Logika typu ceny (Dropdown):** Pevná (vynutí číselné pole v Kč) / Za odvoz (0 Kč) / Dohodou, Výměnou, Nabídni (skryje částku, zobrazí textový štítek).
+     * **Platnost inzerátu *(v0.1.1)*:** Default **30 dní**. UI: `<select>` s preset hodnotami (7, 14, 30, 60, 90, 180, 365) **nebo** `<input type="number">` — **žádný slider** (mobilní UX). Ukládá se `listing_duration_days`; `expires_at` nastaví DB trigger (§9.2). U `udalost` (v0.2) se pole skryje — platí §8.4.1.
+     * **Varování platnosti *(v0.1.1)*:** U `zbozi`/`sluzby`, pokud popis nebo AI JSON obsahuje datum **po** vypočtené expiraci, UI zobrazí: *„Pozor: Platnost inzerátu končí dříve než vámi zmíněné datum. Opravte platnost nebo datum.“*
   3. **Média a Volba Hlavní fotky:**
      * Upload fotografií: max **6 ks**, max **5 MB** před kompresí, formáty JPEG/PNG/WebP. Automatická komprese na klientovi před odesláním do Supabase Storage.
      * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (Náhled a AI analýza)“** (radio button/hvězdička). Výchozí je první nahraná.
@@ -234,6 +327,7 @@ rate_limits (volitelné, pro server-side rate limiting)
     3. **Hydratace podle TS Configu:** AI přebere `aiPrompt` z `categories.ts`:
        * *Zboží (auta-moto, reality, kola-sport):* Hledá vady, barvu, model, STK, metráž, dispozice. Chybějící data → specifické otázky.
        * *Služby (řemeslo-opravy, stěhování-doprava):* Ignoruje ilustrační foto, generuje 1–3 byznys otázky (dojezd, materiál v ceně, nošení do schodů, fixní vs. hodinová cena).
+       * *Události (v0.2):* Extrakce data a času konání, přesné lokality, kapacity a instrukcí k přihlášení. Chybějící datum/čas nebo kapacita → doplňující otázka v AI dotazníku.
   * **UX Flow v modálním okně „AI Náhled & Doplnění“:**
     * **Učesaný text inzerátu** v editovatelné `textarea`, fakta z fotky označená `[AI ODVOZENO Z FOTA]`.
     * **Dynamický dotazník („Sousedská AI se ptá“):** Pole z JSON odpovědi AI.
@@ -253,8 +347,9 @@ rate_limits (volitelné, pro server-side rate limiting)
 Z důvodu GDPR (minimalizace údajů) a ochrany infrastruktury je zaveden automatický proces čištění neaktivních účtů.
 
 * **Pravidlo pro spuštění retence** (obě podmínky současně):
-  1. Nebyl přihlášen déle než **90 dní** (`last_sign_in_at` v Supabase Auth).
+  1. Nebyl přihlášen déle než **90 dní** — zdroj: **`auth.users.last_sign_in_at`** (Supabase Auth), **ne** `profiles.updated_at` (viz §4.2).
   2. Nemá **žádný aktivní inzerát** (`status = 'active'`).
+* **Implementace cronu:** Edge Function nebo pg_cron s přístupem k Auth Admin API / dotazu na `auth.users` — ne z tabulky `profiles`.
 * **Proces anonymizace:**
 
 | Entita | Chování |
@@ -295,7 +390,7 @@ Vestavěný systém rolí navázaný na produkční UI (bez komplexního admin p
 
 ## 6. Nefunkční požadavky & Ochranné limity
 
-* **Automatická expirace inzerátů:** Platnost **30 dní**. Po uplynutí → `archived`. Uživatel obnoví jedním kliknutím v klientské sekci (`archived` → `active`, `expires_at` +30 dní, `renew_count++`).
+* **Automatická expirace inzerátů:** Platnost řízená polem `expires_at`. *(v0.1: fixně 30 dní; od v0.1.1: volba 1–365 dní, default 30 — viz §9.)* Po uplynutí → neveřejný, následně `archived` cronem. Uživatel obnoví jedním kliknutím v klientské sekci.
 * **Bezpečnost a optimalizace:**
   * Vyhledávání: min. 3 znaky.
   * Kontakty: skrytí v HTML, anonymní formulář, server-side strip v popisu.
@@ -311,7 +406,7 @@ Vestavěný systém rolí navázaný na produkční UI (bez komplexního admin p
 | Next.js API Route | **Nepoužívat pro AI** | Proxy přes Vercel = riziko 504 (Hobby legacy limit 10 s) |
 
 * **Architektonická příprava na budoucí monetizaci (bez implementace v v0.1):**
-  * `posts.expires_at` (výchozí +30 dní), `posts.renew_count`, `posts.payment_status` (výchozí `free`).
+  * `posts.expires_at`, `posts.listing_duration_days` (v0.1.1), `posts.renew_count`, `posts.payment_status` (výchozí `free`).
   * `profiles` připraveno pro budoucí limit aktivních inzerátů na neplatícího uživatele.
   * Integrace platební brány (např. Stripe) až po validaci MVP.
 * **Cookie consent (EU):**
@@ -333,3 +428,298 @@ Vestavěný systém rolí navázaný na produkční UI (bez komplexního admin p
 | v2 | — | Produktová a technická iterace |
 | v3 | 2026-06-26 | Sloučení v2 + schválená doplnění: `title`, stavový model, rate limiting, out of scope, datový model, DoD, opravy |
 | v3.1 | 2026-06-26 | AI volání přímo z klienta (ne přes Vercel API), CHECK constrainty u `price_type`/`condition_label`, GDPR FK u komentářů (`ON DELETE SET NULL`, `author_nickname` snapshot) |
+| v3.2 | 2026-06-26 | §4.2 — upřesnění `last_sign_in_at` v Auth vs. `profiles.updated_at`; bez změny DB schématu |
+| v3.3 | 2026-06-27 | §8 Future Scope — modul Události (v0.2+); odkaz na [`future_events.md`](./future_events.md) |
+| v3.4 | 2026-06-27 | Plná integrace modulu Událostí: §1.2 DoD v0.2, §2.1 Out of Scope v0.2, §4 mapování, §5 delty, §8 kompletní spec |
+| v3.5 | 2026-06-27 | §9 Volitelná platnost inzerátu (v0.1.1): `listing_duration_days`, lifecycle po expiraci, §4.1 rozšířeno |
+| v3.6 | 2026-06-27 | Oprava kolize §8/§9: `event_date`, expirace událostí = `event_date + 1 den` |
+| v3.7 | 2026-06-27 | Mobil UX: bez sliderů (select/number, default 30); trigger počítá `expires_at`; guardrail datum v popisu; migrace `003_prd_v3_7.sql` |
+| v3.8 | 2026-06-27 | Události: Pravidelná akce (`long_term`), podkategorie `setkani`, pole Opakování; migrace `004_recurring_events.sql` |
+| v3.9 | 2026-06-27 | Zboží: stav `damaged` — UI „Poškozené / na díly“; migrace `005_damaged_goods.sql` |
+
+---
+
+## 8. Modul Události (v0.2)
+
+> **Stav:** Plánováno po validaci MVP v0.1. Neimplementovat v první verzi.  
+> **Shrnutí pro rychlý přehled:** [`future_events.md`](./future_events.md)
+
+### 8.1 Koncept
+
+**„Událost jako inzerát s poptávkovým formulářem.“**
+
+Událost je běžný řádek v `posts` s `category_type = 'udalost'`. Registrace účastníků = existující anonymní poptávkový formulář (§5.3), ne vlastní registrační systém. Pořadatel dostane e-mail s kontaktem zájemce a odpoví ze své schránky.
+
+**Proč minimalisticky:** nulové náklady na novou doménovou logiku (reuse AI, fotky, geolokace, moderování, e-mail), GDPR-friendly (data účastníků neleží v DB platformy), rychlá validace poptávky po lokálních eventech.
+
+### 8.2 Taxonomie (`src/config/categories.ts`)
+
+Přidání hlavní kategorie **`udalost`**.
+
+| `subcategory_slug` | Název v UI |
+|--------------------|------------|
+| `koncert` | Koncert |
+| `narozeniny` | Narozeniny |
+| `opekani` | Opékání |
+| `sport` | Sport |
+| `workshop` | Workshop |
+| `setkani` | Setkání / komunitní akce |
+| `ostatni` | Ostatní |
+
+**Opakování události (`condition_label`):**
+
+| UI (pole „Opakování“) | DB | Příklad názvu |
+|----------------------|-----|----------------|
+| Jednorázová akce | `one_time` | „Narozeninová oslava na zahradě“ |
+| Pravidelná akce | `long_term` | „Čtvrteční poker u Honzy“ |
+
+U pravidelné akce: `event_date` = nejbližší termín; frekvence (např. každý čtvrtek) v popisu. Po proběhnutí pořadatel upraví datum nebo obnoví inzerát.
+
+**AI prompt (ukázka pro `categories.ts`):**
+
+> Uživatel nabízí událost. Rozliš jednorázovou vs. pravidelnou akci. U pravidelných extrahuj frekvenci. Vždy: datum nejbližšího konání, čas, lokalita, kapacita, instrukce k přihlášení.
+
+### 8.3 Funkční specifikace
+
+#### Prezentace události
+
+- Chová se jako klasický post: název, fotka/galerie, popis, lokalita, štítek stavu, typ vstupu (zdarma / nabídni), **datum a čas konání** (`event_date`).
+- V popisu zadavatel uvede kapacitu (pokud ji chce limitovat) a doplňující informace; **strukturované datum konání** jde do sloupce `event_date`.
+- Fotka, geolokace, AI guardrail, komentáře, moderování — beze změny oproti ostatním kategoriím.
+
+#### Registrace účastníků (= poptávkový formulář)
+
+- Systém **nevyvíjí** vlastní registrační formulář ani tabulku účastníků.
+- Tlačítko: **„Mám zájem o účast“** (místo „Napsat prodejci“).
+- E-mail pořadateli: *„Uživatel [jméno] se chce zúčastnit vaší akce: [Název akce] — [kontaktní údaje z formuláře].“*
+- Rate limit poptávkového formuláře: stejný jako u inzerátů (bez nového limitu v0.2).
+
+#### Odpověď pořadatele
+
+- Pořadatel odpoví **přímo ze svého e-mailu**.
+- Systém neřeší follow-up zprávy ani systémové notifikace účastníkům.
+
+#### Formulář založení (větev UI)
+
+| Krok | Chování pro `udalost` |
+|------|------------------------|
+| 1 — Kategorie | Výběr `udalost` + podsekce; pole **Opakování**: Jednorázová (`one_time`) / Pravidelná (`long_term`) |
+| 2 — Obsah | Povinný **datetime picker** `event_date` (u pravidelné: „nejbližší termín“); hint kapacity a frekvence v popisu; cena: „Vstup zdarma“ / „Nabídni“; **pole platnosti (§9) se nezobrazuje** |
+| 3 — Média | Beze změny (max 6 fotek) |
+
+### 8.4 Datový model a DB migrace
+
+**Nové tabulky:** žádné. Nový sloupec `event_date` v `posts` (viz §4).
+
+**Požadovaná migrace (v0.2):**
+
+```sql
+-- Sloupec pro datum konání události
+ALTER TABLE public.posts
+  ADD COLUMN IF NOT EXISTS event_date TIMESTAMPTZ NULL;
+
+-- event_date povinné jen u událostí; u ostatních kategorií NULL
+ALTER TABLE public.posts DROP CONSTRAINT IF EXISTS posts_event_date_by_category_check;
+ALTER TABLE public.posts ADD CONSTRAINT posts_event_date_by_category_check
+  CHECK (
+    (category_type = 'udalost' AND event_date IS NOT NULL)
+    OR
+    (category_type <> 'udalost' AND event_date IS NULL)
+  );
+
+-- Rozšíření category_type
+ALTER TABLE public.posts DROP CONSTRAINT IF EXISTS posts_category_type_check;
+ALTER TABLE public.posts ADD CONSTRAINT posts_category_type_check
+  CHECK (category_type IN ('zbozi', 'sluzby', 'udalost'));
+
+-- Rozšíření vazby condition_label ↔ category_type
+ALTER TABLE public.posts DROP CONSTRAINT IF EXISTS posts_condition_matches_category_check;
+ALTER TABLE public.posts ADD CONSTRAINT posts_condition_matches_category_check
+  CHECK (
+    (category_type = 'zbozi' AND condition_label IN ('new', 'like_new', 'used', 'damaged'))
+    OR (category_type = 'sluzby' AND condition_label IN ('one_time', 'long_term', 'substitute'))
+    OR (category_type = 'udalost' AND condition_label IN ('one_time', 'long_term'))
+  );
+
+CREATE INDEX IF NOT EXISTS posts_event_date_idx
+  ON public.posts (event_date)
+  WHERE category_type = 'udalost' AND status = 'active';
+```
+
+### 8.4.1 Logika expirace událostí (vazba na §9)
+
+**Problém (bez tohoto pravidla):** Fixní default 30 dní u běžného inzerátu by u události archivoval inzerát **dřív**, než se fyzicky koná — viz opékání 15. srpna zveřejněné 1. července.
+
+**Speciální pravidlo pro `category_type = 'udalost'`:**
+
+| Aspekt | Chování |
+|--------|---------|
+| Pole platnosti (§9.4) | **Skryté** — uživatel nevolí `listing_duration_days` |
+| `listing_duration_days` | U událostí se **ignoruje** (DB default 30 nemá vliv na `expires_at`) |
+| `expires_at` | DB trigger: **`event_date + INTERVAL '1 day'`** |
+| Frontend | Posílá `event_date`; **`expires_at` neposílá** |
+| Obnovení (`renew`) | Jen pokud `event_date > now()`; trigger přepočítá `expires_at` |
+| Validace | `event_date` v budoucnosti při publikaci; max horizont v `app.ts` (startovně 365 dní) |
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_post_expiration_logic()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.category_type = 'udalost' THEN
+    IF NEW.event_date IS NULL THEN
+      RAISE EXCEPTION 'U kategorie udalost je pole event_date povinne.';
+    END IF;
+    NEW.expires_at := NEW.event_date + INTERVAL '1 day';
+  ELSE
+    NEW.event_date := NULL;
+    IF NEW.listing_duration_days IS NULL THEN
+      NEW.listing_duration_days := 30;
+    END IF;
+    NEW.expires_at := now() + (NEW.listing_duration_days || ' days')::interval;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_post_expiration_logic ON public.posts;
+CREATE TRIGGER trigger_post_expiration_logic
+  BEFORE INSERT OR UPDATE OF category_type, event_date, listing_duration_days
+  ON public.posts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_post_expiration_logic();
+```
+
+> **Pravidlo priority:** Pro `udalost` platí vždy `expires_at = event_date + 1 den`. Logika `now() + listing_duration_days` z §9.2 se na události **nevztahuje**. Kompletní migrace: [`supabase/003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql).
+
+### 8.5 Implementační checklist
+
+| Oblast | Změna | Odhad |
+|--------|-------|-------|
+| `src/config/categories.ts` | Kategorie `udalost` + podsekce + `aiPrompt` | ~15 min |
+| DB migrace | `event_date` + CHECK constrainty + trigger expirace dle §8.4.1 | ~1 h |
+| Formulář založení | Větev UI pro `udalost`: datetime picker `event_date`, bez pole platnosti | ~1–2 h |
+| Detail inzerátu | Podmíněné tlačítko + šablona e-mailu poptávky | ~30 min |
+| JSON-LD | `Schema.org/Event` | ~1 h |
+| Filtry HP / vyhledávání | Přidat `udalost` do filtrů; řazení podle `event_date` | ~45 min |
+
+**Celkem:** cca **0,5–1 den** po dokončení MVP v0.1.
+
+### 8.6 Rizika a mitigace
+
+| Riziko | Mitigace v0.2 | Budoucí (v0.3+) |
+|--------|---------------|-----------------|
+| Expiace dříve než datum akce | **`event_date` + trigger `expires_at = event_date + 1 den`** (§8.4.1) | — |
+| Kapacita bez enforcementu | Pořadatel odpoví „kapacita naplněna“ nebo skryje inzerát | `capacity_max` + stav „plná kapacita“ |
+| Konec akce neznámý | Expirace den po `event_date` | `event_ends_at` pro vícedenní akce |
+
+### 8.7 Vědomá omezení oproti původnímu záměru
+
+| Původní požadavek | Řešení v0.2 |
+|-------------------|-------------|
+| Limit počtu návštěvníků | Text v popisu; pořadatel ručně stopne registrace |
+| Registrační DB (jméno, tel, mail) | Stejný poptávkový formulář jako u inzerátů |
+| Notifikace pořadatele | Ano — e-mail z poptávkového formuláře |
+| Dodatečný mail s detaily od pořadatele | Ne — odpověď ze soukromého e-mailu |
+| Počítadlo registrovaných / waitlist | Ne |
+
+### 8.8 Roadmap v0.3+ (mimo v0.2)
+
+- Strukturovaná pole: `event_ends_at`, `capacity_max` (`event_date` je už ve v0.2)
+- Počítadlo poptávek (log odeslaných mailů, ne plná registrace)
+- Automatická archivace po datu akce
+- Waitlist / stav „kapacita naplněna“
+- Systémový follow-up mail od pořadatele
+
+---
+
+## 9. Volitelná platnost inzerátu (v0.1.1)
+
+> **Stav:** Plánováno po validaci MVP v0.1. Neimplementovat v první verzi (v0.1 používá fixních 30 dní).  
+> **Rozsah:** Kategorie `zbozi` a `sluzby`. **Události (`udalost`) jsou výjimka** — expirace z `event_date`, viz §8.4.1.
+
+### 9.1 Koncept
+
+Default **30 dní** platnosti. Uživatel může hodnotu **přepsat** (select nebo číselné pole, rozsah 1–365). **Žádné slidery** — primární UX je mobil (80–90 % traffic).
+
+Frontend posílá `listing_duration_days`. **`expires_at` neposílá** — počítá DB trigger (§9.2, §8.4.1). Max hodnotu lze později upravit v `app.ts` a DB CHECK.
+
+### 9.2 Datový model
+
+**Sloupec v `posts`:**
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| `listing_duration_days` | `INTEGER NOT NULL DEFAULT 30` | Volba uživatele; u `udalost` se ignoruje |
+
+**Výpočet expirace (zbozi / sluzby) — v DB triggeru:**
+
+```text
+expires_at = now() + listing_duration_days * interval '1 day'
+```
+
+Při **obnovení:** trigger při UPDATE `listing_duration_days` přepočítá `expires_at`.
+
+**Výjimka — události:** §8.4.1 — `expires_at = event_date + 1 den`.
+
+**Migrace:** [`supabase/003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) (sloupce `listing_duration_days`, `event_date`, constrainty, trigger).
+
+### 9.3 Konfigurace (`src/config/app.ts`)
+
+```typescript
+LISTING_DURATION_DEFAULT_DAYS = 30
+LISTING_DURATION_MIN_DAYS = 1
+LISTING_DURATION_MAX_DAYS = 365  // upravitelné bez změny logiky
+```
+
+```typescript
+export const LISTING_DURATION_DEFAULT_DAYS = 30;
+export const LISTING_DURATION_MIN_DAYS = 1;
+export const LISTING_DURATION_MAX_DAYS = 365;
+export const LISTING_DURATION_PRESETS = [7, 14, 30, 60, 90, 180, 365] as const;
+```
+
+Frontend validuje rozsah; DB CHECK je pojistka.
+
+### 9.4 UI (mobil-first, bez sliderů)
+
+| Místo | Chování |
+|-------|---------|
+| Formulář založení (krok 2) | **Default 30 dní.** `<select>` s presety (7, 14, 30, 60, 90, 180, 365) nebo `<input type="number" min="1" max="365">`. Žádný slider. |
+| Zobrazení majiteli | „Platí do: [datum]“ (z `expires_at`, read-only) |
+| Obnovení expirovaného | „Obnovit“ + možnost změnit `listing_duration_days` |
+| Události (v0.2) | Pole platnosti **skryté**; povinný datetime picker `event_date` |
+| Guardrail — datum v popisu | U `zbozi`/`sluzby`: pokud AI nebo heuristika najde datum **po** `now + listing_duration_days`, zobraz varování: *„Pozor: Platnost inzerátu končí dříve než vámi zmíněné datum. Opravte platnost nebo datum.“* Neblokuje publikaci (soft warning). |
+
+### 9.5 Cron archivace
+
+Denní job (pg_cron nebo Edge Function):
+
+```sql
+UPDATE public.posts
+SET status = 'archived', updated_at = now()
+WHERE status = 'active'
+  AND expires_at IS NOT NULL
+  AND expires_at <= now();
+```
+
+Veřejná neviditelnost platí **okamžitě** přes `is_post_publicly_visible()` — cron sjednocuje stav pro klientskou sekci a reporting.
+
+**Poznámka k událostem:** U `udalost` je `expires_at = event_date + 1 den` (§8.4.1) — akce nemůže zmizet před konáním.
+
+### 9.6 Implementační checklist
+
+| Oblast | Odhad |
+|--------|-------|
+| DB migrace (`listing_duration_days` + CHECK) | ~20 min |
+| `app.ts` konfigurace | ~10 min |
+| Formulář založení + obnovení | ~1–2 h |
+| Klientská sekce — záložka Expirované | ~1 h |
+| Cron archivace | ~30 min |
+
+**Celkem:** cca **0,5 dne**.
+
+### 9.7 Out of Scope (v0.1.1)
+
+- Placené prodloužení / topování (až monetizace)
+- Různé max limity per kategorie (až v0.3+ podle dat)
+- Automatické e-mailové upozornění „inzerát brzy expiruje“ (volitelné v0.3+)

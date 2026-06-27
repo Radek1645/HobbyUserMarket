@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth/get-user";
 import { redirect } from "next/navigation";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -13,7 +13,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect("/");
   }
 
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
+  const nextPath = next?.startsWith("/") ? next : "/";
 
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4 py-12">
@@ -35,7 +36,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         ) : null}
 
         <form
-          action={signInWithGoogle.bind(null, "/")}
+          action={signInWithGoogle.bind(null, nextPath)}
           className="mt-6"
         >
           <button

@@ -16,12 +16,19 @@ export default async function Home() {
         </p>
 
         {user ? (
-          <p className="mt-6 text-sm text-gray-600">
-            Přihlášen jako{" "}
-            <span className="font-medium text-gray-900">
-              {user.displayName}
+          <p className="mt-6 flex flex-wrap items-center gap-3">
+            <Link
+              href="/inzerat/novy"
+              className="inline-flex rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+            >
+              Založit inzerát
+            </Link>
+            <span className="text-sm text-gray-600">
+              Přihlášen jako{" "}
+              <span className="font-medium text-gray-900">
+                {user.displayName}
+              </span>
             </span>
-            . Profil je synchronizovaný v databázi.
           </p>
         ) : (
           <p className="mt-6 text-sm text-gray-600">

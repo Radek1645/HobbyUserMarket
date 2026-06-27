@@ -143,11 +143,11 @@ CREATE TABLE IF NOT EXISTS public.posts (
     CHECK (price_type IN ('fixed', 'free_pickup', 'negotiable', 'exchange', 'offer')),
 
   CONSTRAINT posts_condition_label_check
-    CHECK (condition_label IN ('new', 'like_new', 'used', 'one_time', 'long_term', 'substitute')),
+    CHECK (condition_label IN ('new', 'like_new', 'used', 'damaged', 'one_time', 'long_term', 'substitute')),
 
   CONSTRAINT posts_condition_matches_category_check
     CHECK (
-      (category_type = 'zbozi' AND condition_label IN ('new', 'like_new', 'used'))
+      (category_type = 'zbozi' AND condition_label IN ('new', 'like_new', 'used', 'damaged'))
       OR
       (category_type = 'sluzby' AND condition_label IN ('one_time', 'long_term', 'substitute'))
     ),
@@ -826,3 +826,25 @@ CREATE POLICY post_images_storage_delete ON storage.objects
       OR public.is_moderator_or_admin()
     )
   );
+
+-- =============================================================================
+-- Table grants (RLS alone is not enough — authenticated role needs GRANT)
+-- =============================================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+GRANT SELECT ON public.posts TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.posts TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE public.posts_id_seq TO authenticated;
+
+GRANT SELECT ON public.profiles TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
+
+GRANT SELECT ON public.post_images TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.post_images TO authenticated;
+
+GRANT SELECT ON public.comments TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.comments TO authenticated;
+
+GRANT SELECT, INSERT ON public.reports TO authenticated;
+GRANT SELECT, INSERT ON public.contact_reveals TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.rate_limits TO authenticated;
