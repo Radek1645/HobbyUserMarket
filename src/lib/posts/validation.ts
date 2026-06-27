@@ -27,15 +27,31 @@ export type ValidationResult =
   | { ok: true; data: CreateListingInput }
   | { ok: false; error: string };
 
-function parseOptionalPrice(
+function parsePriceAmount(
   priceType: PriceType,
   raw: string,
 ): number | null {
-  if (priceType !== "fixed") return null;
-  const amount = Number.parseInt(raw, 10);
+  if (priceType !== "fixed" && priceType !== "negotiable") {
+    return null;
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    if (priceType === "fixed") {
+      throw new Error("Zadej cenu v Kč.");
+    }
+    throw new Error("U ceny dohodou uveď orientační částku v Kč.");
+  }
+
+  const amount = Number.parseInt(trimmed, 10);
   if (Number.isNaN(amount) || amount < 0) {
     throw new Error("Zadej platnou cenu v Kč.");
   }
+
+  if (priceType === "negotiable" && amount < 1) {
+    throw new Error("Orientační cena musí být alespoň 1 Kč.");
+  }
+
   return amount;
 }
 
@@ -50,7 +66,7 @@ export function validateCreateListing(form: FormData): ValidationResult {
     const latitude = Number.parseFloat(String(form.get("latitude") ?? ""));
     const longitude = Number.parseFloat(String(form.get("longitude") ?? ""));
     const priceType = form.get("priceType") as PriceType;
-    const priceAmount = parseOptionalPrice(
+    const priceAmount = parsePriceAmount(
       priceType,
       String(form.get("priceAmount") ?? ""),
     );
@@ -91,11 +107,14 @@ export function validateCreateListing(form: FormData): ValidationResult {
     }
 
     if (!locationText) {
-      return { ok: false, error: "Zadej lokalitu." };
+      return { ok: false, error: "Vyber lokalitu z našeptávače nebo použij GPS." };
     }
 
     if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
-      return { ok: false, error: "Povol polohu nebo použij tlačítko GPS." };
+      return {
+        ok: false,
+        error: "Vyber obec z našeptávače nebo použij GPS — souřadnice chybí.",
+      };
     }
 
     let listingDurationDays = LISTING_DURATION_DEFAULT_DAYS;

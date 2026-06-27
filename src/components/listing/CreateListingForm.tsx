@@ -16,7 +16,8 @@ import {
   parseMentionedDatesFromText,
 } from "@/lib/posts/expiry";
 import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
-import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { LocationInput } from "@/components/listing/LocationInput";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 
 const initialState: CreateListingState = {};
@@ -53,8 +54,9 @@ export function CreateListingForm() {
   );
   const [customDuration, setCustomDuration] = useState(false);
   const [eventDate, setEventDate] = useState("");
-  const [geoError, setGeoError] = useState<string | null>(null);
   const submitErrorRef = useRef<HTMLDivElement>(null);
+
+  const category = getCategoryConfig(categoryType);
 
   useEffect(() => {
     if (state.error && step === 2) {
@@ -65,7 +67,6 @@ export function CreateListingForm() {
     }
   }, [state.error, step]);
 
-  const category = getCategoryConfig(categoryType);
   const isEvent = categoryType === "udalost";
   const isRecurringEvent = isEvent && conditionLabel === "long_term";
 
@@ -100,15 +101,27 @@ export function CreateListingForm() {
 
   const titleTrimmed = title.trim();
   const descriptionTrimmed = description.trim();
-  const hasGps = latitude != null && longitude != null;
+  const hasLocation =
+    latitude != null &&
+    longitude != null &&
+    locationText.trim().length > 0;
   const isTitleValid = titleTrimmed.length >= 1 && title.length <= 80;
   const isDescriptionValid =
     descriptionTrimmed.length >= LISTING_DESCRIPTION_MIN_LENGTH &&
     description.length <= LISTING_DESCRIPTION_MAX_LENGTH;
+  const needsPriceAmount =
+    priceType === "fixed" || priceType === "negotiable";
+  const parsedPriceAmount = Number.parseInt(priceAmount.trim(), 10);
   const isPriceValid =
-    priceType !== "fixed" || priceAmount.trim().length > 0;
+    !needsPriceAmount ||
+    (priceAmount.trim().length > 0 &&
+      !Number.isNaN(parsedPriceAmount) &&
+      parsedPriceAmount >= (priceType === "negotiable" ? 1 : 0));
   const canPublish =
-    hasGps && isTitleValid && isDescriptionValid && isPriceValid;
+    hasLocation &&
+    isTitleValid &&
+    isDescriptionValid &&
+    isPriceValid;
 
   function handleCategoryChange(type: CategoryType) {
     setCategoryType(type);
@@ -116,22 +129,6 @@ export function CreateListingForm() {
     setSubcategorySlug(next.subcategories[0]?.slug ?? "");
     setConditionLabel(next.conditionLabels[0]?.value ?? "used");
     setPriceType(next.priceTypes[0]?.value ?? "negotiable");
-  }
-
-  function useCurrentLocation() {
-    setGeoError(null);
-    if (!navigator.geolocation) {
-      setGeoError("Prohlížeč nepodporuje geolokaci.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatitude(pos.coords.latitude);
-        setLongitude(pos.coords.longitude);
-      },
-      () => setGeoError("Polohu se nepodařilo získat. Povol GPS v prohlížeči."),
-      { enableHighAccuracy: true, timeout: 15000 },
-    );
   }
 
   function canGoStep2(): boolean {
@@ -427,36 +424,16 @@ export function CreateListingForm() {
             </div>
           ) : null}
 
-          <div>
-            <label htmlFor="locationText" className={labelClass}>
-              Lokalita
-            </label>
-            <input
-              id="locationText"
-              name="locationText"
-              required
-              value={locationText}
-              onChange={(e) => setLocationText(e.target.value)}
-              className={inputClass}
-              placeholder="např. Brno-Líšeň"
-            />
-            <button
-              type="button"
-              onClick={useCurrentLocation}
-              className="mt-2 inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <MapPin className="h-4 w-4" />
-              Použít aktuální polohu (GPS)
-            </button>
-            {latitude != null && longitude != null ? (
-              <p className="mt-1 text-xs text-green-700">
-                GPS nastaveno ({latitude.toFixed(4)}, {longitude.toFixed(4)})
-              </p>
-            ) : null}
-            {geoError ? (
-              <p className="mt-1 text-xs text-red-600">{geoError}</p>
-            ) : null}
-          </div>
+          <LocationInput
+            value={{ locationText, latitude, longitude }}
+            onChange={({ locationText: text, latitude: lat, longitude: lng }) => {
+              setLocationText(text);
+              setLatitude(lat);
+              setLongitude(lng);
+            }}
+            inputClass={inputClass}
+            labelClass={labelClass}
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -480,7 +457,7 @@ export function CreateListingForm() {
             {priceType === "fixed" ? (
               <div>
                 <label htmlFor="priceAmount" className={labelClass}>
-                  Cena (Kč)
+                  Cena (Kč) <span className="text-red-600">*</span>
                 </label>
                 <input
                   id="priceAmount"
@@ -492,6 +469,27 @@ export function CreateListingForm() {
                   onChange={(e) => setPriceAmount(e.target.value)}
                   className={inputClass}
                 />
+              </div>
+            ) : null}
+            {priceType === "negotiable" ? (
+              <div>
+                <label htmlFor="priceAmount" className={labelClass}>
+                  Orientační cena (Kč) <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="priceAmount"
+                  name="priceAmount"
+                  type="number"
+                  min={1}
+                  required
+                  value={priceAmount}
+                  onChange={(e) => setPriceAmount(e.target.value)}
+                  className={inputClass}
+                  placeholder="např. 500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Kolik si představuješ? Finální cena se domluví.
+                </p>
               </div>
             ) : null}
           </div>
@@ -521,7 +519,7 @@ export function CreateListingForm() {
               disabled={pending || !canPublish}
               title={
                 !canPublish
-                  ? "Vyplň název, popis a nastav GPS polohu"
+                  ? "Vyplň název, popis a vyber lokalitu z našeptávače nebo GPS"
                   : undefined
               }
               className="flex flex-1 items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"

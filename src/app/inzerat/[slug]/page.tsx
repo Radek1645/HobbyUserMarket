@@ -123,9 +123,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
           </div>
           {post.price_amount != null ? (
             <div>
-              <dt className="text-gray-500">Cena</dt>
+              <dt className="text-gray-500">
+                {post.price_type === "negotiable" ? "Orientačně" : "Cena"}
+              </dt>
               <dd className="font-medium text-gray-900">
-                {post.price_amount} Kč
+                {post.price_type === "negotiable"
+                  ? `cca ${post.price_amount} Kč (dohodou)`
+                  : `${post.price_amount} Kč`}
               </dd>
             </div>
           ) : null}
