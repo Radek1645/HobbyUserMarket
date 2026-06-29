@@ -10,6 +10,7 @@
 
 export const GTM_CTA = {
   // Header
+  HEADER_HOME: "cta_header_home",
   HEADER_CREATE_LISTING: "cta_header_create_listing",
   HEADER_LOCATION: "cta_header_location",
   HEADER_MENU_TOGGLE: "cta_header_menu_toggle",
@@ -52,6 +53,14 @@ export const GTM_CTA = {
 
   // Auth
   LOGIN_GOOGLE: "cta_login_google",
+  LOGIN_EMAIL: "cta_login_email",
+  REGISTER_SUBMIT: "cta_register_submit",
+  PASSWORD_RESET_REQUEST: "cta_password_reset_request",
+  PASSWORD_RESET_SUBMIT: "cta_password_reset_submit",
+  ONBOARDING_SUBMIT: "cta_onboarding_submit",
+  AUTH_TAB_LOGIN: "cta_auth_tab_login",
+  AUTH_TAB_REGISTER: "cta_auth_tab_register",
+  AUTH_TAB_FORGOT: "cta_auth_tab_forgot",
 } as const;
 
 export type GtmCtaId = (typeof GTM_CTA)[keyof typeof GTM_CTA];

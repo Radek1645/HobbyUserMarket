@@ -5,6 +5,17 @@ export type VisitorLocation = {
 };
 
 const STORAGE_KEY = "hum_visitor_location";
+const SEARCH_BY_LOCATION_KEY = "hum_search_by_location";
+
+export function loadSearchByLocation(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(SEARCH_BY_LOCATION_KEY) !== "false";
+}
+
+export function saveSearchByLocation(enabled: boolean): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(SEARCH_BY_LOCATION_KEY, String(enabled));
+}
 
 export function loadVisitorLocation(): VisitorLocation | null {
   if (typeof window === "undefined") return null;

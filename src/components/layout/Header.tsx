@@ -1,6 +1,7 @@
 "use client";
 
 import { signInWithGoogle, signOut } from "@/app/actions/auth";
+import { AppLogo } from "@/components/brand/AppLogo";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import type { AppUser } from "@/types/auth";
 import { LogOut, MapPin, Menu, Plus, Search, X } from "lucide-react";
@@ -19,16 +20,7 @@ export function Header({ user }: HeaderProps) {
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          {user ? (
-            <Link
-              href="/inzerat/novy"
-              {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
-              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-gray-900 px-3 text-sm font-medium text-white transition hover:bg-gray-800 sm:px-4"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Založit</span>
-            </Link>
-          ) : null}
+          <AppLogo />
 
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Hledat</span>
@@ -42,6 +34,28 @@ export function Header({ user }: HeaderProps) {
               className="h-10 w-full rounded-full border border-gray-200 bg-gray-50 pr-3 pl-9 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:ring-2 focus:ring-gray-200"
             />
           </label>
+
+          {user ? (
+            <Link
+              href="/inzerat/novy"
+              {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
+              aria-label="Založit inzerát"
+              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-gray-900 px-3 text-sm font-medium text-white transition hover:bg-gray-800 sm:px-4"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Založit</span>
+            </Link>
+          ) : (
+            <Link
+              href="/login?next=/inzerat/novy&message=create_listing&tab=register"
+              {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
+              aria-label="Založit inzerát — nejdřív profil"
+              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-gray-900 px-3 text-sm font-medium text-white transition hover:bg-gray-800 sm:px-4"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Založit</span>
+            </Link>
+          )}
 
           <button
             type="button"

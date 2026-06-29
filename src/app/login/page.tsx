@@ -1,31 +1,66 @@
 import { signInWithGoogle } from "@/app/actions/auth";
+import { EmailAuthPanel } from "@/components/auth/EmailAuthPanel";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { redirect } from "next/navigation";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    message?: string;
+    next?: string;
+    tab?: string;
+  }>;
+};
+
+function resolveInitialTab(tab?: string): "login" | "register" | "forgot" {
+  if (tab === "register" || tab === "forgot") {
+    return tab;
+  }
+  return "login";
+}
+
+const messageMap: Record<string, string> = {
+  password_updated: "Heslo bylo nastavené. Můžeš se přihlásit.",
+  create_listing:
+    "Nejdřív si založ profil — pak můžeš přidat inzerát a nabízet zboží nebo služby v okolí.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const user = await getCurrentUser();
 
   if (user) {
+    if (user.needsNicknameSetup) {
+      redirect("/onboarding");
+    }
     redirect("/");
   }
 
-  const { error, next } = await searchParams;
+  const { error, message, next, tab } = await searchParams;
   const nextPath = next?.startsWith("/") ? next : "/";
+  const infoMessage = message ? messageMap[message] : undefined;
+  const isCreateListingFlow = message === "create_listing";
 
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
         <h1 className="text-center text-2xl font-semibold text-gray-900">
-          Přihlášení
+          {isCreateListingFlow ? "Založit inzerát" : "Přihlášení"}
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Přihlas se přes Google a začni prodávat nebo nakupovat lokálně.
+          {isCreateListingFlow
+            ? "Přihlas se nebo si vytvoř účet. Bez profilu inzerát nezveřejníš."
+            : "Přihlas se e-mailem nebo přes Google a začni prodávat nebo nakupovat lokálně."}
         </p>
+
+        {infoMessage ? (
+          <p
+            className="mt-4 rounded-lg bg-sky-50 px-3 py-2 text-center text-sm text-sky-900"
+            role="status"
+          >
+            {infoMessage}
+          </p>
+        ) : null}
 
         {error ? (
           <p
@@ -36,14 +71,22 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
         ) : null}
 
-        <form
-          action={signInWithGoogle.bind(null, nextPath)}
-          className="mt-6"
-        >
+        <EmailAuthPanel nextPath={nextPath} initialTab={resolveInitialTab(tab)} />
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center" aria-hidden="true">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-gray-500">nebo</span>
+          </div>
+        </div>
+
+        <form action={signInWithGoogle.bind(null, nextPath)}>
           <button
             type="submit"
             {...gtmCtaProps(GTM_CTA.LOGIN_GOOGLE)}
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 transition hover:bg-gray-50"
           >
             <GoogleIcon />
             Pokračovat přes Google

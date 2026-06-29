@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isPlaceholderNickname } from "@/lib/auth/nickname";
 import type { AppUser, UserRole } from "@/types/auth";
 
 type ProfileRow = {
@@ -11,14 +12,10 @@ type ProfileRow = {
   role: UserRole;
 };
 
-function isPlaceholderNickname(nickname: string): boolean {
-  return nickname.startsWith("user_");
-}
-
 function buildDisplayName(
   name: string | null,
   nickname: string,
-  metadata: Record<string, unknown>
+  metadata: Record<string, unknown>,
 ): string {
   if (name?.trim()) {
     return name.trim();

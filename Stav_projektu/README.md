@@ -12,9 +12,10 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-06-29 | [2026-06-29.md](./2026-06-29.md) |
 | 2026-06-27 | [2026-06-27.md](./2026-06-27.md) |
 
 ## Odkazy
 
-- Kanónický dokument: [`docs/PRD_v3.md`](../docs/PRD_v3.md) (v3.9)
+- Kanónický dokument: [`docs/PRD_v3.md`](../docs/PRD_v3.md)
 - Repo: https://github.com/Radek1645/HobbyUserMarket

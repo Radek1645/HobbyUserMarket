@@ -326,7 +326,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
     * Pro zboží: `Schema.org/IndividualProduct` (název, cena, měna CZK, stav).
     * Pro služby: `Schema.org/Service` (lokalita, popis) — preferováno před `LocalBusiness` u jednotlivců.
     * Pro události *(v0.2)*: `Schema.org/Event` (`startDate` z `event_date`, popis, lokalita).
-  * **SEO přívětivé URL (Slugs):** Tvar `/inzerat/[id]-[url-slug]`, např. `/inzerat/854-prodam-detske-kolo-velo-brno-lisen`. Slug se generuje z `title` při první publikaci a **nemění se** při editaci.
+  * **SEO přívětivé URL (Slugs):** Tvar `/inzerat/[url-slug]`, např. `/inzerat/prace-v-kavarne-j59d`. Interní `id` záznamu se v URL **neuvádí**. `[url-slug]` = slugifikovaný název inzerátu + krátký unikátní suffix (ukládá se do `posts.slug`), generuje se z `title` při první publikaci a **nemění se** při editaci. Staré URL ve tvaru `/inzerat/[id]-[url-slug]` trvale přesměrují na `/inzerat/[url-slug]`.
 
 ### 5.4 Tvorba inzerátu & Synchronní AI Guardrail
 

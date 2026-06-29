@@ -10,24 +10,26 @@ import { createClient } from "@/lib/supabase/server";
 import type { PostRow } from "@/types/post";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-function parseSlugParam(param: string): { id: number; slug: string } | null {
-  const match = /^(\d+)-(.*)$/.exec(param);
-  if (!match) return null;
-  return { id: Number.parseInt(match[1], 10), slug: match[2] };
+function resolveSlugParam(param: string): string {
+  const legacy = /^(\d+)-(.*)$/.exec(param);
+  if (legacy) {
+    permanentRedirect(`/inzerat/${legacy[2]}`);
+  }
+  return param;
 }
 
-async function getPost(id: number): Promise<PostRow | null> {
+async function getPostBySlug(slug: string): Promise<PostRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
     .select("*")
-    .eq("id", id)
+    .eq("slug", slug)
     .maybeSingle<PostRow>();
 
   if (error || !data) return null;
@@ -38,10 +40,9 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug: param } = await params;
-  const parsed = parseSlugParam(param);
-  if (!parsed) return { title: "Inzerát | HobbyUserMarket" };
+  const slug = resolveSlugParam(param);
 
-  const post = await getPost(parsed.id);
+  const post = await getPostBySlug(slug);
   if (!post) return { title: "Inzerát | HobbyUserMarket" };
 
   return {
@@ -51,10 +52,9 @@ export async function generateMetadata({
 
 export default async function ListingDetailPage({ params }: PageProps) {
   const { slug: param } = await params;
-  const parsed = parseSlugParam(param);
-  if (!parsed) notFound();
+  const slug = resolveSlugParam(param);
 
-  const post = await getPost(parsed.id);
+  const post = await getPostBySlug(slug);
   if (!post || post.status !== "active") notFound();
 
   const categoryLabel = getCategoryLabel(post.category_type);

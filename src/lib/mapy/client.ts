@@ -68,43 +68,64 @@ async function mapyGet<T>(
   return response.json() as Promise<T>;
 }
 
+const CZECH_HOUSE_NUMBER_SUFFIX =
+  /\s+(?:č\.?\s*)?\d+[a-zA-Z]?(?:\s*\/\s*\d+[a-zA-Z]?)?$/;
+
+/** Ulice + obec bez popisného/orientačního čísla (pro zobrazení polohy návštěvníka). */
+export function formatPublicAreaLocation(locationText: string): string {
+  const trimmed = locationText.trim();
+  if (!trimmed) return trimmed;
+
+  if (!trimmed.includes(",")) {
+    return trimmed.replace(CZECH_HOUSE_NUMBER_SUFFIX, "").trim();
+  }
+
+  const [first, ...rest] = trimmed.split(",").map((part) => part.trim());
+  const street = first.replace(CZECH_HOUSE_NUMBER_SUFFIX, "").trim();
+  const tail = rest.filter(Boolean).join(", ");
+
+  if (!street) return tail || trimmed;
+  if (!tail) return street;
+  return `${street}, ${tail}`;
+}
+
+/** Obec/město z Mapy `location` řetězce (první segment, bez „- město“). */
+function municipalityFromMapyLocation(location?: string): string | null {
+  if (!location) return null;
+  const withoutCountry = location.replace(/,?\s*Česko\s*$/i, "").trim();
+  const [first] = withoutCountry.split(",").map((part) => part.trim());
+  if (!first) return null;
+  return first.replace(/\s*-\s*město$/i, "").trim() || null;
+}
+
 /** Kontextová nápověda v našeptávači (např. kraj u obce). */
 export function formatMapyLocationLabel(entity: MapyGeocodeEntity): string {
   const name = entity.name.trim();
-  const area = entity.location
-    ?.trim()
-    .replace(/,?\s*Česko\s*$/i, "")
-    .trim();
+  const municipality = municipalityFromMapyLocation(entity.location);
 
   if (
     entity.type === "regional.municipality" ||
     entity.type === "regional.municipality_part"
   ) {
-    return area && area !== name ? area : name;
+    if (municipality && municipality !== name) {
+      return `${name}, ${municipality}`;
+    }
+    return name || municipality || "";
   }
 
   if (
     (entity.type === "regional.address" || entity.type === "regional.street") &&
-    area &&
-    name !== area
+    municipality &&
+    name !== municipality
   ) {
-    return `${name}, ${area}`;
+    return `${name}, ${municipality}`;
   }
 
-  return name || area || "";
+  return name || municipality || "";
 }
 
-/** Krátký název pro uložení do `location_text` (obec, ne kraj). */
+/** Krátký název pro uložení do `location_text` (ulice/obec + město, ne kraj). */
 export function locationTextFromEntity(entity: MapyGeocodeEntity): string {
-  const name = entity.name.trim();
-
-  if (
-    entity.type === "regional.municipality" ||
-    entity.type === "regional.municipality_part"
-  ) {
-    return name;
-  }
-
   return formatMapyLocationLabel(entity);
 }
 
@@ -156,6 +177,7 @@ export async function reverseGeocodeLocation(
   latitude: number,
   longitude: number,
   signal?: AbortSignal,
+  options?: { approximate?: boolean },
 ): Promise<MapyLocationSelection> {
   const data = await mapyGet<MapyRgeocodeResponse>(
     "/v1/rgeocode",
@@ -175,12 +197,26 @@ export async function reverseGeocodeLocation(
     );
   }
 
-  const preferred =
-    items.find((item) => item.type === "regional.address") ??
-    items.find((item) => item.type === "regional.street") ??
-    items.find((item) => item.type === "regional.municipality_part") ??
-    items.find((item) => item.type === "regional.municipality") ??
-    items[0];
+  const preferred = options?.approximate
+    ? (items.find((item) => item.type === "regional.street") ??
+      items.find((item) => item.type === "regional.municipality_part") ??
+      items.find((item) => item.type === "regional.municipality") ??
+      items.find((item) => item.type === "regional.address") ??
+      items[0])
+    : (items.find((item) => item.type === "regional.address") ??
+      items.find((item) => item.type === "regional.street") ??
+      items.find((item) => item.type === "regional.municipality_part") ??
+      items.find((item) => item.type === "regional.municipality") ??
+      items[0]);
 
-  return entityToLocationSelection(preferred);
+  const selection = entityToLocationSelection(preferred);
+
+  if (options?.approximate) {
+    return {
+      ...selection,
+      locationText: formatPublicAreaLocation(selection.locationText),
+    };
+  }
+
+  return selection;
 }

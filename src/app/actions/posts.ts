@@ -1,6 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { getListingPath } from "@/lib/posts/listing-path";
 import { buildPostSlug } from "@/lib/posts/slug";
 import { validateCreateListing } from "@/lib/posts/validation";
 import { createClient } from "@/lib/supabase/server";
@@ -52,7 +53,7 @@ export async function createListing(
   const { data: row, error } = await supabase
     .from("posts")
     .insert(insertPayload)
-    .select("id, slug")
+    .select("slug")
     .single();
 
   if (error) {
@@ -61,5 +62,5 @@ export async function createListing(
   }
 
   revalidatePath("/");
-  redirect(`/inzerat/${row.id}-${row.slug}`);
+  redirect(getListingPath(row.slug));
 }

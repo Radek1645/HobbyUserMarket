@@ -5,10 +5,15 @@ import { LocationInput } from "@/components/listing/LocationInput";
 import { HOME_LISTINGS_LIMIT, SEARCH_RADIUS_KM } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import type { HomeBrowseCategory, HomeTheme } from "@/config/home-themes";
-import { reverseGeocodeLocation } from "@/lib/mapy/client";
+import {
+  formatPublicAreaLocation,
+  reverseGeocodeLocation,
+} from "@/lib/mapy/client";
 import {
   clearVisitorLocation,
+  loadSearchByLocation,
   loadVisitorLocation,
+  saveSearchByLocation,
   saveVisitorLocation,
   type VisitorLocation,
 } from "@/lib/posts/visitor-location";
@@ -26,6 +31,7 @@ type HomeListingsProps = {
 
 export function HomeListings({ category, theme }: HomeListingsProps) {
   const [location, setLocation] = useState<VisitorLocation | null>(null);
+  const [searchByLocation, setSearchByLocation] = useState(true);
   const [locationReady, setLocationReady] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [listings, setListings] = useState<PublicListingPreview[]>([]);
@@ -84,6 +90,8 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
   );
 
   useEffect(() => {
+    setSearchByLocation(loadSearchByLocation());
+
     const saved = loadVisitorLocation();
     if (saved) {
       setLocation(saved);
@@ -103,6 +111,8 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
           const selection = await reverseGeocodeLocation(
             position.coords.latitude,
             position.coords.longitude,
+            undefined,
+            { approximate: true },
           );
           const loc: VisitorLocation = {
             locationText: selection.locationText,
@@ -133,8 +143,14 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
 
   useEffect(() => {
     if (!locationReady) return;
-    void fetchListings(location, category);
-  }, [category, fetchListings, location, locationReady]);
+    const effectiveLocation = searchByLocation ? location : null;
+    void fetchListings(effectiveLocation, category);
+  }, [category, fetchListings, location, locationReady, searchByLocation]);
+
+  function toggleSearchByLocation(enabled: boolean) {
+    setSearchByLocation(enabled);
+    saveSearchByLocation(enabled);
+  }
 
   function applyPickerLocation() {
     if (
@@ -147,13 +163,14 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
     }
 
     const loc: VisitorLocation = {
-      locationText: pickerValue.locationText.trim(),
+      locationText: formatPublicAreaLocation(pickerValue.locationText),
       latitude: pickerValue.latitude,
       longitude: pickerValue.longitude,
     };
 
     saveVisitorLocation(loc);
     setLocation(loc);
+    toggleSearchByLocation(true);
     setShowPicker(false);
     setError(null);
     void fetchListings(loc, category);
@@ -174,9 +191,11 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
     "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
   const labelClass = "block text-sm font-medium text-gray-700";
 
+  const locationFilterActive = Boolean(searchByLocation && location);
+
   const sectionTitle =
-    fetchMode === "nearby" && location
-      ? `${theme.label} v okolí ${location.locationText}`
+    locationFilterActive && location
+      ? `${theme.label} v okolí ${formatPublicAreaLocation(location.locationText)}`
       : `${theme.label} — nejnovější`;
 
   return (
@@ -187,22 +206,35 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
             {sectionTitle}
           </h2>
           <p className="mt-0.5 text-sm text-gray-500">
-            {fetchMode === "nearby"
+            {locationFilterActive
               ? `Do ${SEARCH_RADIUS_KM} km od tebe`
-              : "Vyber polohu pro inzeráty ve svém okolí"}
+              : location
+                ? "Bez filtru vzdálenosti — nejnovější inzeráty"
+                : "Vyber polohu pro inzeráty ve svém okolí"}
           </p>
         </div>
 
         {location ? (
-          <button
-            type="button"
-            {...gtmCtaProps(GTM_CTA.HOME_CHANGE_LOCATION)}
-            onClick={handleChangeLocation}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 underline-offset-2 hover:underline"
-          >
-            <MapPin className="h-4 w-4" />
-            Změnit polohu
-          </button>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={searchByLocation}
+                onChange={(event) => toggleSearchByLocation(event.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-400"
+              />
+              Hledat podle polohy
+            </label>
+            <button
+              type="button"
+              {...gtmCtaProps(GTM_CTA.HOME_CHANGE_LOCATION)}
+              onClick={handleChangeLocation}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 underline-offset-2 hover:underline"
+            >
+              <MapPin className="h-4 w-4" />
+              Změnit polohu
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -251,7 +283,7 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
       {locationReady && !loading && listings.length === 0 && !error ? (
         <p className="mt-8 rounded-2xl border border-dashed border-gray-200/80 bg-white/70 px-4 py-10 text-center text-sm text-gray-500 backdrop-blur-sm">
           {fetchMode === "nearby"
-            ? `V okruhu ${SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není.`
+            ? `V okruhu ${SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkus vypnout „Hledat podle polohy“.`
             : `V kategorii „${theme.label}“ zatím nic není.`}
         </p>
       ) : null}

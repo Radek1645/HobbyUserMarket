@@ -38,7 +38,7 @@ export function ListingCard({ listing }: ListingCardProps) {
 
   return (
     <Link
-      href={getListingPath(listing.id, listing.slug)}
+      href={getListingPath(listing.slug)}
       {...gtmCtaProps(GTM_CTA.LISTING_CARD_OPEN, {
         category: listing.category_type,
         "listing-id": listing.id,
