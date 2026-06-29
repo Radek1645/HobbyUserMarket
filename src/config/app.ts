@@ -1,6 +1,7 @@
 /** Globální parametry aplikace — PRD §3, §9.3 */
 
 export const SEARCH_RADIUS_KM = 15;
+export const HOME_LISTINGS_LIMIT = 9;
 
 export const LISTING_DURATION_DEFAULT_DAYS = 30;
 export const LISTING_DURATION_MIN_DAYS = 1;

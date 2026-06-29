@@ -1,6 +1,7 @@
 "use client";
 
 import { createListing, type CreateListingState } from "@/app/actions/posts";
+import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   LISTING_DURATION_DEFAULT_DAYS,
   LISTING_DURATION_MAX_DAYS,
@@ -182,6 +183,9 @@ export function CreateListingForm() {
                 <button
                   key={cat.type}
                   type="button"
+                  {...gtmCtaProps(GTM_CTA.CREATE_SELECT_CATEGORY, {
+                    category: cat.type,
+                  })}
                   onClick={() => handleCategoryChange(cat.type)}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                     categoryType === cat.type
@@ -216,6 +220,7 @@ export function CreateListingForm() {
 
           <button
             type="button"
+            {...gtmCtaProps(GTM_CTA.CREATE_STEP_CONTINUE)}
             disabled={!canGoStep2()}
             onClick={() => setStep(2)}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
@@ -242,6 +247,7 @@ export function CreateListingForm() {
             </p>
             <button
               type="button"
+              {...gtmCtaProps(GTM_CTA.CREATE_EDIT_CATEGORY)}
               onClick={() => setStep(1)}
               className="shrink-0 font-medium text-gray-700 underline-offset-2 hover:underline"
             >
@@ -520,6 +526,7 @@ export function CreateListingForm() {
           <div className="flex gap-2">
             <button
               type="button"
+              {...gtmCtaProps(GTM_CTA.CREATE_STEP_BACK)}
               onClick={() => setStep(1)}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
@@ -528,6 +535,7 @@ export function CreateListingForm() {
             </button>
             <button
               type="submit"
+              {...gtmCtaProps(GTM_CTA.CREATE_PUBLISH, { category: categoryType })}
               disabled={pending || !canPublish}
               title={
                 !canPublish

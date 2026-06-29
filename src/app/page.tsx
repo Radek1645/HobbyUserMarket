@@ -1,48 +1,27 @@
+import { HomeBrowse } from "@/components/home/HomeBrowse";
 import { getCurrentUser } from "@/lib/auth/get-user";
-import Link from "next/link";
+import { Suspense } from "react";
+
+function HomeFallback() {
+  return (
+    <div className="px-4 py-8 sm:px-6">
+      <div className="h-40 animate-pulse rounded-2xl bg-gray-100" />
+      <div className="mt-6 h-10 animate-pulse rounded-full bg-gray-100" />
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-64 animate-pulse rounded-2xl bg-gray-100" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default async function Home() {
   const user = await getCurrentUser();
 
   return (
-    <div className="px-4 py-8 sm:px-6">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-          HobbyUserMarket
-        </h1>
-        <p className="mt-3 max-w-xl text-gray-600">
-          Lokální tržiště pro hobby uživatele — najdi potraviny, služby a řemeslo
-          ve svém okolí.
-        </p>
-
-        {user ? (
-          <p className="mt-6 flex flex-wrap items-center gap-3">
-            <Link
-              href="/inzerat/novy"
-              className="inline-flex rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
-            >
-              Založit inzerát
-            </Link>
-            <span className="text-sm text-gray-600">
-              Přihlášen jako{" "}
-              <span className="font-medium text-gray-900">
-                {user.displayName}
-              </span>
-            </span>
-          </p>
-        ) : (
-          <p className="mt-6 text-sm text-gray-600">
-            Pro vytváření inzerátů se{" "}
-            <Link
-              href="/login"
-              className="font-medium text-gray-900 underline-offset-2 hover:underline"
-            >
-              přihlas přes Google
-            </Link>
-            .
-          </p>
-        )}
-      </section>
-    </div>
+    <Suspense fallback={<HomeFallback />}>
+      <HomeBrowse user={user} />
+    </Suspense>
   );
 }

@@ -53,6 +53,23 @@ export type PostRow = {
   updated_at: string;
 };
 
+/** Náhled inzerátu pro homepage (RPC get_nearby_posts / get_recent_posts) */
+export type PublicListingPreview = {
+  id: number;
+  title: string;
+  description: string;
+  category_type: CategoryType;
+  subcategory_slug: string;
+  price_type: PriceType;
+  price_amount: number | null;
+  location_text: string;
+  slug: string;
+  main_image_url: string | null;
+  event_date: string | null;
+  created_at: string;
+  distance_km?: number | null;
+};
+
 /** Payload pro INSERT — expires_at nastaví DB trigger */
 export type PostInsert = Pick<
   PostRow,

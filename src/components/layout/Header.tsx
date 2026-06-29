@@ -1,6 +1,7 @@
 "use client";
 
 import { signInWithGoogle, signOut } from "@/app/actions/auth";
+import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import type { AppUser } from "@/types/auth";
 import { LogOut, MapPin, Menu, Plus, Search, X } from "lucide-react";
 import Image from "next/image";
@@ -21,6 +22,7 @@ export function Header({ user }: HeaderProps) {
           {user ? (
             <Link
               href="/inzerat/novy"
+              {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
               className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-gray-900 px-3 text-sm font-medium text-white transition hover:bg-gray-800 sm:px-4"
             >
               <Plus className="h-4 w-4" />
@@ -43,6 +45,7 @@ export function Header({ user }: HeaderProps) {
 
           <button
             type="button"
+            {...gtmCtaProps(GTM_CTA.HEADER_LOCATION)}
             aria-label="Poloha (brzy)"
             title="Detekce polohy — brzy"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition hover:bg-gray-100"
@@ -53,6 +56,7 @@ export function Header({ user }: HeaderProps) {
 
         <button
           type="button"
+          {...gtmCtaProps(GTM_CTA.HEADER_MENU_TOGGLE)}
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
           aria-label={menuOpen ? "Zavřít menu" : "Otevřít menu"}
@@ -97,6 +101,7 @@ export function Header({ user }: HeaderProps) {
               <form action={signOut}>
                 <button
                   type="submit"
+                  {...gtmCtaProps(GTM_CTA.HEADER_SIGN_OUT)}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                 >
                   <LogOut className="h-4 w-4" />
@@ -109,6 +114,7 @@ export function Header({ user }: HeaderProps) {
               <form action={signInWithGoogle.bind(null, "/")}>
                 <button
                   type="submit"
+                  {...gtmCtaProps(GTM_CTA.HEADER_SIGN_IN)}
                   className="flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
                 >
                   Přihlásit se
@@ -118,6 +124,7 @@ export function Header({ user }: HeaderProps) {
                 Nebo přejdi na{" "}
                 <Link
                   href="/login"
+                  {...gtmCtaProps(GTM_CTA.HEADER_LOGIN_PAGE)}
                   className="font-medium text-gray-700 underline-offset-2 hover:underline"
                   onClick={() => setMenuOpen(false)}
                 >

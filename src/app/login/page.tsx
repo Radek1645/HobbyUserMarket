@@ -1,4 +1,5 @@
 import { signInWithGoogle } from "@/app/actions/auth";
+import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { redirect } from "next/navigation";
 
@@ -41,6 +42,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         >
           <button
             type="submit"
+            {...gtmCtaProps(GTM_CTA.LOGIN_GOOGLE)}
             className="flex w-full items-center justify-center gap-3 rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800"
           >
             <GoogleIcon />

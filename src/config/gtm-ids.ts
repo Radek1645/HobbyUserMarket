@@ -1,0 +1,81 @@
+/**
+ * Registr CTA identifikátorů pro GTM / GA4.
+ * PRD §5.5 — hodnoty jsou stabilní API; po nasazení neměnit.
+ *
+ * GTM trigger: Click — všechen element matching CSS selector
+ *   [data-gtm-id^="cta_"]
+ * Proměnná: Click Element → atribut data-gtm-id
+ * Kontext (volitelně): data-gtm-category, data-gtm-listing-id, …
+ */
+
+export const GTM_CTA = {
+  // Header
+  HEADER_CREATE_LISTING: "cta_header_create_listing",
+  HEADER_LOCATION: "cta_header_location",
+  HEADER_MENU_TOGGLE: "cta_header_menu_toggle",
+  HEADER_SIGN_IN: "cta_header_sign_in",
+  HEADER_SIGN_OUT: "cta_header_sign_out",
+  HEADER_LOGIN_PAGE: "cta_header_login_page",
+
+  // Homepage
+  HOME_CREATE_LISTING: "cta_home_create_listing",
+  HOME_SIGN_IN_LINK: "cta_home_sign_in_link",
+  HOME_CATEGORY_TAB: "cta_home_category_tab",
+  HOME_APPLY_LOCATION: "cta_home_apply_location",
+  HOME_CHANGE_LOCATION: "cta_home_change_location",
+
+  // Výpis / detail
+  LISTING_CARD_OPEN: "cta_listing_card_open",
+  DETAIL_BACK_HOME: "cta_detail_back_home",
+
+  // Poptávkový formulář
+  INQUIRY_OPEN: "cta_inquiry_open",
+  INQUIRY_SUBMIT: "cta_inquiry_submit",
+  INQUIRY_CANCEL: "cta_inquiry_cancel",
+  INQUIRY_SEND_ANOTHER: "cta_inquiry_send_another",
+
+  // Založení inzerátu
+  CREATE_BACK_HOME: "cta_create_back_home",
+  CREATE_SELECT_CATEGORY: "cta_create_select_category",
+  CREATE_STEP_CONTINUE: "cta_create_step_continue",
+  CREATE_STEP_BACK: "cta_create_step_back",
+  CREATE_EDIT_CATEGORY: "cta_create_edit_category",
+  CREATE_PUBLISH: "cta_create_publish",
+
+  // Lokalita (formulář)
+  LOCATION_USE_GPS: "cta_location_use_gps",
+  LOCATION_SELECT_SUGGESTION: "cta_location_select_suggestion",
+
+  // Přílohy poptávky
+  INQUIRY_ATTACHMENT_ADD: "cta_inquiry_attachment_add",
+  INQUIRY_ATTACHMENT_REMOVE: "cta_inquiry_attachment_remove",
+
+  // Auth
+  LOGIN_GOOGLE: "cta_login_google",
+} as const;
+
+export type GtmCtaId = (typeof GTM_CTA)[keyof typeof GTM_CTA];
+
+/** Všechna platná ID (validace v CI / testech). */
+export const GTM_CTA_IDS: GtmCtaId[] = Object.values(GTM_CTA);
+
+/**
+ * Props pro `<button>`, `<Link>`, `<a>` — atribut `data-gtm-id` + volitelný kontext.
+ * @example gtmCtaProps(GTM_CTA.HOME_CATEGORY_TAB, { category: "prace" })
+ */
+export function gtmCtaProps(
+  id: GtmCtaId,
+  context?: Record<string, string | number | undefined>,
+): { "data-gtm-id": GtmCtaId } & Record<string, string> {
+  const props: Record<string, string> = { "data-gtm-id": id };
+
+  if (context) {
+    for (const [key, value] of Object.entries(context)) {
+      if (value !== undefined && value !== "") {
+        props[`data-gtm-${key}`] = String(value);
+      }
+    }
+  }
+
+  return props as { "data-gtm-id": GtmCtaId } & Record<string, string>;
+}

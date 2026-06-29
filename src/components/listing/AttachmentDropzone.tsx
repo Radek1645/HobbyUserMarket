@@ -5,6 +5,7 @@ import {
   INQUIRY_ATTACHMENT_MAX_FILES,
   INQUIRY_ATTACHMENT_MAX_TOTAL_BYTES,
 } from "@/config/app";
+import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { useCallback, useRef, useState } from "react";
 
 export type AttachmentFile = {
@@ -93,6 +94,7 @@ export function AttachmentDropzone({
       <div
         role="button"
         tabIndex={0}
+        {...gtmCtaProps(GTM_CTA.INQUIRY_ATTACHMENT_ADD)}
         onClick={() => inputRef.current?.click()}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -136,6 +138,7 @@ export function AttachmentDropzone({
               <span className="truncate">{item.file.name}</span>
               <button
                 type="button"
+                {...gtmCtaProps(GTM_CTA.INQUIRY_ATTACHMENT_REMOVE)}
                 onClick={() => removeFile(item.id)}
                 className="ml-2 shrink-0 text-xs text-gray-500 underline-offset-2 hover:underline"
               >

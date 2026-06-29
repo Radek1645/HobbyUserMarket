@@ -5,6 +5,7 @@ import {
   getSubcategoryLabel,
 } from "@/config/categories";
 import { ListingInquiryForm } from "@/components/listing/ListingInquiryForm";
+import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { createClient } from "@/lib/supabase/server";
 import type { PostRow } from "@/types/post";
 import type { Metadata } from "next";
@@ -103,7 +104,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   return (
     <article className="px-4 py-8 sm:px-6">
-      <Link href="/" className="text-sm text-gray-500 hover:text-gray-800">
+      <Link
+        href="/"
+        {...gtmCtaProps(GTM_CTA.DETAIL_BACK_HOME)}
+        className="text-sm text-gray-500 hover:text-gray-800"
+      >
         ← Zpět
       </Link>
 

@@ -438,6 +438,44 @@ Vestavěný systém rolí navázaný na produkční UI (bez komplexního admin p
   * Consent banner před aktivací GA4 (GTM consent mode).
   * Stránky: Zásady ochrany osobních údajů, Podmínky použití.
   * Bez souhlasu: pouze technicky nezbytné cookies.
+
+### 5.5 GTM identifikátory CTA (Click tracking)
+
+Každé významné CTA v UI musí mít **stabilní identifikátor** pro Google Tag Manager a GA4. Jediný zdroj pravdy: [`src/config/gtm-ids.ts`](../src/config/gtm-ids.ts).
+
+**Konvence:**
+
+| Prvek | Hodnota |
+|-------|---------|
+| HTML atribut | `data-gtm-id` (povinný) |
+| Formát ID | `cta_<plocha>_<akce>` — snake_case, anglicky |
+| Kontext (volitelný) | `data-gtm-<klíč>` — např. `data-gtm-category`, `data-gtm-listing-id` |
+| Helper v kódu | `gtmCtaProps(GTM_CTA.…, { category: "prace" })` |
+
+**Pravidla:**
+
+1. **Stabilita:** Po nasazení do produkce ID **neměnit** — GTM triggery a reporty na nich závisí.
+2. **Nové CTA:** Přidat konstantu do `GTM_CTA` v `gtm-ids.ts` dřív, než se použije v komponentě.
+3. **GTM trigger (doporučení):** Click — element matches CSS selector `[data-gtm-id^="cta_"]`; proměnná z atributu `data-gtm-id`.
+4. **Consent:** Eventy se odesílají až po souhlasu (GTM consent mode); atributy v HTML jsou vždy přítomné.
+5. **Mimo rozsah:** Čistě dekorativní prvky (ikona menu bez byznys akce lze označit, ale nemusí generovat konverzi).
+
+**Přehled implementovaných ID (v0.4):**
+
+| ID | Akce |
+|----|------|
+| `cta_header_create_listing` | Header — Založit |
+| `cta_header_sign_in` | Header menu — Přihlásit se |
+| `cta_header_sign_out` | Header menu — Odhlásit |
+| `cta_home_create_listing` | HP hero — Založit inzerát |
+| `cta_home_category_tab` | HP — záložka kategorie (+ `data-gtm-category`) |
+| `cta_listing_card_open` | Klik na kartu inzerátu (+ `data-gtm-listing-id`) |
+| `cta_inquiry_open` / `cta_inquiry_submit` | Poptávkový formulář |
+| `cta_create_publish` | Publikovat inzerát (+ `data-gtm-category`) |
+| `cta_login_google` | Přihlášení Google |
+
+Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
+
 * **SEO Infrastruktura (Indexace):**
   * **Dynamická Sitemap (`sitemap.xml`):** Pouze `active` inzeráty. Expirované/smazané okamžitě mizí.
   * **SSR / ISR:** Detail inzerátu musí být server-renderovaný — žádný prázdný klientský loader.
@@ -461,6 +499,7 @@ Vestavěný systém rolí navázaný na produkční UI (bez komplexního admin p
 | v3.7 | 2026-06-27 | Mobil UX: bez sliderů (select/number, default 30); trigger počítá `expires_at`; guardrail datum v popisu; migrace `003_prd_v3_7.sql` |
 | v3.8 | 2026-06-27 | Události: Pravidelná akce (`long_term`), podkategorie `setkani`, pole Opakování; migrace `004_recurring_events.sql` |
 | v3.9 | 2026-06-27 | Zboží: stav `damaged` — UI „Poškozené / na díly“; migrace `005_damaged_goods.sql` |
+| v3.11 | 2026-06-29 | GTM: `data-gtm-id` na všech CTA, registr `src/config/gtm-ids.ts`, §5.5 PRD |
 | v3.10 | 2026-06-29 | Nemovitosti: `category_type = 'nemovitost'`, typ transakce `sale`/`rent`, 6 podkategorií; migrace `006_real_estate.sql` |
 
 ---

@@ -7,6 +7,7 @@ import {
   reverseGeocodeLocation,
   suggestPlaces,
 } from "@/lib/mapy/client";
+import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import type { MapyGeocodeEntity } from "@/lib/mapy/types";
 import { Loader2, MapPin } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -219,6 +220,7 @@ export function LocationInput({
                 <button
                   type="button"
                   role="option"
+                  {...gtmCtaProps(GTM_CTA.LOCATION_SELECT_SUGGESTION)}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => selectSuggestion(item)}
@@ -245,6 +247,7 @@ export function LocationInput({
 
       <button
         type="button"
+        {...gtmCtaProps(GTM_CTA.LOCATION_USE_GPS)}
         onClick={useCurrentLocation}
         disabled={isGpsLoading}
         className="mt-2 inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"

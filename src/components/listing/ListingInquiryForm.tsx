@@ -5,6 +5,7 @@ import {
   INQUIRY_MESSAGE_MIN_LENGTH,
   INQUIRY_SENDER_NAME_MAX_LENGTH,
 } from "@/config/app";
+import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   getInquiryCtaLabel,
   getInquiryHeading,
@@ -114,6 +115,7 @@ export function ListingInquiryForm({
         </p>
         <button
           type="button"
+          {...gtmCtaProps(GTM_CTA.INQUIRY_SEND_ANOTHER)}
           onClick={() => setSuccess(false)}
           className="mt-3 text-sm font-medium text-green-900 underline-offset-2 hover:underline"
         >
@@ -127,6 +129,7 @@ export function ListingInquiryForm({
     return (
       <button
         type="button"
+        {...gtmCtaProps(GTM_CTA.INQUIRY_OPEN, { category: categoryType })}
         onClick={() => setOpen(true)}
         className="w-full rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white hover:bg-gray-800 sm:w-auto"
       >
@@ -218,6 +221,7 @@ export function ListingInquiryForm({
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
+          {...gtmCtaProps(GTM_CTA.INQUIRY_CANCEL)}
           onClick={() => setOpen(false)}
           disabled={pending}
           className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
@@ -226,6 +230,7 @@ export function ListingInquiryForm({
         </button>
         <button
           type="submit"
+          {...gtmCtaProps(GTM_CTA.INQUIRY_SUBMIT, { category: categoryType })}
           disabled={pending}
           className="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
         >
