@@ -29,6 +29,25 @@ export type ConditionLabel =
 
 export type PaymentStatus = "free" | "paid";
 
+/** Řádek z public.post_images */
+export type PostImageRow = {
+  id: string;
+  post_id: number;
+  storage_path: string;
+  url: string;
+  sort_order: number;
+  is_main: boolean;
+  created_at: string;
+};
+
+/** Náhled fotky pro formulář / galerii */
+export type ListingImagePreview = {
+  id: string;
+  url: string;
+  isMain: boolean;
+  sortOrder: number;
+};
+
 /** Řádek z public.posts (snake_case dle Supabase) */
 export type PostRow = {
   id: number;

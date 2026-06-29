@@ -4,6 +4,7 @@ import {
   getPriceTypeLabel,
   getSubcategoryLabel,
 } from "@/config/categories";
+import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
 import { ListingInquiryForm } from "@/components/listing/ListingInquiryForm";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
@@ -13,8 +14,9 @@ import {
 } from "@/lib/auth/advertiser-display";
 import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
 import { getListingEditPath } from "@/lib/posts/listing-path";
+import { getListingImages } from "@/lib/posts/listing-images";
 import { createClient } from "@/lib/supabase/server";
-import type { PostRow } from "@/types/post";
+import type { ListingImagePreview, PostRow } from "@/types/post";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -66,6 +68,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const advertiser = await getAdvertiserProfile(post.user_id);
 
+  const supabase = await createClient();
+  const imageRows = await getListingImages(supabase, post.id);
+  const galleryImages: ListingImagePreview[] = imageRows.map((row) => ({
+    id: row.id,
+    url: row.url,
+    isMain: row.is_main,
+    sortOrder: row.sort_order,
+  }));
+
   const categoryLabel = getCategoryLabel(post.category_type);
   const subcategory = getSubcategoryLabel(
     post.category_type,
@@ -105,7 +116,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
         ? "Orientačně"
         : "Cena";
 
-  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -133,6 +143,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
           {post.title}
         </h1>
       </header>
+
+      {galleryImages.length > 0 ? (
+        <div className="mt-6">
+          <ListingImageGallery images={galleryImages} title={post.title} />
+        </div>
+      ) : null}
 
       <div className="mt-6 space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
         {eventLabel ? (

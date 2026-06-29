@@ -17,6 +17,23 @@ export const LISTING_DESCRIPTION_MIN_LENGTH = 10;
 export const LISTING_DESCRIPTION_MAX_LENGTH = 1000;
 export const LISTING_EXCHANGE_FOR_MAX_LENGTH = 100;
 
+/** Fotky inzerátu — PRD §5.4, max 6 */
+export const LISTING_IMAGE_MAX_FILES = 6;
+/** Max. velikost fotky po kompresi na klientovi (uložený soubor + validace serveru). */
+export const LISTING_IMAGE_MAX_FILE_BYTES = 1 * 1024 * 1024;
+/** Max. velikost vstupního souboru před kompresí (snímek z foťáku / galerie). */
+export const LISTING_IMAGE_MAX_SOURCE_BYTES = 25 * 1024 * 1024;
+/** Nejdelší strana po resize před enkódováním. */
+export const LISTING_IMAGE_MAX_DIMENSION = 1920;
+/** Výchozí kvalita enkódování (WebP/JPEG) — dále se snižuje, dokud není soubor ≤ 1 MB. */
+export const LISTING_IMAGE_COMPRESS_QUALITY = 0.82;
+/** Limit těla Server Action při odeslání formuláře s fotkami (next.config serverActions.bodySizeLimit). */
+export const LISTING_IMAGE_MAX_UPLOAD_BYTES =
+  LISTING_IMAGE_MAX_FILES * LISTING_IMAGE_MAX_FILE_BYTES + 512 * 1024;
+export const LISTING_IMAGE_BUCKET = "post-images";
+export const LISTING_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
+export const LISTING_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"] as const;
+
 /** Max. doba dopředu pro datum události */
 export const EVENT_DATE_MAX_DAYS_AHEAD = 365;
 

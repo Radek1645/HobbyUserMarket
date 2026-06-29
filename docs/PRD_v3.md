@@ -340,7 +340,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
      * **Platnost inzerátu *(v0.1.1)*:** Default **30 dní**. UI: `<select>` s preset hodnotami (7, 14, 30, 60, 90, 180, 365) **nebo** `<input type="number">` — **žádný slider** (mobilní UX). Ukládá se `listing_duration_days`; `expires_at` nastaví DB trigger (§9.2). U `udalost` (v0.2) se pole skryje — platí §8.4.1.
      * **Varování platnosti *(v0.1.1)*:** U `zbozi`/`sluzby`, pokud popis nebo AI JSON obsahuje datum **po** vypočtené expiraci, UI zobrazí: *„Pozor: Platnost inzerátu končí dříve než vámi zmíněné datum. Opravte platnost nebo datum.“*
   3. **Média a Volba Hlavní fotky:**
-     * Upload fotografií: max **6 ks**, max **5 MB** před kompresí, formáty JPEG/PNG/WebP. Automatická komprese na klientovi před odesláním do Supabase Storage.
+     * Upload fotografií: max **6 ks**, formáty JPEG/PNG/WebP (včetně snímků z foťáku). **Automatická komprese na klientovi** — každá fotka max **1 MB** po zmenšení (resize + WebP/JPEG) před odesláním do Supabase Storage. Vstupní soubor může být větší (až ~25 MB).
      * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (Náhled a AI analýza)“** (radio button/hvězdička). Výchozí je první nahraná.
 
 * **Multimodální AI Guardrail & Interaktivní doplňování (Text + Foto cross-validace):**

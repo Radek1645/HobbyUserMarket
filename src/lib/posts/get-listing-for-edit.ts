@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import type { PostRow } from "@/types/post";
+import { getListingImages } from "@/lib/posts/listing-images";
+import type { ListingImagePreview, PostRow } from "@/types/post";
 
 export type ListingForEdit = PostRow & {
   location: unknown;
+  images: ListingImagePreview[];
 };
 
 export async function getListingForEdit(
@@ -16,8 +18,17 @@ export async function getListingForEdit(
     .eq("slug", slug)
     .eq("user_id", userId)
     .in("status", ["active", "hidden"])
-    .maybeSingle<ListingForEdit>();
+    .maybeSingle<PostRow & { location: unknown }>();
 
   if (error || !data) return null;
-  return data;
+
+  const rows = await getListingImages(supabase, data.id);
+  const images: ListingImagePreview[] = rows.map((row) => ({
+    id: row.id,
+    url: row.url,
+    isMain: row.is_main,
+    sortOrder: row.sort_order,
+  }));
+
+  return { ...data, images };
 }

@@ -25,6 +25,10 @@ import {
   type ModerationRejectionState,
 } from "@/components/moderation/ModerationRejectedDialog";
 import type { ListingFormInitialValues } from "@/lib/posts/listing-form";
+import {
+  ListingImageUpload,
+  type ListingImageUploadHandle,
+} from "@/components/listing/ListingImageUpload";
 import { LocationInput } from "@/components/listing/LocationInput";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -37,12 +41,13 @@ import {
   useTransition,
 } from "react";
 
-import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
+import type { CategoryType, ConditionLabel, ListingImagePreview, PriceType } from "@/types/post";
 
 type CreateListingFormProps = {
   mode?: "create" | "edit";
   postId?: number;
   initialValues?: ListingFormInitialValues;
+  initialImages?: ListingImagePreview[];
 };
 
 type FormState = CreateListingState | UpdateListingState;
@@ -61,6 +66,7 @@ export function CreateListingForm({
   mode = "create",
   postId,
   initialValues,
+  initialImages = [],
 }: CreateListingFormProps) {
   const isEdit = mode === "edit";
   const formAction = isEdit ? updateListing : createListing;
@@ -106,6 +112,7 @@ export function CreateListingForm({
   );
   const [eventDate, setEventDate] = useState(initialValues?.eventDate ?? "");
   const submitErrorRef = useRef<HTMLDivElement>(null);
+  const imageUploadRef = useRef<ListingImageUploadHandle>(null);
 
   const category = getCategoryConfig(categoryType);
 
@@ -232,6 +239,8 @@ export function CreateListingForm({
       setDescription(moderation.cleanedDescription);
     }
 
+    imageUploadRef.current?.appendToFormData(formData);
+
     startModerationTransition(() => {
       boundAction(formData);
     });
@@ -246,7 +255,11 @@ export function CreateListingForm({
         onClose={() => setModerationRejection(null)}
       />
 
-      <form onSubmit={handleFormSubmit} className="space-y-6">
+      <form
+        onSubmit={handleFormSubmit}
+        encType="multipart/form-data"
+        className="space-y-6"
+      >
       {isEdit && postId ? (
         <input type="hidden" name="postId" value={postId} />
       ) : null}
@@ -442,6 +455,11 @@ export function CreateListingForm({
               <p className="mt-2 text-sm text-amber-800">{expiryWarning}</p>
             ) : null}
           </div>
+
+          <ListingImageUpload
+            ref={imageUploadRef}
+            initialImages={initialImages}
+          />
 
           <div>
             <label htmlFor="condition" className={labelClass}>

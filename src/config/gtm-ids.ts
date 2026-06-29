@@ -55,6 +55,9 @@ export const GTM_CTA = {
   CREATE_EDIT_CATEGORY: "cta_create_edit_category",
   CREATE_PUBLISH: "cta_create_publish",
   EDIT_SAVE: "cta_edit_save",
+  LISTING_IMAGE_ADD: "cta_listing_image_add",
+  LISTING_IMAGE_REMOVE: "cta_listing_image_remove",
+  LISTING_IMAGE_SET_MAIN: "cta_listing_image_set_main",
 
   // Lokalita (formulář)
   LOCATION_USE_GPS: "cta_location_use_gps",

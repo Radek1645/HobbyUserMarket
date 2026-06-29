@@ -9,6 +9,7 @@ import {
   type CreateListingInput,
 } from "@/lib/posts/validation";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
+import { syncListingImagesFromForm } from "@/lib/posts/listing-images";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -76,12 +77,23 @@ export async function createListing(
   const { data: row, error } = await supabase
     .from("posts")
     .insert(insertPayload)
-    .select("slug")
+    .select("id, slug")
     .single();
 
-  if (error) {
+  if (error || !row) {
     console.error("createListing:", error);
     return { error: "Inzerát se nepodařilo uložit. Zkus to znovu." };
+  }
+
+  const imageResult = await syncListingImagesFromForm(
+    supabase,
+    user.id,
+    row.id,
+    formData,
+  );
+
+  if (imageResult.error) {
+    return { error: imageResult.error };
   }
 
   revalidatePath("/");
@@ -141,6 +153,17 @@ export async function updateListing(
   if (updateError) {
     console.error("updateListing:", updateError);
     return { error: "Změny se nepodařilo uložit. Zkus to znovu." };
+  }
+
+  const imageResult = await syncListingImagesFromForm(
+    supabase,
+    user.id,
+    postId,
+    formData,
+  );
+
+  if (imageResult.error) {
+    return { error: imageResult.error };
   }
 
   revalidatePath("/");
