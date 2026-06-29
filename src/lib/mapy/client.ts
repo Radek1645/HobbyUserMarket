@@ -68,13 +68,20 @@ async function mapyGet<T>(
   return response.json() as Promise<T>;
 }
 
-/** Krátký název lokality pro UI a location_text (bez „, Česko“). */
+/** Kontextová nápověda v našeptávači (např. kraj u obce). */
 export function formatMapyLocationLabel(entity: MapyGeocodeEntity): string {
+  const name = entity.name.trim();
   const area = entity.location
     ?.trim()
     .replace(/,?\s*Česko\s*$/i, "")
     .trim();
-  const name = entity.name.trim();
+
+  if (
+    entity.type === "regional.municipality" ||
+    entity.type === "regional.municipality_part"
+  ) {
+    return area && area !== name ? area : name;
+  }
 
   if (
     (entity.type === "regional.address" || entity.type === "regional.street") &&
@@ -84,14 +91,28 @@ export function formatMapyLocationLabel(entity: MapyGeocodeEntity): string {
     return `${name}, ${area}`;
   }
 
-  return area || name;
+  return name || area || "";
+}
+
+/** Krátký název pro uložení do `location_text` (obec, ne kraj). */
+export function locationTextFromEntity(entity: MapyGeocodeEntity): string {
+  const name = entity.name.trim();
+
+  if (
+    entity.type === "regional.municipality" ||
+    entity.type === "regional.municipality_part"
+  ) {
+    return name;
+  }
+
+  return formatMapyLocationLabel(entity);
 }
 
 export function entityToLocationSelection(
   entity: MapyGeocodeEntity,
 ): MapyLocationSelection {
   return {
-    locationText: formatMapyLocationLabel(entity),
+    locationText: locationTextFromEntity(entity),
     latitude: entity.position.lat,
     longitude: entity.position.lon,
   };

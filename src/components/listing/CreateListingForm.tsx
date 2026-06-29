@@ -9,7 +9,7 @@ import {
   LISTING_DESCRIPTION_MAX_LENGTH,
   LISTING_DESCRIPTION_MIN_LENGTH,
 } from "@/config/app";
-import { CATEGORIES, getCategoryConfig, getSubcategoryLabel } from "@/config/categories";
+import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getSubcategoryLabel } from "@/config/categories";
 import {
   computeListingExpiresAt,
   getListingExpiryWarning,
@@ -68,6 +68,7 @@ export function CreateListingForm() {
   }, [state.error, step]);
 
   const isEvent = categoryType === "udalost";
+  const isRealEstate = categoryType === "nemovitost";
   const isRecurringEvent = isEvent && conditionLabel === "long_term";
 
   const subcategories = category.subcategories;
@@ -265,7 +266,9 @@ export function CreateListingForm() {
                   ? isRecurringEvent
                     ? "např. Čtvrteční poker u Honzy"
                     : "např. Opékání na zahradě"
-                  : "např. Prodám med z vlastní včelny"
+                  : isRealEstate
+                    ? "např. Pronájem bytu 2+kk v centru"
+                    : "např. Prodám med z vlastní včelny"
               }
             />
             <p className="mt-1 text-xs text-gray-500">{title.length}/80</p>
@@ -296,7 +299,9 @@ export function CreateListingForm() {
                   ? isRecurringEvent
                     ? "Frekvence (každý čtvrtek 18:00…), kapacita, co s sebou, jak se přihlásit…"
                     : "Kapacita, co s sebou, jak se přihlásit…"
-                  : "Popis zboží nebo služby…"
+                  : isRealEstate
+                    ? "Dispozice, plocha v m², patro, kauce, poplatky, stav objektu, parkování…"
+                    : "Popis zboží nebo služby…"
               }
             />
             <p className="mt-1 text-xs text-gray-500">
@@ -319,7 +324,7 @@ export function CreateListingForm() {
 
           <div>
             <label htmlFor="condition" className={labelClass}>
-              {isEvent ? "Opakování" : "Stav"}
+              {getConditionFieldLabel(categoryType)}
             </label>
             <select
               id="condition"

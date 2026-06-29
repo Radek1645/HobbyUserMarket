@@ -5,7 +5,7 @@ import {
   LISTING_DESCRIPTION_MAX_LENGTH,
   LISTING_DESCRIPTION_MIN_LENGTH,
 } from "@/config/app";
-import { getCategoryConfig, isValidSubcategory } from "@/config/categories";
+import { getCategoryConfig, getConditionFieldLabel, isValidSubcategory } from "@/config/categories";
 import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
 
 export type CreateListingInput = {
@@ -81,7 +81,10 @@ export function validateCreateListing(form: FormData): ValidationResult {
 
     const category = getCategoryConfig(categoryType);
     if (!category.conditionLabels.some((c) => c.value === conditionLabel)) {
-      return { ok: false, error: "Vyber stav nabídky." };
+      return {
+        ok: false,
+        error: `Vyber ${getConditionFieldLabel(categoryType).toLowerCase()}.`,
+      };
     }
 
     if (!category.priceTypes.some((p) => p.value === priceType)) {

@@ -1,6 +1,6 @@
 /** Typy pro tabulku posts — PRD §4, v3.7 */
 
-export type CategoryType = "zbozi" | "sluzby" | "udalost";
+export type CategoryType = "zbozi" | "sluzby" | "udalost" | "nemovitost";
 
 export type PostStatus = "draft" | "active" | "archived" | "hidden" | "deleted";
 
@@ -18,7 +18,9 @@ export type ConditionLabel =
   | "damaged"
   | "one_time"
   | "long_term"
-  | "substitute";
+  | "substitute"
+  | "sale"
+  | "rent";
 
 export type PaymentStatus = "free" | "paid";
 

@@ -11,6 +11,8 @@ export type CategoryConfig = {
   label: string;
   subcategories: SubcategoryConfig[];
   conditionLabels: { value: ConditionLabel; label: string }[];
+  /** Label pole ve formuláři (výchozí: „Stav“) */
+  conditionFieldLabel?: string;
   priceTypes: { value: PriceType; label: string }[];
   aiPrompt?: string;
 };
@@ -33,6 +35,11 @@ const UDALOST_CONDITIONS: CategoryConfig["conditionLabels"] = [
   { value: "long_term", label: "Pravidelná akce" },
 ];
 
+const NEMOVITOST_CONDITIONS: CategoryConfig["conditionLabels"] = [
+  { value: "sale", label: "Prodej" },
+  { value: "rent", label: "Pronájem" },
+];
+
 const COMMON_PRICE_TYPES: CategoryConfig["priceTypes"] = [
   { value: "fixed", label: "Pevná cena" },
   { value: "free_pickup", label: "Za odvoz / zdarma" },
@@ -43,6 +50,12 @@ const COMMON_PRICE_TYPES: CategoryConfig["priceTypes"] = [
 
 const UDALOST_PRICE_TYPES: CategoryConfig["priceTypes"] = [
   { value: "free_pickup", label: "Vstup zdarma" },
+  { value: "offer", label: "Nabídni" },
+];
+
+const NEMOVITOST_PRICE_TYPES: CategoryConfig["priceTypes"] = [
+  { value: "fixed", label: "Pevná cena" },
+  { value: "negotiable", label: "Dohodou" },
   { value: "offer", label: "Nabídni" },
 ];
 
@@ -90,9 +103,27 @@ export const CATEGORIES: CategoryConfig[] = [
       { slug: "ostatni", label: "Ostatní" },
     ],
     conditionLabels: UDALOST_CONDITIONS,
+    conditionFieldLabel: "Opakování",
     priceTypes: UDALOST_PRICE_TYPES,
     aiPrompt:
       "Uživatel nabízí událost. Rozliš jednorázovou vs. pravidelnou akci. U pravidelných akcí extrahuj frekvenci (např. každý čtvrtek). Vždy: datum nejbližšího konání, čas, lokalita, kapacita, instrukce k přihlášení.",
+  },
+  {
+    type: "nemovitost",
+    label: "Nemovitosti",
+    subcategories: [
+      { slug: "byty", label: "Byty" },
+      { slug: "domy", label: "Domy" },
+      { slug: "pozemky", label: "Pozemky" },
+      { slug: "chata-chalupa", label: "Rekreační objekty" },
+      { slug: "komercni", label: "Komerční objekty" },
+      { slug: "ostatni", label: "Ostatní" },
+    ],
+    conditionLabels: NEMOVITOST_CONDITIONS,
+    conditionFieldLabel: "Typ transakce",
+    priceTypes: NEMOVITOST_PRICE_TYPES,
+    aiPrompt:
+      "Uživatel nabízí nemovitost k prodeji nebo pronájmu. Extrahuj z textu klíčové parametry: dispozice (např. 2+kk, 3+1), užitná plocha v m², patro, přítomnost balkónu/sklepa/výtahu, výši kauce a poplatků za energie (u pronájmu), stav objektu (po rekonstrukci, novostavba, původní stav) a parkování. Pokud data chybí, vygeneruj 1–3 cílené otázky do sousedského AI dotazníku.",
   },
 ];
 
@@ -153,6 +184,14 @@ export function getSubcategoryLabel(
   }
 
   return { label: formatSlugAsLabel(subcategorySlug), isLegacy: true };
+}
+
+/**
+ * Label pole stavu / typu transakce / opakování ve formuláři.
+ */
+export function getConditionFieldLabel(categoryType: string): string {
+  const category = CATEGORIES.find((c) => c.type === categoryType);
+  return category?.conditionFieldLabel ?? "Stav";
 }
 
 /**

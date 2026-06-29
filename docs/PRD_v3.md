@@ -1,16 +1,16 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.9  
-> **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql)  
+> **Verze dokumentu:** v3.10  
+> **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-06-27
+> **Datum:** 2026-06-29
 
 ---
 
 ## 1. Produktová vize a cíle
 
-* **Vize:** Lokální peer-to-peer ekosystém pro rychlou inzerci zboží, služeb a lokálních událostí v bezprostředním okolí uživatele. Místo, kde soused prodá přebytky medu, nabídne sekání trávy, daruje starou skříň za odvoz, prodá kolo po dítěti — nebo zveřejní opékání špekáčků na zahradě.
+* **Vize:** Lokální peer-to-peer ekosystém pro rychlou inzerci zboží, služeb, nemovitostí a lokálních událostí v bezprostředním okolí uživatele. Místo, kde soused prodá přebytky medu, nabídne sekání trávy, daruje starou skříň za odvoz, prodá kolo po dítěti, pronajme byt — nebo zveřejní opékání špekáčků na zahradě.
 * **Cílová skupina:** Věk 15–35 let (mobilní, digitálně gramotní, preferující rychlá lokální řešení).
 * **Filozofie vývoje:** Hardcore MVP stavěné metodou AI Vibecodingu (Cursor).
 * **Provozní rozpočet:** Do 1 000 Kč / měsíc. Finance jsou alokovány výhradně do stability infrastruktury, doručení e-mailů a provozu nezbytných API.
@@ -44,6 +44,16 @@ Modul událostí je hotový, když platí všechny body:
 3. **Účast bez registrace:** Na detailu události je tlačítko **„Mám zájem o účast“**; odeslání poptávky doručí pořadateli e-mail se jménem a kontaktem účastníka.
 4. **Bez nových tabulek:** Událost je řádek v `posts` s `category_type = 'udalost'`; v DB neexistuje tabulka účastníků.
 5. **SEO:** Detail události má JSON-LD `Schema.org/Event` a je v `sitemap.xml`.
+
+### 1.4 Definition of Done (v0.3 — Nemovitosti)
+
+Modul nemovitostí je hotový, když platí všechny body:
+
+1. **Taxonomie:** V `categories.ts` existuje `category_type = 'nemovitost'` se 6 podkategoriemi; AI guardrail používá dedikovaný `aiPrompt`.
+2. **Typ transakce:** Pole `condition_label` rozlišuje **Prodej** (`sale`) a **Pronájem** (`rent`); UI label pole je „Typ transakce“.
+3. **Platnost:** Stejná logika jako u `zbozi`/`sluzby` — `listing_duration_days` + trigger `expires_at` (default 30 dní).
+4. **Cenové modely:** Pevná cena, Dohodou, Nabídni (bez „Za odvoz“ / „Výměnou“).
+5. **Detail inzerátu:** V hlavičce se zobrazí Prodej/Pronájem vedle kategorie a podkategorie.
 
 ---
 
@@ -94,7 +104,7 @@ I v rámci modulu událostí se **neimplementuje:**
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **cookie consent bannerem** (GTM consent mode) před aktivací měření.
-* **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2) a `subcategory_slug`.
+* **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2 / `nemovitost` od v0.3) a `subcategory_slug`.
 * **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1) v `src/config/app.ts`. Výchozí radius: **15 km**. Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max).
 
 ---
@@ -115,13 +125,14 @@ posts
   - id, user_id (UUID, FK auth.users ON DELETE RESTRICT)
   - title (TEXT, NOT NULL, max 80 znaků v UI)
   - description (TEXT, max 1000 znaků)
-  - category_type (VARCHAR(10), NOT NULL, CHECK IN ('zbozi', 'sluzby') — v0.2 rozšířeno o 'udalost')
+  - category_type (VARCHAR(10), NOT NULL, CHECK IN ('zbozi', 'sluzby', 'udalost', 'nemovitost'))
   - subcategory_slug (VARCHAR(50), NOT NULL)
   - price_type (VARCHAR(20), NOT NULL, CHECK IN ('fixed', 'free_pickup', 'negotiable', 'exchange', 'offer'))
   - price_amount (INTEGER, nullable — povinné pouze pokud price_type = 'fixed')
   - condition_label (VARCHAR(20), NOT NULL, CHECK IN (
       'new', 'like_new', 'used', 'damaged', -- zboží
-      'one_time', 'long_term', 'substitute' -- služby
+      'one_time', 'long_term', 'substitute', -- služby / události
+      'sale', 'rent' -- nemovitosti
     ))
   - location_text, location (GEOGRAPHY POINT)
   - status (ENUM: draft | active | archived | hidden | deleted)
@@ -177,6 +188,8 @@ rate_limits (volitelné, pro server-side rate limiting)
 | Služby | Záskok | `substitute` |
 | Události *(v0.2)* | Jednorázová akce | `one_time` |
 | Události *(v0.2)* | Pravidelná akce | `long_term` |
+| Nemovitosti *(v0.3)* | Prodej | `sale` |
+| Nemovitosti *(v0.3)* | Pronájem | `rent` |
 
 **Mapování UI → DB pro události *(v0.2)* — reuse existujících sloupců, bez nových tabulek:**
 
@@ -190,6 +203,18 @@ rate_limits (volitelné, pro server-side rate limiting)
 | `event_date` | povinné `TIMESTAMPTZ` | Jednorázová: datum akce. Pravidelná: **nejbližší termín** (frekvence v popisu) |
 | Kapacita | v `description` | v0.2 bez strukturovaného pole |
 | `expires_at` | `event_date + 1 den` | **Ne** z `listing_duration_days` — viz §8.4.1 |
+
+**Mapování UI → DB pro nemovitosti *(v0.3)* — reuse existujících sloupců, bez nových tabulek:**
+
+| Pole | Hodnota pro `nemovitost` | Poznámka |
+|------|--------------------------|----------|
+| `category_type` | `'nemovitost'` | Vyžaduje migraci CHECK constraintu |
+| `subcategory_slug` | `byty` \| `domy` \| `pozemky` \| `chata-chalupa` \| `komercni` \| `ostatni` | Definice v `categories.ts` |
+| `condition_label` | `'sale'` nebo `'rent'` | UI: pole **Typ transakce** — Prodej / Pronájem |
+| `price_type` | `'fixed'` \| `'negotiable'` \| `'offer'` | Bez `free_pickup` a `exchange` |
+| `price_amount` | povinné u `fixed`, volitelné u `negotiable` | Cena / nájemné v Kč |
+| `event_date` | `NULL` | Nemovitosti nepoužívají datum akce |
+| `expires_at` | `now() + listing_duration_days` | Stejná logika jako zboží/služby — viz §9.2 |
 
 ### 4.1 Stavový model inzerátu (`posts.status`)
 
@@ -436,6 +461,7 @@ Vestavěný systém rolí navázaný na produkční UI (bez komplexního admin p
 | v3.7 | 2026-06-27 | Mobil UX: bez sliderů (select/number, default 30); trigger počítá `expires_at`; guardrail datum v popisu; migrace `003_prd_v3_7.sql` |
 | v3.8 | 2026-06-27 | Události: Pravidelná akce (`long_term`), podkategorie `setkani`, pole Opakování; migrace `004_recurring_events.sql` |
 | v3.9 | 2026-06-27 | Zboží: stav `damaged` — UI „Poškozené / na díly“; migrace `005_damaged_goods.sql` |
+| v3.10 | 2026-06-29 | Nemovitosti: `category_type = 'nemovitost'`, typ transakce `sale`/`rent`, 6 podkategorií; migrace `006_real_estate.sql` |
 
 ---
 
@@ -723,3 +749,53 @@ Veřejná neviditelnost platí **okamžitě** přes `is_post_publicly_visible()`
 - Placené prodloužení / topování (až monetizace)
 - Různé max limity per kategorie (až v0.3+ podle dat)
 - Automatické e-mailové upozornění „inzerát brzy expiruje“ (volitelné v0.3+)
+
+---
+
+## 10. Modul Nemovitosti (v0.3)
+
+> **Stav:** Implementováno v taxonomii a DB constraintech. Strukturovaná pole (dispozice, m²) až v0.4+.
+
+### 10.1 Koncept
+
+**„Nemovitost jako běžný inzerát s typem transakce.“**
+
+Nemovitost je řádek v `posts` s `category_type = 'nemovitost'`. Klíčové parametry (dispozice, plocha, kauce) jdou do popisu; AI guardrail extrahuje chybějící data dotazníkem. Bez nových tabulek a sloupců.
+
+### 10.2 Taxonomie (`src/config/categories.ts`)
+
+| `subcategory_slug` | Název v UI |
+|--------------------|------------|
+| `byty` | Byty |
+| `domy` | Domy |
+| `pozemky` | Pozemky |
+| `chata-chalupa` | Rekreační objekty |
+| `komercni` | Komerční objekty |
+| `ostatni` | Ostatní |
+
+**Typ transakce (`condition_label`):**
+
+| UI (pole „Typ transakce“) | DB |
+|---------------------------|-----|
+| Prodej | `sale` |
+| Pronájem | `rent` |
+
+**AI prompt (ukázka pro `categories.ts`):**
+
+> Uživatel nabízí nemovitost k prodeji nebo pronájmu. Extrahuj dispozici, plochu, patro, balkón/sklep/výtah, kauci a poplatky (u pronájmu), stav objektu a parkování. Chybějící data → 1–3 doplňující otázky.
+
+### 10.3 DB migrace
+
+Kompletní migrace: [`supabase/006_real_estate.sql`](../supabase/006_real_estate.sql)
+
+- Rozšíření `posts_category_type_check` o `'nemovitost'`
+- Rozšíření `posts_condition_label_check` o `'sale'`, `'rent'`
+- Rozšíření `posts_condition_matches_category_check` pro párování `nemovitost` ↔ `sale`/`rent`
+- Trigger `handle_post_expiration_logic`: nemovitosti spadají do `ELSE` větve (`listing_duration_days`, default 30 dní)
+
+### 10.4 Out of Scope (v0.3)
+
+- Strukturovaná pole `area_m2`, `rooms`, `floor` (až v0.4+)
+- Energetický štítek, katastrální území
+- Ověření vlastnictví / realitní licence
+- Filtr „pouze pronájem“ na HP (až s vyhledáváním)

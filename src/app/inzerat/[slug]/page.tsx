@@ -66,7 +66,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     : null;
 
   const conditionText =
-    post.category_type === "udalost"
+    post.category_type === "udalost" || post.category_type === "nemovitost"
       ? getConditionLabel(post.category_type, post.condition_label)
       : null;
 
