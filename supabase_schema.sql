@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT posts_category_type_check
-    CHECK (category_type IN ('zbozi', 'sluzby', 'udalost', 'nemovitost')),
+    CHECK (category_type IN ('zbozi', 'sluzby', 'udalost', 'nemovitost', 'prace')),
 
   CONSTRAINT posts_price_type_check
     CHECK (price_type IN ('fixed', 'free_pickup', 'negotiable', 'exchange', 'offer')),
@@ -158,6 +158,8 @@ CREATE TABLE IF NOT EXISTS public.posts (
       (category_type = 'udalost' AND condition_label IN ('one_time', 'long_term'))
       OR
       (category_type = 'nemovitost' AND condition_label IN ('sale', 'rent'))
+      OR
+      (category_type = 'prace' AND condition_label IN ('one_time', 'long_term', 'substitute'))
     ),
 
   CONSTRAINT posts_price_amount_fixed_check
@@ -840,11 +842,11 @@ CREATE POLICY post_images_storage_delete ON storage.objects
 -- =============================================================================
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 
-GRANT SELECT ON public.posts TO anon, authenticated;
+GRANT SELECT ON public.posts TO anon, authenticated, service_role;
 GRANT INSERT, UPDATE, DELETE ON public.posts TO authenticated;
 GRANT USAGE, SELECT ON SEQUENCE public.posts_id_seq TO authenticated;
 
-GRANT SELECT ON public.profiles TO anon, authenticated;
+GRANT SELECT ON public.profiles TO anon, authenticated, service_role;
 GRANT INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
 
 GRANT SELECT ON public.post_images TO anon, authenticated;

@@ -1,6 +1,11 @@
 /** Typy pro tabulku posts — PRD §4, v3.7 */
 
-export type CategoryType = "zbozi" | "sluzby" | "udalost" | "nemovitost";
+export type CategoryType =
+  | "zbozi"
+  | "sluzby"
+  | "udalost"
+  | "nemovitost"
+  | "prace";
 
 export type PostStatus = "draft" | "active" | "archived" | "hidden" | "deleted";
 

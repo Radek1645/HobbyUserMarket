@@ -69,6 +69,7 @@ export function CreateListingForm() {
 
   const isEvent = categoryType === "udalost";
   const isRealEstate = categoryType === "nemovitost";
+  const isJob = categoryType === "prace";
   const isRecurringEvent = isEvent && conditionLabel === "long_term";
 
   const subcategories = category.subcategories;
@@ -268,7 +269,9 @@ export function CreateListingForm() {
                     : "např. Opékání na zahradě"
                   : isRealEstate
                     ? "např. Pronájem bytu 2+kk v centru"
-                    : "např. Prodám med z vlastní včelny"
+                    : isJob
+                      ? "např. Brigáda v kavárně o víkendu"
+                      : "např. Prodám med z vlastní včelny"
               }
             />
             <p className="mt-1 text-xs text-gray-500">{title.length}/80</p>
@@ -301,7 +304,9 @@ export function CreateListingForm() {
                     : "Kapacita, co s sebou, jak se přihlásit…"
                   : isRealEstate
                     ? "Dispozice, plocha v m², patro, kauce, poplatky, stav objektu, parkování…"
-                    : "Popis zboží nebo služby…"
+                    : isJob
+                      ? "Rozsah práce, požadavky (věk, praxe), termín nástupu, počet hodin…"
+                      : "Popis zboží nebo služby…"
               }
             />
             <p className="mt-1 text-xs text-gray-500">
@@ -462,7 +467,8 @@ export function CreateListingForm() {
             {priceType === "fixed" ? (
               <div>
                 <label htmlFor="priceAmount" className={labelClass}>
-                  Cena (Kč) <span className="text-red-600">*</span>
+                  {isJob ? "Mzda (Kč)" : "Cena (Kč)"}{" "}
+                  <span className="text-red-600">*</span>
                 </label>
                 <input
                   id="priceAmount"
@@ -479,7 +485,8 @@ export function CreateListingForm() {
             {priceType === "negotiable" ? (
               <div>
                 <label htmlFor="priceAmount" className={labelClass}>
-                  Orientační cena (Kč) <span className="text-red-600">*</span>
+                  {isJob ? "Orientační odměna (Kč)" : "Orientační cena (Kč)"}{" "}
+                  <span className="text-red-600">*</span>
                 </label>
                 <input
                   id="priceAmount"

@@ -59,6 +59,18 @@ const NEMOVITOST_PRICE_TYPES: CategoryConfig["priceTypes"] = [
   { value: "offer", label: "Nabídni" },
 ];
 
+const PRACE_CONDITIONS: CategoryConfig["conditionLabels"] = [
+  { value: "one_time", label: "Jednorázový úkol / brigáda" },
+  { value: "long_term", label: "Dlouhodobá práce" },
+  { value: "substitute", label: "Záskok" },
+];
+
+const PRACE_PRICE_TYPES: CategoryConfig["priceTypes"] = [
+  { value: "fixed", label: "Hodinová / fixní mzda (Kč)" },
+  { value: "negotiable", label: "Dohodou" },
+  { value: "offer", label: "Nabídněte odměnu" },
+];
+
 export const CATEGORIES: CategoryConfig[] = [
   {
     type: "zbozi",
@@ -124,6 +136,24 @@ export const CATEGORIES: CategoryConfig[] = [
     priceTypes: NEMOVITOST_PRICE_TYPES,
     aiPrompt:
       "Uživatel nabízí nemovitost k prodeji nebo pronájmu. Extrahuj z textu klíčové parametry: dispozice (např. 2+kk, 3+1), užitná plocha v m², patro, přítomnost balkónu/sklepa/výtahu, výši kauce a poplatků za energie (u pronájmu), stav objektu (po rekonstrukci, novostavba, původní stav) a parkování. Pokud data chybí, vygeneruj 1–3 cílené otázky do sousedského AI dotazníku.",
+  },
+  {
+    type: "prace",
+    label: "Práce a brigády",
+    subcategories: [
+      { slug: "brigady-jednorazove", label: "Brigády a jednorázové úkoly" },
+      { slug: "retail-pohostinstvi", label: "Prodej a pohostinství" },
+      { slug: "administrativa", label: "Administrativa a kancelář" },
+      { slug: "it-digital", label: "IT a digitál" },
+      { slug: "remeslo-stavba", label: "Řemeslo a stavba" },
+      { slug: "pece-zahrada", label: "Péče, zahrada, domácnost" },
+      { slug: "ostatni", label: "Ostatní" },
+    ],
+    conditionLabels: PRACE_CONDITIONS,
+    conditionFieldLabel: "Typ úvazku",
+    priceTypes: PRACE_PRICE_TYPES,
+    aiPrompt:
+      "Uživatel hledá pracovníka nebo brigádníka. Rozliš typ úvazku (jednorázový úkol, dlouhodobá práce, záskok). Extrahuj: výši odměny (→ price_amount), časový rámec a termín nástupu, požadavky (věk, praxe, dovednosti). Chybějící klíčová data → 1–3 cílené otázky. E-maily a telefony v textu nahraď [SKRYTO – použij chráněné pole].",
   },
 ];
 

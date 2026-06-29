@@ -4,6 +4,7 @@ import {
   getPriceTypeLabel,
   getSubcategoryLabel,
 } from "@/config/categories";
+import { ListingInquiryForm } from "@/components/listing/ListingInquiryForm";
 import { createClient } from "@/lib/supabase/server";
 import type { PostRow } from "@/types/post";
 import type { Metadata } from "next";
@@ -66,7 +67,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
     : null;
 
   const conditionText =
-    post.category_type === "udalost" || post.category_type === "nemovitost"
+    post.category_type === "udalost" ||
+    post.category_type === "nemovitost" ||
+    post.category_type === "prace"
       ? getConditionLabel(post.category_type, post.condition_label)
       : null;
 
@@ -82,6 +85,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
     : null;
 
   const priceTypeLabel = getPriceTypeLabel(post.category_type, post.price_type);
+
+  const priceAmountLabel =
+    post.category_type === "prace"
+      ? post.price_type === "negotiable"
+        ? "Orientační odměna"
+        : "Odměna"
+      : post.price_type === "negotiable"
+        ? "Orientačně"
+        : "Cena";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isOwner = user?.id === post.user_id;
 
   return (
     <article className="px-4 py-8 sm:px-6">
@@ -123,9 +141,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           </div>
           {post.price_amount != null ? (
             <div>
-              <dt className="text-gray-500">
-                {post.price_type === "negotiable" ? "Orientačně" : "Cena"}
-              </dt>
+              <dt className="text-gray-500">{priceAmountLabel}</dt>
               <dd className="font-medium text-gray-900">
                 {post.price_type === "negotiable"
                   ? `cca ${post.price_amount} Kč (dohodou)`
@@ -142,9 +158,25 @@ export default async function ListingDetailPage({ params }: PageProps) {
         </dl>
       </div>
 
-      <p className="mt-6 text-sm text-gray-500">
-        Kontakt a poptávkový formulář — v další iteraci.
-      </p>
+      <section className="mt-6">
+        {isOwner ? (
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-700">
+            <p className="font-medium text-gray-900">Toto je tvůj inzerát.</p>
+            <p className="mt-1">
+              Poptávky od zájemců ti přijdou na e-mail účtu, kterým jsi se
+              přihlásil. Pro test otevři odkaz na inzerát v{" "}
+              <strong>anonymním okně</strong> (nebo se odhlaš) a formulář
+              vyplň jako zájemce.
+            </p>
+          </div>
+        ) : (
+          <ListingInquiryForm
+            postId={post.id}
+            postTitle={post.title}
+            categoryType={post.category_type}
+          />
+        )}
+      </section>
     </article>
   );
 }
