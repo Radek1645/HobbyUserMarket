@@ -1,7 +1,8 @@
 "use client";
 
-import { createListing, type CreateListingState } from "@/app/actions/posts";
+import { createListing, updateListing, type CreateListingState, type UpdateListingState } from "@/app/actions/posts";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { MODERATION_ENABLED } from "@/config/moderation";
 import {
   LISTING_DURATION_DEFAULT_DAYS,
   LISTING_DURATION_MAX_DAYS,
@@ -9,6 +10,7 @@ import {
   LISTING_DURATION_PRESETS,
   LISTING_DESCRIPTION_MAX_LENGTH,
   LISTING_DESCRIPTION_MIN_LENGTH,
+  LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
 import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getSubcategoryLabel } from "@/config/categories";
 import {
@@ -16,12 +18,34 @@ import {
   getListingExpiryWarning,
   parseMentionedDatesFromText,
 } from "@/lib/posts/expiry";
-import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
+import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
+import {
+  ModerationRejectedDialog,
+  moderationFailureToRejection,
+  type ModerationRejectionState,
+} from "@/components/moderation/ModerationRejectedDialog";
+import type { ListingFormInitialValues } from "@/lib/posts/listing-form";
 import { LocationInput } from "@/components/listing/LocationInput";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 
-const initialState: CreateListingState = {};
+import {
+  useActionState,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+
+import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
+
+type CreateListingFormProps = {
+  mode?: "create" | "edit";
+  postId?: number;
+  initialValues?: ListingFormInitialValues;
+};
+
+type FormState = CreateListingState | UpdateListingState;
 
 const inputClass =
   "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
@@ -31,30 +55,56 @@ const labelClass = "block text-sm font-medium text-gray-700";
 const errorAlertClass =
   "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800";
 
-export function CreateListingForm() {
-  const [state, formAction, pending] = useActionState(
-    createListing,
+const initialState: FormState = {};
+
+export function CreateListingForm({
+  mode = "create",
+  postId,
+  initialValues,
+}: CreateListingFormProps) {
+  const isEdit = mode === "edit";
+  const formAction = isEdit ? updateListing : createListing;
+
+  const [state, boundAction, pending] = useActionState(
+    formAction,
     initialState,
   );
-  const [step, setStep] = useState(1);
+  const [isModerating, startModerationTransition] = useTransition();
+  const [moderationError, setModerationError] = useState<string | null>(null);
+  const [moderationRejection, setModerationRejection] =
+    useState<ModerationRejectionState | null>(null);
+  const [step, setStep] = useState(isEdit ? 2 : 1);
 
-  const [categoryType, setCategoryType] = useState<CategoryType>("zbozi");
+  const [categoryType, setCategoryType] = useState<CategoryType>(
+    initialValues?.categoryType ?? "zbozi",
+  );
   const [subcategorySlug, setSubcategorySlug] = useState(
-    CATEGORIES[0].subcategories[0]?.slug ?? "",
+    initialValues?.subcategorySlug ?? CATEGORIES[0].subcategories[0]?.slug ?? "",
   );
-  const [conditionLabel, setConditionLabel] = useState<ConditionLabel>("used");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [locationText, setLocationText] = useState("");
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [priceType, setPriceType] = useState<PriceType>("negotiable");
-  const [priceAmount, setPriceAmount] = useState("");
+  const [conditionLabel, setConditionLabel] = useState<ConditionLabel>(
+    initialValues?.conditionLabel ?? "used",
+  );
+  const [title, setTitle] = useState(initialValues?.title ?? "");
+  const [description, setDescription] = useState(initialValues?.description ?? "");
+  const [locationText, setLocationText] = useState(initialValues?.locationText ?? "");
+  const [latitude, setLatitude] = useState<number | null>(
+    initialValues?.latitude ?? null,
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    initialValues?.longitude ?? null,
+  );
+  const [priceType, setPriceType] = useState<PriceType>(
+    initialValues?.priceType ?? "negotiable",
+  );
+  const [priceAmount, setPriceAmount] = useState(initialValues?.priceAmount ?? "");
+  const [exchangeFor, setExchangeFor] = useState(initialValues?.exchangeFor ?? "");
   const [listingDurationDays, setListingDurationDays] = useState(
-    LISTING_DURATION_DEFAULT_DAYS,
+    initialValues?.listingDurationDays ?? LISTING_DURATION_DEFAULT_DAYS,
   );
-  const [customDuration, setCustomDuration] = useState(false);
-  const [eventDate, setEventDate] = useState("");
+  const [customDuration, setCustomDuration] = useState(
+    initialValues?.customDuration ?? false,
+  );
+  const [eventDate, setEventDate] = useState(initialValues?.eventDate ?? "");
   const submitErrorRef = useRef<HTMLDivElement>(null);
 
   const category = getCategoryConfig(categoryType);
@@ -138,8 +188,68 @@ export function CreateListingForm() {
     return Boolean(subcategorySlug);
   }
 
+  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setModerationError(null);
+    setModerationRejection(null);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    const moderation = await runListingModeration({
+      intent: isEdit ? "update" : "create",
+      title: titleTrimmed,
+      description: descriptionTrimmed,
+      categoryType,
+      subcategorySlug,
+      initialValues: isEdit ? initialValues : undefined,
+    });
+
+    if (!moderation.ok) {
+      const rejection = moderationFailureToRejection(moderation);
+      if (rejection) {
+        setModerationRejection(rejection);
+        return;
+      }
+
+      setModerationError(
+        moderation.kind === "error" ? moderation.error : null,
+      );
+      submitErrorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+      return;
+    }
+
+    if (moderation.cleanedTitle !== titleTrimmed) {
+      formData.set("title", moderation.cleanedTitle);
+      setTitle(moderation.cleanedTitle);
+    }
+
+    if (moderation.cleanedDescription !== descriptionTrimmed) {
+      formData.set("description", moderation.cleanedDescription);
+      setDescription(moderation.cleanedDescription);
+    }
+
+    startModerationTransition(() => {
+      boundAction(formData);
+    });
+  }
+
+  const isSaving = pending || isModerating;
+
   return (
-    <form action={formAction} className="space-y-6">
+    <>
+      <ModerationRejectedDialog
+        rejection={moderationRejection}
+        onClose={() => setModerationRejection(null)}
+      />
+
+      <form onSubmit={handleFormSubmit} className="space-y-6">
+      {isEdit && postId ? (
+        <input type="hidden" name="postId" value={postId} />
+      ) : null}
       <input type="hidden" name="categoryType" value={categoryType} />
       <input type="hidden" name="subcategorySlug" value={subcategorySlug} />
       <input type="hidden" name="conditionLabel" value={conditionLabel} />
@@ -451,6 +561,17 @@ export function CreateListingForm() {
             labelClass={labelClass}
           />
 
+          {isEdit && locationText.trim().length > 0 && !hasLocation ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <p className="font-medium">Lokalitu je potřeba znovu potvrdit</p>
+              <p className="mt-1">
+                Vyber místo z našeptávače — vždy položku s{" "}
+                <strong>městem</strong> (např. „Nové Sady, Brno“), nebo použij
+                GPS.
+              </p>
+            </div>
+          ) : null}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="priceType" className={labelClass}>
@@ -510,15 +631,46 @@ export function CreateListingForm() {
                 </p>
               </div>
             ) : null}
+            {priceType === "exchange" ? (
+              <div>
+                <label htmlFor="exchangeFor" className={labelClass}>
+                  Ideálně za co
+                </label>
+                <input
+                  id="exchangeFor"
+                  name="exchangeFor"
+                  type="text"
+                  maxLength={LISTING_EXCHANGE_FOR_MAX_LENGTH}
+                  value={exchangeFor}
+                  onChange={(e) => setExchangeFor(e.target.value)}
+                  className={inputClass}
+                  placeholder="např. dětské kolo, stůl…"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Volitelné, max. {LISTING_EXCHANGE_FOR_MAX_LENGTH} znaků.
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <p className="text-xs text-gray-500">
-            Fotografie a AI kontrola — v další iteraci. Teď publikuješ textový
-            inzerát.
+            {MODERATION_ENABLED
+              ? "Před uložením proběhne AI kontrola obsahu (drogy, nelegální věci…)."
+              : "AI kontrola obsahu bude brzy — teď se inzerát uloží rovnou."}
           </p>
 
-          {state.error ? (
+          {moderationError ? (
             <div ref={submitErrorRef} role="alert" className={errorAlertClass}>
+              {moderationError}
+            </div>
+          ) : null}
+
+          {state.error ? (
+            <div
+              ref={moderationError ? undefined : submitErrorRef}
+              role="alert"
+              className={errorAlertClass}
+            >
               {state.error}
             </div>
           ) : null}
@@ -535,8 +687,11 @@ export function CreateListingForm() {
             </button>
             <button
               type="submit"
-              {...gtmCtaProps(GTM_CTA.CREATE_PUBLISH, { category: categoryType })}
-              disabled={pending || !canPublish}
+              {...gtmCtaProps(
+                isEdit ? GTM_CTA.EDIT_SAVE : GTM_CTA.CREATE_PUBLISH,
+                { category: categoryType },
+              )}
+              disabled={isSaving || !canPublish}
               title={
                 !canPublish
                   ? "Vyplň název, popis a vyber lokalitu z našeptávače nebo GPS"
@@ -544,11 +699,18 @@ export function CreateListingForm() {
               }
               className="flex flex-1 items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {pending ? "Ukládám…" : "Publikovat inzerát"}
+              {isSaving
+                ? isModerating
+                  ? "Kontroluji…"
+                  : "Ukládám…"
+                : isEdit
+                  ? "Uložit změny"
+                  : "Publikovat inzerát"}
             </button>
           </div>
         </div>
       ) : null}
     </form>
+    </>
   );
 }

@@ -10,9 +10,11 @@ import Link from "next/link";
 
 type ListingCardProps = {
   listing: PublicListingPreview;
+  /** Homepage — větší fotka, méně textu */
+  imageFirst?: boolean;
 };
 
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, imageFirst = false }: ListingCardProps) {
   const categoryLabel = getCategoryLabel(listing.category_type);
   const subcategory = getSubcategoryLabel(
     listing.category_type,
@@ -30,6 +32,55 @@ export function ListingCard({ listing }: ListingCardProps) {
         timeStyle: "short",
       })
     : null;
+
+  if (imageFirst) {
+    return (
+      <Link
+        href={getListingPath(listing.slug)}
+        {...gtmCtaProps(GTM_CTA.LISTING_CARD_OPEN, {
+          category: listing.category_type,
+          "listing-id": listing.id,
+        })}
+        className="group block overflow-hidden rounded-2xl border border-gray-200/80 bg-white transition hover:border-gray-300 hover:shadow-md"
+      >
+        <div className="relative aspect-[4/5] bg-gray-100">
+          {listing.main_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={listing.main_image_url}
+              alt=""
+              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-1 text-gray-400">
+              <span className="text-3xl font-light text-gray-300">◇</span>
+              <span className="text-xs">Bez fotky</span>
+            </div>
+          )}
+
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-3 pb-3 pt-10">
+            <span className="inline-block max-w-full truncate rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-medium text-gray-800 shadow-sm">
+              {subcategory.label}
+            </span>
+            <h2 className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-white">
+              {listing.title}
+            </h2>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-white/90">
+              <span className="font-semibold text-white">{priceLabel}</span>
+              {listing.distance_km != null ? (
+                <span>{listing.distance_km} km</span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <p className="truncate px-3 py-2 text-xs text-gray-500">
+          {listing.location_text}
+          {eventLabel ? ` · ${eventLabel}` : ""}
+        </p>
+      </Link>
+    );
+  }
 
   const descriptionPreview =
     listing.description.length > 120

@@ -1,8 +1,14 @@
 "use client";
 
+import {
+  applyListingFilters,
+  HomeListingFilter,
+  type HomeListingFilterState,
+} from "@/components/home/HomeListingFilter";
 import { ListingCard } from "@/components/listing/ListingCard";
 import { LocationInput } from "@/components/listing/LocationInput";
-import { HOME_LISTINGS_LIMIT, SEARCH_RADIUS_KM } from "@/config/app";
+import { HOME_LISTINGS_FETCH_LIMIT, SEARCH_RADIUS_KM } from "@/config/app";
+import { getSubcategoryLabel } from "@/config/categories";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import type { HomeBrowseCategory, HomeTheme } from "@/config/home-themes";
 import {
@@ -20,9 +26,15 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { PublicListingPreview } from "@/types/post";
 import { Loader2, MapPin } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type FetchMode = "nearby" | "recent";
+
+const DEFAULT_FILTER: HomeListingFilterState = {
+  subcategorySlug: null,
+  sort: "default",
+  searchByLocation: true,
+};
 
 type HomeListingsProps = {
   category: HomeBrowseCategory;
@@ -31,7 +43,8 @@ type HomeListingsProps = {
 
 export function HomeListings({ category, theme }: HomeListingsProps) {
   const [location, setLocation] = useState<VisitorLocation | null>(null);
-  const [searchByLocation, setSearchByLocation] = useState(true);
+  const [filter, setFilter] = useState<HomeListingFilterState>(DEFAULT_FILTER);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [locationReady, setLocationReady] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [listings, setListings] = useState<PublicListingPreview[]>([]);
@@ -59,7 +72,7 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
             p_latitude: loc.latitude,
             p_longitude: loc.longitude,
             p_radius_km: SEARCH_RADIUS_KM,
-            p_limit: HOME_LISTINGS_LIMIT,
+            p_limit: HOME_LISTINGS_FETCH_LIMIT,
             p_category_type: rpcCategory,
           });
 
@@ -69,7 +82,7 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
           setFetchMode("nearby");
         } else {
           const { data, error: rpcError } = await supabase.rpc("get_recent_posts", {
-            p_limit: HOME_LISTINGS_LIMIT,
+            p_limit: HOME_LISTINGS_FETCH_LIMIT,
             p_category_type: rpcCategory,
           });
 
@@ -90,7 +103,10 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
   );
 
   useEffect(() => {
-    setSearchByLocation(loadSearchByLocation());
+    setFilter((current) => ({
+      ...current,
+      searchByLocation: loadSearchByLocation(),
+    }));
 
     const saved = loadVisitorLocation();
     if (saved) {
@@ -142,14 +158,28 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
   }, []);
 
   useEffect(() => {
-    if (!locationReady) return;
-    const effectiveLocation = searchByLocation ? location : null;
-    void fetchListings(effectiveLocation, category);
-  }, [category, fetchListings, location, locationReady, searchByLocation]);
+    setFilter((current) => ({
+      ...current,
+      subcategorySlug: null,
+    }));
+    setFilterOpen(false);
+  }, [category]);
 
-  function toggleSearchByLocation(enabled: boolean) {
-    setSearchByLocation(enabled);
-    saveSearchByLocation(enabled);
+  useEffect(() => {
+    if (!locationReady) return;
+    const effectiveLocation = filter.searchByLocation ? location : null;
+    void fetchListings(effectiveLocation, category);
+  }, [
+    category,
+    fetchListings,
+    filter.searchByLocation,
+    location,
+    locationReady,
+  ]);
+
+  function handleFilterChange(next: HomeListingFilterState) {
+    setFilter(next);
+    saveSearchByLocation(next.searchByLocation);
   }
 
   function applyPickerLocation() {
@@ -170,7 +200,7 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
 
     saveVisitorLocation(loc);
     setLocation(loc);
-    toggleSearchByLocation(true);
+    handleFilterChange({ ...filter, searchByLocation: true });
     setShowPicker(false);
     setError(null);
     void fetchListings(loc, category);
@@ -187,21 +217,31 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
     });
   }
 
+  const filteredListings = useMemo(
+    () => applyListingFilters(listings, filter, category),
+    [category, filter, listings],
+  );
+
   const inputClass =
     "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
   const labelClass = "block text-sm font-medium text-gray-700";
 
-  const locationFilterActive = Boolean(searchByLocation && location);
+  const locationFilterActive = Boolean(filter.searchByLocation && location);
 
   const sectionTitle =
     locationFilterActive && location
       ? `${theme.label} v okolí ${formatPublicAreaLocation(location.locationText)}`
       : `${theme.label} — nejnovější`;
 
+  const subcategoryLabel =
+    category !== "all" && filter.subcategorySlug
+      ? getSubcategoryLabel(category, filter.subcategorySlug).label
+      : null;
+
   return (
     <section className="mt-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h2 className={`text-lg font-semibold ${theme.accentClass}`}>
             {sectionTitle}
           </h2>
@@ -211,31 +251,34 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
               : location
                 ? "Bez filtru vzdálenosti — nejnovější inzeráty"
                 : "Vyber polohu pro inzeráty ve svém okolí"}
+            {subcategoryLabel ? ` · ${subcategoryLabel}` : ""}
           </p>
         </div>
 
-        {location ? (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600">
-              <input
-                type="checkbox"
-                checked={searchByLocation}
-                onChange={(event) => toggleSearchByLocation(event.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-400"
-              />
-              Hledat podle polohy
-            </label>
+        <div className="flex shrink-0 items-center gap-2">
+          {location ? (
             <button
               type="button"
               {...gtmCtaProps(GTM_CTA.HOME_CHANGE_LOCATION)}
               onClick={handleChangeLocation}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 underline-offset-2 hover:underline"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
             >
-              <MapPin className="h-4 w-4" />
-              Změnit polohu
+              <MapPin className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Změnit polohu</span>
+              <span className="sm:hidden">Poloha</span>
             </button>
-          </div>
-        ) : null}
+          ) : null}
+
+          <HomeListingFilter
+            category={category}
+            theme={theme}
+            open={filterOpen}
+            onOpenChange={setFilterOpen}
+            filter={filter}
+            onFilterChange={handleFilterChange}
+            hasLocation={Boolean(location)}
+          />
+        </div>
       </div>
 
       {showPicker && !location ? (
@@ -280,19 +323,21 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
         </p>
       ) : null}
 
-      {locationReady && !loading && listings.length === 0 && !error ? (
+      {locationReady && !loading && filteredListings.length === 0 && !error ? (
         <p className="mt-8 rounded-2xl border border-dashed border-gray-200/80 bg-white/70 px-4 py-10 text-center text-sm text-gray-500 backdrop-blur-sm">
-          {fetchMode === "nearby"
-            ? `V okruhu ${SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkus vypnout „Hledat podle polohy“.`
-            : `V kategorii „${theme.label}“ zatím nic není.`}
+          {listings.length > 0 && filter.subcategorySlug
+            ? `V podkategorii „${subcategoryLabel}“ zatím nic není. Zkus jiný filtr.`
+            : fetchMode === "nearby"
+              ? `V okruhu ${SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkus vypnout „Hledat podle polohy“ ve filtru.`
+              : `V kategorii „${theme.label}“ zatím nic není.`}
         </p>
       ) : null}
 
-      {locationReady && !loading && listings.length > 0 ? (
-        <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((listing) => (
+      {locationReady && !loading && filteredListings.length > 0 ? (
+        <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          {filteredListings.map((listing) => (
             <li key={listing.id}>
-              <ListingCard listing={listing} />
+              <ListingCard listing={listing} imageFirst />
             </li>
           ))}
         </ul>

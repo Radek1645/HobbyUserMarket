@@ -81,6 +81,12 @@ export const CATEGORIES: CategoryConfig[] = [
       { slug: "nabytek-domacnost", label: "Nábytek a domácnost" },
       { slug: "elektronika", label: "Elektronika" },
       { slug: "auta-moto", label: "Auta a moto" },
+      {
+        slug: "moda-obleceni",
+        label: "Móda a oblečení",
+        aiPrompt:
+          "Uživatel prodává oblečení, obuv nebo módní doplňky. Extrahuj: značka, velikost, střih, materiál, barva, určení (dámské/pánské/dětské/unisex), sezóna, stav (nové s visačkou, nošené minimálně). Chybí-li velikost nebo značka → 1–3 doplňující otázky.",
+      },
       { slug: "ostatni", label: "Ostatní" },
     ],
     conditionLabels: ZBOZI_CONDITIONS,

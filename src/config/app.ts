@@ -1,7 +1,10 @@
 /** Globální parametry aplikace — PRD §3, §9.3 */
 
 export const SEARCH_RADIUS_KM = 15;
+/** Počet karet na homepage po aplikaci filtru (max. z načtené dávky). */
 export const HOME_LISTINGS_LIMIT = 9;
+/** Kolik inzerátů načíst z API — větší pool pro filtrování podkategorií na klientovi. */
+export const HOME_LISTINGS_FETCH_LIMIT = 36;
 
 export const LISTING_DURATION_DEFAULT_DAYS = 30;
 export const LISTING_DURATION_MIN_DAYS = 1;
@@ -12,6 +15,7 @@ export const LISTING_DURATION_PRESETS = [7, 14, 30, 60, 90, 180, 365] as const;
 
 export const LISTING_DESCRIPTION_MIN_LENGTH = 10;
 export const LISTING_DESCRIPTION_MAX_LENGTH = 1000;
+export const LISTING_EXCHANGE_FOR_MAX_LENGTH = 100;
 
 /** Max. doba dopředu pro datum události */
 export const EVENT_DATE_MAX_DAYS_AHEAD = 365;

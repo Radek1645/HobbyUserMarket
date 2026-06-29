@@ -39,6 +39,7 @@ export type PostRow = {
   subcategory_slug: string;
   price_type: PriceType;
   price_amount: number | null;
+  exchange_for: string | null;
   condition_label: ConditionLabel;
   location_text: string;
   status: PostStatus;
@@ -87,6 +88,7 @@ export type PostInsert = Pick<
     Pick<
       PostRow,
       | "price_amount"
+      | "exchange_for"
       | "status"
       | "listing_duration_days"
       | "event_date"

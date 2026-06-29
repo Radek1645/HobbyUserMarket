@@ -15,6 +15,8 @@ export const GTM_CTA = {
   HEADER_LOCATION: "cta_header_location",
   HEADER_MENU_TOGGLE: "cta_header_menu_toggle",
   HEADER_SIGN_IN: "cta_header_sign_in",
+  HEADER_REGISTER: "cta_header_register",
+  HEADER_MY_LISTINGS: "cta_header_my_listings",
   HEADER_SIGN_OUT: "cta_header_sign_out",
   HEADER_LOGIN_PAGE: "cta_header_login_page",
 
@@ -24,10 +26,20 @@ export const GTM_CTA = {
   HOME_CATEGORY_TAB: "cta_home_category_tab",
   HOME_APPLY_LOCATION: "cta_home_apply_location",
   HOME_CHANGE_LOCATION: "cta_home_change_location",
+  HOME_OPEN_FILTER: "cta_home_open_filter",
+  HOME_FILTER_SORT: "cta_home_filter_sort",
+  HOME_FILTER_SUBCATEGORY: "cta_home_filter_subcategory",
 
   // Výpis / detail
   LISTING_CARD_OPEN: "cta_listing_card_open",
   DETAIL_BACK_HOME: "cta_detail_back_home",
+  DETAIL_EDIT_LISTING: "cta_detail_edit_listing",
+  MY_LISTINGS_EDIT: "cta_my_listings_edit",
+  MY_LISTINGS_VIEW: "cta_my_listings_view",
+  MY_LISTINGS_DELETE: "cta_my_listings_delete",
+  MY_LISTINGS_PAUSE: "cta_my_listings_pause",
+  MY_LISTINGS_PUBLISH: "cta_my_listings_publish",
+  MY_LISTINGS_EXTEND: "cta_my_listings_extend",
 
   // Poptávkový formulář
   INQUIRY_OPEN: "cta_inquiry_open",
@@ -42,6 +54,7 @@ export const GTM_CTA = {
   CREATE_STEP_BACK: "cta_create_step_back",
   CREATE_EDIT_CATEGORY: "cta_create_edit_category",
   CREATE_PUBLISH: "cta_create_publish",
+  EDIT_SAVE: "cta_edit_save",
 
   // Lokalita (formulář)
   LOCATION_USE_GPS: "cta_location_use_gps",

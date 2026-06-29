@@ -4,6 +4,7 @@ import {
   LISTING_DURATION_MIN_DAYS,
   LISTING_DESCRIPTION_MAX_LENGTH,
   LISTING_DESCRIPTION_MIN_LENGTH,
+  LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
 import { getCategoryConfig, getConditionFieldLabel, isValidSubcategory } from "@/config/categories";
 import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
@@ -19,6 +20,7 @@ export type CreateListingInput = {
   longitude: number;
   priceType: PriceType;
   priceAmount: number | null;
+  exchangeFor: string | null;
   listingDurationDays: number;
   eventDate: string | null;
 };
@@ -26,6 +28,11 @@ export type CreateListingInput = {
 export type ValidationResult =
   | { ok: true; data: CreateListingInput }
   | { ok: false; error: string };
+
+export type ValidateListingOptions = {
+  /** Při editaci — stejné datum akce jako v DB projde i když je v minulosti. */
+  existingEventDate?: string | null;
+};
 
 function parsePriceAmount(
   priceType: PriceType,
@@ -55,7 +62,10 @@ function parsePriceAmount(
   return amount;
 }
 
-export function validateCreateListing(form: FormData): ValidationResult {
+export function validateListingForm(
+  form: FormData,
+  options?: ValidateListingOptions,
+): ValidationResult {
   try {
     const categoryType = form.get("categoryType") as CategoryType;
     const subcategorySlug = String(form.get("subcategorySlug") ?? "").trim();
@@ -70,6 +80,24 @@ export function validateCreateListing(form: FormData): ValidationResult {
       priceType,
       String(form.get("priceAmount") ?? ""),
     );
+    const rawExchangeFor = String(form.get("exchangeFor") ?? "").trim();
+    const exchangeFor =
+      priceType === "exchange"
+        ? rawExchangeFor.length > 0
+          ? rawExchangeFor
+          : null
+        : null;
+
+    if (
+      priceType === "exchange" &&
+      exchangeFor != null &&
+      exchangeFor.length > LISTING_EXCHANGE_FOR_MAX_LENGTH
+    ) {
+      return {
+        ok: false,
+        error: `Popis výměny může mít maximálně ${LISTING_EXCHANGE_FOR_MAX_LENGTH} znaků.`,
+      };
+    }
 
     if (!categoryType || !getCategoryConfig(categoryType)) {
       return { ok: false, error: "Vyber kategorii." };
@@ -129,7 +157,19 @@ export function validateCreateListing(form: FormData): ValidationResult {
         return { ok: false, error: "Zadej datum a čas akce." };
       }
       const parsed = new Date(rawEvent);
-      if (Number.isNaN(parsed.getTime()) || parsed <= new Date()) {
+      if (Number.isNaN(parsed.getTime())) {
+        return { ok: false, error: "Neplatné datum akce." };
+      }
+
+      const existing = options?.existingEventDate
+        ? new Date(options.existingEventDate)
+        : null;
+      const isUnchanged =
+        existing != null &&
+        !Number.isNaN(existing.getTime()) &&
+        parsed.getTime() === existing.getTime();
+
+      if (!isUnchanged && parsed <= new Date()) {
         return { ok: false, error: "Datum akce musí být v budoucnosti." };
       }
       eventDate = parsed.toISOString();
@@ -163,6 +203,7 @@ export function validateCreateListing(form: FormData): ValidationResult {
         longitude,
         priceType,
         priceAmount,
+        exchangeFor,
         listingDurationDays,
         eventDate,
       },
@@ -173,4 +214,15 @@ export function validateCreateListing(form: FormData): ValidationResult {
       error: e instanceof Error ? e.message : "Neplatná data formuláře.",
     };
   }
+}
+
+export function validateCreateListing(form: FormData): ValidationResult {
+  return validateListingForm(form);
+}
+
+export function validateUpdateListing(
+  form: FormData,
+  existingEventDate: string | null,
+): ValidationResult {
+  return validateListingForm(form, { existingEventDate });
 }

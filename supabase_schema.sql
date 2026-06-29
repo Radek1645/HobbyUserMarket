@@ -77,11 +77,32 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email           TEXT,
   phone           VARCHAR(30),
   avatar_url      TEXT,
+  is_company      BOOLEAN NOT NULL DEFAULT false,
+  company_name    VARCHAR(150),
+  company_ico     VARCHAR(8),
+  company_ico_verified BOOLEAN NOT NULL DEFAULT false,
   role            public.user_role NOT NULL DEFAULT 'user',
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT profiles_nickname_unique UNIQUE (nickname),
-  CONSTRAINT profiles_nickname_not_empty CHECK (char_length(trim(nickname)) > 0)
+  CONSTRAINT profiles_nickname_not_empty CHECK (char_length(trim(nickname)) > 0),
+
+  CONSTRAINT profiles_company_fields_check
+    CHECK (
+      (
+        is_company = false
+        AND company_name IS NULL
+        AND company_ico IS NULL
+      )
+      OR (
+        is_company = true
+        AND company_name IS NOT NULL
+        AND char_length(trim(company_name)) BETWEEN 2 AND 150
+      )
+    ),
+
+  CONSTRAINT profiles_company_ico_format_check
+    CHECK (company_ico IS NULL OR company_ico ~ '^\d{8}$')
 );
 
 -- RBAC helper funkce (vyžadují existující tabulku profiles)
@@ -121,6 +142,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   subcategory_slug  VARCHAR(50) NOT NULL,
   price_type        VARCHAR(20) NOT NULL,
   price_amount      INTEGER,
+  exchange_for      VARCHAR(100),
   condition_label   VARCHAR(20) NOT NULL,
   location_text     TEXT NOT NULL,
   location          extensions.geography(POINT, 4326) NOT NULL,
@@ -167,6 +189,18 @@ CREATE TABLE IF NOT EXISTS public.posts (
       (price_type = 'fixed' AND price_amount IS NOT NULL AND price_amount >= 0)
       OR
       (price_type <> 'fixed' AND (price_amount IS NULL OR price_amount >= 0))
+    ),
+
+  CONSTRAINT posts_exchange_for_check
+    CHECK (
+      (
+        price_type = 'exchange'
+        AND (
+          exchange_for IS NULL
+          OR char_length(trim(exchange_for)) BETWEEN 1 AND 100
+        )
+      )
+      OR (price_type <> 'exchange' AND exchange_for IS NULL)
     ),
 
   CONSTRAINT posts_title_length_check

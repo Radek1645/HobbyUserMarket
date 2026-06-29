@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+@theme {
+  /* Nemovitosti — terakota / pálená cihla (viz home-themes nemovitost) */
+  --color-cihla-50: #faf3f0;
+  --color-cihla-200: #ecccbe;
+  --color-cihla-300: #d9957f;
+  --color-cihla-500: #c85a32;
+  --color-cihla-700: #ae4524;
+  --color-cihla-900: #9c3a1a;
+  --color-cihla-950: #4d1a0b;
+}

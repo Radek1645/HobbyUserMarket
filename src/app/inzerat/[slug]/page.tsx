@@ -6,6 +6,13 @@ import {
 } from "@/config/categories";
 import { ListingInquiryForm } from "@/components/listing/ListingInquiryForm";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import {
+  getAdvertiserIcoDisplay,
+  getAdvertiserPrimaryLabel,
+  getAdvertiserPrimaryLabelTitle,
+} from "@/lib/auth/advertiser-display";
+import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
+import { getListingEditPath } from "@/lib/posts/listing-path";
 import { createClient } from "@/lib/supabase/server";
 import type { PostRow } from "@/types/post";
 import type { Metadata } from "next";
@@ -56,6 +63,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const post = await getPostBySlug(slug);
   if (!post || post.status !== "active") notFound();
+
+  const advertiser = await getAdvertiserProfile(post.user_id);
 
   const categoryLabel = getCategoryLabel(post.category_type);
   const subcategory = getSubcategoryLabel(
@@ -123,7 +132,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <h1 className="mt-1 text-2xl font-semibold text-gray-900 sm:text-3xl">
           {post.title}
         </h1>
-        <p className="mt-2 text-gray-600">{post.location_text}</p>
       </header>
 
       <div className="mt-6 space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
@@ -140,6 +148,38 @@ export default async function ListingDetailPage({ params }: PageProps) {
         )}
 
         <dl className="grid gap-2 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2">
+          {advertiser ? (
+            <>
+              <div>
+                <dt className="text-gray-500">
+                  {getAdvertiserPrimaryLabelTitle(advertiser)}
+                </dt>
+                <dd className="font-medium text-gray-900">
+                  {getAdvertiserPrimaryLabel(advertiser)}
+                </dd>
+              </div>
+              {advertiser.is_company ? (
+                <div>
+                  <dt className="text-gray-500">Kontaktní přezdívka</dt>
+                  <dd className="font-medium text-gray-900">
+                    {advertiser.nickname}
+                  </dd>
+                </div>
+              ) : null}
+              {getAdvertiserIcoDisplay(advertiser) ? (
+                <div>
+                  <dt className="text-gray-500">IČO</dt>
+                  <dd className="font-medium text-gray-900">
+                    {getAdvertiserIcoDisplay(advertiser)}
+                  </dd>
+                </div>
+              ) : null}
+            </>
+          ) : null}
+          <div>
+            <dt className="text-gray-500">Lokalita</dt>
+            <dd className="font-medium text-gray-900">{post.location_text}</dd>
+          </div>
           <div>
             <dt className="text-gray-500">Typ ceny</dt>
             <dd className="font-medium text-gray-900">{priceTypeLabel}</dd>
@@ -152,6 +192,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
                   ? `cca ${post.price_amount} Kč (dohodou)`
                   : `${post.price_amount} Kč`}
               </dd>
+            </div>
+          ) : null}
+          {post.price_type === "exchange" && post.exchange_for ? (
+            <div>
+              <dt className="text-gray-500">Ideálně za co</dt>
+              <dd className="font-medium text-gray-900">{post.exchange_for}</dd>
             </div>
           ) : null}
           {expiresLabel ? (
@@ -173,6 +219,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
               <strong>anonymním okně</strong> (nebo se odhlaš) a formulář
               vyplň jako zájemce.
             </p>
+            <Link
+              href={getListingEditPath(post.slug)}
+              {...gtmCtaProps(GTM_CTA.DETAIL_EDIT_LISTING, {
+                listing_id: post.id,
+              })}
+              className="mt-4 inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+            >
+              Upravit inzerát
+            </Link>
           </div>
         ) : (
           <ListingInquiryForm

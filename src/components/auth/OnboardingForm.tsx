@@ -1,8 +1,9 @@
 "use client";
 
 import { completeOnboarding, type AuthFormState } from "@/app/actions/auth";
+import { CompanyIcoInput } from "@/components/auth/CompanyIcoInput";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 type OnboardingFormProps = {
   nextPath: string;
@@ -16,6 +17,7 @@ const inputClass =
 
 export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
   const [state, action, pending] = useActionState(completeOnboarding, initialState);
+  const [isCompany, setIsCompany] = useState(false);
 
   return (
     <form action={action} className="space-y-4">
@@ -28,6 +30,47 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
           E-mail nelze později změnit — při potřebě jiné adresy založ nový účet.
         </p>
       </div>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 px-3 py-3">
+        <input
+          type="checkbox"
+          name="isCompany"
+          value="true"
+          checked={isCompany}
+          onChange={(event) => setIsCompany(event.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-300"
+        />
+        <span className="text-sm text-gray-700">
+          <span className="font-medium text-gray-900">Registruji se jako firma</span>
+          <span className="mt-0.5 block text-xs text-gray-500">
+            U inzerátů se místo přezdívky zobrazí název firmy. Přezdívku si stejně
+            zvolíš pro komentáře a interní identitu.
+          </span>
+        </span>
+      </label>
+
+      {isCompany ? (
+        <div className="space-y-4 rounded-xl border border-gray-100 bg-gray-50/80 p-3">
+          <div>
+            <label
+              htmlFor="companyName"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Název firmy <span className="text-red-600">*</span>
+            </label>
+            <input
+              id="companyName"
+              name="companyName"
+              required={isCompany}
+              maxLength={150}
+              autoComplete="organization"
+              placeholder="např. Novák s.r.o."
+              className={inputClass}
+            />
+          </div>
+          <CompanyIcoInput />
+        </div>
+      ) : null}
 
       <div>
         <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">
@@ -44,8 +87,9 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
           className={inputClass}
         />
         <p className="mt-1 text-xs text-gray-500">
-          3–30 znaků, písmena, čísla, podtržítko nebo pomlčka. Zobrazí se u tvých
-          inzerátů a komentářů.
+          {isCompany
+            ? "3–30 znaků. U firem se u inzerátů zobrazí název firmy, přezdívka zůstane u komentářů."
+            : "3–30 znaků, písmena, čísla, podtržítko nebo pomlčka. Zobrazí se u tvých inzerátů."}
         </p>
       </div>
 

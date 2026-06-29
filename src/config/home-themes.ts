@@ -93,15 +93,15 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
     headline: "Bydlení a prostory v okolí",
     subline:
       "Prodej i pronájem garáží, pokojů nebo bytů přímo od lidí, bez provize realitkám.",
-    shellClass: "bg-stone-100/60",
+    shellClass: "bg-cihla-50/70",
     heroClass: "bg-white/80 backdrop-blur-md",
-    heroBorderClass: "border-orange-900/15",
-    accentClass: "text-orange-950",
+    heroBorderClass: "border-cihla-900/20",
+    accentClass: "text-cihla-950",
     tabActiveClass:
-      "bg-orange-900 text-white border-orange-900 shadow-sm shadow-orange-900/10",
+      "bg-cihla-900 text-white border-cihla-900 shadow-sm shadow-cihla-900/15",
     tabInactiveClass:
-      "bg-white text-orange-900/75 border-orange-200/50 hover:border-orange-300/70 hover:text-orange-950",
-    ctaClass: "bg-orange-900 text-white hover:bg-orange-950",
+      "bg-white text-cihla-900/80 border-cihla-200/80 hover:border-cihla-300 hover:text-cihla-950",
+    ctaClass: "bg-cihla-900 text-white hover:bg-cihla-950",
   },
   udalost: {
     label: "Události",

@@ -1,6 +1,7 @@
 "use server";
 
 import { isPlaceholderNickname, normalizeNickname, validateNickname } from "@/lib/auth/nickname";
+import { normalizeIco, validateIco } from "@/lib/company/ico";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/supabase/env";
 import { redirect } from "next/navigation";
@@ -9,6 +10,13 @@ export type AuthFormState = {
   error?: string;
   success?: string;
 };
+
+const DUPLICATE_EMAIL_MESSAGE =
+  "Účet s tímto e-mailem už existuje. Přihlas se nebo obnov heslo.";
+
+function isDuplicateEmailSignup(user: { identities?: unknown[] | null } | null): boolean {
+  return user != null && (user.identities?.length ?? 0) === 0;
+}
 
 function readEmail(formData: FormData): string {
   return String(formData.get("email") ?? "").trim().toLowerCase();
@@ -34,8 +42,13 @@ function mapAuthError(message: string): string {
     return "E-mail ještě není ověřený. Zkontroluj schránku a klikni na odkaz v e-mailu.";
   }
 
-  if (lower.includes("user already registered")) {
-    return "Účet s tímto e-mailem už existuje. Přihlas se nebo obnov heslo.";
+  if (
+    lower.includes("user already registered") ||
+    lower.includes("already registered") ||
+    lower.includes("already exists") ||
+    lower.includes("email_exists")
+  ) {
+    return DUPLICATE_EMAIL_MESSAGE;
   }
 
   if (lower.includes("password")) {
@@ -132,7 +145,7 @@ export async function signUpWithEmail(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -142,6 +155,14 @@ export async function signUpWithEmail(
 
   if (error) {
     return { error: mapAuthError(error.message) };
+  }
+
+  if (isDuplicateEmailSignup(data.user)) {
+    return { error: DUPLICATE_EMAIL_MESSAGE };
+  }
+
+  if (!data.user) {
+    return { error: "Registraci se nepodařilo dokončit. Zkus to znovu." };
   }
 
   return {
@@ -222,6 +243,22 @@ export async function completeOnboarding(
   }
 
   const nickname = normalizeNickname(rawNickname);
+  const isCompany = formData.get("isCompany") === "true";
+  const companyName = String(formData.get("companyName") ?? "").trim();
+  const companyIcoRaw = String(formData.get("companyIco") ?? "");
+  const companyIco = normalizeIco(companyIcoRaw);
+
+  if (isCompany) {
+    if (companyName.length < 2 || companyName.length > 150) {
+      return { error: "Název firmy musí mít 2–150 znaků." };
+    }
+
+    const icoError = companyIco ? validateIco(companyIco) : null;
+    if (icoError) {
+      return { error: icoError };
+    }
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -233,7 +270,13 @@ export async function completeOnboarding(
 
   const { error } = await supabase
     .from("profiles")
-    .update({ nickname })
+    .update({
+      nickname,
+      is_company: isCompany,
+      company_name: isCompany ? companyName : null,
+      company_ico: isCompany && companyIco ? companyIco : null,
+      company_ico_verified: false,
+    })
     .eq("id", user.id);
 
   if (error) {
