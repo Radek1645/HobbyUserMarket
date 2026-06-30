@@ -88,6 +88,8 @@ export type PublicListingPreview = {
   event_date: string | null;
   created_at: string;
   distance_km?: number | null;
+  /** Vyplněno RPC get_nearby_posts — skutečně použitý rádius (adaptivní kroky). */
+  effective_radius_km?: number | null;
 };
 
 /** Payload pro INSERT — expires_at nastaví DB trigger */

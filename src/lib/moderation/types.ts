@@ -10,8 +10,10 @@ export type ModerateListingRequest = {
   description: string;
   categoryType: CategoryType;
   subcategorySlug: string;
-  /** Base64 hlavní fotky — až s uploadem fotek. */
-  mainImageBase64?: string;
+  /** Všechny nahrané fotky (max. 6) — bezpečnostní filtr. */
+  imagesBase64?: string[];
+  /** Index hlavní fotky v `imagesBase64` — cross-validace textu a hydratace. */
+  mainImageIndex?: number;
 };
 
 export type ModerationQuestion = {
@@ -26,6 +28,8 @@ export type ModerateListingResponse = {
   reason?: string;
   /** ID kategorie z prohibited-topics.ts */
   rejectedTopicId?: string;
+  /** 0-based index fotky, která porušila pravidla (volitelně). */
+  rejectedImageIndex?: number;
   cleanedTitle?: string;
   cleanedDescription?: string;
   questions?: ModerationQuestion[];
@@ -37,6 +41,10 @@ export type ListingModerationInput = {
   description: string;
   categoryType: CategoryType;
   subcategorySlug: string;
+  images?: {
+    imagesBase64: string[];
+    mainImageIndex: number;
+  };
 };
 
 export type ListingModerationSuccess = {

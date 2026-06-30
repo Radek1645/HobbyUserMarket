@@ -13,6 +13,8 @@ import type {
 export type RunListingModerationParams = ListingModerationInput & {
   /** Při editaci — pro rozhodnutí, zda AI vůbec volat. */
   initialValues?: ListingFormInitialValues;
+  /** Při editaci — změna pořadí, smazání, nové fotky nebo hlavní náhled. */
+  imagesChanged?: boolean;
 };
 
 /**
@@ -26,15 +28,16 @@ export async function runListingModeration(
   const description = params.description.trim();
 
   if (params.intent === "update" && params.initialValues) {
-    const contentChanged = listingNeedsModeration(
-      {
-        title,
-        description,
-        categoryType: params.categoryType,
-        subcategorySlug: params.subcategorySlug,
-      },
-      params.initialValues,
-    );
+    const contentChanged =
+      listingNeedsModeration(
+        {
+          title,
+          description,
+          categoryType: params.categoryType,
+          subcategorySlug: params.subcategorySlug,
+        },
+        params.initialValues,
+      ) || Boolean(params.imagesChanged);
 
     if (!contentChanged && !MODERATION_ENABLED) {
       return {
@@ -70,5 +73,6 @@ export async function runListingModeration(
     description,
     categoryType: params.categoryType,
     subcategorySlug: params.subcategorySlug,
+    images: params.images,
   });
 }

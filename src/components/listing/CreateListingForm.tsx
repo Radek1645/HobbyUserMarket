@@ -203,6 +203,23 @@ export function CreateListingForm({
     const form = event.currentTarget;
     const formData = new FormData(form);
 
+    let moderationImages;
+    try {
+      moderationImages =
+        (await imageUploadRef.current?.getModerationImages()) ?? undefined;
+    } catch (imagePrepError) {
+      setModerationError(
+        imagePrepError instanceof Error
+          ? imagePrepError.message
+          : "Fotky se nepodařilo připravit pro AI kontrolu.",
+      );
+      submitErrorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+      return;
+    }
+
     const moderation = await runListingModeration({
       intent: isEdit ? "update" : "create",
       title: titleTrimmed,
@@ -210,6 +227,10 @@ export function CreateListingForm({
       categoryType,
       subcategorySlug,
       initialValues: isEdit ? initialValues : undefined,
+      imagesChanged: isEdit
+        ? (imageUploadRef.current?.hasImageChanges() ?? false)
+        : false,
+      images: moderationImages,
     });
 
     if (!moderation.ok) {

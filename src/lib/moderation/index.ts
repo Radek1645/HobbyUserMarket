@@ -1,5 +1,6 @@
 export { invokeModerateListing } from "@/lib/moderation/moderate-listing-client";
 export { listingNeedsModeration } from "@/lib/moderation/needs-moderation";
+export { prepareModerationImages } from "@/lib/moderation/prepare-moderation-images";
 export { runListingModeration } from "@/lib/moderation/run-listing-moderation";
 export { stripContactInfo } from "@/lib/moderation/strip-contacts";
 export {

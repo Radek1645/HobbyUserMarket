@@ -11,6 +11,11 @@ import {
   validateListingImageFile,
   validateListingImageSourceFile,
 } from "@/lib/posts/listing-images";
+import type { ModerationImagePayload } from "@/lib/moderation/prepare-moderation-images";
+import {
+  prepareModerationImages,
+  type ModerationImageSource,
+} from "@/lib/moderation/prepare-moderation-images";
 import type { ListingImagePreview } from "@/types/post";
 import { Star, X, Camera, ImageIcon } from "lucide-react";
 import {
@@ -24,6 +29,8 @@ import {
 
 export type ListingImageUploadHandle = {
   appendToFormData: (formData: FormData) => void;
+  hasImageChanges: () => boolean;
+  getModerationImages: () => Promise<ModerationImagePayload | null>;
 };
 
 type ImageItem =
@@ -90,7 +97,56 @@ export const ListingImageUpload = forwardRef<
     [items, mainKey, removedIds],
   );
 
-  useImperativeHandle(ref, () => ({ appendToFormData }), [appendToFormData]);
+  const hasImageChanges = useCallback(() => {
+    if (removedIds.length > 0) return true;
+    if (items.some((item) => item.kind === "new")) return true;
+
+    const sortedInitial = [...initialImages].sort(
+      (a, b) => a.sortOrder - b.sortOrder,
+    );
+    const initialKeys = sortedInitial.map((image) => `e:${image.id}`);
+    const currentExistingKeys = items
+      .filter((item) => item.kind === "existing")
+      .map((item) => item.key);
+
+    if (initialKeys.join(",") !== currentExistingKeys.join(",")) {
+      return true;
+    }
+
+    const initialMain = sortedInitial.find((image) => image.isMain);
+    const initialMainKey = initialMain
+      ? `e:${initialMain.id}`
+      : sortedInitial[0]
+        ? `e:${sortedInitial[0].id}`
+        : "";
+    const effectiveMainKey = mainKey || items[0]?.key || "";
+
+    return initialMainKey !== effectiveMainKey;
+  }, [initialImages, items, mainKey, removedIds]);
+
+  const getModerationImages = useCallback(async () => {
+    if (items.length === 0) {
+      return null;
+    }
+
+    const sources: ModerationImageSource[] = items.map((item) =>
+      item.kind === "new"
+        ? { kind: "file", file: item.file }
+        : { kind: "url", url: item.url },
+    );
+    const mainIndex = Math.max(
+      0,
+      items.findIndex((item) => item.key === (mainKey || items[0]?.key)),
+    );
+
+    return prepareModerationImages(sources, mainIndex);
+  }, [items, mainKey]);
+
+  useImperativeHandle(
+    ref,
+    () => ({ appendToFormData, hasImageChanges, getModerationImages }),
+    [appendToFormData, getModerationImages, hasImageChanges],
+  );
 
   async function processFiles(incoming: FileList | File[]) {
     setError(null);
@@ -183,7 +239,8 @@ export const ListingImageUpload = forwardRef<
           Volitelné, max. {LISTING_IMAGE_MAX_FILES} fotek. Snímky z foťáku nebo
           galerie se automaticky zmenší (max.{" "}
           {Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024))} MB každá).
-          První nebo označená hvědičkou bude náhled na homepage.
+          Hvězdičkou zvolíš náhled na homepage. Všechny fotky procházejí
+          bezpečnostní AI kontrolou.
         </p>
       </div>
 
@@ -214,8 +271,10 @@ export const ListingImageUpload = forwardRef<
                         ? "bg-amber-400 text-amber-950"
                         : "bg-white/90 text-gray-600 hover:bg-white"
                     }`}
-                    title={isMain ? "Hlavní fotka" : "Nastavit jako hlavní"}
-                    aria-label={isMain ? "Hlavní fotka" : "Nastavit jako hlavní"}
+                    title={isMain ? "Hlavní fotka (náhled)" : "Nastavit jako hlavní náhled"}
+                    aria-label={
+                      isMain ? "Hlavní fotka (náhled)" : "Nastavit jako hlavní náhled"
+                    }
                     aria-pressed={isMain}
                   >
                     <Star className="h-4 w-4" fill={isMain ? "currentColor" : "none"} />

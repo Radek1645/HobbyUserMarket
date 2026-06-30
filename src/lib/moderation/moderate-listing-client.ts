@@ -65,6 +65,12 @@ export async function invokeModerateListing(
         description: input.description,
         categoryType: input.categoryType,
         subcategorySlug: input.subcategorySlug,
+        ...(input.images
+          ? {
+              imagesBase64: input.images.imagesBase64,
+              mainImageIndex: input.images.mainImageIndex,
+            }
+          : {}),
       },
     },
   );

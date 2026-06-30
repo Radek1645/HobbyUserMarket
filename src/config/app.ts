@@ -1,6 +1,11 @@
 /** Globální parametry aplikace — PRD §3, §9.3 */
 
-export const SEARCH_RADIUS_KM = 15;
+/** Adaptivní kroky rádiusu pro homepage (km) — od nejmenšího po max. */
+export const SEARCH_RADIUS_STEPS_KM = [15, 30, 50, 60] as const;
+/** Výchozí (nejmenší) krok — zpětná kompatibilita v UI. */
+export const SEARCH_RADIUS_KM = SEARCH_RADIUS_STEPS_KM[0];
+/** Minimální počet inzerátů v okruhu; pod tím fallback na celostátní výpis. */
+export const HOME_LISTINGS_MIN_REQUIRED = 6;
 /** Počet karet na homepage po aplikaci filtru (max. z načtené dávky). */
 export const HOME_LISTINGS_LIMIT = 9;
 /** Kolik inzerátů načíst z API — větší pool pro filtrování podkategorií na klientovi. */

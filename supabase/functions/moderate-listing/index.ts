@@ -28,6 +28,11 @@ serve(async (req) => {
     const body = await req.json();
     const title = String(body?.title ?? "").trim();
     const description = String(body?.description ?? "").trim();
+    const imagesBase64 = Array.isArray(body?.imagesBase64)
+      ? body.imagesBase64.map((item: unknown) => String(item ?? "")).filter(Boolean)
+      : [];
+    const mainImageIndex =
+      typeof body?.mainImageIndex === "number" ? body.mainImageIndex : 0;
 
     if (!title || !description) {
       return new Response(
@@ -42,8 +47,10 @@ serve(async (req) => {
       );
     }
 
-    // TODO: rate limit, volání AI s _moderationSystemPrompt
+    // TODO: rate limit, volání AI s _moderationSystemPrompt + imagesBase64 + mainImageIndex
     void _moderationSystemPrompt;
+    void imagesBase64;
+    void mainImageIndex;
 
     return new Response(
       JSON.stringify({

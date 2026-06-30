@@ -23,3 +23,7 @@ export const MODERATION_ENABLED = false;
 export const MODERATION_RATE_LIMIT_PER_HOUR = 5;
 
 export const MODERATION_FUNCTION_NAME = "moderate-listing" as const;
+
+/** Nejdelší strana snímku posílaného do AI (bezpečnostní filtr všech fotek). */
+export const MODERATION_IMAGE_MAX_DIMENSION = 512;
+export const MODERATION_IMAGE_COMPRESS_QUALITY = 0.82;

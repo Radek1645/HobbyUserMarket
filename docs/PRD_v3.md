@@ -1,10 +1,10 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.10  
+> **Verze dokumentu:** v3.11  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-06-29
+> **Datum:** 2026-06-30
 
 ---
 
@@ -20,10 +20,10 @@
 MVP je hotové, když platí všechny body:
 
 1. **Rychlost založení:** Přihlášený uživatel zveřejní inzerát (s AI flow) do **2 minut** od otevření formuláře.
-2. **Lokální relevance:** Návštěvník s povolenou polohou vidí **6–9 inzerátů** v okruhu **15 km**, seřazených podle vzdálenosti.
+2. **Lokální relevance:** Návštěvník s povolenou polohou vidí **6–9 inzerátů (mobil / desktop)**. Priorita: nejbližší v adaptivním okruhu (**15–60 km**). Pokud v okruhu není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** s hláškou.
 3. **Ochrana kontaktů:** V HTML zdroji detailu inzerátu **není** telefon ani e-mail před kliknutím na „Zobrazit kontakt“ (ověřitelné v DevTools).
 4. **SEO:** Detail inzerátu má server-renderovaný HTML, dynamický Title tag, JSON-LD a je v `sitemap.xml`.
-5. **Moderování:** 3 nahlášení od 3 různých uživatelů skryje inzerát; moderátor ho vidí na `/mod/karantena`.
+5. **Moderování:** 3 nahlášení od 3 různých uživatelů skryje inzerát; moderátor ho vidí na `/mod/karantena`. Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků.
 
 ### 1.2 Definition of Done (v0.1.1 — Volitelná platnost inzerátu)
 
@@ -105,7 +105,7 @@ I v rámci modulu událostí se **neimplementuje:**
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **cookie consent bannerem** (GTM consent mode) před aktivací měření.
 * **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2 / `nemovitost` od v0.3) a `subcategory_slug`.
-* **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1) v `src/config/app.ts`. Výchozí radius: **15 km**. Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max).
+* **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1) v `src/config/app.ts`. Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace fotek v `src/config/moderation/index.ts` (`MODERATION_IMAGE_MAX_DIMENSION = 512`). Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max).
 
 ---
 
@@ -277,7 +277,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * Tento claim bude optimalizován pro SEO jako H1/H2 podpora pro klíčová slova spojená s rychlou, bezbolestnou lokální inzercí.
 * **Geolokační logika:**
   1. Web primárně požádá o polohu přes HTML5 Geolocation API.
-  2. **Success:** Souřadnice návštěvníka se uloží do `localStorage`. Pomocí PostGIS se spočítá vzdálenost a v Hero sekci se zobrazí 6–9 inzerátů v okruhu **15 km** od uživatele (konfigurovatelné v `src/config/app.ts`).
+  2. **Success:** Souřadnice návštěvníka se uloží do `localStorage`. PostGIS RPC `get_nearby_posts` kaskádově zkouší okruhy **15 → 30 → 50 → 60 km** (konfigurovatelné v `src/config/app.ts`), dokud nenajde alespoň **6** aktivních inzerátů. V Hero sekci se zobrazí **6–9** nejbližších. Pokud ani v **60 km** není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** (`get_recent_posts`) s hláškou, že v okolí zatím nic není.
   3. **Fallback (Odmítnutí polohy / nepřesná IP):** Inzeráty se skryjí. Zobrazí se dominantní vyhledávací pole s integrovaným **adresním našeptávačem přes Mapy.cz API**. Uživatel musí vybrat validní obec/městskou část z nabídky. Vybrané souřadnice (WGS84) se uloží do `localStorage` pro další návštěvy.
   4. **Persistence:** Poloha návštěvníka se ukládá do `localStorage`. Do Supabase jdou souřadnice až u inzerátu (`posts.location`).
 * **Vyhledávání a filtrace:**
@@ -341,10 +341,11 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
      * **Varování platnosti *(v0.1.1)*:** U `zbozi`/`sluzby`, pokud popis nebo AI JSON obsahuje datum **po** vypočtené expiraci, UI zobrazí: *„Pozor: Platnost inzerátu končí dříve než vámi zmíněné datum. Opravte platnost nebo datum.“*
   3. **Média a Volba Hlavní fotky:**
      * Upload fotografií: max **6 ks**, formáty JPEG/PNG/WebP (včetně snímků z foťáku). **Automatická komprese na klientovi** — každá fotka max **1 MB** po zmenšení (resize + WebP/JPEG) před odesláním do Supabase Storage. Vstupní soubor může být větší (až ~25 MB).
-     * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (Náhled a AI analýza)“** (radio button/hvězdička). Výchozí je první nahraná.
+     * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (náhled)“** (radio button/hvězdička). Výchozí je první nahraná. Hlavní fotka určuje náhled na homepage a slouží pro cross-validaci textu a AI hydrataci — **ne** jako jediná kontrolovaná fotka.
 
 * **Multimodální AI Guardrail & Interaktivní doplňování (Text + Foto cross-validace):**
-  * Po kliknutí na „Zkontrolovat inzerát“ klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `subcategory_slug`, **hlavní fotografie** (512×512 px, base64 nebo signed URL). Edge Function volá Gemini Flash / GPT-4o-mini a vrátí striktní JSON. **Žádná Next.js API Route v tomto flow.**
+  * Po kliknutí na „Zkontrolovat inzerát“ klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `subcategory_slug`, **všechny nahrané fotografie** (max. 6, každá zmenšená na **512×512 px**, base64) a `mainImageIndex` (index hlavní fotky). **Jedno** volání AI — bezpečnostní filtr na všech snímcích, cross-validace a hydratace z hlavní. Edge Function volá Gemini Flash / GPT-4o-mini a vrátí striktní JSON. **Žádná Next.js API Route v tomto flow.**
+  * **Bezpečnostní filtr fotek:** Pokud **jakákoliv** fotografie porušuje pravidla (zbraně, drogy, porno, orgány…), celý inzerát je `REJECTED`. Volitelně `rejectedImageIndex` pro UI. Výběr „čisté“ hlavní fotky nesmí obejít kontrolu zbylých snímků.
   * **Rate limit:** Max **5 AI kontrol / hodinu / uživatel**. Při překročení: HTTP 429 + srozumitelná hláška v UI.
   * **Logika zpracování AI (JSON výstup):**
     1. **Bezpečnostní a podvodový filtr:** Zakázaný obsah (zbraně, drogy, porno, orgány) → status `REJECTED`, proces končí chybou. Sémantická neshoda text/foto → chyba konzistence.

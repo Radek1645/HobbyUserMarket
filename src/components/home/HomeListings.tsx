@@ -7,7 +7,13 @@ import {
 } from "@/components/home/HomeListingFilter";
 import { ListingCard } from "@/components/listing/ListingCard";
 import { LocationInput } from "@/components/listing/LocationInput";
-import { HOME_LISTINGS_FETCH_LIMIT, SEARCH_RADIUS_KM } from "@/config/app";
+import {
+  HOME_LISTINGS_FETCH_LIMIT,
+  HOME_LISTINGS_LIMIT,
+  HOME_LISTINGS_MIN_REQUIRED,
+  SEARCH_RADIUS_KM,
+  SEARCH_RADIUS_STEPS_KM,
+} from "@/config/app";
 import { getSubcategoryLabel } from "@/config/categories";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import type { HomeBrowseCategory, HomeTheme } from "@/config/home-themes";
@@ -49,6 +55,8 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [listings, setListings] = useState<PublicListingPreview[]>([]);
   const [fetchMode, setFetchMode] = useState<FetchMode>("recent");
+  const [effectiveRadiusKm, setEffectiveRadiusKm] = useState<number | null>(null);
+  const [nationwideFallback, setNationwideFallback] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,15 +79,37 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
           const { data, error: rpcError } = await supabase.rpc("get_nearby_posts", {
             p_latitude: loc.latitude,
             p_longitude: loc.longitude,
-            p_radius_km: SEARCH_RADIUS_KM,
+            p_radius_steps_km: [...SEARCH_RADIUS_STEPS_KM],
+            p_min_required: HOME_LISTINGS_MIN_REQUIRED,
             p_limit: HOME_LISTINGS_FETCH_LIMIT,
             p_category_type: rpcCategory,
           });
 
           if (rpcError) throw rpcError;
 
-          setListings((data ?? []) as PublicListingPreview[]);
-          setFetchMode("nearby");
+          const nearby = (data ?? []) as PublicListingPreview[];
+
+          if (nearby.length < HOME_LISTINGS_MIN_REQUIRED) {
+            const { data: recentData, error: recentError } = await supabase.rpc(
+              "get_recent_posts",
+              {
+                p_limit: HOME_LISTINGS_FETCH_LIMIT,
+                p_category_type: rpcCategory,
+              },
+            );
+
+            if (recentError) throw recentError;
+
+            setListings((recentData ?? []) as PublicListingPreview[]);
+            setFetchMode("recent");
+            setEffectiveRadiusKm(null);
+            setNationwideFallback(true);
+          } else {
+            setListings(nearby);
+            setFetchMode("nearby");
+            setEffectiveRadiusKm(nearby[0]?.effective_radius_km ?? SEARCH_RADIUS_KM);
+            setNationwideFallback(false);
+          }
         } else {
           const { data, error: rpcError } = await supabase.rpc("get_recent_posts", {
             p_limit: HOME_LISTINGS_FETCH_LIMIT,
@@ -90,6 +120,8 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
 
           setListings((data ?? []) as PublicListingPreview[]);
           setFetchMode("recent");
+          setEffectiveRadiusKm(null);
+          setNationwideFallback(false);
         }
       } catch (e) {
         console.error("home listings:", e);
@@ -217,10 +249,10 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
     });
   }
 
-  const filteredListings = useMemo(
-    () => applyListingFilters(listings, filter, category),
-    [category, filter, listings],
-  );
+  const filteredListings = useMemo(() => {
+    const filtered = applyListingFilters(listings, filter, category);
+    return filtered.slice(0, HOME_LISTINGS_LIMIT);
+  }, [category, filter, listings]);
 
   const inputClass =
     "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
@@ -229,9 +261,28 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
   const locationFilterActive = Boolean(filter.searchByLocation && location);
 
   const sectionTitle =
-    locationFilterActive && location
+    locationFilterActive && location && fetchMode === "nearby"
       ? `${theme.label} v okolí ${formatPublicAreaLocation(location.locationText)}`
       : `${theme.label} — nejnovější`;
+
+  const listingsSubtitle = (() => {
+    if (locationFilterActive && fetchMode === "nearby" && effectiveRadiusKm != null) {
+      if (effectiveRadiusKm > SEARCH_RADIUS_KM) {
+        return `V bezprostředním okolí málo inzerátů — zobrazujeme do ${effectiveRadiusKm} km od tebe`;
+      }
+      return `Do ${effectiveRadiusKm} km od tebe`;
+    }
+    if (locationFilterActive && nationwideFallback) {
+      return "Ve tvém okolí zatím nic není — nejnovější inzeráty z celé republiky";
+    }
+    if (location && !filter.searchByLocation) {
+      return "Bez filtru vzdálenosti — nejnovější inzeráty";
+    }
+    if (!location) {
+      return "Vyber polohu pro inzeráty ve svém okolí";
+    }
+    return "Nejnovější inzeráty";
+  })();
 
   const subcategoryLabel =
     category !== "all" && filter.subcategorySlug
@@ -246,11 +297,7 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
             {sectionTitle}
           </h2>
           <p className="mt-0.5 text-sm text-gray-500">
-            {locationFilterActive
-              ? `Do ${SEARCH_RADIUS_KM} km od tebe`
-              : location
-                ? "Bez filtru vzdálenosti — nejnovější inzeráty"
-                : "Vyber polohu pro inzeráty ve svém okolí"}
+            {listingsSubtitle}
             {subcategoryLabel ? ` · ${subcategoryLabel}` : ""}
           </p>
         </div>
@@ -328,8 +375,10 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
           {listings.length > 0 && filter.subcategorySlug
             ? `V podkategorii „${subcategoryLabel}“ zatím nic není. Zkus jiný filtr.`
             : fetchMode === "nearby"
-              ? `V okruhu ${SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkus vypnout „Hledat podle polohy“ ve filtru.`
-              : `V kategorii „${theme.label}“ zatím nic není.`}
+              ? `V okolí do ${effectiveRadiusKm ?? SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkus vypnout „Hledat podle polohy“ ve filtru.`
+              : nationwideFallback
+                ? `V okolí zatím nic není a v kategorii „${theme.label}“ není ani celostátní inzerce.`
+                : `V kategorii „${theme.label}“ zatím nic není.`}
         </p>
       ) : null}
 

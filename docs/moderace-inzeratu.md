@@ -31,7 +31,7 @@ Formulář (create / edit)
 | `src/config/moderation/messages.ts` | Texty popupu, cesta k podmínkám inzerce |
 | `src/config/moderation/build-prompt.ts` | Sestavení system promptu pro AI ze seznamu |
 | `src/config/moderation/index.ts` | Přepínač `MODERATION_ENABLED`, rate limit |
-| `src/lib/moderation/` | Logika klienta (volání, strip kontaktů, kdy moderovat) |
+| `src/lib/moderation/` | Logika klienta (volání, strip kontaktů, příprava fotek) |
 | `src/components/moderation/ModerationRejectedDialog.tsx` | Popup při zamítnutí |
 | `src/app/podminky-inzerce/page.tsx` | Stub stránky Podmínky inzerce (odkaz z patičky) |
 | `supabase/functions/moderate-listing/` | Edge Function (zatím stub) |
@@ -129,9 +129,22 @@ Plný text pravidel doplníš později na stránku `src/app/podminky-inzerce/pag
 |------|----------|
 | Nový inzerát | Před publikací (až po zapnutí AI) |
 | Editace — změna názvu, popisu, kategorie | Ano |
+| Editace — změna fotek (přidání, smazání, pořadí, hlavní náhled) | Ano — **všechny** aktuální fotky |
 | Editace — jen cena, lokalita, stav, platnost | Ne (přeskočí se) |
 
-Logika: `src/lib/moderation/needs-moderation.ts`.
+Logika: `src/lib/moderation/needs-moderation.ts` + `ListingImageUpload.hasImageChanges()`.
+
+---
+
+## Fotografie a AI kontrola
+
+| Co | Kolik fotek | Účel |
+|----|-------------|------|
+| **Bezpečnostní filtr** | Všechny nahrané (max. 6) | Zbraně, drogy, porno… — zamítnutí jedné = zamítnutí celého inzerátu |
+| **Cross-validace text ↔ foto** | Hlavní fotka (`mainImageIndex`) | Konzistence názvu/popisu s náhledem |
+| **AI hydratace / dotazník** | Hlavní fotka | Doplňující otázky podle kategorie |
+
+Klient připraví snímky v `src/lib/moderation/prepare-moderation-images.ts` (resize na `MODERATION_IMAGE_MAX_DIMENSION`, default 512 px) a pošle je v jednom payloadu `imagesBase64` + `mainImageIndex`. Hvězdička u miniatury = **náhled na homepage**, ne „jediná kontrolovaná fotka“.
 
 ---
 
