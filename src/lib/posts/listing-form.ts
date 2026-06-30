@@ -22,6 +22,9 @@ export type ListingFormInitialValues = {
   listingDurationDays: number;
   eventDate: string;
   customDuration: boolean;
+  showContactEmail: boolean;
+  showContactPhone: boolean;
+  contactPhone: string;
 };
 
 export function toDatetimeLocalValue(iso: string | null): string {
@@ -61,5 +64,11 @@ export function postToListingFormInitialValues(
     listingDurationDays,
     eventDate: toDatetimeLocalValue(post.event_date),
     customDuration,
+    showContactEmail: post.show_contact_email ?? false,
+    showContactPhone: post.show_contact_phone ?? false,
+    contactPhone:
+      post.show_contact_phone && post.contact_phone?.trim()
+        ? post.contact_phone.trim()
+        : "",
   };
 }

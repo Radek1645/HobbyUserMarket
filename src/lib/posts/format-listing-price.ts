@@ -1,4 +1,5 @@
 import { getPriceTypeLabel } from "@/config/categories";
+import { formatCzkAmount } from "@/lib/posts/price-input";
 import type { CategoryType, PriceType } from "@/types/post";
 
 export function formatListingPrice(
@@ -10,11 +11,11 @@ export function formatListingPrice(
   const label = getPriceTypeLabel(categoryType, priceType);
 
   if (priceType === "fixed" && priceAmount != null) {
-    return `${priceAmount} Kč`;
+    return `${formatCzkAmount(priceAmount)} Kč`;
   }
 
   if (priceType === "negotiable" && priceAmount != null) {
-    return `cca ${priceAmount} Kč (dohodou)`;
+    return `cca ${formatCzkAmount(priceAmount)} Kč (dohodou)`;
   }
 
   if (priceType === "exchange" && exchangeFor?.trim()) {

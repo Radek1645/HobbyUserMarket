@@ -81,6 +81,7 @@ export default async function EditListingPage({ params }: PageProps) {
         postId={post.id}
         initialValues={initialValues}
         initialImages={post.images}
+        userEmail={user.email}
       />
     </div>
   );

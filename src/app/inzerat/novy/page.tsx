@@ -32,7 +32,7 @@ export default async function NewListingPage() {
         </p>
       </div>
 
-      <CreateListingForm />
+      <CreateListingForm userEmail={user.email} />
     </div>
   );
 }

@@ -12,7 +12,6 @@ export type ListingSortMode = "default" | "newest" | "nearest";
 export type HomeListingFilterState = {
   subcategorySlug: string | null;
   sort: ListingSortMode;
-  searchByLocation: boolean;
 };
 
 type HomeListingFilterProps = {
@@ -38,7 +37,6 @@ export function countActiveFilters(
   let count = 0;
   if (category !== "all" && filter.subcategorySlug) count += 1;
   if (filter.sort !== "default") count += 1;
-  if (!filter.searchByLocation) count += 1;
   return count;
 }
 
@@ -117,7 +115,6 @@ export function HomeListingFilter({
     onFilterChange({
       subcategorySlug: null,
       sort: "default",
-      searchByLocation: true,
     });
   }
 
@@ -240,29 +237,6 @@ export function HomeListingFilter({
                 Služby…).
               </p>
             )}
-
-            <fieldset>
-              <legend className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                Poloha
-              </legend>
-              <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-xl px-1 py-1 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={filter.searchByLocation}
-                  disabled={!hasLocation}
-                  onChange={(event) =>
-                    patch({ searchByLocation: event.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-400 disabled:opacity-50"
-                />
-                Hledat podle polohy
-              </label>
-              {!hasLocation ? (
-                <p className="mt-1 px-1 text-xs text-gray-500">
-                  Nejdřív nastav polohu výpisem v okolí.
-                </p>
-              ) : null}
-            </fieldset>
           </div>
 
           {activeCount > 0 ? (

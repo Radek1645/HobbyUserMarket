@@ -2,12 +2,16 @@
 
 import { signOut } from "@/app/actions/auth";
 import { AppLogo } from "@/components/brand/AppLogo";
+import { HeaderSearch } from "@/components/layout/HeaderSearch";
+import { HeaderLocationPanel } from "@/components/location/HeaderLocationPanel";
+import { useVisitorLocationContext } from "@/components/location/VisitorLocationProvider";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { formatPublicAreaLocation } from "@/lib/mapy/client";
 import type { AppUser } from "@/types/auth";
-import { LogOut, MapPin, Menu, Plus, Search, X, LayoutList } from "lucide-react";
+import { LogOut, MapPin, Menu, Plus, X, LayoutList } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 type HeaderProps = {
   user: AppUser | null;
@@ -18,6 +22,7 @@ const CREATE_LISTING_CLASS =
 
 export function Header({ user }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { location, panelOpen, togglePanel } = useVisitorLocationContext();
   const menuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -63,18 +68,16 @@ export function Header({ user }: HeaderProps) {
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <AppLogo />
 
-          <label className="relative min-w-0 flex-1">
-            <span className="sr-only">Hledat</span>
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="search"
-              placeholder="Hledat inzeráty…"
-              className="h-10 w-full rounded-full border border-gray-200 bg-gray-50 pr-3 pl-9 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:ring-2 focus:ring-gray-200"
-            />
-          </label>
+          <Suspense
+            fallback={
+              <div
+                className="h-10 min-w-0 flex-1 rounded-full border border-gray-200 bg-gray-50"
+                aria-hidden="true"
+              />
+            }
+          >
+            <HeaderSearch />
+          </Suspense>
 
           {user ? (
             <Link
@@ -101,9 +104,24 @@ export function Header({ user }: HeaderProps) {
           <button
             type="button"
             {...gtmCtaProps(GTM_CTA.HEADER_LOCATION)}
-            aria-label="Poloha (brzy)"
-            title="Detekce polohy — brzy"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition hover:bg-gray-100"
+            aria-expanded={panelOpen}
+            aria-label={
+              location
+                ? `Poloha: ${formatPublicAreaLocation(location.locationText)}`
+                : "Nastavit polohu"
+            }
+            title={
+              location
+                ? formatPublicAreaLocation(location.locationText)
+                : "Nastavit polohu pro inzeráty v okolí"
+            }
+            onClick={togglePanel}
+            className={[
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition",
+              panelOpen || location
+                ? "border-emerald-600 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100",
+            ].join(" ")}
           >
             <MapPin className="h-4 w-4" />
           </button>
@@ -219,6 +237,7 @@ export function Header({ user }: HeaderProps) {
           </nav>
         </div>
       </div>
+      <HeaderLocationPanel />
     </header>
   );
 }

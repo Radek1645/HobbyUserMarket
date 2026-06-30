@@ -69,6 +69,9 @@ export type PostRow = {
   payment_status: PaymentStatus;
   main_image_url: string | null;
   slug: string;
+  show_contact_email?: boolean;
+  show_contact_phone?: boolean;
+  contact_phone?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -115,5 +118,8 @@ export type PostInsert = Pick<
       | "event_date"
       | "main_image_url"
       | "payment_status"
+      | "show_contact_email"
+      | "show_contact_phone"
+      | "contact_phone"
     >
   >;

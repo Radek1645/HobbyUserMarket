@@ -3,10 +3,18 @@ import type { InquiryPayload } from "./validation";
 
 export function buildInquiryEmail(payload: InquiryPayload & {
   postTitle: string;
+  postListingUrl: string;
   categoryType: CategoryType;
 }) {
-  const { senderName, senderContact, message, postTitle, categoryType, attachments } =
-    payload;
+  const {
+    senderName,
+    senderContact,
+    message,
+    postTitle,
+    postListingUrl,
+    categoryType,
+    attachments,
+  } = payload;
 
   let subject: string;
   let intro: string;
@@ -31,6 +39,8 @@ export function buildInquiryEmail(payload: InquiryPayload & {
       : "";
 
   const text = `${intro}
+
+Inzerát: ${postListingUrl}
 
 Kontakt zájemce: ${senderContact}
 

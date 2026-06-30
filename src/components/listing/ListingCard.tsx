@@ -4,6 +4,7 @@ import {
 } from "@/config/categories";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
+import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingPath } from "@/lib/posts/listing-path";
 import type { PublicListingPreview } from "@/types/post";
 import Link from "next/link";
@@ -75,7 +76,7 @@ export function ListingCard({ listing, imageFirst = false }: ListingCardProps) {
         </div>
 
         <p className="truncate px-3 py-2 text-xs text-gray-500">
-          {listing.location_text}
+          {formatPublicListingLocation(listing.location_text)}
           {eventLabel ? ` · ${eventLabel}` : ""}
         </p>
       </Link>
@@ -117,7 +118,9 @@ export function ListingCard({ listing, imageFirst = false }: ListingCardProps) {
         <h2 className="mt-1 line-clamp-2 text-base font-semibold text-gray-900 group-hover:underline">
           {listing.title}
         </h2>
-        <p className="mt-1 text-sm text-gray-600">{listing.location_text}</p>
+        <p className="mt-1 text-sm text-gray-600">
+          {formatPublicListingLocation(listing.location_text)}
+        </p>
         {descriptionPreview ? (
           <p className="mt-2 line-clamp-2 text-sm text-gray-500">
             {descriptionPreview}

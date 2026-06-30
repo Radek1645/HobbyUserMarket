@@ -7,6 +7,11 @@ import {
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
 import { getCategoryConfig, getConditionFieldLabel, isValidSubcategory } from "@/config/categories";
+import {
+  formatContactPhoneForStorage,
+  isValidContactPhone,
+} from "@/lib/posts/contact-phone";
+import { parsePriceInput } from "@/lib/posts/price-input";
 import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
 
 export type CreateListingInput = {
@@ -23,6 +28,9 @@ export type CreateListingInput = {
   exchangeFor: string | null;
   listingDurationDays: number;
   eventDate: string | null;
+  showContactEmail: boolean;
+  showContactPhone: boolean;
+  contactPhone: string | null;
 };
 
 export type ValidationResult =
@@ -50,8 +58,8 @@ function parsePriceAmount(
     throw new Error("U ceny dohodou uveď orientační částku v Kč.");
   }
 
-  const amount = Number.parseInt(trimmed, 10);
-  if (Number.isNaN(amount) || amount < 0) {
+  const amount = parsePriceInput(trimmed);
+  if (amount == null || amount < 0) {
     throw new Error("Zadej platnou cenu v Kč.");
   }
 
@@ -80,6 +88,23 @@ export function validateListingForm(
       priceType,
       String(form.get("priceAmount") ?? ""),
     );
+    const showContactEmail = form.get("showContactEmail") === "true";
+    const showContactPhone = form.get("showContactPhone") === "true";
+    const contactPhoneRaw = String(form.get("contactPhone") ?? "").trim();
+    let contactPhone: string | null = null;
+
+    if (showContactPhone) {
+      if (!contactPhoneRaw) {
+        throw new Error("Zadej telefonní číslo, nebo vypni zobrazení telefonu.");
+      }
+      if (!isValidContactPhone(contactPhoneRaw)) {
+        throw new Error(
+          "Telefon musí mít 9–15 číslic (můžeš uvést mezinárodní předvolbu).",
+        );
+      }
+      contactPhone = formatContactPhoneForStorage(contactPhoneRaw);
+    }
+
     const rawExchangeFor = String(form.get("exchangeFor") ?? "").trim();
     const exchangeFor =
       priceType === "exchange"
@@ -206,6 +231,9 @@ export function validateListingForm(
         exchangeFor,
         listingDurationDays,
         eventDate,
+        showContactEmail,
+        showContactPhone,
+        contactPhone,
       },
     };
   } catch (e) {

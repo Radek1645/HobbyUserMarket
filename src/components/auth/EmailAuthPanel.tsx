@@ -15,6 +15,8 @@ type AuthTab = "login" | "register" | "forgot";
 type EmailAuthPanelProps = {
   nextPath: string;
   initialTab?: AuthTab;
+  /** Větší typografie a odsazení — flow „Založit inzerát“ na desktopu. */
+  prominent?: boolean;
 };
 
 const initialState: AuthFormState = {};
@@ -22,9 +24,24 @@ const initialState: AuthFormState = {};
 const inputClass =
   "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:ring-2 focus:ring-gray-200";
 
+const prominentInputClass =
+  "mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:ring-2 focus:ring-gray-200 sm:py-3.5 sm:text-base";
+
 const labelClass = "block text-sm font-medium text-gray-700";
 
-export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPanelProps) {
+const prominentLabelClass = "block text-sm font-medium text-gray-700 sm:text-base";
+
+const primaryButtonClass =
+  "flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50";
+
+const prominentPrimaryButtonClass =
+  "flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base";
+
+export function EmailAuthPanel({
+  nextPath,
+  initialTab = "login",
+  prominent = false,
+}: EmailAuthPanelProps) {
   const [tab, setTab] = useState<AuthTab>(initialTab);
   const [loginState, loginAction, loginPending] = useActionState(
     signInWithEmail,
@@ -42,9 +59,15 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
   const state =
     tab === "login" ? loginState : tab === "register" ? registerState : resetState;
 
+  const fieldInputClass = prominent ? prominentInputClass : inputClass;
+  const fieldLabelClass = prominent ? prominentLabelClass : labelClass;
+  const submitButtonClass = prominent ? prominentPrimaryButtonClass : primaryButtonClass;
+
   return (
-    <div className="mt-6 space-y-4">
-      <div className="flex rounded-xl bg-gray-100 p-1 text-sm">
+    <div className={`space-y-4 ${prominent ? "mt-8 sm:mt-10" : "mt-6"}`}>
+      <div
+        className={`flex rounded-xl bg-gray-100 p-1 ${prominent ? "text-sm sm:text-base" : "text-sm"}`}
+      >
         <button
           type="button"
           {...gtmCtaProps(GTM_CTA.AUTH_TAB_LOGIN)}
@@ -87,7 +110,7 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
         <form action={loginAction} className="space-y-4">
           <input type="hidden" name="next" value={nextPath} />
           <div>
-            <label htmlFor="login-email" className={labelClass}>
+            <label htmlFor="login-email" className={fieldLabelClass}>
               E-mail
             </label>
             <input
@@ -96,7 +119,7 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
               type="email"
               autoComplete="email"
               required
-              className={inputClass}
+              className={fieldInputClass}
             />
           </div>
           <PasswordInput
@@ -104,6 +127,7 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
             name="password"
             label="Heslo"
             autoComplete="current-password"
+            prominent={prominent}
           />
           <button
             type="button"
@@ -117,7 +141,7 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
             type="submit"
             {...gtmCtaProps(GTM_CTA.LOGIN_EMAIL)}
             disabled={loginPending}
-            className="flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className={submitButtonClass}
           >
             {loginPending ? "Přihlašuji…" : "Přihlásit se"}
           </button>
@@ -127,7 +151,7 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
       {tab === "register" ? (
         <form action={registerAction} className="space-y-4">
           <div>
-            <label htmlFor="register-email" className={labelClass}>
+            <label htmlFor="register-email" className={fieldLabelClass}>
               E-mail
             </label>
             <input
@@ -136,7 +160,7 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
               type="email"
               autoComplete="email"
               required
-              className={inputClass}
+              className={fieldInputClass}
             />
           </div>
           <PasswordInput
@@ -146,15 +170,16 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
             autoComplete="new-password"
             minLength={8}
             hint="Minimálně 8 znaků."
+            prominent={prominent}
           />
-          <p className="text-xs text-gray-500">
+          <p className={`text-gray-500 ${prominent ? "text-xs sm:text-sm" : "text-xs"}`}>
             Po registraci ti pošleme ověřovací odkaz. Bez něj se nepřihlásíš.
           </p>
           <button
             type="submit"
             {...gtmCtaProps(GTM_CTA.REGISTER_SUBMIT)}
             disabled={registerPending}
-            className="flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className={submitButtonClass}
           >
             {registerPending ? "Vytvářím účet…" : "Vytvořit účet"}
           </button>
@@ -167,7 +192,7 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
             Zadej e-mail účtu. Pošleme odkaz pro nastavení nového hesla.
           </p>
           <div>
-            <label htmlFor="reset-email" className={labelClass}>
+            <label htmlFor="reset-email" className={fieldLabelClass}>
               E-mail
             </label>
             <input
@@ -176,14 +201,14 @@ export function EmailAuthPanel({ nextPath, initialTab = "login" }: EmailAuthPane
               type="email"
               autoComplete="email"
               required
-              className={inputClass}
+              className={fieldInputClass}
             />
           </div>
           <button
             type="submit"
             {...gtmCtaProps(GTM_CTA.PASSWORD_RESET_REQUEST)}
             disabled={resetPending}
-            className="flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className={submitButtonClass}
           >
             {resetPending ? "Odesílám…" : "Odeslat odkaz"}
           </button>

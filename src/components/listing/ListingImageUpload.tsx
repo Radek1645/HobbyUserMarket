@@ -6,6 +6,12 @@ import {
   LISTING_IMAGE_MAX_FILE_BYTES,
 } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import {
+  listingFormDropzoneClass,
+  listingFormHintClass,
+  listingFormLabelClass,
+  listingFormSecondaryButtonClass,
+} from "@/config/listing-form-ui";
 import { compressListingImage } from "@/lib/images/compress-listing-image";
 import {
   validateListingImageFile,
@@ -234,8 +240,8 @@ export const ListingImageUpload = forwardRef<
   return (
     <div className="space-y-3">
       <div>
-        <span className="block text-sm font-medium text-gray-700">Fotky</span>
-        <p className="mt-0.5 text-xs text-gray-500">
+        <span className={listingFormLabelClass}>Fotky</span>
+        <p className={listingFormHintClass}>
           Volitelné, max. {LISTING_IMAGE_MAX_FILES} fotek. Snímky z foťáku nebo
           galerie se automaticky zmenší (max.{" "}
           {Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024))} MB každá).
@@ -253,7 +259,7 @@ export const ListingImageUpload = forwardRef<
             return (
               <li
                 key={item.key}
-                className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50"
+                className="relative overflow-hidden rounded-xl border border-neutral-400 bg-neutral-50"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -310,7 +316,7 @@ export const ListingImageUpload = forwardRef<
               disabled={isCompressing}
               {...gtmCtaProps(GTM_CTA.LISTING_IMAGE_ADD)}
               onClick={() => cameraInputRef.current?.click()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-gray-50 px-4 py-3.5 text-sm font-medium text-gray-800 hover:bg-gray-100 disabled:cursor-wait disabled:opacity-60"
+              className={`flex w-full ${listingFormSecondaryButtonClass} py-3.5`}
             >
               <Camera className="h-5 w-5" aria-hidden="true" />
               Vyfotit
@@ -320,7 +326,7 @@ export const ListingImageUpload = forwardRef<
               disabled={isCompressing}
               {...gtmCtaProps(GTM_CTA.LISTING_IMAGE_ADD)}
               onClick={() => galleryInputRef.current?.click()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600 hover:border-gray-400 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
+              className={`flex w-full ${listingFormSecondaryButtonClass} border-dashed py-3`}
             >
               <ImageIcon className="h-4 w-4" aria-hidden="true" />
               Vybrat z galerie
@@ -351,7 +357,7 @@ export const ListingImageUpload = forwardRef<
                 void processFiles(event.dataTransfer.files);
               }
             }}
-            className="hidden cursor-pointer rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600 hover:border-gray-400 hover:bg-gray-100 disabled:cursor-wait disabled:opacity-60 sm:block"
+            className={`hidden cursor-pointer sm:block ${listingFormDropzoneClass} disabled:cursor-wait disabled:opacity-60`}
           >
             Přetáhni fotky sem nebo klikni pro výběr
           </div>
@@ -359,7 +365,7 @@ export const ListingImageUpload = forwardRef<
       ) : null}
 
       {isCompressing ? (
-        <p className="text-xs text-gray-500" aria-live="polite">
+        <p className={listingFormHintClass} aria-live="polite">
           Optimalizuji fotku…
         </p>
       ) : null}

@@ -38,6 +38,10 @@ function buildListingPayload(data: CreateListingInput) {
     location_text: data.locationText,
     location: `SRID=4326;POINT(${data.longitude} ${data.latitude})`,
     listing_duration_days: data.listingDurationDays,
+    show_contact_email: data.showContactEmail,
+    show_contact_phone: data.showContactPhone,
+    contact_phone:
+      data.showContactPhone && data.contactPhone ? data.contactPhone : null,
   };
 
   if (data.categoryType === "udalost" && data.eventDate) {

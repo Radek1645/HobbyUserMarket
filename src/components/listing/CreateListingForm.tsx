@@ -25,11 +25,15 @@ import {
   type ModerationRejectionState,
 } from "@/components/moderation/ModerationRejectedDialog";
 import type { ListingFormInitialValues } from "@/lib/posts/listing-form";
+import { CONTACT_PHONE_MAX_LENGTH, CONTACT_PHONE_PLACEHOLDER } from "@/lib/posts/contact-phone";
+import { formatEmailPreviewForForm } from "@/lib/posts/contact-display";
+import { parsePriceInput } from "@/lib/posts/price-input";
 import {
   ListingImageUpload,
   type ListingImageUploadHandle,
 } from "@/components/listing/ListingImageUpload";
 import { LocationInput } from "@/components/listing/LocationInput";
+import { PriceAmountInput } from "@/components/listing/PriceAmountInput";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import {
@@ -41,6 +45,19 @@ import {
   useTransition,
 } from "react";
 
+import {
+  listingFormCardClass,
+  listingFormCategoryBarClass,
+  listingFormContactOptionActiveClass,
+  listingFormContactOptionBaseClass,
+  listingFormContactOptionIdleClass,
+  listingFormContactSectionClass,
+  listingFormHintClass,
+  listingFormInputClass,
+  listingFormLabelClass,
+  listingFormPrimaryButtonClass,
+  listingFormSecondaryButtonClass,
+} from "@/config/listing-form-ui";
 import type { CategoryType, ConditionLabel, ListingImagePreview, PriceType } from "@/types/post";
 
 type CreateListingFormProps = {
@@ -48,14 +65,15 @@ type CreateListingFormProps = {
   postId?: number;
   initialValues?: ListingFormInitialValues;
   initialImages?: ListingImagePreview[];
+  /** E-mail z účtu — náhled v sekci kontaktu. */
+  userEmail: string;
 };
 
 type FormState = CreateListingState | UpdateListingState;
 
-const inputClass =
-  "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
-
-const labelClass = "block text-sm font-medium text-gray-700";
+const inputClass = listingFormInputClass;
+const labelClass = listingFormLabelClass;
+const hintClass = listingFormHintClass;
 
 const errorAlertClass =
   "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800";
@@ -67,6 +85,7 @@ export function CreateListingForm({
   postId,
   initialValues,
   initialImages = [],
+  userEmail,
 }: CreateListingFormProps) {
   const isEdit = mode === "edit";
   const formAction = isEdit ? updateListing : createListing;
@@ -111,10 +130,20 @@ export function CreateListingForm({
     initialValues?.customDuration ?? false,
   );
   const [eventDate, setEventDate] = useState(initialValues?.eventDate ?? "");
+  const [showContactEmail, setShowContactEmail] = useState(
+    initialValues?.showContactEmail ?? false,
+  );
+  const [showContactPhone, setShowContactPhone] = useState(
+    initialValues?.showContactPhone ?? false,
+  );
+  const [contactPhone, setContactPhone] = useState(
+    initialValues?.contactPhone ?? "",
+  );
   const submitErrorRef = useRef<HTMLDivElement>(null);
   const imageUploadRef = useRef<ListingImageUploadHandle>(null);
 
   const category = getCategoryConfig(categoryType);
+  const emailPreview = formatEmailPreviewForForm(userEmail);
 
   useEffect(() => {
     if (state.error && step === 2) {
@@ -171,11 +200,10 @@ export function CreateListingForm({
     description.length <= LISTING_DESCRIPTION_MAX_LENGTH;
   const needsPriceAmount =
     priceType === "fixed" || priceType === "negotiable";
-  const parsedPriceAmount = Number.parseInt(priceAmount.trim(), 10);
+  const parsedPriceAmount = parsePriceInput(priceAmount);
   const isPriceValid =
     !needsPriceAmount ||
-    (priceAmount.trim().length > 0 &&
-      !Number.isNaN(parsedPriceAmount) &&
+    (parsedPriceAmount != null &&
       parsedPriceAmount >= (priceType === "negotiable" ? 1 : 0));
   const canPublish =
     hasLocation &&
@@ -367,7 +395,7 @@ export function CreateListingForm({
             {...gtmCtaProps(GTM_CTA.CREATE_STEP_CONTINUE)}
             disabled={!canGoStep2()}
             onClick={() => setStep(2)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`flex w-full items-center justify-center gap-2 ${listingFormPrimaryButtonClass}`}
           >
             Pokračovat
             <ChevronRight className="h-4 w-4" />
@@ -376,24 +404,18 @@ export function CreateListingForm({
       ) : null}
 
       {step === 2 ? (
-        <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-gray-50 px-3 py-2.5 text-sm">
-            <p className="text-gray-600">
-              <span className="text-gray-500">Kategorie:</span>{" "}
-              <span className="font-medium text-gray-900">{category.label}</span>
-              <span aria-hidden="true" className="text-gray-400">
-                {" "}
-                ·{" "}
-              </span>
-              <span className="font-medium text-gray-900">
-                {selectedSubcategory.label}
+        <div className={listingFormCardClass}>
+          <div className={listingFormCategoryBarClass}>
+            <p>
+              <span className="font-semibold text-neutral-900">
+                Kategorie: {category.label} · {selectedSubcategory.label}
               </span>
             </p>
             <button
               type="button"
               {...gtmCtaProps(GTM_CTA.CREATE_EDIT_CATEGORY)}
               onClick={() => setStep(1)}
-              className="shrink-0 font-medium text-gray-700 underline-offset-2 hover:underline"
+              className="shrink-0 font-semibold text-blue-800 underline-offset-2 hover:underline"
             >
               Upravit
             </button>
@@ -424,7 +446,7 @@ export function CreateListingForm({
                       : "např. Prodám med z vlastní včelny"
               }
             />
-            <p className="mt-1 text-xs text-gray-500">{title.length}/80</p>
+            <p className={hintClass}>{title.length}/80</p>
             {title.length > 0 && !isTitleValid ? (
               <p className="mt-1 text-xs text-red-600">
                 Název musí mít 1–80 znaků (nesmí být jen mezery).
@@ -459,7 +481,7 @@ export function CreateListingForm({
                       : "Popis zboží nebo služby…"
               }
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className={hintClass}>
               {description.length}/{LISTING_DESCRIPTION_MAX_LENGTH}
               {descriptionTrimmed.length > 0 &&
               descriptionTrimmed.length < LISTING_DESCRIPTION_MIN_LENGTH
@@ -501,7 +523,7 @@ export function CreateListingForm({
               ))}
             </select>
             {isRecurringEvent ? (
-              <p className="mt-1 text-xs text-gray-500">
+              <p className={hintClass}>
                 Uveď v popisu frekvenci (např. každý čtvrtek). Datum níže =
                 nejbližší termín.
               </p>
@@ -524,7 +546,7 @@ export function CreateListingForm({
                 className={inputClass}
               />
               {expiresPreview ? (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={hintClass}>
                   Inzerát bude viditelný do {expiresPreview} (den po akci).
                 </p>
               ) : null}
@@ -534,7 +556,7 @@ export function CreateListingForm({
           {!isEvent ? (
             <div>
               <span className={labelClass}>Platnost inzerátu</span>
-              <p className="mt-0.5 text-xs text-gray-500">
+              <p className={hintClass}>
                 Výchozí 30 dní — můžeš přepsat.
               </p>
               {!customDuration ? (
@@ -575,14 +597,14 @@ export function CreateListingForm({
                   <button
                     type="button"
                     onClick={() => setCustomDuration(false)}
-                    className="shrink-0 rounded-xl border border-gray-200 px-3 text-sm text-gray-600"
+                    className={`shrink-0 ${listingFormSecondaryButtonClass} px-3 py-2`}
                   >
                     Presety
                   </button>
                 </div>
               )}
               {expiresPreview ? (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={hintClass}>
                   Platí do cca {expiresPreview}
                 </p>
               ) : null}
@@ -631,44 +653,38 @@ export function CreateListingForm({
               </select>
             </div>
             {priceType === "fixed" ? (
-              <div>
-                <label htmlFor="priceAmount" className={labelClass}>
-                  {isJob ? "Mzda (Kč)" : "Cena (Kč)"}{" "}
-                  <span className="text-red-600">*</span>
-                </label>
-                <input
-                  id="priceAmount"
-                  name="priceAmount"
-                  type="number"
-                  min={0}
-                  required
-                  value={priceAmount}
-                  onChange={(e) => setPriceAmount(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
+              <PriceAmountInput
+                id="priceAmount"
+                label={
+                  <>
+                    {isJob ? "Mzda (Kč)" : "Cena (Kč)"}{" "}
+                    <span className="text-red-600">*</span>
+                  </>
+                }
+                value={priceAmount}
+                onChange={setPriceAmount}
+                inputClass={inputClass}
+                labelClass={labelClass}
+                required
+              />
             ) : null}
             {priceType === "negotiable" ? (
-              <div>
-                <label htmlFor="priceAmount" className={labelClass}>
-                  {isJob ? "Orientační odměna (Kč)" : "Orientační cena (Kč)"}{" "}
-                  <span className="text-red-600">*</span>
-                </label>
-                <input
-                  id="priceAmount"
-                  name="priceAmount"
-                  type="number"
-                  min={1}
-                  required
-                  value={priceAmount}
-                  onChange={(e) => setPriceAmount(e.target.value)}
-                  className={inputClass}
-                  placeholder="např. 500"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Kolik si představuješ? Finální cena se domluví.
-                </p>
-              </div>
+              <PriceAmountInput
+                id="priceAmount"
+                label={
+                  <>
+                    {isJob ? "Orientační odměna (Kč)" : "Orientační cena (Kč)"}{" "}
+                    <span className="text-red-600">*</span>
+                  </>
+                }
+                value={priceAmount}
+                onChange={setPriceAmount}
+                inputClass={inputClass}
+                labelClass={labelClass}
+                required
+                placeholder="např. 500"
+                hint="Kolik si představuješ? Finální cena se domluví."
+              />
             ) : null}
             {priceType === "exchange" ? (
               <div>
@@ -685,14 +701,110 @@ export function CreateListingForm({
                   className={inputClass}
                   placeholder="např. dětské kolo, stůl…"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={hintClass}>
                   Volitelné, max. {LISTING_EXCHANGE_FOR_MAX_LENGTH} znaků.
                 </p>
               </div>
             ) : null}
           </div>
 
-          <p className="text-xs text-gray-500">
+          <div className={listingFormContactSectionClass}>
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-900">
+                Přímé kontakty v inzerátu
+              </h3>
+              <p className={`${hintClass} mt-1`}>
+                Zájemci ti vždy mohou poslat zprávu přes formulář na webu.
+                Chceš jim ukázat i přímé spojení?
+              </p>
+            </div>
+
+            <input
+              type="hidden"
+              name="showContactEmail"
+              value={showContactEmail ? "true" : "false"}
+            />
+            <input
+              type="hidden"
+              name="showContactPhone"
+              value={showContactPhone ? "true" : "false"}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label
+                className={`${listingFormContactOptionBaseClass} ${
+                  showContactEmail
+                    ? listingFormContactOptionActiveClass
+                    : listingFormContactOptionIdleClass
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={showContactEmail}
+                  onChange={(event) =>
+                    setShowContactEmail(event.target.checked)
+                  }
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-400 text-blue-600 focus:ring-blue-600"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-neutral-900">
+                    Zobrazit můj e-mail
+                  </span>
+                  <span className="mt-0.5 block text-xs text-neutral-600">
+                    {emailPreview}
+                  </span>
+                </span>
+              </label>
+
+              <label
+                className={`${listingFormContactOptionBaseClass} ${
+                  showContactPhone
+                    ? listingFormContactOptionActiveClass
+                    : listingFormContactOptionIdleClass
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={showContactPhone}
+                  onChange={(event) =>
+                    setShowContactPhone(event.target.checked)
+                  }
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-400 text-blue-600 focus:ring-blue-600"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-neutral-900">
+                    Zobrazit telefonní číslo
+                  </span>
+                  <span className="mt-0.5 block text-xs text-neutral-600">
+                    Zobrazí se až po kliknutí
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            {showContactPhone ? (
+              <div>
+                <label htmlFor="contactPhone" className={labelClass}>
+                  Zadej telefonní číslo <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="contactPhone"
+                  name="contactPhone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  required
+                  maxLength={CONTACT_PHONE_MAX_LENGTH}
+                  value={contactPhone}
+                  onChange={(event) => setContactPhone(event.target.value)}
+                  className={inputClass}
+                  placeholder={CONTACT_PHONE_PLACEHOLDER}
+                />
+              </div>
+            ) : null}
+          </div>
+
+          <p className={hintClass}>
             {MODERATION_ENABLED
               ? "Před uložením proběhne AI kontrola obsahu (drogy, nelegální věci…)."
               : "AI kontrola obsahu bude brzy — teď se inzerát uloží rovnou."}
@@ -719,7 +831,7 @@ export function CreateListingForm({
               type="button"
               {...gtmCtaProps(GTM_CTA.CREATE_STEP_BACK)}
               onClick={() => setStep(1)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className={`flex flex-1 ${listingFormSecondaryButtonClass}`}
             >
               <ChevronLeft className="h-4 w-4" />
               Zpět
@@ -736,7 +848,7 @@ export function CreateListingForm({
                   ? "Vyplň název, popis a vyber lokalitu z našeptávače nebo GPS"
                   : undefined
               }
-              className="flex flex-1 items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`flex flex-1 ${listingFormPrimaryButtonClass}`}
             >
               {isSaving
                 ? isModerating

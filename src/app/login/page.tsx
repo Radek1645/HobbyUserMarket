@@ -22,8 +22,6 @@ function resolveInitialTab(tab?: string): "login" | "register" | "forgot" {
 
 const messageMap: Record<string, string> = {
   password_updated: "Heslo bylo nastavené. Můžeš se přihlásit.",
-  create_listing:
-    "Nejdřív si založ profil — pak můžeš přidat inzerát a nabízet zboží nebo služby v okolí.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -42,16 +40,41 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const isCreateListingFlow = message === "create_listing";
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        <h1 className="text-center text-2xl font-semibold text-gray-900">
+    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4 py-10 sm:py-12">
+      <div
+        className={
+          isCreateListingFlow
+            ? "w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-md sm:max-w-lg sm:p-10 lg:max-w-xl lg:p-12"
+            : "w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+        }
+      >
+        <h1
+          className={`text-center font-semibold text-gray-900 ${
+            isCreateListingFlow ? "text-2xl sm:text-3xl" : "text-2xl"
+          }`}
+        >
           {isCreateListingFlow ? "Založit inzerát" : "Přihlášení"}
         </h1>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          {isCreateListingFlow
-            ? "Přihlas se nebo si vytvoř účet. Bez profilu inzerát nezveřejníš."
-            : "Přihlas se e-mailem nebo přes Google a začni prodávat nebo nakupovat lokálně."}
-        </p>
+
+        {isCreateListingFlow ? (
+          <>
+            <p
+              className="mt-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-center text-base font-semibold leading-snug text-sky-950 sm:mt-6 sm:px-5 sm:py-5 sm:text-lg"
+              role="status"
+            >
+              Nejdřív si založ profil nebo se přihlas.
+            </p>
+            <p className="mt-3 text-center text-sm leading-relaxed text-gray-600 sm:text-base">
+              Bez účtu inzerát nezveřejníš. Pak můžeš nabízet zboží nebo služby
+              v okolí.
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Přihlas se e-mailem nebo přes Google a začni prodávat nebo nakupovat
+            lokálně.
+          </p>
+        )}
 
         {infoMessage ? (
           <p
@@ -71,7 +94,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
         ) : null}
 
-        <EmailAuthPanel nextPath={nextPath} initialTab={resolveInitialTab(tab)} />
+        <EmailAuthPanel
+          nextPath={nextPath}
+          initialTab={resolveInitialTab(tab)}
+          prominent={isCreateListingFlow}
+        />
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center" aria-hidden="true">
@@ -86,7 +113,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <button
             type="submit"
             {...gtmCtaProps(GTM_CTA.LOGIN_GOOGLE)}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 transition hover:bg-gray-50"
+            className={`flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 font-medium text-gray-900 transition hover:bg-gray-50 ${
+              isCreateListingFlow
+                ? "py-3.5 text-sm sm:py-4 sm:text-base"
+                : "py-3 text-sm"
+            }`}
           >
             <GoogleIcon />
             Pokračovat přes Google

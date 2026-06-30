@@ -11,6 +11,10 @@ export const HOME_LISTINGS_LIMIT = 9;
 /** Kolik inzerátů načíst z API — větší pool pro filtrování podkategorií na klientovi. */
 export const HOME_LISTINGS_FETCH_LIMIT = 36;
 
+/** Fulltext vyhledávání — PRD §5.2 */
+export const SEARCH_QUERY_MIN_LENGTH = 3;
+export const SEARCH_QUERY_MAX_LENGTH = 100;
+
 export const LISTING_DURATION_DEFAULT_DAYS = 30;
 export const LISTING_DURATION_MIN_DAYS = 1;
 export const LISTING_DURATION_MAX_DAYS = 365;

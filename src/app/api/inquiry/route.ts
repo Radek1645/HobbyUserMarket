@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { buildInquiryEmail, extractReplyTo } from "@/lib/inquiry/email";
 import { resolveOwnerEmail } from "@/lib/inquiry/resolve-owner-email";
+import { inquirySendErrorMessage } from "@/lib/inquiry/send-error";
 import { validateInquiryPayload } from "@/lib/inquiry/validation";
+import { getListingPath } from "@/lib/posts/listing-path";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSiteUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { CategoryType, PostRow } from "@/types/post";
 
@@ -35,10 +38,13 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: post, error: postError } = await supabase
     .from("posts")
-    .select("id, title, category_type, status, expires_at, user_id")
+    .select("id, title, slug, category_type, status, expires_at, user_id")
     .eq("id", postId)
     .maybeSingle<
-      Pick<PostRow, "id" | "title" | "category_type" | "status" | "user_id"> & {
+      Pick<
+        PostRow,
+        "id" | "title" | "slug" | "category_type" | "status" | "user_id"
+      > & {
         expires_at: string | null;
       }
     >();
@@ -99,6 +105,7 @@ export async function POST(request: Request) {
   const emailContent = buildInquiryEmail({
     ...validated.data,
     postTitle: post.title,
+    postListingUrl: `${getSiteUrl()}${getListingPath(post.slug)}`,
     categoryType: post.category_type as CategoryType,
   });
 
@@ -119,7 +126,7 @@ export async function POST(request: Request) {
   if (sendError) {
     console.error("inquiry send:", sendError);
     return NextResponse.json(
-      { error: "Poptávku se nepodařilo odeslat. Zkus to později." },
+      { error: inquirySendErrorMessage(sendError) },
       { status: 502 },
     );
   }

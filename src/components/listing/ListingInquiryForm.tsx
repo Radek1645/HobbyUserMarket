@@ -6,23 +6,31 @@ import {
   INQUIRY_SENDER_NAME_MAX_LENGTH,
 } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { listingInquiryCtaButtonClass } from "@/config/listing-form-ui";
 import {
   getInquiryCtaLabel,
   getInquiryHeading,
   getInquirySubmitLabel,
 } from "@/lib/inquiry/labels";
 import type { CategoryType } from "@/types/post";
-import { useState } from "react";
 import {
   AttachmentDropzone,
   attachmentsToPayload,
   type AttachmentFile,
 } from "./AttachmentDropzone";
+import { useState } from "react";
 
 type ListingInquiryFormProps = {
   postId: number;
   postTitle: string;
   categoryType: CategoryType;
+  /** Uvnitř společné karty kontaktu na detailu — bez odděleného rámečku u CTA. */
+  embedded?: boolean;
+  /** Řízené otevření formuláře (tlačítko může být v nadřazeném stacku). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Skryje vlastní trigger — použij s `open` / `onOpenChange`. */
+  hideTrigger?: boolean;
 };
 
 const inputClass =
@@ -34,8 +42,21 @@ export function ListingInquiryForm({
   postId,
   postTitle,
   categoryType,
+  embedded = false,
+  open: openControlled,
+  onOpenChange,
+  hideTrigger = false,
 }: ListingInquiryFormProps) {
-  const [open, setOpen] = useState(false);
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = openControlled ?? openInternal;
+
+  function setOpen(next: boolean) {
+    if (onOpenChange) {
+      onOpenChange(next);
+    } else {
+      setOpenInternal(next);
+    }
+  }
   const [senderName, setSenderName] = useState("");
   const [senderContact, setSenderContact] = useState("");
   const [message, setMessage] = useState("");
@@ -126,12 +147,16 @@ export function ListingInquiryForm({
   }
 
   if (!open) {
+    if (hideTrigger) {
+      return null;
+    }
+
     return (
       <button
         type="button"
         {...gtmCtaProps(GTM_CTA.INQUIRY_OPEN, { category: categoryType })}
         onClick={() => setOpen(true)}
-        className="w-full rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white hover:bg-gray-800 sm:w-auto"
+        className={listingInquiryCtaButtonClass}
       >
         {getInquiryCtaLabel(categoryType)}
       </button>
@@ -141,7 +166,11 @@ export function ListingInquiryForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6"
+      className={
+        embedded
+          ? "mt-4 space-y-4 border-t border-gray-100 pt-4"
+          : "space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6"
+      }
     >
       <div>
         <h2 className="text-lg font-semibold text-gray-900">

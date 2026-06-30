@@ -1,5 +1,4 @@
-import { Header } from "@/components/layout/Header";
-import { SiteFooter } from "@/components/layout/SiteFooter";
+import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -32,9 +31,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col bg-gray-50 text-gray-900 antialiased`}
       >
-        <Header user={user} />
-        <main className="mx-auto w-full max-w-5xl flex-1">{children}</main>
-        <SiteFooter />
+        <AppShell user={user}>{children}</AppShell>
       </body>
     </html>
   );

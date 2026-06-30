@@ -12,6 +12,7 @@ export const GTM_CTA = {
   // Header
   HEADER_HOME: "cta_header_home",
   HEADER_CREATE_LISTING: "cta_header_create_listing",
+  HEADER_SEARCH_SUBMIT: "cta_header_search_submit",
   HEADER_LOCATION: "cta_header_location",
   HEADER_MENU_TOGGLE: "cta_header_menu_toggle",
   HEADER_SIGN_IN: "cta_header_sign_in",
@@ -46,6 +47,7 @@ export const GTM_CTA = {
   INQUIRY_SUBMIT: "cta_inquiry_submit",
   INQUIRY_CANCEL: "cta_inquiry_cancel",
   INQUIRY_SEND_ANOTHER: "cta_inquiry_send_another",
+  CONTACT_REVEAL: "cta_contact_reveal",
 
   // Založení inzerátu
   CREATE_BACK_HOME: "cta_create_back_home",

@@ -6,7 +6,7 @@ import {
   type HomeListingFilterState,
 } from "@/components/home/HomeListingFilter";
 import { ListingCard } from "@/components/listing/ListingCard";
-import { LocationInput } from "@/components/listing/LocationInput";
+import { useVisitorLocationContext } from "@/components/location/VisitorLocationProvider";
 import {
   HOME_LISTINGS_FETCH_LIMIT,
   HOME_LISTINGS_LIMIT,
@@ -15,44 +15,36 @@ import {
   SEARCH_RADIUS_STEPS_KM,
 } from "@/config/app";
 import { getSubcategoryLabel } from "@/config/categories";
-import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import type { HomeBrowseCategory, HomeTheme } from "@/config/home-themes";
-import {
-  formatPublicAreaLocation,
-  reverseGeocodeLocation,
-} from "@/lib/mapy/client";
-import {
-  clearVisitorLocation,
-  loadSearchByLocation,
-  loadVisitorLocation,
-  saveSearchByLocation,
-  saveVisitorLocation,
-  type VisitorLocation,
-} from "@/lib/posts/visitor-location";
+import { formatPublicAreaLocation } from "@/lib/mapy/client";
+import { isSearchQueryValid } from "@/lib/posts/search-query";
+import type { VisitorLocation } from "@/lib/posts/visitor-location";
 import { createClient } from "@/lib/supabase/client";
 import type { PublicListingPreview } from "@/types/post";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type FetchMode = "nearby" | "recent";
+type FetchMode = "nearby" | "recent" | "search";
 
 const DEFAULT_FILTER: HomeListingFilterState = {
   subcategorySlug: null,
   sort: "default",
-  searchByLocation: true,
 };
 
 type HomeListingsProps = {
   category: HomeBrowseCategory;
   theme: HomeTheme;
+  searchQuery?: string;
 };
 
-export function HomeListings({ category, theme }: HomeListingsProps) {
-  const [location, setLocation] = useState<VisitorLocation | null>(null);
+export function HomeListings({
+  category,
+  theme,
+  searchQuery = "",
+}: HomeListingsProps) {
+  const { location, ready: locationReady } = useVisitorLocationContext();
   const [filter, setFilter] = useState<HomeListingFilterState>(DEFAULT_FILTER);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [locationReady, setLocationReady] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
   const [listings, setListings] = useState<PublicListingPreview[]>([]);
   const [fetchMode, setFetchMode] = useState<FetchMode>("recent");
   const [effectiveRadiusKm, setEffectiveRadiusKm] = useState<number | null>(null);
@@ -60,14 +52,12 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [pickerValue, setPickerValue] = useState({
-    locationText: "",
-    latitude: null as number | null,
-    longitude: null as number | null,
-  });
-
   const fetchListings = useCallback(
-    async (loc: VisitorLocation | null, cat: HomeBrowseCategory) => {
+    async (
+      loc: VisitorLocation | null,
+      cat: HomeBrowseCategory,
+      query: string,
+    ) => {
       setLoading(true);
       setError(null);
 
@@ -75,6 +65,38 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
       const rpcCategory = cat === "all" ? null : cat;
 
       try {
+        if (query && isSearchQueryValid(query)) {
+          const searchParams: {
+            p_query: string;
+            p_category_type: string | null;
+            p_limit: number;
+            p_latitude?: number;
+            p_longitude?: number;
+          } = {
+            p_query: query,
+            p_category_type: rpcCategory,
+            p_limit: HOME_LISTINGS_FETCH_LIMIT,
+          };
+
+          if (loc) {
+            searchParams.p_latitude = loc.latitude;
+            searchParams.p_longitude = loc.longitude;
+          }
+
+          const { data, error: rpcError } = await supabase.rpc(
+            "search_posts",
+            searchParams,
+          );
+
+          if (rpcError) throw rpcError;
+
+          setListings((data ?? []) as PublicListingPreview[]);
+          setFetchMode("search");
+          setEffectiveRadiusKm(null);
+          setNationwideFallback(false);
+          return;
+        }
+
         if (loc) {
           const { data, error: rpcError } = await supabase.rpc("get_nearby_posts", {
             p_latitude: loc.latitude,
@@ -137,149 +159,66 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
   useEffect(() => {
     setFilter((current) => ({
       ...current,
-      searchByLocation: loadSearchByLocation(),
-    }));
-
-    const saved = loadVisitorLocation();
-    if (saved) {
-      setLocation(saved);
-      setLocationReady(true);
-      return;
-    }
-
-    if (!navigator.geolocation) {
-      setLocationReady(true);
-      setShowPicker(true);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const selection = await reverseGeocodeLocation(
-            position.coords.latitude,
-            position.coords.longitude,
-            undefined,
-            { approximate: true },
-          );
-          const loc: VisitorLocation = {
-            locationText: selection.locationText,
-            latitude: selection.latitude,
-            longitude: selection.longitude,
-          };
-          saveVisitorLocation(loc);
-          setLocation(loc);
-        } catch {
-          const loc: VisitorLocation = {
-            locationText: "Moje poloha",
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          saveVisitorLocation(loc);
-          setLocation(loc);
-        } finally {
-          setLocationReady(true);
-        }
-      },
-      () => {
-        setLocationReady(true);
-        setShowPicker(true);
-      },
-      { enableHighAccuracy: false, timeout: 12_000, maximumAge: 300_000 },
-    );
-  }, []);
-
-  useEffect(() => {
-    setFilter((current) => ({
-      ...current,
       subcategorySlug: null,
     }));
     setFilterOpen(false);
   }, [category]);
 
   useEffect(() => {
-    if (!locationReady) return;
-    const effectiveLocation = filter.searchByLocation ? location : null;
-    void fetchListings(effectiveLocation, category);
-  }, [
-    category,
-    fetchListings,
-    filter.searchByLocation,
-    location,
-    locationReady,
-  ]);
-
-  function handleFilterChange(next: HomeListingFilterState) {
-    setFilter(next);
-    saveSearchByLocation(next.searchByLocation);
-  }
-
-  function applyPickerLocation() {
-    if (
-      pickerValue.latitude == null ||
-      pickerValue.longitude == null ||
-      !pickerValue.locationText.trim()
-    ) {
-      setError("Vyber obec z našeptávače nebo použij GPS.");
+    if (searchQuery && !isSearchQueryValid(searchQuery)) {
+      setLoading(false);
+      setListings([]);
+      setError(null);
+      setFetchMode("search");
       return;
     }
 
-    const loc: VisitorLocation = {
-      locationText: formatPublicAreaLocation(pickerValue.locationText),
-      latitude: pickerValue.latitude,
-      longitude: pickerValue.longitude,
-    };
+    if (searchQuery && isSearchQueryValid(searchQuery)) {
+      void fetchListings(location, category, searchQuery);
+      return;
+    }
 
-    saveVisitorLocation(loc);
-    setLocation(loc);
-    handleFilterChange({ ...filter, searchByLocation: true });
-    setShowPicker(false);
-    setError(null);
-    void fetchListings(loc, category);
-  }
-
-  function handleChangeLocation() {
-    clearVisitorLocation();
-    setLocation(null);
-    setShowPicker(true);
-    setPickerValue({
-      locationText: "",
-      latitude: null,
-      longitude: null,
-    });
-  }
+    if (!locationReady) return;
+    void fetchListings(location, category, "");
+  }, [category, fetchListings, location, locationReady, searchQuery]);
 
   const filteredListings = useMemo(() => {
     const filtered = applyListingFilters(listings, filter, category);
     return filtered.slice(0, HOME_LISTINGS_LIMIT);
   }, [category, filter, listings]);
 
-  const inputClass =
-    "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
-  const labelClass = "block text-sm font-medium text-gray-700";
+  const searchActive = searchQuery.length > 0;
+  const searchValid = isSearchQueryValid(searchQuery);
 
-  const locationFilterActive = Boolean(filter.searchByLocation && location);
-
-  const sectionTitle =
-    locationFilterActive && location && fetchMode === "nearby"
+  const sectionTitle = searchActive
+    ? searchValid
+      ? `Výsledky pro „${searchQuery}"`
+      : "Vyhledávání"
+    : location && fetchMode === "nearby"
       ? `${theme.label} v okolí ${formatPublicAreaLocation(location.locationText)}`
       : `${theme.label} — nejnovější`;
 
   const listingsSubtitle = (() => {
-    if (locationFilterActive && fetchMode === "nearby" && effectiveRadiusKm != null) {
+    if (searchActive) {
+      if (!searchValid) {
+        return "Zadej alespoň 3 znaky pro fulltextové hledání";
+      }
+      if (location) {
+        return "Seřazeno podle relevance, vzdálenost doplňuje řazení";
+      }
+      return "Seřazeno podle relevance";
+    }
+    if (location && fetchMode === "nearby" && effectiveRadiusKm != null) {
       if (effectiveRadiusKm > SEARCH_RADIUS_KM) {
         return `V bezprostředním okolí málo inzerátů — zobrazujeme do ${effectiveRadiusKm} km od tebe`;
       }
       return `Do ${effectiveRadiusKm} km od tebe`;
     }
-    if (locationFilterActive && nationwideFallback) {
+    if (location && nationwideFallback) {
       return "Ve tvém okolí zatím nic není — nejnovější inzeráty z celé republiky";
     }
-    if (location && !filter.searchByLocation) {
-      return "Bez filtru vzdálenosti — nejnovější inzeráty";
-    }
     if (!location) {
-      return "Vyber polohu pro inzeráty ve svém okolí";
+      return "Nastav polohu ikonou špendlíku v horní liště";
     }
     return "Nejnovější inzeráty";
   })();
@@ -302,59 +241,18 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {location ? (
-            <button
-              type="button"
-              {...gtmCtaProps(GTM_CTA.HOME_CHANGE_LOCATION)}
-              onClick={handleChangeLocation}
-              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
-            >
-              <MapPin className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Změnit polohu</span>
-              <span className="sm:hidden">Poloha</span>
-            </button>
-          ) : null}
-
-          <HomeListingFilter
-            category={category}
-            theme={theme}
-            open={filterOpen}
-            onOpenChange={setFilterOpen}
-            filter={filter}
-            onFilterChange={handleFilterChange}
-            hasLocation={Boolean(location)}
-          />
-        </div>
+        <HomeListingFilter
+          category={category}
+          theme={theme}
+          open={filterOpen}
+          onOpenChange={setFilterOpen}
+          filter={filter}
+          onFilterChange={setFilter}
+          hasLocation={Boolean(location)}
+        />
       </div>
 
-      {showPicker && !location ? (
-        <div
-          className={`mt-4 rounded-2xl border p-4 sm:p-5 ${theme.heroClass} ${theme.heroBorderClass}`}
-        >
-          <p className="text-sm text-gray-600">
-            Pro inzeráty v okolí vyber obec nebo povol polohu v prohlížeči.
-          </p>
-          <div className="mt-3">
-            <LocationInput
-              value={pickerValue}
-              onChange={setPickerValue}
-              inputClass={inputClass}
-              labelClass={labelClass}
-            />
-          </div>
-          <button
-            type="button"
-            {...gtmCtaProps(GTM_CTA.HOME_APPLY_LOCATION)}
-            onClick={applyPickerLocation}
-            className={`mt-4 rounded-xl px-4 py-2.5 text-sm font-medium transition ${theme.ctaClass}`}
-          >
-            Zobrazit inzeráty v okolí
-          </button>
-        </div>
-      ) : null}
-
-      {!locationReady || loading ? (
+      {(!searchActive && !locationReady) || loading ? (
         <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           Načítám inzeráty…
@@ -370,19 +268,21 @@ export function HomeListings({ category, theme }: HomeListingsProps) {
         </p>
       ) : null}
 
-      {locationReady && !loading && filteredListings.length === 0 && !error ? (
+      {(searchActive || locationReady) && !loading && filteredListings.length === 0 && !error ? (
         <p className="mt-8 rounded-2xl border border-dashed border-gray-200/80 bg-white/70 px-4 py-10 text-center text-sm text-gray-500 backdrop-blur-sm">
-          {listings.length > 0 && filter.subcategorySlug
+          {searchActive && searchValid
+            ? `Pro „${searchQuery}" jsme nic nenašli. Zkus jiné slovo nebo kategorii.`
+            : listings.length > 0 && filter.subcategorySlug
             ? `V podkategorii „${subcategoryLabel}“ zatím nic není. Zkus jiný filtr.`
             : fetchMode === "nearby"
-              ? `V okolí do ${effectiveRadiusKm ?? SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkus vypnout „Hledat podle polohy“ ve filtru.`
+              ? `V okolí do ${effectiveRadiusKm ?? SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkus jinou kategorii nebo polohu.`
               : nationwideFallback
                 ? `V okolí zatím nic není a v kategorii „${theme.label}“ není ani celostátní inzerce.`
                 : `V kategorii „${theme.label}“ zatím nic není.`}
         </p>
       ) : null}
 
-      {locationReady && !loading && filteredListings.length > 0 ? (
+      {(searchActive || locationReady) && !loading && filteredListings.length > 0 ? (
         <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {filteredListings.map((listing) => (
             <li key={listing.id}>

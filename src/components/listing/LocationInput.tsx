@@ -8,6 +8,11 @@ import {
   suggestPlaces,
 } from "@/lib/mapy/client";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import {
+  listingFormInputClass,
+  listingFormLabelClass,
+  listingFormSecondaryButtonClass,
+} from "@/config/listing-form-ui";
 import type { MapyGeocodeEntity } from "@/lib/mapy/types";
 import { Loader2, MapPin } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -30,8 +35,8 @@ const DEBOUNCE_MS = 300;
 export function LocationInput({
   value,
   onChange,
-  inputClass = "",
-  labelClass = "",
+  inputClass = listingFormInputClass,
+  labelClass = listingFormLabelClass,
 }: LocationInputProps) {
   const listId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -250,7 +255,7 @@ export function LocationInput({
         {...gtmCtaProps(GTM_CTA.LOCATION_USE_GPS)}
         onClick={useCurrentLocation}
         disabled={isGpsLoading}
-        className="mt-2 inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className={`mt-2 inline-flex w-full sm:w-auto ${listingFormSecondaryButtonClass} px-3 py-2`}
       >
         {isGpsLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

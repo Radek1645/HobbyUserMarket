@@ -1,4 +1,5 @@
 import { getMapyApiKey } from "@/lib/mapy/env";
+import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import type {
   MapyGeocodeEntity,
   MapyGeocodeResponse,
@@ -68,25 +69,9 @@ async function mapyGet<T>(
   return response.json() as Promise<T>;
 }
 
-const CZECH_HOUSE_NUMBER_SUFFIX =
-  /\s+(?:č\.?\s*)?\d+[a-zA-Z]?(?:\s*\/\s*\d+[a-zA-Z]?)?$/;
-
-/** Ulice + obec bez popisného/orientačního čísla (pro zobrazení polohy návštěvníka). */
+/** Alias pro filtr polohy návštěvníka na homepage. */
 export function formatPublicAreaLocation(locationText: string): string {
-  const trimmed = locationText.trim();
-  if (!trimmed) return trimmed;
-
-  if (!trimmed.includes(",")) {
-    return trimmed.replace(CZECH_HOUSE_NUMBER_SUFFIX, "").trim();
-  }
-
-  const [first, ...rest] = trimmed.split(",").map((part) => part.trim());
-  const street = first.replace(CZECH_HOUSE_NUMBER_SUFFIX, "").trim();
-  const tail = rest.filter(Boolean).join(", ");
-
-  if (!street) return tail || trimmed;
-  if (!tail) return street;
-  return `${street}, ${tail}`;
+  return formatPublicListingLocation(locationText);
 }
 
 /** Obec/město z Mapy `location` řetězce (první segment, bez „- město“). */

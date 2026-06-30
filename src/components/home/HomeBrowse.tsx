@@ -8,6 +8,7 @@ import {
   parseHomeBrowseCategory,
   type HomeBrowseCategory,
 } from "@/config/home-themes";
+import { normalizeSearchQuery } from "@/lib/posts/search-query";
 import type { AppUser } from "@/types/auth";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,6 +24,11 @@ export function HomeBrowse({ user }: HomeBrowseProps) {
 
   const category = useMemo(
     () => parseHomeBrowseCategory(searchParams.get("kategorie")),
+    [searchParams],
+  );
+
+  const searchQuery = useMemo(
+    () => normalizeSearchQuery(searchParams.get("q")),
     [searchParams],
   );
 
@@ -118,6 +124,7 @@ export function HomeBrowse({ user }: HomeBrowseProps) {
         <HomeListings
           category={category}
           theme={theme}
+          searchQuery={searchQuery}
         />
       </div>
     </div>

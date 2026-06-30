@@ -4,8 +4,8 @@ import {
   getPriceTypeLabel,
   getSubcategoryLabel,
 } from "@/config/categories";
+import { ListingContactSection } from "@/components/listing/ListingContactSection";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
-import { ListingInquiryForm } from "@/components/listing/ListingInquiryForm";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   getAdvertiserIcoDisplay,
@@ -13,8 +13,10 @@ import {
   getAdvertiserPrimaryLabelTitle,
 } from "@/lib/auth/advertiser-display";
 import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
-import { getListingEditPath } from "@/lib/posts/listing-path";
+import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingImages } from "@/lib/posts/listing-images";
+import { getListingEditPath } from "@/lib/posts/listing-path";
+import { formatCzkAmount } from "@/lib/posts/price-input";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingImagePreview, PostRow } from "@/types/post";
 import type { Metadata } from "next";
@@ -55,7 +57,7 @@ export async function generateMetadata({
   if (!post) return { title: "Inzerát | HobbyUserMarket" };
 
   return {
-    title: `${post.title} | ${post.location_text} | HobbyUserMarket`,
+    title: `${post.title} | ${formatPublicListingLocation(post.location_text)} | HobbyUserMarket`,
   };
 }
 
@@ -194,7 +196,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
           ) : null}
           <div>
             <dt className="text-gray-500">Lokalita</dt>
-            <dd className="font-medium text-gray-900">{post.location_text}</dd>
+            <dd className="font-medium text-gray-900">
+              {formatPublicListingLocation(post.location_text)}
+            </dd>
           </div>
           <div>
             <dt className="text-gray-500">Typ ceny</dt>
@@ -205,8 +209,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
               <dt className="text-gray-500">{priceAmountLabel}</dt>
               <dd className="font-medium text-gray-900">
                 {post.price_type === "negotiable"
-                  ? `cca ${post.price_amount} Kč (dohodou)`
-                  : `${post.price_amount} Kč`}
+                  ? `cca ${formatCzkAmount(post.price_amount)} Kč (dohodou)`
+                  : `${formatCzkAmount(post.price_amount)} Kč`}
               </dd>
             </div>
           ) : null}
@@ -246,10 +250,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
             </Link>
           </div>
         ) : (
-          <ListingInquiryForm
+          <ListingContactSection
             postId={post.id}
+            postSlug={post.slug}
             postTitle={post.title}
             categoryType={post.category_type}
+            showContactEmail={post.show_contact_email === true}
+            showContactPhone={post.show_contact_phone === true}
+            isLoggedIn={Boolean(user)}
           />
         )}
       </section>
