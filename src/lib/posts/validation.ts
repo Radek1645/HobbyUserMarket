@@ -42,6 +42,40 @@ export type ValidateListingOptions = {
   existingEventDate?: string | null;
 };
 
+export type FutureEventDateResult =
+  | { ok: true; parsed: Date }
+  | { ok: false; error: string };
+
+/** Datum akce musí být v budoucnosti (při editaci projde nezměněné datum z DB). */
+export function validateFutureEventDate(
+  rawEvent: string,
+  options?: Pick<ValidateListingOptions, "existingEventDate">,
+  now: Date = new Date(),
+): FutureEventDateResult {
+  const trimmed = rawEvent.trim();
+  if (!trimmed) {
+    return { ok: false, error: "Zadej datum a čas akce." };
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return { ok: false, error: "Neplatné datum akce." };
+  }
+
+  const existingRaw = options?.existingEventDate;
+  const existing = existingRaw ? new Date(existingRaw) : null;
+  const isUnchanged =
+    existing != null &&
+    !Number.isNaN(existing.getTime()) &&
+    parsed.getTime() === existing.getTime();
+
+  if (!isUnchanged && parsed <= now) {
+    return { ok: false, error: "Datum akce musí být v budoucnosti." };
+  }
+
+  return { ok: true, parsed };
+}
+
 function parsePriceAmount(
   priceType: PriceType,
   raw: string,
@@ -163,13 +197,13 @@ export function validateListingForm(
     }
 
     if (!locationText) {
-      return { ok: false, error: "Vyber lokalitu z našeptávače nebo použij GPS." };
+      return { ok: false, error: "Zadej a potvrď obec z našeptávače." };
     }
 
     if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
       return {
         ok: false,
-        error: "Vyber obec z našeptávače nebo použij GPS — souřadnice chybí.",
+        error: "Vyber obec z našeptávače — bez potvrzené lokality inzerát neuložíme.",
       };
     }
 
@@ -177,27 +211,12 @@ export function validateListingForm(
     let eventDate: string | null = null;
 
     if (categoryType === "udalost") {
-      const rawEvent = String(form.get("eventDate") ?? "").trim();
-      if (!rawEvent) {
-        return { ok: false, error: "Zadej datum a čas akce." };
+      const rawEvent = String(form.get("eventDate") ?? "");
+      const eventValidation = validateFutureEventDate(rawEvent, options);
+      if (!eventValidation.ok) {
+        return { ok: false, error: eventValidation.error };
       }
-      const parsed = new Date(rawEvent);
-      if (Number.isNaN(parsed.getTime())) {
-        return { ok: false, error: "Neplatné datum akce." };
-      }
-
-      const existing = options?.existingEventDate
-        ? new Date(options.existingEventDate)
-        : null;
-      const isUnchanged =
-        existing != null &&
-        !Number.isNaN(existing.getTime()) &&
-        parsed.getTime() === existing.getTime();
-
-      if (!isUnchanged && parsed <= new Date()) {
-        return { ok: false, error: "Datum akce musí být v budoucnosti." };
-      }
-      eventDate = parsed.toISOString();
+      eventDate = eventValidation.parsed.toISOString();
     } else {
       listingDurationDays = Number.parseInt(
         String(form.get("listingDurationDays") ?? LISTING_DURATION_DEFAULT_DAYS),

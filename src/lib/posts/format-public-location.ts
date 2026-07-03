@@ -19,3 +19,20 @@ export function formatPublicListingLocation(locationText: string): string {
   if (!tail) return street;
   return `${street}, ${tail}`;
 }
+
+/** Kompaktní štítek do headeru — typicky jen město/obec, bez ulice. */
+export function formatHeaderLocation(locationText: string): string {
+  const formatted = formatPublicListingLocation(locationText);
+  if (!formatted) return formatted;
+
+  const parts = formatted
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) {
+    return parts[parts.length - 1]!.replace(/\s*-\s*město$/i, "").trim();
+  }
+
+  return formatted.replace(/\s*-\s*město$/i, "").trim();
+}

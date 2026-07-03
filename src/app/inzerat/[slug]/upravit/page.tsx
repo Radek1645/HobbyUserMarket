@@ -1,5 +1,6 @@
 import { CreateListingForm } from "@/components/listing/CreateListingForm";
 import { BackHomeLink } from "@/components/navigation/BackHomeLink";
+import { BackLink } from "@/components/navigation/BackLink";
 import { getListingForEdit } from "@/lib/posts/get-listing-for-edit";
 import {
   getListingEditPath,
@@ -8,7 +9,6 @@ import {
 import { postToListingFormInitialValues } from "@/lib/posts/listing-form";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 type PageProps = {
@@ -59,14 +59,14 @@ export default async function EditListingPage({ params }: PageProps) {
   return (
     <div className="px-4 py-8 sm:px-6">
       <div className="mb-6">
-        <BackHomeLink />
+        <div className="flex flex-wrap items-center gap-2">
+          <BackHomeLink />
 
-        <Link
-          href={getListingPath(slug)}
-          className="mt-2 inline-block text-sm text-gray-500 hover:text-gray-800"
-        >
-          ← Zpět na detail
-        </Link>
+          <BackLink
+            href={getListingPath(slug)}
+            label="Zpět na detail inzerátu"
+          />
+        </div>
 
         <h1 className="mt-4 text-2xl font-semibold text-gray-900">
           Upravit inzerát

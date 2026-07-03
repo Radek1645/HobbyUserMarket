@@ -7,15 +7,22 @@ import { formatListingPrice } from "@/lib/posts/format-listing-price";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingPath } from "@/lib/posts/listing-path";
 import type { PublicListingPreview } from "@/types/post";
+import Image from "next/image";
 import Link from "next/link";
 
 type ListingCardProps = {
   listing: PublicListingPreview;
   /** Homepage — větší fotka, méně textu */
   imageFirst?: boolean;
+  /** První karty na homepage — rychlejší LCP */
+  priority?: boolean;
 };
 
-export function ListingCard({ listing, imageFirst = false }: ListingCardProps) {
+export function ListingCard({
+  listing,
+  imageFirst = false,
+  priority = false,
+}: ListingCardProps) {
   const categoryLabel = getCategoryLabel(listing.category_type);
   const subcategory = getSubcategoryLabel(
     listing.category_type,
@@ -46,11 +53,13 @@ export function ListingCard({ listing, imageFirst = false }: ListingCardProps) {
       >
         <div className="relative aspect-[4/5] bg-gray-100">
           {listing.main_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={listing.main_image_url}
               alt=""
-              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+              fill
+              sizes="(max-width: 640px) 50vw, 33vw"
+              priority={priority}
+              className="object-cover transition duration-300 group-hover:scale-[1.02]"
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-1 text-gray-400">
@@ -97,13 +106,14 @@ export function ListingCard({ listing, imageFirst = false }: ListingCardProps) {
       })}
       className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:border-gray-300 hover:shadow-sm"
     >
-      <div className="flex aspect-[16/10] items-center justify-center bg-gray-100 text-gray-400">
+      <div className="relative flex aspect-[16/10] items-center justify-center bg-gray-100 text-gray-400">
         {listing.main_image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={listing.main_image_url}
             alt=""
-            className="h-full w-full object-cover"
+            fill
+            sizes="(max-width: 640px) 100vw, 320px"
+            className="object-cover"
           />
         ) : (
           <span className="text-xs">Bez fotky</span>

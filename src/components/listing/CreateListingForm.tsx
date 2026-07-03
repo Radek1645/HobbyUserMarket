@@ -2,7 +2,7 @@
 
 import { createListing, updateListing, type CreateListingState, type UpdateListingState } from "@/app/actions/posts";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
-import { MODERATION_ENABLED } from "@/config/moderation";
+import { MODERATION_ENABLED, MODERATION_MAX_QUESTIONS } from "@/config/moderation";
 import {
   LISTING_DURATION_DEFAULT_DAYS,
   LISTING_DURATION_MAX_DAYS,
@@ -12,19 +12,29 @@ import {
   LISTING_DESCRIPTION_MIN_LENGTH,
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
-import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getSubcategoryLabel } from "@/config/categories";
+import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getConditionLabel, getPriceTypeLabel, getSubcategoryLabel } from "@/config/categories";
 import {
   computeListingExpiresAt,
   getListingExpiryWarning,
   parseMentionedDatesFromText,
 } from "@/lib/posts/expiry";
 import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
+import { stripContactInfo } from "@/lib/moderation/strip-contacts";
+import { appendQuestionAnswersToDescription } from "@/lib/moderation/append-question-answers";
+import {
+  ModerationPreviewDialog,
+  type ModerationPreviewState,
+} from "@/components/moderation/ModerationPreviewDialog";
 import {
   ModerationRejectedDialog,
   moderationFailureToRejection,
   type ModerationRejectionState,
 } from "@/components/moderation/ModerationRejectedDialog";
-import type { ListingFormInitialValues } from "@/lib/posts/listing-form";
+import {
+  dateToDatetimeLocalValue,
+  type ListingFormInitialValues,
+} from "@/lib/posts/listing-form";
+import { validateFutureEventDate } from "@/lib/posts/validation";
 import { CONTACT_PHONE_MAX_LENGTH, CONTACT_PHONE_PLACEHOLDER } from "@/lib/posts/contact-phone";
 import { formatEmailPreviewForForm } from "@/lib/posts/contact-display";
 import { parsePriceInput } from "@/lib/posts/price-input";
@@ -34,7 +44,7 @@ import {
 } from "@/components/listing/ListingImageUpload";
 import { LocationInput } from "@/components/listing/LocationInput";
 import { PriceAmountInput } from "@/components/listing/PriceAmountInput";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 import {
   useActionState,
@@ -98,6 +108,10 @@ export function CreateListingForm({
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [moderationRejection, setModerationRejection] =
     useState<ModerationRejectionState | null>(null);
+  const [moderationPreview, setModerationPreview] =
+    useState<ModerationPreviewState | null>(null);
+  const pendingPublishFormRef = useRef<HTMLFormElement | null>(null);
+  const [isCheckingAi, setIsCheckingAi] = useState(false);
   const [step, setStep] = useState(isEdit ? 2 : 1);
 
   const [categoryType, setCategoryType] = useState<CategoryType>(
@@ -205,11 +219,26 @@ export function CreateListingForm({
     !needsPriceAmount ||
     (parsedPriceAmount != null &&
       parsedPriceAmount >= (priceType === "negotiable" ? 1 : 0));
+  const eventDateValidation = useMemo(() => {
+    if (!isEvent) return { ok: true as const };
+    return validateFutureEventDate(eventDate, {
+      existingEventDate: isEdit ? initialValues?.eventDate : undefined,
+    });
+  }, [eventDate, initialValues?.eventDate, isEdit, isEvent]);
+  const isEventDateValid = eventDateValidation.ok;
+  const eventDateError = eventDateValidation.ok
+    ? null
+    : eventDateValidation.error;
+  const eventDateMin = useMemo(
+    () => (mode === "create" ? dateToDatetimeLocalValue(new Date()) : undefined),
+    [mode],
+  );
   const canPublish =
     hasLocation &&
     isTitleValid &&
     isDescriptionValid &&
-    isPriceValid;
+    isPriceValid &&
+    isEventDateValid;
 
   function handleCategoryChange(type: CategoryType) {
     setCategoryType(type);
@@ -223,19 +252,83 @@ export function CreateListingForm({
     return Boolean(subcategorySlug);
   }
 
+  function publishListing(
+    form: HTMLFormElement,
+    titleValue: string,
+    descriptionValue: string,
+  ) {
+    const formData = new FormData(form);
+    formData.set("title", titleValue);
+    formData.set("description", descriptionValue);
+    setTitle(titleValue);
+    setDescription(descriptionValue);
+    imageUploadRef.current?.appendToFormData(formData);
+
+    startModerationTransition(() => {
+      boundAction(formData);
+    });
+  }
+
+  function handlePreviewClose() {
+    if (pending || isModerating) return;
+    setModerationPreview(null);
+    pendingPublishFormRef.current = null;
+  }
+
+  function handlePublishOriginalFromPreview() {
+    const form = pendingPublishFormRef.current;
+    const preview = moderationPreview;
+    if (!form || !preview) return;
+
+    publishListing(
+      form,
+      preview.originalTitle,
+      stripContactInfo(preview.originalDescription),
+    );
+    setModerationPreview(null);
+    pendingPublishFormRef.current = null;
+  }
+
+  function handlePublishAiFromPreview(payload: {
+    title: string;
+    description: string;
+    questionAnswers: Record<string, string>;
+  }) {
+    const form = pendingPublishFormRef.current;
+    const preview = moderationPreview;
+    if (!form || !preview) return;
+
+    const finalDescription = appendQuestionAnswersToDescription(
+      payload.description,
+      preview.questions.slice(0, MODERATION_MAX_QUESTIONS),
+      payload.questionAnswers,
+    );
+
+    publishListing(form, payload.title, finalDescription);
+    setModerationPreview(null);
+    pendingPublishFormRef.current = null;
+  }
+
   async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setModerationError(null);
     setModerationRejection(null);
+    setModerationPreview(null);
+
+    if (isEvent && !isEventDateValid) {
+      return;
+    }
 
     const form = event.currentTarget;
-    const formData = new FormData(form);
+    pendingPublishFormRef.current = form;
 
     let moderationImages;
     try {
+      setIsCheckingAi(true);
       moderationImages =
         (await imageUploadRef.current?.getModerationImages()) ?? undefined;
     } catch (imagePrepError) {
+      setIsCheckingAi(false);
       setModerationError(
         imagePrepError instanceof Error
           ? imagePrepError.message
@@ -248,18 +341,34 @@ export function CreateListingForm({
       return;
     }
 
-    const moderation = await runListingModeration({
-      intent: isEdit ? "update" : "create",
-      title: titleTrimmed,
-      description: descriptionTrimmed,
-      categoryType,
-      subcategorySlug,
-      initialValues: isEdit ? initialValues : undefined,
-      imagesChanged: isEdit
-        ? (imageUploadRef.current?.hasImageChanges() ?? false)
-        : false,
-      images: moderationImages,
-    });
+    let moderation;
+    try {
+      moderation = await runListingModeration({
+        intent: isEdit ? "update" : "create",
+        title: titleTrimmed,
+        description: descriptionTrimmed,
+        categoryType,
+        subcategorySlug,
+        conditionLabel,
+        conditionLabelText: getConditionLabel(categoryType, conditionLabel),
+        conditionFieldLabel: getConditionFieldLabel(categoryType),
+        eventDate: isEvent && eventDate ? eventDate : undefined,
+        priceType,
+        priceTypeLabel: getPriceTypeLabel(categoryType, priceType),
+        priceAmount:
+          parsedPriceAmount != null &&
+          (priceType === "fixed" || priceType === "negotiable")
+            ? parsedPriceAmount
+            : undefined,
+        initialValues: isEdit ? initialValues : undefined,
+        imagesChanged: isEdit
+          ? (imageUploadRef.current?.hasImageChanges() ?? false)
+          : false,
+        images: moderationImages,
+      });
+    } finally {
+      setIsCheckingAi(false);
+    }
 
     if (!moderation.ok) {
       const rejection = moderationFailureToRejection(moderation);
@@ -278,24 +387,26 @@ export function CreateListingForm({
       return;
     }
 
-    if (moderation.cleanedTitle !== titleTrimmed) {
-      formData.set("title", moderation.cleanedTitle);
-      setTitle(moderation.cleanedTitle);
+    if (moderation.skipped || !MODERATION_ENABLED) {
+      publishListing(
+        form,
+        moderation.cleanedTitle,
+        moderation.cleanedDescription,
+      );
+      pendingPublishFormRef.current = null;
+      return;
     }
 
-    if (moderation.cleanedDescription !== descriptionTrimmed) {
-      formData.set("description", moderation.cleanedDescription);
-      setDescription(moderation.cleanedDescription);
-    }
-
-    imageUploadRef.current?.appendToFormData(formData);
-
-    startModerationTransition(() => {
-      boundAction(formData);
+    setModerationPreview({
+      originalTitle: titleTrimmed,
+      originalDescription: descriptionTrimmed,
+      aiTitle: moderation.cleanedTitle ?? titleTrimmed,
+      aiDescription: moderation.cleanedDescription ?? descriptionTrimmed,
+      questions: moderation.questions ?? [],
     });
   }
 
-  const isSaving = pending || isModerating;
+  const isSaving = pending || isModerating || isCheckingAi;
 
   return (
     <>
@@ -303,6 +414,43 @@ export function CreateListingForm({
         rejection={moderationRejection}
         onClose={() => setModerationRejection(null)}
       />
+
+      <ModerationPreviewDialog
+        preview={moderationPreview}
+        publishing={pending || isModerating}
+        onClose={handlePreviewClose}
+        onPublishAi={handlePublishAiFromPreview}
+        onPublishOriginal={handlePublishOriginalFromPreview}
+      />
+
+      {isCheckingAi ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          role="presentation"
+        >
+          <div
+            className="absolute inset-0 bg-gray-900/50 backdrop-blur-[1px]"
+            aria-hidden
+          />
+          <div
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            className="relative w-full max-w-sm rounded-2xl border border-neutral-200 bg-white px-6 py-8 text-center shadow-xl"
+          >
+            <Loader2
+              className="mx-auto h-10 w-10 animate-spin text-blue-700"
+              aria-hidden
+            />
+            <p className="mt-4 text-base font-semibold text-neutral-900">
+              Probíhá AI kontrola inzerátu
+            </p>
+            <p className="mt-2 text-sm text-neutral-600">
+              Může to trvat i 15 sekund.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <form
         onSubmit={handleFormSubmit}
@@ -541,11 +689,16 @@ export function CreateListingForm({
                 id="eventDate"
                 type="datetime-local"
                 required
+                min={eventDateMin}
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
                 className={inputClass}
+                aria-invalid={eventDateError ? true : undefined}
               />
-              {expiresPreview ? (
+              {eventDateError ? (
+                <p className="mt-1 text-sm text-red-600">{eventDateError}</p>
+              ) : null}
+              {expiresPreview && !eventDateError ? (
                 <p className={hintClass}>
                   Inzerát bude viditelný do {expiresPreview} (den po akci).
                 </p>
@@ -622,17 +775,6 @@ export function CreateListingForm({
             labelClass={labelClass}
           />
 
-          {isEdit && locationText.trim().length > 0 && !hasLocation ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              <p className="font-medium">Lokalitu je potřeba znovu potvrdit</p>
-              <p className="mt-1">
-                Vyber místo z našeptávače — vždy položku s{" "}
-                <strong>městem</strong> (např. „Nové Sady, Brno“), nebo použij
-                GPS.
-              </p>
-            </div>
-          ) : null}
-
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="priceType" className={labelClass}>
@@ -657,7 +799,11 @@ export function CreateListingForm({
                 id="priceAmount"
                 label={
                   <>
-                    {isJob ? "Mzda (Kč)" : "Cena (Kč)"}{" "}
+                    {isJob
+                      ? "Mzda (Kč)"
+                      : isEvent
+                        ? "Vstupné (Kč)"
+                        : "Cena (Kč)"}{" "}
                     <span className="text-red-600">*</span>
                   </>
                 }
@@ -806,7 +952,7 @@ export function CreateListingForm({
 
           <p className={hintClass}>
             {MODERATION_ENABLED
-              ? "Před uložením proběhne AI kontrola obsahu (drogy, nelegální věci…)."
+              ? "Před publikací proběhne AI kontrola — uvidíš náhled a můžeš zvolit, zda AI text použiješ."
               : "AI kontrola obsahu bude brzy — teď se inzerát uloží rovnou."}
           </p>
 
@@ -845,18 +991,27 @@ export function CreateListingForm({
               disabled={isSaving || !canPublish}
               title={
                 !canPublish
-                  ? "Vyplň název, popis a vyber lokalitu z našeptávače nebo GPS"
+                  ? isEvent && eventDateError
+                    ? eventDateError
+                    : "Vyplň název, popis a potvrď obec z našeptávače"
                   : undefined
               }
-              className={`flex flex-1 ${listingFormPrimaryButtonClass}`}
+              className={`flex flex-1 items-center justify-center gap-2 ${listingFormPrimaryButtonClass}`}
             >
-              {isSaving
-                ? isModerating
-                  ? "Kontroluji…"
-                  : "Ukládám…"
-                : isEdit
-                  ? "Uložit změny"
-                  : "Publikovat inzerát"}
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  {isCheckingAi
+                    ? "AI kontrola…"
+                    : isModerating || pending
+                      ? "Ukládám…"
+                      : "Pracuji…"}
+                </>
+              ) : isEdit ? (
+                "Uložit změny"
+              ) : (
+                "Publikovat inzerát"
+              )}
             </button>
           </div>
         </div>

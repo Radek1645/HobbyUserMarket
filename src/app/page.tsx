@@ -1,27 +1,26 @@
 import { HomeBrowse } from "@/components/home/HomeBrowse";
-import { getCurrentUser } from "@/lib/auth/get-user";
-import { Suspense } from "react";
+import { parseHomeBrowseCategory } from "@/config/home-themes";
+import { fetchHomeRecentListings } from "@/lib/posts/get-home-listings";
+import { isSearchQueryValid, normalizeSearchQuery } from "@/lib/posts/search-query";
 
-function HomeFallback() {
-  return (
-    <div className="px-4 py-8 sm:px-6">
-      <div className="h-40 animate-pulse rounded-2xl bg-gray-100" />
-      <div className="mt-6 h-10 animate-pulse rounded-full bg-gray-100" />
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-64 animate-pulse rounded-2xl bg-gray-100" />
-        ))}
-      </div>
-    </div>
-  );
-}
+type HomePageProps = {
+  searchParams: Promise<{ kategorie?: string; q?: string }>;
+};
 
-export default async function Home() {
-  const user = await getCurrentUser();
+export default async function Home({ searchParams }: HomePageProps) {
+  const params = await searchParams;
+  const category = parseHomeBrowseCategory(params.kategorie ?? null);
+  const searchQuery = normalizeSearchQuery(params.q ?? "");
+
+  const initialListings =
+    searchQuery && isSearchQueryValid(searchQuery)
+      ? null
+      : await fetchHomeRecentListings(category);
 
   return (
-    <Suspense fallback={<HomeFallback />}>
-      <HomeBrowse user={user} />
-    </Suspense>
+    <HomeBrowse
+      initialListings={initialListings?.listings ?? null}
+      initialListingsCategory={initialListings?.category ?? null}
+    />
   );
 }

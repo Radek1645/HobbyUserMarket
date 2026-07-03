@@ -23,7 +23,7 @@ import {
   type ModerationImageSource,
 } from "@/lib/moderation/prepare-moderation-images";
 import type { ListingImagePreview } from "@/types/post";
-import { Star, X, Camera, ImageIcon } from "lucide-react";
+import { Camera, ImageIcon, Loader2, Star, X } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -365,7 +365,11 @@ export const ListingImageUpload = forwardRef<
       ) : null}
 
       {isCompressing ? (
-        <p className={listingFormHintClass} aria-live="polite">
+        <p
+          className={`${listingFormHintClass} flex items-center gap-2`}
+          aria-live="polite"
+        >
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           Optimalizuji fotku…
         </p>
       ) : null}

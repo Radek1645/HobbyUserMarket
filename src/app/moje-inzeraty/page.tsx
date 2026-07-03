@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
 import type { PostRow, PostStatus } from "@/types/post";
 import type { Metadata } from "next";
+import { BackHomeLink } from "@/components/navigation/BackHomeLink";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -48,12 +49,7 @@ export default async function MyListingsPage() {
 
   return (
     <div className="px-4 py-8 sm:px-6">
-      <Link
-        href="/"
-        className="text-sm text-gray-500 hover:text-gray-800"
-      >
-        ← Zpět na úvod
-      </Link>
+      <BackHomeLink />
 
       <h1 className="mt-4 text-2xl font-semibold text-gray-900">
         Správa inzerátů

@@ -50,6 +50,7 @@ const COMMON_PRICE_TYPES: CategoryConfig["priceTypes"] = [
 
 const UDALOST_PRICE_TYPES: CategoryConfig["priceTypes"] = [
   { value: "free_pickup", label: "Vstup zdarma" },
+  { value: "fixed", label: "Pevná cena (vstupné)" },
   { value: "offer", label: "Nabídni" },
 ];
 
@@ -79,20 +80,30 @@ export const CATEGORIES: CategoryConfig[] = [
       { slug: "potraviny-domaci", label: "Potraviny a domácí výrobky" },
       { slug: "kola-sport", label: "Kola a sport" },
       { slug: "nabytek-domacnost", label: "Nábytek a domácnost" },
-      { slug: "elektronika", label: "Elektronika" },
-      { slug: "auta-moto", label: "Auta a moto" },
+      {
+        slug: "elektronika",
+        label: "Elektronika",
+        aiPrompt:
+          "Úvod + Parametry (model, stav, výbava, baterie u mobilů…). Dotazník jen pokud chybí klíčové parametry.",
+      },
+      {
+        slug: "auta-moto",
+        label: "Auta a moto",
+        aiPrompt:
+          "Úvod + Parametry (rok, nájezd, motorizace, STK, výbava, stav). Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu. Dotazník jen na chybějící údaje.",
+      },
       {
         slug: "moda-obleceni",
         label: "Móda a oblečení",
         aiPrompt:
-          "Uživatel prodává oblečení, obuv nebo módní doplňky. Extrahuj: značka, velikost, střih, materiál, barva, určení (dámské/pánské/dětské/unisex), sezóna, stav (nové s visačkou, nošené minimálně). Chybí-li velikost nebo značka → 1–3 doplňující otázky.",
+          "Uživatel prodává módu. Pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj maximálně 2 stručné, lidské otázky (např. „Jaká je to velikost?“). Na volitelné parametry (materiál, sezóna) se ptej, jen pokud text neobsahuje téměř nic.",
       },
       { slug: "ostatni", label: "Ostatní" },
     ],
     conditionLabels: ZBOZI_CONDITIONS,
     priceTypes: COMMON_PRICE_TYPES,
     aiPrompt:
-      "Uživatel prodává zboží. Hledej vady, barvu, model, rok výroby. U stavu poškozené/na díly: rozsah poškození, vhodnost k opravě nebo rozebrání. Chybějící data → doplňující otázky.",
+      "Analyzuj nabízené zboží. cleanedDescription: úvod (co prodáváš + cena v textu) a sekce Parametry s odrážkami (nájezd, rozměry, materiál, výbava, stav…). Ve formuláři dostaneš stav — u „Poškozené / na díly“ bez rozsahu vady se ptej. Doplňující otázky jen na chybějící zásadní parametry. Na cenu se neptej, pokud je ve formuláři.",
   },
   {
     type: "sluzby",
@@ -106,7 +117,7 @@ export const CATEGORIES: CategoryConfig[] = [
     conditionLabels: SLUZBY_CONDITIONS,
     priceTypes: COMMON_PRICE_TYPES,
     aiPrompt:
-      "Uživatel nabízí službu. Generuj 1–3 otázky: dojezd, materiál v ceně, rozsah práce.",
+      "Uživatel nabízí službu. Pokud v textu chybí lokalita/dojezd (kde službu poskytuje) nebo informace o materiálu (zda je v ceně), zeptej se na to jednou či dvěma přátelskými otázkami. Pokud je text dostatečně jasný, neptej se na nic.",
   },
   {
     type: "udalost",
@@ -124,7 +135,7 @@ export const CATEGORIES: CategoryConfig[] = [
     conditionFieldLabel: "Opakování",
     priceTypes: UDALOST_PRICE_TYPES,
     aiPrompt:
-      "Uživatel nabízí událost. Rozliš jednorázovou vs. pravidelnou akci. U pravidelných akcí extrahuj frekvenci (např. každý čtvrtek). Vždy: datum nejbližšího konání, čas, lokalita, kapacita, instrukce k přihlášení.",
+      "Analyzuj akci. Ve formuláři může být datum konání — na to se znovu neptej. Kritické parametry jsou: DATUM (pokud chybí ve formuláři i v textu), ČAS a LOKALITA. Pokud některý chybí, vygeneruj cílené otázky. U opakovaných akcí chtěj upřesnit frekvenci (např. „Které dny v týdnu akce platí?“).",
   },
   {
     type: "nemovitost",
@@ -141,7 +152,7 @@ export const CATEGORIES: CategoryConfig[] = [
     conditionFieldLabel: "Typ transakce",
     priceTypes: NEMOVITOST_PRICE_TYPES,
     aiPrompt:
-      "Uživatel nabízí nemovitost k prodeji nebo pronájmu. Extrahuj z textu klíčové parametry: dispozice (např. 2+kk, 3+1), užitná plocha v m², patro, přítomnost balkónu/sklepa/výtahu, výši kauce a poplatků za energie (u pronájmu), stav objektu (po rekonstrukci, novostavba, původní stav) a parkování. Pokud data chybí, vygeneruj 1–3 cílené otázky do sousedského AI dotazníku.",
+      "Uživatel nabízí nemovitost. Skenuj text a fotky na: dispozice (např. 2+kk), plocha v m² a poplatky/kauce (u pronájmu). Pouze pokud tyto KRITICKÉ informace zcela chybí, vytvoř max 3 otázky. Na detaily typu patro, výtah nebo parkování se ptej, jen když je původní popis extrémně stručný.",
   },
   {
     type: "prace",
@@ -159,7 +170,7 @@ export const CATEGORIES: CategoryConfig[] = [
     conditionFieldLabel: "Typ úvazku",
     priceTypes: PRACE_PRICE_TYPES,
     aiPrompt:
-      "Uživatel hledá pracovníka nebo brigádníka. Rozliš typ úvazku (jednorázový úkol, dlouhodobá práce, záskok). Extrahuj: výši odměny (→ price_amount), časový rámec a termín nástupu, požadavky (věk, praxe, dovednosti). Chybějící klíčová data → 1–3 cílené otázky. E-maily a telefony v textu nahraď [SKRYTO – použij chráněné pole].",
+      "Uživatel nabízí práci/brigádu. Zaměř se na: termín nástupu, požadavky na pracovníka a odměnu. Chybí-li tyto informace, zeptej se na ně. NEPOKOUŠEJ SE v tomto kroku upravovat nebo cenzurovat telefonní čísla a e-maily, to řeší systém jinde.",
   },
 ];
 

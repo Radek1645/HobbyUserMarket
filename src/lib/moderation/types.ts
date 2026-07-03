@@ -1,4 +1,4 @@
-import type { CategoryType } from "@/types/post";
+import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
 
 export type ModerationIntent = "create" | "update";
 
@@ -10,6 +10,20 @@ export type ModerateListingRequest = {
   description: string;
   categoryType: CategoryType;
   subcategorySlug: string;
+  /** Hodnota z formuláře (stav / typ úvazku / opakování akce…). */
+  conditionLabel?: ConditionLabel;
+  /** Lidsky čitelný popisek ke conditionLabel pro AI. */
+  conditionLabelText?: string;
+  /** Název pole ve formuláři (Stav, Opakování, Typ úvazku…). */
+  conditionFieldLabel?: string;
+  /** U událostí — datetime z formuláře (ISO nebo datetime-local). */
+  eventDate?: string;
+  /** Typ ceny z formuláře — AI se na cenu znovu neptá, pokud je pevná/orientační. */
+  priceType?: PriceType;
+  /** Lidsky čitelný popisek typu ceny (Pevná cena, Dohodou…). */
+  priceTypeLabel?: string;
+  /** Částka v Kč z formuláře (u fixed / negotiable). */
+  priceAmount?: number;
   /** Všechny nahrané fotky (max. 6) — bezpečnostní filtr. */
   imagesBase64?: string[];
   /** Index hlavní fotky v `imagesBase64` — cross-validace textu a hydratace. */
@@ -41,6 +55,13 @@ export type ListingModerationInput = {
   description: string;
   categoryType: CategoryType;
   subcategorySlug: string;
+  conditionLabel?: ConditionLabel;
+  conditionLabelText?: string;
+  conditionFieldLabel?: string;
+  eventDate?: string;
+  priceType?: PriceType;
+  priceTypeLabel?: string;
+  priceAmount?: number;
   images?: {
     imagesBase64: string[];
     mainImageIndex: number;

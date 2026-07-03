@@ -2,11 +2,17 @@
 
 import {
   formatPublicAreaLocation,
+  MapyApiError,
   reverseGeocodeLocation,
 } from "@/lib/mapy/client";
 import {
+  clearLocationPromptDismissed,
   clearVisitorLocation,
+  loadLocationPromptDismissed,
+  loadSearchByLocation,
   loadVisitorLocation,
+  saveLocationPromptDismissed,
+  saveSearchByLocation,
   saveVisitorLocation,
   type VisitorLocation,
 } from "@/lib/posts/visitor-location";
@@ -32,15 +38,20 @@ type PickerValue = {
 
 type VisitorLocationContextValue = {
   location: VisitorLocation | null;
+  locationEnabled: boolean;
   ready: boolean;
   panelOpen: boolean;
+  editingLocation: boolean;
   pickerValue: PickerValue;
   setPickerValue: (value: PickerValue) => void;
   panelError: string | null;
+  gpsLoading: boolean;
   togglePanel: () => void;
   closePanel: () => void;
   applyPickerLocation: () => void;
+  applyGpsLocation: () => void;
   beginChangeLocation: () => void;
+  optOutLocation: () => void;
 };
 
 const VisitorLocationContext = createContext<VisitorLocationContextValue | null>(
@@ -59,24 +70,48 @@ export function VisitorLocationProvider({
   children: React.ReactNode;
 }) {
   const [location, setLocation] = useState<VisitorLocation | null>(null);
+  const [locationEnabled, setLocationEnabled] = useState(true);
   const [ready, setReady] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(false);
   const [pickerValue, setPickerValue] = useState<PickerValue>(EMPTY_PICKER);
   const [panelError, setPanelError] = useState<string | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const closePanel = useCallback(() => {
     setPanelOpen(false);
+    setEditingLocation(false);
     setPanelError(null);
+    saveLocationPromptDismissed();
   }, []);
 
   const openPanel = useCallback(() => {
     setPanelOpen(true);
+    setEditingLocation(true);
     setPanelError(null);
   }, []);
 
   const togglePanel = useCallback(() => {
-    setPanelOpen((open) => !open);
+    setPanelOpen((open) => {
+      const next = !open;
+      if (next) {
+        setEditingLocation(location == null || !locationEnabled);
+      }
+      setPanelError(null);
+      return next;
+    });
+  }, [location, locationEnabled]);
+
+  const persistLocation = useCallback((next: VisitorLocation) => {
+    saveSearchByLocation(true);
+    clearLocationPromptDismissed();
+    saveVisitorLocation(next);
+    setLocation(next);
+    setLocationEnabled(true);
     setPanelError(null);
+    setEditingLocation(false);
+    setPanelOpen(false);
+    notifyVisitorLocationChanged();
   }, []);
 
   const applyPickerLocation = useCallback(() => {
@@ -85,7 +120,7 @@ export function VisitorLocationProvider({
       pickerValue.longitude == null ||
       !pickerValue.locationText.trim()
     ) {
-      setPanelError("Vyber obec z našeptávače nebo použij GPS.");
+      setPanelError("Vyber obec z našeptávače.");
       return;
     }
 
@@ -95,21 +130,80 @@ export function VisitorLocationProvider({
       longitude: pickerValue.longitude,
     };
 
-    saveVisitorLocation(next);
-    setLocation(next);
-    setPanelError(null);
-    setPanelOpen(false);
-    notifyVisitorLocationChanged();
-  }, [pickerValue]);
+    persistLocation(next);
+  }, [persistLocation, pickerValue]);
 
-  const beginChangeLocation = useCallback(() => {
+  const applyGpsLocation = useCallback(() => {
+    setPanelError(null);
+
+    if (!navigator.geolocation) {
+      setPanelError("Prohlížeč nepodporuje geolokaci.");
+      return;
+    }
+
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const selection = await reverseGeocodeLocation(
+            position.coords.latitude,
+            position.coords.longitude,
+            undefined,
+            { approximate: true },
+          );
+          persistLocation({
+            locationText: formatPublicAreaLocation(selection.locationText),
+            latitude: selection.latitude,
+            longitude: selection.longitude,
+          });
+        } catch (err) {
+          if (err instanceof MapyApiError) {
+            setPanelError(err.message);
+          } else {
+            persistLocation({
+              locationText: "Moje poloha",
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+          }
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => {
+        setPanelError("Polohu se nepodařilo získat. Povol GPS v prohlížeči.");
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: false, timeout: 12_000, maximumAge: 300_000 },
+    );
+  }, [persistLocation]);
+
+  const optOutLocation = useCallback(() => {
     clearVisitorLocation();
+    saveSearchByLocation(false);
+    saveLocationPromptDismissed();
     setLocation(null);
+    setLocationEnabled(false);
     setPickerValue(EMPTY_PICKER);
     setPanelError(null);
-    setPanelOpen(true);
+    setEditingLocation(false);
+    setPanelOpen(false);
     notifyVisitorLocationChanged();
   }, []);
+
+  const beginChangeLocation = useCallback(() => {
+    if (location) {
+      setPickerValue({
+        locationText: location.locationText,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
+    } else {
+      setPickerValue(EMPTY_PICKER);
+    }
+    setEditingLocation(true);
+    setPanelError(null);
+  }, [location]);
 
   useEffect(() => {
     function handleOpenRequest() {
@@ -123,6 +217,14 @@ export function VisitorLocationProvider({
   }, [openPanel]);
 
   useEffect(() => {
+    const searchEnabled = loadSearchByLocation();
+    setLocationEnabled(searchEnabled);
+
+    if (!searchEnabled) {
+      setReady(true);
+      return;
+    }
+
     const saved = loadVisitorLocation();
     if (saved) {
       setLocation(saved);
@@ -135,83 +237,47 @@ export function VisitorLocationProvider({
       return;
     }
 
-    if (!navigator.geolocation) {
-      setReady(true);
-      setPanelOpen(true);
-      return;
-    }
+    setReady(true);
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const selection = await reverseGeocodeLocation(
-            position.coords.latitude,
-            position.coords.longitude,
-            undefined,
-            { approximate: true },
-          );
-          const loc: VisitorLocation = {
-            locationText: selection.locationText,
-            latitude: selection.latitude,
-            longitude: selection.longitude,
-          };
-          saveVisitorLocation(loc);
-          setLocation(loc);
-          setPickerValue({
-            locationText: loc.locationText,
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-          });
-          notifyVisitorLocationChanged();
-        } catch {
-          const loc: VisitorLocation = {
-            locationText: "Moje poloha",
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          saveVisitorLocation(loc);
-          setLocation(loc);
-          setPickerValue({
-            locationText: loc.locationText,
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-          });
-          notifyVisitorLocationChanged();
-        } finally {
-          setReady(true);
-        }
-      },
-      () => {
-        setReady(true);
-        setPanelOpen(true);
-      },
-      { enableHighAccuracy: false, timeout: 12_000, maximumAge: 300_000 },
-    );
+    if (!loadLocationPromptDismissed()) {
+      setEditingLocation(true);
+      setPanelOpen(true);
+    }
   }, []);
 
   const value = useMemo(
     () => ({
       location,
+      locationEnabled,
       ready,
       panelOpen,
+      editingLocation,
       pickerValue,
       setPickerValue,
       panelError,
+      gpsLoading,
       togglePanel,
       closePanel,
       applyPickerLocation,
+      applyGpsLocation,
       beginChangeLocation,
+      optOutLocation,
     }),
     [
       location,
+      locationEnabled,
       ready,
       panelOpen,
+      editingLocation,
       pickerValue,
       panelError,
+      gpsLoading,
       togglePanel,
       closePanel,
       applyPickerLocation,
+      applyGpsLocation,
       beginChangeLocation,
+      optOutLocation,
     ],
   );
 

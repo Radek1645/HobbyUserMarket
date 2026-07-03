@@ -1,5 +1,5 @@
 import { MODERATION_REJECTION_UI } from "@/config/moderation";
-import Link from "next/link";
+import { BackHomeLink } from "@/components/navigation/BackHomeLink";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -22,12 +22,7 @@ export default function ListingTermsPage() {
         služby, drogy, zbraně ani jiné zakázané kategorie uvedené při zamítnutí
         inzerátu.
       </p>
-      <Link
-        href="/"
-        className="mt-6 inline-block text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
-      >
-        ← Zpět na úvod
-      </Link>
+      <BackHomeLink className="mt-6" />
     </div>
   );
 }

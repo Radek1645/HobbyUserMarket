@@ -1,12 +1,16 @@
 /**
- * Kopie pro Edge Function deploy.
- * Upravuj primárně: src/config/moderation/prohibited-topics.ts
- * Pak spusť: npm run sync:moderation
+ * Seznam zakázaného obsahu — hlavní soubor k úpravám.
+ * Při zapnutí AI moderace zkopíruj i do supabase/functions/_shared/ (deploy Edge Function).
  */
+
 export type ProhibitedTopic = {
+  /** Stabilní ID — nepřejmenovávej po nasazení (logy, AI odpovědi). */
   id: string;
+  /** Krátký název (UI, logy). */
   label: string;
+  /** Co přesně AI / moderace má zamítnout — piš konkrétně. */
   criteria: string;
+  /** Volitelně: budoucí rychlý lokální filtr před voláním AI. */
   keywords?: readonly string[];
 };
 
@@ -35,8 +39,7 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
   {
     id: "human_organs",
     label: "Lidské orgány a tkáně",
-    criteria:
-      "Prodej nebo nabídka lidských orgánů, krve mimo legální dárcovství, tkání.",
+    criteria: "Prodej nebo nabídka lidských orgánů, krve mimo legální dárcovství, tkání.",
   },
   {
     id: "stolen_goods",
@@ -89,8 +92,15 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
     criteria:
       "Organizace hazardních her bez licence, sázení mimo legální rámec.",
   },
-];
+] as const;
+
+export type ProhibitedTopicId = (typeof PROHIBITED_TOPICS)[number]["id"];
 
 export function getProhibitedTopic(id: string): ProhibitedTopic | undefined {
   return PROHIBITED_TOPICS.find((topic) => topic.id === id);
+}
+
+/** Shrnutí pro UI (patka dialogu, nápověda). */
+export function getProhibitedTopicsSummaryLabels(): string[] {
+  return PROHIBITED_TOPICS.map((topic) => topic.label);
 }

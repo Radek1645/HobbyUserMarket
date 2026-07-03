@@ -1,16 +1,10 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -29,7 +23,7 @@ export default async function RootLayout({
   return (
     <html lang="cs">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col bg-gray-50 text-gray-900 antialiased`}
+        className={`${geistSans.className} flex min-h-screen flex-col bg-gray-50 text-gray-900 antialiased`}
       >
         <AppShell user={user}>{children}</AppShell>
       </body>

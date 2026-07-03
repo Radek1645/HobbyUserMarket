@@ -27,15 +27,19 @@ export type ListingFormInitialValues = {
   contactPhone: string;
 };
 
+export function dateToDatetimeLocalValue(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export function toDatetimeLocalValue(iso: string | null): string {
   if (!iso) return "";
 
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
 
-  const pad = (value: number) => String(value).padStart(2, "0");
-
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return dateToDatetimeLocalValue(date);
 }
 
 export function postToListingFormInitialValues(

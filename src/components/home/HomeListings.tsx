@@ -35,21 +35,34 @@ type HomeListingsProps = {
   category: HomeBrowseCategory;
   theme: HomeTheme;
   searchQuery?: string;
+  initialListings?: PublicListingPreview[] | null;
+  initialListingsCategory?: HomeBrowseCategory | null;
 };
 
 export function HomeListings({
   category,
   theme,
   searchQuery = "",
+  initialListings = null,
+  initialListingsCategory = null,
 }: HomeListingsProps) {
-  const { location, ready: locationReady } = useVisitorLocationContext();
+  const hasInitialForCategory =
+    initialListings != null &&
+    initialListingsCategory != null &&
+    initialListingsCategory === category &&
+    !searchQuery;
+
+  const { location, locationEnabled, ready: locationReady } = useVisitorLocationContext();
+  const activeLocation = locationEnabled ? location : null;
   const [filter, setFilter] = useState<HomeListingFilterState>(DEFAULT_FILTER);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [listings, setListings] = useState<PublicListingPreview[]>([]);
+  const [listings, setListings] = useState<PublicListingPreview[]>(
+    () => (hasInitialForCategory ? initialListings : []),
+  );
   const [fetchMode, setFetchMode] = useState<FetchMode>("recent");
   const [effectiveRadiusKm, setEffectiveRadiusKm] = useState<number | null>(null);
   const [nationwideFallback, setNationwideFallback] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !hasInitialForCategory);
   const [error, setError] = useState<string | null>(null);
 
   const fetchListings = useCallback(
@@ -57,8 +70,11 @@ export function HomeListings({
       loc: VisitorLocation | null,
       cat: HomeBrowseCategory,
       query: string,
+      options?: { silent?: boolean },
     ) => {
-      setLoading(true);
+      if (!options?.silent) {
+        setLoading(true);
+      }
       setError(null);
 
       const supabase = createClient();
@@ -174,13 +190,42 @@ export function HomeListings({
     }
 
     if (searchQuery && isSearchQueryValid(searchQuery)) {
-      void fetchListings(location, category, searchQuery);
+      void fetchListings(activeLocation, category, searchQuery);
       return;
     }
 
-    if (!locationReady) return;
-    void fetchListings(location, category, "");
-  }, [category, fetchListings, location, locationReady, searchQuery]);
+    if (!locationReady) {
+      if (hasInitialForCategory) {
+        setListings(initialListings);
+        setFetchMode("recent");
+        setEffectiveRadiusKm(null);
+        setNationwideFallback(false);
+        setLoading(false);
+        setError(null);
+      }
+      return;
+    }
+
+    if (!activeLocation && hasInitialForCategory) {
+      setListings(initialListings);
+      setFetchMode("recent");
+      setEffectiveRadiusKm(null);
+      setNationwideFallback(false);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    void fetchListings(activeLocation, category, "", { silent: hasInitialForCategory });
+  }, [
+    activeLocation,
+    category,
+    fetchListings,
+    hasInitialForCategory,
+    initialListings,
+    locationReady,
+    searchQuery,
+  ]);
 
   const filteredListings = useMemo(() => {
     const filtered = applyListingFilters(listings, filter, category);
@@ -194,8 +239,8 @@ export function HomeListings({
     ? searchValid
       ? `Výsledky pro „${searchQuery}"`
       : "Vyhledávání"
-    : location && fetchMode === "nearby"
-      ? `${theme.label} v okolí ${formatPublicAreaLocation(location.locationText)}`
+    : activeLocation && fetchMode === "nearby"
+      ? `${theme.label} v okolí ${formatPublicAreaLocation(activeLocation.locationText)}`
       : `${theme.label} — nejnovější`;
 
   const listingsSubtitle = (() => {
@@ -203,22 +248,24 @@ export function HomeListings({
       if (!searchValid) {
         return "Zadej alespoň 3 znaky pro fulltextové hledání";
       }
-      if (location) {
+      if (activeLocation) {
         return "Seřazeno podle relevance, vzdálenost doplňuje řazení";
       }
       return "Seřazeno podle relevance";
     }
-    if (location && fetchMode === "nearby" && effectiveRadiusKm != null) {
+    if (activeLocation && fetchMode === "nearby" && effectiveRadiusKm != null) {
       if (effectiveRadiusKm > SEARCH_RADIUS_KM) {
         return `V bezprostředním okolí málo inzerátů — zobrazujeme do ${effectiveRadiusKm} km od tebe`;
       }
       return `Do ${effectiveRadiusKm} km od tebe`;
     }
-    if (location && nationwideFallback) {
+    if (activeLocation && nationwideFallback) {
       return "Ve tvém okolí zatím nic není — nejnovější inzeráty z celé republiky";
     }
-    if (!location) {
-      return "Nastav polohu ikonou špendlíku v horní liště";
+    if (!activeLocation) {
+      return locationEnabled
+        ? "Nastav polohu ikonou špendlíku v horní liště"
+        : "Zobrazujeme nejnovější inzeráty bez filtrování podle polohy";
     }
     return "Nejnovější inzeráty";
   })();
@@ -248,15 +295,33 @@ export function HomeListings({
           onOpenChange={setFilterOpen}
           filter={filter}
           onFilterChange={setFilter}
-          hasLocation={Boolean(location)}
+          hasLocation={Boolean(activeLocation)}
         />
       </div>
 
-      {(!searchActive && !locationReady) || loading ? (
+      {loading && !hasInitialForCategory ? (
         <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           Načítám inzeráty…
         </div>
+      ) : null}
+
+      {(searchActive || locationReady || hasInitialForCategory) &&
+      filteredListings.length > 0 ? (
+        <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          {filteredListings.map((listing, index) => (
+            <li key={listing.id}>
+              <ListingCard listing={listing} imageFirst priority={index < 3} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {loading && hasInitialForCategory && activeLocation ? (
+        <p className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Aktualizuji podle polohy…
+        </p>
       ) : null}
 
       {error ? (
@@ -268,7 +333,10 @@ export function HomeListings({
         </p>
       ) : null}
 
-      {(searchActive || locationReady) && !loading && filteredListings.length === 0 && !error ? (
+      {(searchActive || locationReady || hasInitialForCategory) &&
+      !loading &&
+      filteredListings.length === 0 &&
+      !error ? (
         <p className="mt-8 rounded-2xl border border-dashed border-gray-200/80 bg-white/70 px-4 py-10 text-center text-sm text-gray-500 backdrop-blur-sm">
           {searchActive && searchValid
             ? `Pro „${searchQuery}" jsme nic nenašli. Zkus jiné slovo nebo kategorii.`
@@ -280,16 +348,6 @@ export function HomeListings({
                 ? `V okolí zatím nic není a v kategorii „${theme.label}“ není ani celostátní inzerce.`
                 : `V kategorii „${theme.label}“ zatím nic není.`}
         </p>
-      ) : null}
-
-      {(searchActive || locationReady) && !loading && filteredListings.length > 0 ? (
-        <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-          {filteredListings.map((listing) => (
-            <li key={listing.id}>
-              <ListingCard listing={listing} imageFirst />
-            </li>
-          ))}
-        </ul>
       ) : null}
     </section>
   );

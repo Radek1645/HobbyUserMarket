@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
 import type { AppUser, UserRole } from "@/types/auth";
+import { cache } from "react";
 
 type ProfileRow = {
   id: string;
@@ -33,7 +34,7 @@ function buildDisplayName(
   return nickname;
 }
 
-export async function getCurrentUser(): Promise<AppUser | null> {
+export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   const supabase = await createClient();
 
   const {
@@ -92,4 +93,4 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     displayName: buildDisplayName(profile.name, nickname, metadata),
     needsNicknameSetup: isPlaceholderNickname(nickname),
   };
-}
+});

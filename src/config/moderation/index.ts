@@ -4,6 +4,8 @@ export {
 export {
   LISTING_TERMS_PATH,
   MODERATION_DEFAULT_REJECTION_REASON,
+  MODERATION_GEMINI_QUOTA_ERROR,
+  MODERATION_PREVIEW_UI,
   MODERATION_RATE_LIMIT_MESSAGE,
   MODERATION_REJECTION_UI,
   MODERATION_TECHNICAL_ERROR,
@@ -17,12 +19,15 @@ export {
 } from "@/config/moderation/prohibited-topics";
 
 /** Volá Edge Function `moderate-listing` před uložením (create i edit). */
-export const MODERATION_ENABLED = false;
+export const MODERATION_ENABLED = true;
 
 /** Max. AI kontrol / hodinu / uživatel (PRD). */
-export const MODERATION_RATE_LIMIT_PER_HOUR = 5;
+export const MODERATION_RATE_LIMIT_PER_HOUR = 20;
 
 export const MODERATION_FUNCTION_NAME = "moderate-listing" as const;
+
+/** Max. doplňujících otázek v NEEDS_QUESTIONS (hard limit v parse-response). */
+export const MODERATION_MAX_QUESTIONS = 5;
 
 /** Nejdelší strana snímku posílaného do AI (bezpečnostní filtr všech fotek). */
 export const MODERATION_IMAGE_MAX_DIMENSION = 512;

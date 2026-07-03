@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
     CHECK (char_length(title) BETWEEN 1 AND 80),
 
   CONSTRAINT posts_description_length_check
-    CHECK (char_length(description) <= 1000),
+    CHECK (char_length(description) <= 2000),
 
   CONSTRAINT posts_subcategory_slug_not_empty
     CHECK (char_length(trim(subcategory_slug)) > 0),

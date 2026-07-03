@@ -1,7 +1,7 @@
 import { SetPasswordForm } from "@/components/auth/SetPasswordForm";
+import { BackLink } from "@/components/navigation/BackLink";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
@@ -32,11 +32,9 @@ export default async function SetPasswordPage() {
           <SetPasswordForm />
         </div>
 
-        <p className="mt-4 text-center text-sm text-gray-500">
-          <Link href="/login" className="underline-offset-2 hover:underline">
-            Zpět na přihlášení
-          </Link>
-        </p>
+        <div className="mt-4 flex justify-center">
+          <BackLink href="/login" label="Zpět na přihlášení" />
+        </div>
       </div>
     </div>
   );

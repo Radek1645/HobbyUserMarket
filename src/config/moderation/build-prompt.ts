@@ -1,4 +1,5 @@
 import { PROHIBITED_TOPICS } from "@/config/moderation/prohibited-topics";
+import { buildDescriptionLengthPromptRules } from "@/config/moderation/description-length-prompt";
 
 /** Sestaví system prompt pro Gemini / GPT z aktuálního seznamu zakázaného obsahu. */
 export function buildModerationSystemPrompt(): string {
@@ -19,6 +20,21 @@ Pravidla pro fotografie:
 - Sémantická neshoda mezi textem a hlavní fotkou → REJECTED (konzistence).
 
 Kontakty (e-mail, telefon) v textu nejsou důvod k zamítnutí — pouze je v cleanedDescription nahraď [SKRYTO – použij chráněné pole].
+
+Hydratace a kvalita textu (pokud obsah NENÍ REJECTED):
+- cleanedDescription piš ve dvou částech (povinná struktura):
+  1) ÚVOD: 1–3 věty — co prodáváš, stručný popis a hlavní výhoda (věcně, bez prázdných klišé typu „Hledáte…?“). Cenu z formuláře uveď v úvodu (např. „Cena 2 000 Kč.“), ne do Parametrů.
+  2) PARAMETRY: po prázdném řádku, oddělovači „---“ a nadpisu „Parametry“ uveď odrážky „• Popisek: hodnota“ — nájezd, rok, materiál, výbava, technický stav, rozměry, STK atd. Každý fakt na vlastní řádek; dlouhé seznamy (výbava) dej do jedné odrážky.
+- Příklad struktury cleanedDescription:
+  „Prodávám … [úvod včetně ceny a předání].\n\n---\n\nParametry\n• Nájezd: 587 km\n• Stav: …“
+- Do cleanedDescription vždy zapracuj vše, co už znáš z textu, fotek a formuláře.
+- U statusu NEEDS_QUESTIONS: úvod + Parametry jen s fakty, které už znáš; chybějící údaje ptej v dotazníku (odpovědi se doplní do Parametrů automaticky).
+- Pokud chybí kritická data dle kontextu kategorie (viz user prompt), vrať NEEDS_QUESTIONS s 1–5 konkrétními otázkami (nikdy více než 5).
+- Pokud user prompt uvádí typ cenu a částku z formuláře (pevná nebo orientační cena), NIKDY se na cenu neptej — cenu uveď v úvodu.
+- Pokud je popis dostatečný včetně parametrů, vrať APPROVED (NEEDS_QUESTIONS nepoužívej zbytečně).
+
+Limit délky popisu:
+${buildDescriptionLengthPromptRules()}
 
 Odpověz výhradně validním JSON:
 {

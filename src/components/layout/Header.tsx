@@ -4,11 +4,9 @@ import { signOut } from "@/app/actions/auth";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { HeaderLocationPanel } from "@/components/location/HeaderLocationPanel";
-import { useVisitorLocationContext } from "@/components/location/VisitorLocationProvider";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
-import { formatPublicAreaLocation } from "@/lib/mapy/client";
 import type { AppUser } from "@/types/auth";
-import { LogOut, MapPin, Menu, Plus, X, LayoutList } from "lucide-react";
+import { LogOut, Menu, Plus, X, LayoutList } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -18,11 +16,10 @@ type HeaderProps = {
 };
 
 const CREATE_LISTING_CLASS =
-  "flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-semibold text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-600/15 transition hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:px-6 sm:text-[0.9375rem]";
+  "flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 p-0 text-sm font-semibold text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-600/15 transition hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:h-11 sm:w-auto sm:px-4 sm:text-[0.9375rem] md:px-6";
 
 export function Header({ user }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { location, panelOpen, togglePanel } = useVisitorLocationContext();
   const menuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -64,8 +61,8 @@ export function Header({ user }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 overflow-x-clip border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="mx-auto flex h-14 max-w-5xl items-center gap-1.5 px-3 sm:gap-2 sm:px-4">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
           <AppLogo />
 
           <Suspense
@@ -78,7 +75,9 @@ export function Header({ user }: HeaderProps) {
           >
             <HeaderSearch />
           </Suspense>
+        </div>
 
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
           {user ? (
             <Link
               href="/inzerat/novy"
@@ -87,7 +86,7 @@ export function Header({ user }: HeaderProps) {
               className={CREATE_LISTING_CLASS}
             >
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2.5} />
-              <span className="hidden min-[420px]:inline">Vytvořit inzerát</span>
+              <span className="hidden min-[480px]:inline">Vytvořit inzerát</span>
             </Link>
           ) : (
             <Link
@@ -97,34 +96,11 @@ export function Header({ user }: HeaderProps) {
               className={CREATE_LISTING_CLASS}
             >
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2.5} />
-              <span className="hidden min-[420px]:inline">Vytvořit inzerát</span>
+              <span className="hidden min-[480px]:inline">Vytvořit inzerát</span>
             </Link>
           )}
 
-          <button
-            type="button"
-            {...gtmCtaProps(GTM_CTA.HEADER_LOCATION)}
-            aria-expanded={panelOpen}
-            aria-label={
-              location
-                ? `Poloha: ${formatPublicAreaLocation(location.locationText)}`
-                : "Nastavit polohu"
-            }
-            title={
-              location
-                ? formatPublicAreaLocation(location.locationText)
-                : "Nastavit polohu pro inzeráty v okolí"
-            }
-            onClick={togglePanel}
-            className={[
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition",
-              panelOpen || location
-                ? "border-emerald-600 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100",
-            ].join(" ")}
-          >
-            <MapPin className="h-4 w-4" />
-          </button>
+          <HeaderLocationPanel />
         </div>
 
         <div
@@ -237,7 +213,6 @@ export function Header({ user }: HeaderProps) {
           </nav>
         </div>
       </div>
-      <HeaderLocationPanel />
     </header>
   );
 }

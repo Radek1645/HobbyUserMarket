@@ -3,10 +3,12 @@
 import {
   MODERATION_DEFAULT_REJECTION_REASON,
   MODERATION_FUNCTION_NAME,
+  MODERATION_MAX_QUESTIONS,
   MODERATION_RATE_LIMIT_MESSAGE,
   MODERATION_RATE_LIMIT_PER_HOUR,
   MODERATION_TECHNICAL_ERROR,
 } from "@/config/moderation";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type {
   ListingModerationFailure,
@@ -35,7 +37,7 @@ function mapResponse(
       skipped: false,
       cleanedTitle: response.cleanedTitle ?? title,
       cleanedDescription: response.cleanedDescription ?? description,
-      questions: response.questions,
+      questions: response.questions?.slice(0, MODERATION_MAX_QUESTIONS),
     };
   }
 
@@ -51,11 +53,32 @@ function technicalFailure(message: string): ListingModerationFailure {
   return { ok: false, kind: "error", error: message };
 }
 
+async function readModerationResponseFromError(
+  error: unknown,
+): Promise<ModerateListingResponse | null> {
+  if (!(error instanceof FunctionsHttpError)) {
+    return null;
+  }
+
+  const response = error.context;
+  if (!(response instanceof Response)) {
+    return null;
+  }
+
+  try {
+    const body = (await response.clone().json()) as ModerateListingResponse;
+    return body?.status ? body : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Volá Supabase Edge Function — až po `supabase functions deploy`. */
 export async function invokeModerateListing(
   input: ListingModerationInput,
 ): Promise<ListingModerationSuccess | ListingModerationFailure> {
   const supabase = createClient();
+
   const { data, error } = await supabase.functions.invoke<ModerateListingResponse>(
     MODERATION_FUNCTION_NAME,
     {
@@ -65,6 +88,21 @@ export async function invokeModerateListing(
         description: input.description,
         categoryType: input.categoryType,
         subcategorySlug: input.subcategorySlug,
+        ...(input.conditionLabel
+          ? { conditionLabel: input.conditionLabel }
+          : {}),
+        ...(input.conditionLabelText
+          ? { conditionLabelText: input.conditionLabelText }
+          : {}),
+        ...(input.conditionFieldLabel
+          ? { conditionFieldLabel: input.conditionFieldLabel }
+          : {}),
+        ...(input.eventDate ? { eventDate: input.eventDate } : {}),
+        ...(input.priceType ? { priceType: input.priceType } : {}),
+        ...(input.priceTypeLabel
+          ? { priceTypeLabel: input.priceTypeLabel }
+          : {}),
+        ...(input.priceAmount != null ? { priceAmount: input.priceAmount } : {}),
         ...(input.images
           ? {
               imagesBase64: input.images.imagesBase64,
@@ -81,6 +119,11 @@ export async function invokeModerateListing(
       return technicalFailure(
         MODERATION_RATE_LIMIT_MESSAGE(MODERATION_RATE_LIMIT_PER_HOUR),
       );
+    }
+
+    const errorBody = await readModerationResponseFromError(error);
+    if (errorBody) {
+      return mapResponse(errorBody, input.title, input.description);
     }
 
     console.error("invokeModerateListing:", error);

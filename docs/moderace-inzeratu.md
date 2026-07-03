@@ -2,7 +2,7 @@
 
 Dokumentace k AI guardrailu podle PRD §5.4. Platí pro **založení** i **úpravu** inzerátu — oba flow sdílejí stejnou vrstvu.
 
-> **Stav:** AI moderace je **připravená, ale vypnutá** (`MODERATION_ENABLED = false`). Inzeráty se ukládají bez volání AI. Po zapnutí a deployi Edge Function se aktivuje plný flow včetně popupu při zamítnutí.
+> **Stav:** AI moderace je **zapnutá** (`MODERATION_ENABLED = true`). Vyžaduje deploy Edge Function `moderate-listing` a secret `GEMINI_API_KEY` v Supabase.
 
 ---
 
@@ -148,36 +148,80 @@ Klient připraví snímky v `src/lib/moderation/prepare-moderation-images.ts` (r
 
 ---
 
-## Zapnutí AI moderace (až budeš ready)
+## Zapnutí AI moderace
 
-1. Doplň volání Gemini/OpenAI do `supabase/functions/moderate-listing/index.ts` (prompt: `buildModerationSystemPrompt()` ze `_shared`).
-2. Nastav secret v Supabase: `GEMINI_API_KEY` (příp. `OPENAI_API_KEY`).
-3. Synchronizuj pravidla a deploy:
+**Pořadí je důležité** — nejdřív sync (vygeneruje `_shared`), pak deploy (přibalí čerstvý kód). Deploy před syncem = staré nebo prázdné prompty v cloudu.
+
+1. Nastav secret v Supabase: `GEMINI_API_KEY` (příp. `OPENAI_API_KEY`). Model: **`gemini-2.5-flash`** (default v kódu; override secretem `GEMINI_MODEL`).
+2. **Synchronizuj a deploy** (v tomto pořadí):
 
 ```bash
 npm run sync:moderation
 supabase functions deploy moderate-listing
 ```
 
-4. V `src/config/moderation/index.ts` nastav:
+3. Nasazení DB pojistky strip kontaktů (jednorázově, pokud ještě není):
 
-```typescript
-export const MODERATION_ENABLED = true;
+```bash
+# Supabase SQL Editor — celý soubor:
+# supabase/020_strip_contacts_in_posts.sql
 ```
 
-5. Ověř create i edit — při `REJECTED` se má zobrazit popup s odkazem na Podmínky inzerce.
+4. V `src/config/moderation/index.ts`: `MODERATION_ENABLED = true` (už zapnuto v repu).
+
+5. Ověř create i edit — při `REJECTED` popup, při schválení modal „AI Náhled & Doplnění“.
+
+> **Po změně `categories.ts` nebo `prohibited-topics.ts`:** znovu `npm run sync:moderation` → `supabase functions deploy moderate-listing`. Sync **po** deployi nedává smysl — cloud už běží se starým balíkem; oprava vyžaduje **nový** deploy hned po syncu.
+
+---
+
+## Strip kontaktů — tři vrstvy (včetně „Ignorovat AI“)
+
+| Vrstva | Kde | Účel |
+|--------|-----|------|
+| 1 | Edge Function (AI) | Čistka v `cleanedDescription` |
+| 2 | Server Action `createListing` / `updateListing` | `stripContactInfo()` v `buildListingPayload()` — vždy před INSERT/UPDATE |
+| 3 | PostgreSQL trigger `trg_posts_strip_contacts` | Pojistka proti obejití (Postman, upravený JS, přímý Supabase SDK) |
+
+Edge Function u kroku „Ignorovat AI“ **neúčinkuje** — kontakty usekne vrstva 2 a 3. Migrace: [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql).
+
+---
+
+## Odpovědi na AI dotazník (NEEDS_QUESTIONS)
+
+Odpovědi z modalu se **nepersistují do JSONB** — v DB není sloupec `metadata` / `ai_properties` u `posts`.
+
+Flow:
+1. AI vrátí `questions[]` v JSON odpovědi Edge Function.
+2. Uživatel volitelně vyplní pole v modalu.
+3. Při „Doplnit, upravit a publikovat“ klient zavolá `appendQuestionAnswersToDescription()` — odpovědi se **přilepí na konec sloupce `description`** jako prostý text (`Otázka: odpověď`).
+
+Je to záměrně jednoduché (humáč, ale funkční). Strukturované uložení otázek až v budoucnu (mimo v0.5).
 
 ---
 
 ## Sync pravidel do Edge Function
 
-Next.js a Supabase Edge Function nesdílí stejný import. Po úpravě `prohibited-topics.ts` spusť:
+Next.js a Supabase Edge Function nesdílí stejný import. Po úpravě `prohibited-topics.ts` nebo `categories.ts` (aiPrompt) spusť:
 
 ```bash
 npm run sync:moderation
 ```
 
-Zkopíruje `src/config/moderation/prohibited-topics.ts` → `supabase/functions/_shared/moderation/prohibited-topics.ts`.
+- Zkopíruje `prohibited-topics.ts` → `_shared/moderation/`
+- Vygeneruje `category-prompts.ts` z `categories.ts` (prompt **jen na serveru**, klient posílá pouze `categoryType` + `subcategorySlug`)
+
+---
+
+## UX — modální okno „AI Náhled & Doplnění“
+
+Po úspěšné AI kontrole (APPROVED / NEEDS_QUESTIONS) se zobrazí `ModerationPreviewDialog`:
+
+1. **Doplnit, upravit a publikovat** — editovatelný náhled AI textu + volitelné odpovědi na otázky
+2. **Ignorovat AI a publikovat původní** — původní název/popis (bezpečnostní filtr už proběhl), server-side strip kontaktů
+3. **Zrušit** — návrat do formuláře bez uložení
+
+Při `REJECTED` se zobrazí `ModerationRejectedDialog` (inzerát se neuloží).
 
 ---
 

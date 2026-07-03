@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-03 | [2026-07-03.md](./2026-07-03.md) — AI moderace, strukturovaný popis, limit 2000 znaků; **TODO další session:** Site Notice lišta (§11.4 PRD) |
 | 2026-06-29 (večer) | [2026-06-29-vecer.md](./2026-06-29-vecer.md) — fotky, komprese, galerie |
 | 2026-06-29 | [2026-06-29.md](./2026-06-29.md) — auth, homepage, slug URL |
 | 2026-06-27 | [2026-06-27.md](./2026-06-27.md) |

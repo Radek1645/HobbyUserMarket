@@ -5,7 +5,9 @@ import {
   getSubcategoryLabel,
 } from "@/config/categories";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
+import { ListingDescription } from "@/components/listing/ListingDescription";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
+import { BackLink } from "@/components/navigation/BackLink";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   getAdvertiserIcoDisplay,
@@ -125,13 +127,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   return (
     <article className="px-4 py-8 sm:px-6">
-      <Link
+      <BackLink
         href="/"
-        {...gtmCtaProps(GTM_CTA.DETAIL_BACK_HOME)}
-        className="text-sm text-gray-500 hover:text-gray-800"
-      >
-        ← Zpět
-      </Link>
+        label="Zpět"
+        gtmId={GTM_CTA.DETAIL_BACK_HOME}
+      />
 
       <header className="mt-4">
         <p className="text-sm text-gray-500">
@@ -160,7 +160,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         ) : null}
 
         {post.description ? (
-          <p className="whitespace-pre-wrap text-gray-800">{post.description}</p>
+          <ListingDescription description={post.description} />
         ) : (
           <p className="text-gray-500 italic">Bez popisu.</p>
         )}

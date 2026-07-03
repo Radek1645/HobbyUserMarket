@@ -1,10 +1,10 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.11  
-> **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql)  
+> **Verze dokumentu:** v3.14  
+> **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)**  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql) · [`016_search_posts.sql`](../supabase/016_search_posts.sql) · [`017_allow_contact_reveal.sql`](../supabase/017_allow_contact_reveal.sql) · [`018_reset_contact_opt_in.sql`](../supabase/018_reset_contact_opt_in.sql) · [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql) · [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql) · [`021_rate_limits_service_role_grants.sql`](../supabase/021_rate_limits_service_role_grants.sql) · [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql) · *v0.5 audit:* `020_audit_and_notes.sql` *(plánováno — jiný soubor než strip kontaktů)*  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-06-30
+> **Datum:** 2026-07-04
 
 ---
 
@@ -23,7 +23,7 @@ MVP je hotové, když platí všechny body:
 2. **Lokální relevance:** Návštěvník s povolenou polohou vidí **6–9 inzerátů (mobil / desktop)**. Priorita: nejbližší v adaptivním okruhu (**15–60 km**). Pokud v okruhu není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** s hláškou.
 3. **Ochrana kontaktů:** V HTML zdroji detailu inzerátu **není** telefon ani e-mail před kliknutím na „Zobrazit kontakt“ (ověřitelné v DevTools).
 4. **SEO:** Detail inzerátu má server-renderovaný HTML, dynamický Title tag, JSON-LD a je v `sitemap.xml`.
-5. **Moderování:** 3 nahlášení od 3 různých uživatelů skryje inzerát; moderátor ho vidí na `/mod/karantena`. Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků.
+5. **Moderování:** 3 nahlášení od 3 různých uživatelů skryje inzerát; moderátor ho vidí na `/mod/karantena`. Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků. *(Od v0.5: každé stažení/skrytí má záznam v audit logu s důvodem — §11.1.)*
 
 ### 1.2 Definition of Done (v0.1.1 — Volitelná platnost inzerátu)
 
@@ -55,6 +55,17 @@ Modul nemovitostí je hotový, když platí všechny body:
 4. **Cenové modely:** Pevná cena, Dohodou, Nabídni (bez „Za odvoz“ / „Výměnou“).
 5. **Detail inzerátu:** V hlavičce se zobrazí Prodej/Pronájem vedle kategorie a podkategorie.
 
+### 1.5 Definition of Done (v0.5 — Provoz, moderace a compliance)
+
+Modul je hotový, když platí všechny body:
+
+1. **Auditní historie:** Každá změna `posts.status` a každé moderátorské smazání/skrytí má záznam v `audit_events` včetně důvodu a aktéra. Odhalení kontaktu a odeslané poptávky se logují do `contact_reveals` / `inquiry_events` a jsou viditelné v God Mode timeline (§11.1 C).
+2. **Moderátorské poznámky:** Moderátor nebo admin může přidat ruční poznámku k inzerátu nebo profilu; běžný uživatel ji nevidí.
+3. **Nahlášení:** Funguje inline tlačítko na detailu i standalone formulář `/nahlasit`; admin dostane e-mail; 3× report od různých uživatelů → auto-hide (existující DB trigger).
+4. **Právní dokumenty a patička:** Patička je na všech stránkách (`AppShell`); VOP ke stažení jako PDF; FAQ stránka s accordion UI (viz §11.3).
+5. **God Mode:** Admin/moderátor prochází `/mod/inzeraty` a `/mod/karantena`, moderuje z detailu inzerátu; každá akce jde do audit logu.
+6. **SEO / AI crawlery:** Detail inzerátu má validní JSON-LD podle typu kategorie a je v `sitemap.xml`.
+
 ---
 
 ## 2. Mimo rozsah MVP (Out of Scope) — v0.1
@@ -67,7 +78,7 @@ V této verzi se **neimplementuje:**
 - Push notifikace
 - Hodnocení a recenze prodejců
 - Vícejazyčnost
-- Komplexní admin dashboard
+- Enterprise admin panel (denní moderaci nahrazuje God Mode — viz §5.6 a §11.4)
 - Automatické překlady
 - Byznys logika limitů aktivních inzerátů na uživatele (jen připraveno v `profiles`)
 - SMS verifikace telefonu
@@ -94,18 +105,31 @@ I v rámci modulu událostí se **neimplementuje:**
 
 ---
 
+## 2.2 Mimo rozsah v0.5 (Out of Scope) — Provoz a moderace
+
+I v rámci modulu v0.5 se **neimplementuje:**
+
+- Full-text admin search napříč celou DB
+- Export audit logu do CSV / BI nástroje
+- Ticket systém se stavem pro oznamovatele („sledovat vyřízení“)
+- Automatické AI posouzení nahlášeného inzerátu (až po validaci manuální moderace)
+- Verzování právních PDF v admin UI (stačí soubor v `public/docs/` s verzí v názvu)
+- Samostatná mobilní admin aplikace
+
+---
+
 ## 3. High-Level Architektura & Tech Stack
 
 * **Frontend/Backend:** Next.js (App Router), Tailwind CSS.
 * **Hosting / Deployment:** Vercel (Free / Hobby tier).
 * **Database & Auth:** Supabase (PostgreSQL + PostGIS extenze pro geolokaci, Supabase Auth, Supabase Storage). Přechod na Pro Tier ($25/měsíc) při ostrém startu kvůli garanci záloh a neusínání DB.
 * **Geocoding API:** Mapy.cz API (Autocomplete + Geofocus). Využití bezplatného tarifu pro vývojáře, který plně pokrývá potřeby MVP.
-* **AI Vrstva:** Supabase Edge Functions + **Gemini Flash** (aktuální verze API, konfigurovatelný identifikátor v `src/config/app.ts`) s fallbackem na **OpenAI GPT-4o-mini** pro real-time synchronní multimodální moderování a hydrataci obsahu. Timeout Edge Function: **30 s**.
+* **AI Vrstva:** Supabase Edge Functions + **Gemini Flash** (výchozí model **`gemini-2.5-flash`**, override přes Supabase secret `GEMINI_MODEL` v `_shared/moderation/gemini.ts`) s fallbackem na **OpenAI GPT-4o-mini** pro real-time synchronní multimodální moderování a hydrataci obsahu. Timeout Edge Function: **30 s**. Implementační detail: [`docs/moderace-inzeratu.md`](./moderace-inzeratu.md).
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **cookie consent bannerem** (GTM consent mode) před aktivací měření.
 * **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2 / `nemovitost` od v0.3) a `subcategory_slug`.
-* **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1) v `src/config/app.ts`. Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace fotek v `src/config/moderation/index.ts` (`MODERATION_IMAGE_MAX_DIMENSION = 512`). Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max).
+* **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1, **max délka popisu**) v `src/config/app.ts` (`LISTING_DESCRIPTION_MAX_LENGTH = 2000`, `MODERATION_DESCRIPTION_QA_RESERVE = 400`). Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace v `src/config/moderation/index.ts` (`MODERATION_ENABLED`, `MODERATION_RATE_LIMIT_PER_HOUR = 20`, `MODERATION_MAX_QUESTIONS = 5`, `MODERATION_IMAGE_MAX_DIMENSION = 512`). Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max). Prompty kategorií sync: `npm run sync:moderation`.
 
 ---
 
@@ -124,7 +148,7 @@ profiles
 posts
   - id, user_id (UUID, FK auth.users ON DELETE RESTRICT)
   - title (TEXT, NOT NULL, max 80 znaků v UI)
-  - description (TEXT, max 1000 znaků)
+  - description (TEXT, max **2000** znaků — CHECK `posts_description_length_check`, migrace [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql))
   - category_type (VARCHAR(10), NOT NULL, CHECK IN ('zbozi', 'sluzby', 'udalost', 'nemovitost'))
   - subcategory_slug (VARCHAR(50), NOT NULL)
   - price_type (VARCHAR(20), NOT NULL, CHECK IN ('fixed', 'free_pickup', 'negotiable', 'exchange', 'offer'))
@@ -139,6 +163,7 @@ posts
   - expires_at, renew_count, payment_status (VARCHAR(20), výchozí: 'free')
   - listing_duration_days (INTEGER, NOT NULL, DEFAULT 30 — od v0.1.1; viz §9; u `udalost` se nevyužívá)
   - event_date (TIMESTAMPTZ, NULL — od v0.2; povinné pokud `category_type = 'udalost'`)
+  - show_contact_email, show_contact_phone (BOOLEAN), contact_phone (TEXT, nullable — migrace [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql))
   - main_image_url, slug
   - created_at, updated_at
 
@@ -156,10 +181,37 @@ comments
 reports
   - id, target_type (post | comment), target_id
   - reporter_user_id, reason, created_at
+  - source (inline | standalone) — od v0.5
+  - detail_text (TEXT, nullable) — volný popis od v0.5
+  - reporter_email (TEXT, nullable) — pro anonymní standalone report od v0.5
   - UNIQUE(reporter_user_id, target_type, target_id)  -- 1 report per user per item
 
-contact_reveals (pro analytics + rate limit)
+audit_events — od v0.5; append-only systémový log (viz §11.1)
+  - id (UUID)
+  - entity_type (post | profile)
+  - entity_id (BIGINT | UUID)
+  - event_type (VARCHAR, stabilní kód — viz §11.1)
+  - actor_user_id (UUID, nullable — NULL = systém/cron)
+  - actor_role (user | moderator | admin | system)
+  - payload (JSONB) — from_status, to_status, reason_code, changed_fields, …
+  - created_at
+
+moderator_notes — od v0.5; ruční poznámky moderátora (viz §11.1)
+  - id (UUID)
+  - entity_type (post | profile)
+  - entity_id (BIGINT | UUID)
+  - author_user_id (FK profiles)
+  - body (TEXT, max 2000 znaků)
+  - created_at, updated_at
+
+contact_reveals (pro analytics + rate limit; zdroj pro engagement timeline v God Mode — §11.1 C)
   - id, post_id, viewer_user_id, revealed_at
+
+inquiry_events — od v0.5; metadata o odeslané poptávce, bez obsahu zprávy (GDPR — §11.1 C)
+  - id (UUID)
+  - post_id (FK posts)
+  - viewer_user_id (UUID, nullable — NULL = anonymní odesílatel)
+  - created_at
 
 rate_limits (volitelné, pro server-side rate limiting)
   - id, user_id, action_type, count, window_start
@@ -198,7 +250,7 @@ rate_limits (volitelné, pro server-side rate limiting)
 | `category_type` | `'udalost'` | Vyžaduje migraci CHECK constraintu |
 | `subcategory_slug` | `koncert` \| `narozeniny` \| `opekani` \| `sport` \| `workshop` \| `setkani` \| `ostatni` | Definice v `categories.ts` |
 | `condition_label` | `'one_time'` nebo `'long_term'` | UI: „Jednorázová akce“ / „Pravidelná akce“ (pole **Opakování**) |
-| `price_type` | `'free_pickup'` nebo `'offer'` | Vstup zdarma → `free_pickup`; jinak „Nabídni“ |
+| `price_type` | `'free_pickup'`, `'fixed'` nebo `'offer'` | Vstup zdarma → `free_pickup`; pevné vstupné → `fixed` + `price_amount`; jinak „Nabídni“ → `offer` |
 | `price_amount` | `NULL` | Cena není primární dimenze |
 | `event_date` | povinné `TIMESTAMPTZ` | Jednorázová: datum akce. Pravidelná: **nejbližší termín** (frekvence v popisu) |
 | Kapacita | v `description` | v0.2 bez strukturovaného pole |
@@ -232,6 +284,7 @@ rate_limits (volitelné, pro server-side rate limiting)
 - Obnovení inzerátu: `archived` → `active`, reset `expires_at` na `now() + listing_duration_days`, inkrement `renew_count`. *(v0.1: fixně +30 dní; od v0.1.1: podle uložené volby, s možností změnit délku při obnovení.)*
 - Sitemap zahrnuje výhradně `active` inzeráty s platným `expires_at`.
 - Po editaci: `updated_at` se aktualizuje; **slug se nemění** (stabilita URL).
+- **Audit *(v0.5)*:** Každá změna `posts.status` vytvoří záznam v `audit_events` (trigger nebo Server Action). Majitel i moderátor tak vidí kompletní historii inzerátu v God Mode UI.
 
 **Co se stane po expiraci (`expires_at <= now()`):**
 
@@ -287,7 +340,15 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * Řazení: Kategorie, cena, datum přidání, vzdálenost (pokud je poloha aktivní). *(Události od v0.2: volitelně řazení podle `event_date` — nejbližší konání první.)*
 * **Header & Footer:**
   * Header: Logotyp, indikace verze (v0.1 Prerelease), stav přihlášení, dominantní CTA tlačítko „Založit inzerát“.
-  * Footer: O projektu, podmínky použití, zásady ochrany osobních údajů, AI disclaimer, cookie/privacy info s odkazem na consent nastavení.
+  * **Footer — globální dostupnost:** Patička je součástí `AppShell` a zobrazuje se na **všech veřejných i autentizovaných stránkách** (včetně `/mod/*`). V navigaci patičky:
+    * O projektu
+    * Nahlásit inzerát (`/nahlasit`) — od v0.5
+    * FAQ (`/faq`) — od v0.5; accordion stránka odvozená z VOP (viz §11.3)
+    * Všeobecné obchodní podmínky — VOP (`/vop`, PDF ke stažení)
+    * Podmínky inzerce (`/podminky-inzerce`)
+    * Zásady ochrany osobních údajů — GDPR (`/gdpr`, PDF ke stažení)
+    * Cookies / consent nastavení
+    * AI disclaimer (krátká poznámka u podmínek inzerce nebo samostatný odkaz)
 
 ### 5.2 Autentizace a správa profilu
 
@@ -316,16 +377,22 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 * **Ochrana kontaktů před scrapery (Anti-Scraping / Bot protection):**
   * **Tlačítko „Zobrazit kontakt“:** Telefon a e-mail prodejce nejsou v HTML kódu stránky. Zobrazí se až po kliknutí **přihlášeného** uživatele. Event se loguje do `contact_reveals`.
   * **Rate limit:** Max **20 zobrazení kontaktů / den / uživatel**.
-  * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá.
+  * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá. Po úspěšném odeslání se zapíše metadata do `inquiry_events` (bez obsahu zprávy — §11.1 C).
   * **Události *(v0.2)*:** U `category_type = 'udalost'` se formulář chová jako „registrace zájmu o účast“ — tlačítko **„Mám zájem o účast“**, předmět/tělo e-mailu: *„Uživatel [jméno] se chce zúčastnit vaší akce: [Název] — [kontaktní údaje].“* Pořadatel odpovídá ze svého e-mailu; systém neukládá účastníky do DB.
 * **Komunitní moderování inzerátů:**
-  * Tlačítko „Nahlásit inzerát“ (Důvody: Podvod / Nelegální obsah / Nevhodné chování). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky skryje (`hidden`) do karantény.
-* **Automatizované On-Page SEO & Rich Snippets:**
+  * **Inline:** Tlačítko „Nahlásit inzerát“ na detailu (Důvody: Podvod / Nelegální obsah / Sexuální obsah / Drogy / Spam / Nevhodné chování / Jiné). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky skryje (`hidden`) do karantény.
+  * **Standalone *(v0.5)*:** Formulář na `/nahlasit` (odkaz v patičce) — pole URL inzerátu (validace domény a slug), důvod (select), volitelný popis (max 500 znaků), e-mail oznamovatele (povinné pro nepřihlášené). Po odeslání: INSERT do `reports`, záznam v `audit_events`, e-mail adminovi (Resend), UI potvrzení „Díky, prověříme to do 24 h“.
+  * Stejná logika 3× threshold platí pro komentáře (existující trigger).
+* **Automatizované On-Page SEO, Rich Snippets & AI crawlery:**
   * **Dynamická Metadata (Next.js Metadata API):** Formát: `[Název inzerátu] | [Lokalita] | Local Hobby Market`. Příklad: *„Prodám dětské kolo Velo | Brno-Líšeň | Local Hobby Market“*.
-  * **Strukturovaná data (Schema.org):** JSON-LD podle typu kategorie:
-    * Pro zboží: `Schema.org/IndividualProduct` (název, cena, měna CZK, stav).
-    * Pro služby: `Schema.org/Service` (lokalita, popis) — preferováno před `LocalBusiness` u jednotlivců.
-    * Pro události *(v0.2)*: `Schema.org/Event` (`startDate` z `event_date`, popis, lokalita).
+  * **Strukturovaná data (Schema.org JSON-LD):** Server-renderovaný `<script type="application/ld+json">` na detailu inzerátu — helper `buildListingJsonLd()` v `src/lib/seo/listing-json-ld.ts`. Mapování podle `category_type`:
+    * `zbozi` → `Schema.org/Product` (název, popis, `offers` s cenou v CZK, `itemCondition`)
+    * `sluzby` → `Schema.org/Service` (lokalita, popis) — preferováno před `LocalBusiness` u jednotlivců
+    * `udalost` → `Schema.org/Event` (`startDate` z `event_date`, popis, lokalita)
+    * `nemovitost` → `Schema.org/RealEstateListing` (cena, adresa)
+    * `prace` → `Schema.org/JobPosting` (odměna, typ úvazku)
+  * **Volitelně *(v0.5.1+)*:** Soubor `public/llms.txt` s popisem veřejných URL pro LLM crawlery.
+  * **Sitemap:** Aktivní inzeráty (`status = 'active'`, `expires_at > now()`) v `sitemap.xml`.
   * **SEO přívětivé URL (Slugs):** Tvar `/inzerat/[url-slug]`, např. `/inzerat/prace-v-kavarne-j59d`. Interní `id` záznamu se v URL **neuvádí**. `[url-slug]` = slugifikovaný název inzerátu + krátký unikátní suffix (ukládá se do `posts.slug`), generuje se z `title` při první publikaci a **nemění se** při editaci. Staré URL ve tvaru `/inzerat/[id]-[url-slug]` trvale přesměrují na `/inzerat/[url-slug]`.
 
 ### 5.4 Tvorba inzerátu & Synchronní AI Guardrail
@@ -334,7 +401,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   1. **Kategorie a stav (Řízeno přes TS Config):** Výběr `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2) a `subcategory_slug` z `src/config/categories.ts`. Povinný štítek stavu (Zboží: Nové / Jako nové / Použité / **Poškozené / na díly** `damaged`; Služby: Jednorázově / Dlouhodobě / Záskok; Události: **Opakování** — Jednorázová akce `one_time` / Pravidelná akce `long_term`).
   2. **Obsah a Cena:**
      * **Název inzerátu:** Povinné pole (max **80 znaků**). Používá se pro SEO Title tag, Open Graph a generování URL slugu.
-     * **Textový popis:** Max 1 000 znaků. *(Události v0.2: UI hint — povinně uveď datum, čas a kapacitu; validace přes AI dotazník.)*
+     * **Textový popis:** Min. **10**, max **2000** znaků. Strukturovaný finální text (po AI nebo ručně): **úvod** (1–3 věty, včetně ceny a předání) + oddělovač `---` + sekce **Parametry** s odrážkami `• Popisek: hodnota`. *(Události v0.2: datum konání jde do `event_date`, ne do popisu; kapacita volitelně v popisu nebo AI dotazník.)*
      * **Poloha inzerátu (Validace a GPS):** Povinné pole s našeptávačem Mapy.cz. Tlačítko „Použít aktuální polohu“ pro GPS z prohlížeče. Do `posts` se ukládá `location_text` (UI) i PostGIS point `location` (prostorové dotazy).
      * **Logika typu ceny (Dropdown):** Pevná (vynutí číselné pole v Kč) / Za odvoz (0 Kč) / Dohodou, Výměnou, Nabídni (skryje částku, zobrazí textový štítek).
      * **Platnost inzerátu *(v0.1.1)*:** Default **30 dní**. UI: `<select>` s preset hodnotami (7, 14, 30, 60, 90, 180, 365) **nebo** `<input type="number">` — **žádný slider** (mobilní UX). Ukládá se `listing_duration_days`; `expires_at` nastaví DB trigger (§9.2). U `udalost` (v0.2) se pole skryje — platí §8.4.1.
@@ -344,25 +411,28 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
      * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (náhled)“** (radio button/hvězdička). Výchozí je první nahraná. Hlavní fotka určuje náhled na homepage a slouží pro cross-validaci textu a AI hydrataci — **ne** jako jediná kontrolovaná fotka.
 
 * **Multimodální AI Guardrail & Interaktivní doplňování (Text + Foto cross-validace):**
-  * Po kliknutí na „Zkontrolovat inzerát“ klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `subcategory_slug`, **všechny nahrané fotografie** (max. 6, každá zmenšená na **512×512 px**, base64) a `mainImageIndex` (index hlavní fotky). **Jedno** volání AI — bezpečnostní filtr na všech snímcích, cross-validace a hydratace z hlavní. Edge Function volá Gemini Flash / GPT-4o-mini a vrátí striktní JSON. **Žádná Next.js API Route v tomto flow.**
+  * Po kliknutí na **„Publikovat inzerát“** (create) / **„Uložit“** (edit) klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `categoryType`, `subcategory_slug`, metadata z formuláře (`conditionLabel`, `conditionLabelText`, `conditionFieldLabel`, `priceType`, `priceTypeLabel`, `priceAmount`, u událostí `eventDate`), **všechny nahrané fotografie** (max. 6, každá zmenšená na **512×512 px**, base64) a `mainImageIndex`. **Jedno** volání AI — bezpečnostní filtr na všech snímcích, cross-validace a hydratace z hlavní. Edge Function volá Gemini Flash / GPT-4o-mini a vrátí striktní JSON. **Žádná Next.js API Route v tomto flow.**
   * **Bezpečnostní filtr fotek:** Pokud **jakákoliv** fotografie porušuje pravidla (zbraně, drogy, porno, orgány…), celý inzerát je `REJECTED`. Volitelně `rejectedImageIndex` pro UI. Výběr „čisté“ hlavní fotky nesmí obejít kontrolu zbylých snímků.
-  * **Rate limit:** Max **5 AI kontrol / hodinu / uživatel**. Při překročení: HTTP 429 + srozumitelná hláška v UI.
+  * **Rate limit:** Max **20 AI kontrol / hodinu / uživatel** (`MODERATION_RATE_LIMIT_PER_HOUR`). Při překročení: HTTP 429 + srozumitelná hláška v UI.
   * **Logika zpracování AI (JSON výstup):**
     1. **Bezpečnostní a podvodový filtr:** Zakázaný obsah (zbraně, drogy, porno, orgány) → status `REJECTED`, proces končí chybou. Sémantická neshoda text/foto → chyba konzistence.
     2. **Čistka kontaktů (AI):** E-maily a telefony v popisu (i na fotce) nahrazeny `[SKRYTO – použij chráněné pole]`.
-    3. **Hydratace podle TS Configu:** AI přebere `aiPrompt` z `categories.ts`:
-       * *Zboží (auta-moto, reality, kola-sport):* Hledá vady, barvu, model, STK, metráž, dispozice. Chybějící data → specifické otázky.
-       * *Služby (řemeslo-opravy, stěhování-doprava):* Ignoruje ilustrační foto, generuje 1–3 byznys otázky (dojezd, materiál v ceně, nošení do schodů, fixní vs. hodinová cena).
-       * *Události (v0.2):* Extrakce data a času konání, přesné lokality, kapacity a instrukcí k přihlášení. Chybějící datum/čas nebo kapacita → doplňující otázka v AI dotazníku.
-  * **UX Flow v modálním okně „AI Náhled & Doplnění“:**
-    * **Učesaný text inzerátu** v editovatelné `textarea`, fakta z fotky označená `[AI ODVOZENO Z FOTA]`.
-    * **Dynamický dotazník („Sousedská AI se ptá“):** Pole z JSON odpovědi AI.
+    3. **Hydratace podle TS Configu:** AI přebere `aiPrompt` z `categories.ts` (sync do Edge). Metadata z formuláře (cena, stav, datum akce) se **nepřepisují dotazníkem** — na cenu se neptat, pokud je ve formuláři.
+       * *Zboží (auta-moto, elektronika):* Parametry v odrážkách; chybějící kritická data → max **5** otázek (`NEEDS_QUESTIONS`).
+       * *Služby:* Otázky jen na chybějící dojezd, materiál, rozsah.
+       * *Události (v0.2):* `event_date` z formuláře — AI se na datum neptá; chybí-li lokalita/kapacita → dotazník.
+    4. **Limit délky:** `cleanedDescription` max **2000** znaků celkem; u `NEEDS_QUESTIONS` max **1600** znaků (rezerva **400** na odpovědi doplněné do Parametrů).
+  * **UX Flow v modálním okně „AI náhled a doplnění“:**
+    * **Učesaný text inzerátu** v editovatelné `textarea` (struktura úvod + `---` + Parametry).
+    * **Dynamický dotazník („Vylepšete svůj inzerát“):** Max 5 otázek; odpovědi povinné; ukládají se jako odrážky v sekci Parametry (ne celé věty otázek).
+    * Počítadlo znaků v modalu zahrnuje **projekovaný finální popis** včetně odpovědí (limit 2000).
+    * Během volání AI: **full-screen overlay** se spinnerem (ne banner dole).
     * **Akce uživatele:**
       1. **Doplnit, upravit a publikovat (Doporučeno):** Finální verze (včetně `title`) uložena do DB jako `status = 'active'`.
-      2. **Ignorovat AI (Publikovat původní patlanici):** Zahodí AI korektury a doplňky, ale **vždy platí:**
+      2. **Publikovat bez vylepšení:** Zahodí AI korektury textu, ale **vždy platí:**
          - Bezpečnostní filtr (zbraně, drogy, porno, orgány) — neprůstřelný.
-         - **Server-side strip kontaktů** v popisu (regex, nezávislé na AI) — nahrazení `[SKRYTO – použij chráněné pole]`.
-      3. **Smazat / Zrušit:** Koncept zahozen, v DB nevzniká zápis.
+         - **Server-side strip kontaktů** v popisu (DB trigger + regex) — nahrazení `[SKRYTO – použij chráněné pole]`.
+      3. **Zrušit:** Koncept zahozen, v DB nevzniká zápis.
 
 * **Editace existujícího inzerátu:**
   * Změna **názvu, popisu, fotek nebo kategorie** → povinná znovu AI kontrola (min. bezpečnostní filtr + strip kontaktů).
@@ -390,27 +460,37 @@ Z důvodu GDPR (minimalizace údajů) a ochrany infrastruktury je zaveden automa
 
 ### 5.6 Role-Based Access Control (RBAC) & Inline Administrace (God Mode)
 
-Vestavěný systém rolí navázaný na produkční UI (bez komplexního admin panelu).
+Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admin panelu**. Supabase Dashboard zůstává pro SQL a migrace; denní moderaci obstarává God Mode na produkčním webu (viz také §11.4).
 
 * **Systémové role (Postgres ENUM):**
   1. `user` – Výchozí role. Plný přístup k P2P funkcím, spravuje pouze vlastní obsah.
-  2. `moderator` – Vidí admin prvky u cizího obsahu. Může smazat/skrýt jakýkoliv inzerát nebo komentář. **Nemá právo sahat na profily uživatelů.**
-  3. `admin` – Plná práva moderátora + změna rolí a správa/anonymizace účtů. Identifikace přes JWT spárovaný s UUID v DB.
+  2. `moderator` – Vidí admin prvky u cizího obsahu. Může smazat/skrýt/obnovit jakýkoliv inzerát nebo komentář. **Nemá právo sahat na profily uživatelů.**
+  3. `admin` – Plná práva moderátora + změna rolí, správa/anonymizace účtů a přístup k `/mod/uzivatele`. Identifikace přes JWT spárovaný s UUID v DB.
 
 * **UX Flow inline moderování (God Mode):**
-  * Uživatel s rolí `moderator` nebo `admin` na detailu cizího inzerátu/komentáře vidí administrační lištu: **[Skrýt (Karanténa)]** a **[Smazat natvrdo]**.
-  * Moderátor vidí reálný kontext přímo na produkčním webu.
+  * Uživatel s rolí `moderator` nebo `admin` na detailu **cizího** inzerátu/komentáře vidí vizuálně oddělenou administrační lištu:
+    **[Skrýt (Karanténa)]** · **[Smazat natvrdo]** · **[Historie]** · **[+ Poznámka]**
+  * Při smazání/skrytí moderátorem: **povinný důvod** (dropdown) + volitelná textová poznámka → obojí do `audit_events` (+ volitelně `moderator_notes`).
+  * Moderátor vidí reálný kontext přímo na produkčním webu; může otevřít editaci cizího inzerátu přes `/inzerat/[slug]/upravit` (Server Action ověřuje roli).
 
-* **Minimální moderátorská fronta (`/mod/karantena`):**
-  * Přístup pouze pro `moderator` a `admin`.
-  * Seznam inzerátů a komentářů ve stavu `hidden`, seřazeno od nejnovějšího.
-  * Akce: obnovit (`active`) / smazat natvrdo (`deleted`).
-  * Žádný další admin UI.
+* **Minimální moderátorské routes:**
+
+| Route | Přístup | Obsah |
+|-------|---------|-------|
+| `/mod/karantena` | `moderator`, `admin` | Inzeráty a komentáře ve stavu `hidden`, seřazeno od nejnovějšího. Akce: obnovit (`active`) / smazat (`deleted`). |
+| `/mod/inzeraty` | `moderator`, `admin` | Tabulka všech inzerátů s filtrem stavu a kategorie; odkaz na detail. |
+| `/mod/uzivatele` | **jen `admin`** | Seznam profilů, role, počet inzerátů; odkaz na historii a poznámky profilu. |
+
+* **Panel Historie & Poznámky *(v0.5)*:**
+  * **Historie** — sjednocená časová osa: `audit_events` (stav, moderace) + `contact_reveals` (odhalení kontaktu) + `inquiry_events` (odeslaná poptávka) + `reports` (nahlášení). Typ události vizuálně odlišen.
+  * **Poznámky** — ruční záznamy z `moderator_notes` (editace autorem do 24 h).
+  * Viditelné pouze pro `moderator` a `admin`. Majitel vidí u vlastního inzerátu jen agregované počty engagement (§11.1 C).
 
 * **Zabezpečení:**
   * UI lišty podmíněno `profile.role` v session.
   * RLS propustí `DELETE` a `UPDATE` u cizího obsahu pouze pro `moderator` a `admin`.
-  * Při smazání inzerátu: DB trigger smaže fotografie ze Supabase Storage.
+  * Server Actions vždy znovu ověřují roli — UI samo nestačí.
+  * Při smazání inzerátu: DB trigger smaže fotografie ze Supabase Storage; akce se zaloguje do `audit_events`.
 
 ---
 
@@ -425,7 +505,7 @@ Vestavěný systém rolí navázaný na produkční UI (bez komplexního admin p
 
 | Akce | Limit | Při překročení |
 |------|-------|----------------|
-| AI kontrola inzerátu | 5 / hodinu / uživatel | HTTP 429 + hláška v UI |
+| AI kontrola inzerátu | **20** / hodinu / uživatel | HTTP 429 + hláška v UI |
 | Zobrazení kontaktu | 20 / den / uživatel | HTTP 429 + hláška v UI |
 | Nový komentář | 10 / hodinu / uživatel | HTTP 429 + hláška v UI |
 | AI Edge Function (Supabase, voláno přímo z klienta) | Timeout 30 s | „Zkus znovu za chvíli“; server-side bezpečnostní pre-check v Edge Function proběhne vždy |
@@ -502,6 +582,9 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.9 | 2026-06-27 | Zboží: stav `damaged` — UI „Poškozené / na díly“; migrace `005_damaged_goods.sql` |
 | v3.11 | 2026-06-29 | GTM: `data-gtm-id` na všech CTA, registr `src/config/gtm-ids.ts`, §5.5 PRD |
 | v3.10 | 2026-06-29 | Nemovitosti: `category_type = 'nemovitost'`, typ transakce `sale`/`rent`, 6 podkategorií; migrace `006_real_estate.sql` |
+| v3.12 | 2026-07-02 | §11 Modul v0.5: audit log, moderátorské poznámky, nahlášení, God Mode, JSON-LD, VOP/GDPR/FAQ accordion v patičce; §1.5 DoD v0.5; §2.2 Out of Scope v0.5; rozšíření §4, §5.1, §5.3, §5.6 |
+| v3.13 | 2026-07-03 | AI moderace nasazena: §5.4 (Gemini 2.5-flash, rate limit **20/h**, max **5** otázek, strukturovaný popis úvod+Parametry, limit **2000** znaků, UX modal); §4 + migrace **016–021**, **023**; události: pevné vstupné, validace `event_date`; oprava odkazu migrace 020 (strip kontaktů vs. plánovaný audit) |
+| v3.14 | 2026-07-04 | §11.4 **Globální informační lišta** (Site Notice): 3 varianty `info` / `marketing` / `maintenance`, config `message` + volitelný `link`, nasazení bez odstávky webu |
 
 ---
 
@@ -570,7 +653,7 @@ U pravidelné akce: `event_date` = nejbližší termín; frekvence (např. každ
 | Krok | Chování pro `udalost` |
 |------|------------------------|
 | 1 — Kategorie | Výběr `udalost` + podsekce; pole **Opakování**: Jednorázová (`one_time`) / Pravidelná (`long_term`) |
-| 2 — Obsah | Povinný **datetime picker** `event_date` (u pravidelné: „nejbližší termín“); hint kapacity a frekvence v popisu; cena: „Vstup zdarma“ / „Nabídni“; **pole platnosti (§9) se nezobrazuje** |
+| 2 — Obsah | Povinný **datetime picker** `event_date` (u pravidelné: „nejbližší termín“); validace **datum v budoucnosti** (klient + server; při editaci projde nezměněné staré datum); hint kapacity a frekvence v popisu; cena: **Vstup zdarma** / **Pevná cena (vstupné)** / **Nabídni**; **pole platnosti (§9) se nezobrazuje** |
 | 3 — Média | Beze změny (max 6 fotek) |
 
 ### 8.4 Datový model a DB migrace
@@ -625,7 +708,7 @@ CREATE INDEX IF NOT EXISTS posts_event_date_idx
 | `expires_at` | DB trigger: **`event_date + INTERVAL '1 day'`** |
 | Frontend | Posílá `event_date`; **`expires_at` neposílá** |
 | Obnovení (`renew`) | Jen pokud `event_date > now()`; trigger přepočítá `expires_at` |
-| Validace | `event_date` v budoucnosti při publikaci; max horizont v `app.ts` (startovně 365 dní) |
+| Validace | `event_date` **v budoucnosti** při publikaci (server + klient); při editaci beze změny data projde i minulý termín; max horizont volitelně v `app.ts` |
 
 ```sql
 CREATE OR REPLACE FUNCTION public.handle_post_expiration_logic()
@@ -839,3 +922,307 @@ Kompletní migrace: [`supabase/006_real_estate.sql`](../supabase/006_real_estate
 - Energetický štítek, katastrální území
 - Ověření vlastnictví / realitní licence
 - Filtr „pouze pronájem“ na HP (až s vyhledáváním)
+
+---
+
+## 11. Modul Provoz, moderace a compliance (v0.5)
+
+> **Stav:** Plánováno. Kanonická specifikace v tomto dokumentu.  
+> **Migrace DB:** [`020_audit_and_notes.sql`](../supabase/020_audit_and_notes.sql) *(plánováno)* · rozšíření `reports`  
+> **Související:** §1.5 DoD · §4 datový model · §5.1 Footer · §5.3 Nahlášení · §5.6 God Mode
+
+### 11.1 Auditní log a moderátorské poznámky
+
+#### Koncept — tři oddělené okruhy
+
+| Typ | Tabulka | Kdo vytváří | Kdo vidí | Účel |
+|-----|---------|-------------|----------|------|
+| **A) Systémový audit** | `audit_events` | Automaticky (trigger, cron, Server Action) | `moderator`, `admin` | Neměnná historie změn stavu a moderace |
+| **B) Moderátorská poznámka** | `moderator_notes` | Ručně admin/moderátor | `moderator`, `admin` | Kontext rozhodnutí („volal jsem mu, slíbil opravit“) |
+| **C) Engagement (interakce)** | `contact_reveals`, `inquiry_events` | Automaticky při akci uživatele | `moderator`, `admin` (+ majitel u vlastního inzerátu — agregáty) | Kdo projevil zájem; **ne** lifecycle inzerátu |
+
+**Proč ne vše do `audit_events`?**
+- Odhalení kontaktu a poptávky jsou **časté** (desítky denně) — zahlcovaly by audit změn stavu.
+- Audit = „co se stalo s inzerátem/účtem“; engagement = „kdo na inzerát reagoval“.
+- V God Mode UI se obojí zobrazí v **sjednocené časové ose** (Historie), ale ukládá se odděleně.
+
+**Pravidla:**
+- `audit_events` je **append-only** — žádný `UPDATE` / `DELETE`.
+- Běžný uživatel audit ani poznámky nevidí.
+- Při každé změně `posts.status` **povinně** záznam s `from_status` → `to_status` v `payload`.
+
+#### C) Engagement — odhalení kontaktu a poptávka
+
+| Akce | Logovat do DB? | Tabulka / kanál | Co ukládat |
+|------|----------------|-----------------|------------|
+| **Odkrytí kontaktu** (klik „Zobrazit kontakt“) | **Ano** | `contact_reveals` *(už existuje)* | `post_id`, `viewer_user_id`, `revealed_at` |
+| **Odeslání poptávky** (submit formuláře) | **Ano** | `inquiry_events` *(nové)* | `post_id`, `viewer_user_id` (nullable), `created_at` — **bez textu zprávy a bez e-mailu** |
+| **Otevření poptávkového formuláře** (jen rozbalení) | **Ne** (DB) | GTM `cta_inquiry_open` | Analytika v GA4; do DB by to generovalo šum |
+
+**GDPR u poptávky:** Obsah zprávy a kontakt zájemce jdou **jen e-mailem** zadavateli (Resend). Do DB se neukládají — stejný princip jako u modulu Události/Práce. V `inquiry_events` je jen metadata „poptávka odeslána“.
+
+**God Mode — sjednocená timeline:**
+- Panel **Historie** na detailu inzerátu sloučí chronologicky: `audit_events` + `contact_reveals` + `inquiry_events` + `reports`.
+- Typ události vizuálně odlišen (badge: „Stav“ / „Kontakt“ / „Poptávka“ / „Nahlášení“).
+- Majitel inzerátu v `/moje-inzeraty` vidí **agregáty** (počet odhalení kontaktu, počet poptávek za 30 dní) — ne identitu prohlížečů (GDPR).
+
+#### A) Systémový audit — logované události
+
+**Inzerát (`entity_type = 'post'`):**
+
+| Událost | `event_type` | Typický `payload` |
+|---------|--------------|-------------------|
+| Vytvoření | `post_created` | `{ status, category_type }` |
+| Publikace | `post_published` | `{ from_status }` |
+| Editace obsahu | `post_updated` | `{ fields: ['title','description',…] }` |
+| Pozastavení / skrytí | `post_hidden` | `{ reason_code, actor_role }` |
+| Expirovalo | `post_expired` | `{ expires_at }` |
+| Obnovení | `post_renewed` | `{ renew_count, new_expires_at }` |
+| Smazání majitelem | `post_deleted_by_owner` | `{ exit_poll_reason }` |
+| Smazání moderátorem | `post_deleted_by_mod` | `{ reason_code, note_id? }` |
+| 3× nahlášení | `post_auto_hidden_reports` | `{ report_count }` |
+| Nahlášení (jednotlivé) | `post_reported` | `{ reason, source }` |
+| AI zamítnuto | `post_ai_rejected` | `{ topic_id }` |
+| AI schváleno | `post_ai_approved` | — |
+
+**Uživatel (`entity_type = 'profile'`):**
+
+| Událost | `event_type` |
+|---------|--------------|
+| Onboarding dokončen | `profile_onboarded` |
+| Změna role | `profile_role_changed` |
+| Anonymizace (GDPR cron) | `profile_anonymized` |
+| Varování / pozastavení | `profile_warned` / `profile_suspended` |
+
+#### B) Moderátorské poznámky
+
+- Max **2000 znaků** na poznámku.
+- Editace povolena **jen autorovi do 24 h** od vytvoření.
+- V God Mode UI: záložka **Poznámky** oddělená od **Historie** (audit).
+
+#### Důvody stažení inzerátu (moderátor)
+
+Povinný dropdown při smazání/skrytí moderátorem — hodnoty synchronizované s `src/config/moderation/removal-reasons.ts`:
+
+| Kód | Label |
+|-----|-------|
+| `illegal_content` | Nelegální obsah |
+| `prohibited_category` | Zakázaná kategorie (drogy, zbraně, …) |
+| `fraud` | Podvod |
+| `duplicate_spam` | Duplicita / spam |
+| `report_threshold` | Automaticky po nahlášeních |
+| `other` | Jiné (vyžaduje poznámku) |
+
+---
+
+### 11.2 Nahlášení škodlivého obsahu
+
+#### Vstupní body
+
+1. **Inline** — tlačítko „Nahlásit“ na detailu inzerátu a u komentáře.
+2. **Standalone** — `/nahlasit` (odkaz v patičce).
+
+#### Standalone formulář
+
+| Pole | Povinné | Poznámka |
+|------|---------|----------|
+| URL inzerátu | ano | Validace: musí být `/inzerat/[slug]` z naší produkční domény |
+| Důvod | ano | Select: Podvod · Nelegální obsah · Sexuální obsah · Drogy · Spam · Jiné |
+| Popis | ne | max 500 znaků |
+| E-mail oznamovatele | ne* | *Povinné pro nepřihlášené (follow-up) |
+
+#### Flow po odeslání
+
+```
+Odeslání reportu
+  → INSERT do reports (source = 'inline' | 'standalone')
+  → INSERT audit_events (post_reported)
+  → IF count distinct reporters >= 3 → DB trigger → status hidden
+  → Vždy: e-mail adminovi (Resend) — URL, důvod, počet reportů, odkaz do /mod/karantena
+  → UI: „Díky, prověříme to do 24 h“
+```
+
+#### Out of Scope v0.5
+
+- Veřejný ticket systém se stavem pro oznamovatele
+- Automatické AI posouzení reportu
+
+---
+
+### 11.3 Právní dokumenty, FAQ a patička
+
+#### Patička — globální dostupnost
+
+Patička je renderována v `AppShell` → `SiteFooter` na **všech stránkách** včetně autentizovaných a `/mod/*`.
+
+#### Dokumenty
+
+| Dokument | Formát | URL | Obsah |
+|----------|--------|-----|-------|
+| **Všeobecné obchodní podmínky (VOP)** | PDF + HTML stub | `/vop` · `/docs/vop-v1.0.pdf` | Smluvní vztah s platformou |
+| **Podmínky inzerce** | HTML | `/podminky-inzerce` | Pravidla pro inzerenty, moderace (existující stub) |
+| **Zásady ochrany osobních údajů** | PDF + HTML stub | `/gdpr` · `/docs/gdpr-v1.0.pdf` | GDPR, zpracování dat |
+| **Cookies** | HTML / modal | `/cookies` nebo consent banner | GTM consent mode |
+| **FAQ** | HTML (accordion) | `/faq` | Viz níže |
+
+PDF soubory ukládat do `public/docs/` s verzí v názvu souboru (`vop-v1.0.pdf`).
+
+#### FAQ stránka (`/faq`)
+
+**Účel:** Srozumitelné odpovědi pro uživatele odvozené z VOP — ne duplicitní právní text, ale lidsky čitelné vysvětlení.
+
+**Obsah:**
+- Položky FAQ vycházejí z kapitol VOP (odpovědnost platformy, inzerce, moderace, osobní údaje, kontakty).
+- Zdroj dat: statický config `src/config/faq.ts` (MVP) — později generování z verze VOP.
+
+**UI — accordion (rozbalovací sekce):**
+- Každá položka = **nadpis** (otázka nebo téma) + **skrytý text** (odpověď).
+- Po kliknutí na nadpis se pod ním **odklopí** související text; opětovný klik (nebo klik na jinou položku) sekci zavře.
+- Přístupnost: `<button aria-expanded>` + `aria-controls` pro panel obsahu; klávesnice (Enter/Space).
+- Na mobilu: jedna otázka otevřená najednou (volitelně) — méně scrollu.
+
+**Odkaz v patičce:** „Časté dotazy“ → `/faq`
+
+#### DoD (právní sekce)
+
+1. Všechny odkazy v patičce vedou na funkční stránku (min. stub; PDF kde je hotové).
+2. VOP PDF je ke stažení.
+3. FAQ stránka s accordion UI je dostupná a obsahuje min. 5 položek odvozených z VOP.
+
+---
+
+### 11.4 Globální informační lišta (Site Notice)
+
+> **Stav:** Plánováno — **neimplementováno** (viz [§11.7](#117-doporučené-pořadí-implementace)).  
+> **Cíl:** Oznámit uživatelům provozní zprávu **bez odstávky webu** — pouze zapnutí konfigurace a redeploy (ne maintenance mode).
+
+#### Účel
+
+Tenká lišta nad headerem na **všech stránkách** (`AppShell`, včetně `/login` a `/mod/*`). Slouží k:
+
+- informování o provozu (novinka, beta, tip),
+- krátké marketingové kampani,
+- **odstávkovému** varování (plánovaná migrace, výpadek API) — web **běží dál**, lišta jen upozorní.
+
+**Není to:** cookie consent, God Mode lišta na detailu inzerátu, ani full-screen blokace stránky.
+
+#### Tři varianty (liší se barvou a výchozím tónem textu)
+
+| Varianta | Kód | Barva (návrh) | Typické použití |
+|----------|-----|---------------|-----------------|
+| **Informativní** | `info` | modrá / neutrální (`blue-50`, text `blue-900`) | „Nově AI úprava inzerátu“, „Beta verze“ |
+| **Marketingová** | `marketing` | zelená / brand (`emerald-50`, text `emerald-900`) | „Pozvi souseda — sdílej odkaz“, akce |
+| **Odstávková** | `maintenance` | amber / oranžová (`amber-50`, text `amber-900`) | „Dnes 22:00 krátká odstávka kvůli migraci DB“ |
+
+Varianta určuje **pouze vizuální styl** (pozadí, okraj, ikona). Text je vždy konfigurovatelný.
+
+#### Konfigurace (MVP — bez DB)
+
+Jediný zdroj pravdy: `src/config/site-notice.ts` (volitelně override přes env pro produkci bez commitu).
+
+```typescript
+export type SiteNoticeVariant = "info" | "marketing" | "maintenance";
+
+export type SiteNoticeConfig = {
+  enabled: boolean;
+  variant: SiteNoticeVariant;
+  /** Hlavní text lišty (1–2 věty). */
+  message: string;
+  /** Volitelný odkaz — celá lišta nebo jen CTA „Více“. */
+  link?: {
+    href: string;       // interní (/faq) nebo externí (https://…)
+    label?: string;     // výchozí: „Více informací“
+  };
+  /** U info/marketing: uživatel může lištu zavřít (localStorage). U maintenance: doporučeno false. */
+  dismissible?: boolean;
+};
+```
+
+**Env override (doporučeno pro produkci):**  
+`NEXT_PUBLIC_SITE_NOTICE_ENABLED`, `NEXT_PUBLIC_SITE_NOTICE_VARIANT`, `NEXT_PUBLIC_SITE_NOTICE_MESSAGE`, volitelně `NEXT_PUBLIC_SITE_NOTICE_LINK_HREF`, `NEXT_PUBLIC_SITE_NOTICE_LINK_LABEL` — umožní zapnout/vypnout lištu na Vercel **bez úpravy kódu**.
+
+#### UI a chování
+
+- Umístění: **nad** `Header` v `AppShell`, `role="status"` nebo `role="alert"` (u `maintenance` preferovat `alert`).
+- Responzivní: text zalamovat, odkaz na konci řádku nebo pod textem na mobilu.
+- `sticky` header zůstane pod lištou (lišta může být součást sticky bloku nebo fixed nahoře — implementace sjednotí s `z-index` headeru).
+- Pokud `enabled: false` → komponenta se nerenderuje (nulový vizuální dopad).
+- Přístupnost: dostatečný kontrast, odkaz s viditelným `:focus`.
+
+#### Nasazení bez odstávky
+
+1. Nastavit env nebo upravit `site-notice.ts`.
+2. `git push` / redeploy na Vercel.
+3. Lišta se objeví na všech stránkách — **žádný maintenance režim**, žádné vypnutí Supabase.
+
+Pro skutečnou odstávku (read-only web) zůstává mimo rozsah MVP — tato lišta jen **komunikuje**, ne blokuje.
+
+#### DoD (Site Notice)
+
+1. Komponenta `SiteNoticeBar` + config `src/config/site-notice.ts`.
+2. Tři varianty s odlišnou barvou dle tabulky výše.
+3. `message` a volitelný `link` (href + label) z configu/env.
+4. Lišta na všech stránkách přes `AppShell`.
+5. Zapnutí/vypnutí redeployem bez změny DB.
+
+**Odhad implementace:** ~1–1,5 h.
+
+---
+
+### 11.5 God Mode — doplňující specifikace
+
+God Mode nahrazuje „tlustého klienta“ pro denní moderaci. Supabase Dashboard zůstává pro SQL a migrace.
+
+**Admin (`admin`) = superAdmin** pro účely provozu — plný přístup k `/mod/*`.
+
+**Editace cizího inzerátu:**
+- Admin/moderátor otevře `/inzerat/[slug]/upravit` u cizího inzerátu.
+- Server Action ověří `profile.role IN ('moderator','admin')` a bypassne RLS vlastnictví.
+- Každá uložená změna → `audit_events` (`post_updated`).
+
+**Menu pro moderátory:**
+- Položka „Moderace“ v menu přihlášeného uživatele (viditelná jen pro `moderator` / `admin`).
+- Odkazy: Karanténa · Všechny inzeráty · *(admin)* Uživatelé.
+
+---
+
+### 11.6 Strukturovaná data (SEO + AI boti)
+
+Implementace v server komponentě detailu inzerátu — viz §5.3.
+
+**Helper:** `src/lib/seo/listing-json-ld.ts` — jeden zdroj pravdy pro JSON-LD.
+
+**Validace DoD:** Google Rich Results Test + ruční kontrola v HTML zdroji.
+
+**Mapování `category_type` → Schema.org:**
+
+| `category_type` | Typ |
+|-----------------|-----|
+| `zbozi` | `Product` |
+| `sluzby` | `Service` |
+| `udalost` | `Event` |
+| `nemovitost` | `RealEstateListing` |
+| `prace` | `JobPosting` |
+
+**Volitelně v0.5.1:** `public/llms.txt` — popis veřejných URL pro LLM crawlery.
+
+---
+
+### 11.7 Doporučené pořadí implementace
+
+| Pořadí | Oblast | Odhad |
+|--------|--------|-------|
+| 0 | **Globální informační lišta** (§11.4) — rychlé nasazení bez odstávky | 1–1,5 h |
+| 1 | JSON-LD + sitemap | 2–3 h |
+| 2 | Nahlášení UI + e-mail adminovi | 3–4 h |
+| 3 | God Mode (lišta + `/mod/karantena` + `/mod/inzeraty`) | 4–6 h |
+| 4 | `audit_events` + triggery | 4–5 h |
+| 5 | `inquiry_events` + napojení na `/api/inquiry` | 1 h |
+| 6 | `moderator_notes` | 2 h |
+| 7 | VOP/GDPR PDF + footer + FAQ accordion | 2–3 h |
+
+Audit log implementovat **po** God Mode a nahlášení — ať loguje reálné produkční akce.
+
+### 11.8 Out of Scope (v0.5)
+
+Viz [§2.2](#22-mimo-rozsah-v05-out-of-scope--provoz-a-moderace).

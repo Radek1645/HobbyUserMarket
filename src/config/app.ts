@@ -23,7 +23,9 @@ export const LISTING_DURATION_MAX_DAYS = 365;
 export const LISTING_DURATION_PRESETS = [7, 14, 30, 60, 90, 180, 365] as const;
 
 export const LISTING_DESCRIPTION_MIN_LENGTH = 10;
-export const LISTING_DESCRIPTION_MAX_LENGTH = 1000;
+export const LISTING_DESCRIPTION_MAX_LENGTH = 2000;
+/** Rezerva znaků v cleanedDescription při NEEDS_QUESTIONS — doplní se odpovědi z dotazníku. */
+export const MODERATION_DESCRIPTION_QA_RESERVE = 400;
 export const LISTING_EXCHANGE_FOR_MAX_LENGTH = 100;
 
 /** Fotky inzerátu — PRD §5.4, max 6 */

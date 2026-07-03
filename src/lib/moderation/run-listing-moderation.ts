@@ -73,6 +73,13 @@ export async function runListingModeration(
     description,
     categoryType: params.categoryType,
     subcategorySlug: params.subcategorySlug,
+    conditionLabel: params.conditionLabel,
+    conditionLabelText: params.conditionLabelText,
+    conditionFieldLabel: params.conditionFieldLabel,
+    eventDate: params.eventDate,
+    priceType: params.priceType,
+    priceTypeLabel: params.priceTypeLabel,
+    priceAmount: params.priceAmount,
     images: params.images,
   });
 }

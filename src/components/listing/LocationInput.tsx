@@ -9,9 +9,9 @@ import {
 } from "@/lib/mapy/client";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
+  listingFormHintClass,
   listingFormInputClass,
   listingFormLabelClass,
-  listingFormSecondaryButtonClass,
 } from "@/config/listing-form-ui";
 import type { MapyGeocodeEntity } from "@/lib/mapy/types";
 import { Loader2, MapPin } from "lucide-react";
@@ -28,6 +28,9 @@ type LocationInputProps = {
   onChange: (value: LocationInputValue) => void;
   inputClass?: string;
   labelClass?: string;
+  compact?: boolean;
+  label?: string;
+  placeholder?: string;
 };
 
 const DEBOUNCE_MS = 300;
@@ -37,6 +40,9 @@ export function LocationInput({
   onChange,
   inputClass = listingFormInputClass,
   labelClass = listingFormLabelClass,
+  compact = false,
+  label,
+  placeholder,
 }: LocationInputProps) {
   const listId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,6 +59,8 @@ export function LocationInput({
     value.latitude != null &&
     value.longitude != null &&
     value.locationText.trim().length > 0;
+
+  const isEmpty = value.locationText.trim().length === 0;
 
   const clearPendingSuggest = useCallback(() => {
     if (debounceRef.current) {
@@ -185,29 +193,62 @@ export function LocationInput({
 
   return (
     <div ref={containerRef}>
-      <label htmlFor="locationText" className={labelClass}>
-        Lokalita <span className="text-red-600">*</span>
-      </label>
+      {!compact ? (
+        <label htmlFor="locationText" className={labelClass}>
+          Lokalita inzerátu <span className="text-red-600">*</span>
+        </label>
+      ) : label ? (
+        <label htmlFor="locationText" className="mb-1 block text-sm font-medium text-gray-900">
+          {label}
+        </label>
+      ) : null}
       <div className="relative">
         <input
           id="locationText"
           name="locationText"
           type="text"
-          required
           autoComplete="off"
           role="combobox"
           aria-expanded={isOpen}
           aria-controls={listId}
           aria-autocomplete="list"
+          aria-label={compact && !label ? "Obec nebo město" : undefined}
           value={value.locationText}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => {
             if (suggestions.length > 0) setIsOpen(true);
           }}
-          className={inputClass}
-          placeholder="Obec, ulice nebo adresa…"
+          className={[
+            inputClass,
+            !compact ? "pr-10" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          placeholder={
+            placeholder ??
+            (compact ? "Obec nebo město…" : "Přehradní, Brno…")
+          }
         />
-        {isSuggestLoading ? (
+        {!compact ? (
+          isGpsLoading || isSuggestLoading ? (
+            <Loader2
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
+              aria-hidden="true"
+            />
+          ) : (
+            <button
+              type="button"
+              {...gtmCtaProps(GTM_CTA.LOCATION_USE_GPS)}
+              onClick={useCurrentLocation}
+              title="Jsem právě na místě — doplnit z GPS"
+              aria-label="Jsem právě na místě — doplnit z GPS"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/35"
+            >
+              <MapPin className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )
+        ) : null}
+        {compact && isSuggestLoading ? (
           <Loader2
             className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
             aria-hidden="true"
@@ -218,7 +259,10 @@ export function LocationInput({
           <ul
             id={listId}
             role="listbox"
-            className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
+            className={[
+              "absolute z-20 mt-1 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg",
+              compact ? "max-h-40" : "max-h-56",
+            ].join(" ")}
           >
             {suggestions.map((item) => (
               <li key={`${item.type}-${item.name}-${item.position.lon}`}>
@@ -250,33 +294,29 @@ export function LocationInput({
         ) : null}
       </div>
 
-      <button
-        type="button"
-        {...gtmCtaProps(GTM_CTA.LOCATION_USE_GPS)}
-        onClick={useCurrentLocation}
-        disabled={isGpsLoading}
-        className={`mt-2 inline-flex w-full sm:w-auto ${listingFormSecondaryButtonClass} px-3 py-2`}
-      >
-        {isGpsLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-        ) : (
-          <MapPin className="h-4 w-4" aria-hidden="true" />
-        )}
-        {isGpsLoading ? "Načítám polohu…" : "Použít aktuální polohu (GPS)"}
-      </button>
-
-      {isResolved ? (
-        <p className="mt-1 text-xs text-green-700">
-          Poloha nastavena ({value.latitude!.toFixed(4)},{" "}
-          {value.longitude!.toFixed(4)})
-        </p>
-      ) : value.locationText.trim().length > 0 ? (
-        <p className="mt-1 text-xs text-amber-700">
-          Vyber místo z našeptávače nebo použij GPS.
-        </p>
+      {!compact ? (
+        <div className="mt-1 space-y-1">
+          {isEmpty ? (
+            <p className={listingFormHintClass}>
+              Zadej město, abychom inzerát správně spárovali.
+            </p>
+          ) : isResolved ? (
+            <p className="text-xs text-green-700">
+              Lokalita potvrzena: {value.locationText}
+            </p>
+          ) : (
+            <p className={listingFormHintClass}>
+              Našeptávač ti pomůže vybrat správnou obec.
+            </p>
+          )}
+        </div>
       ) : null}
 
-      {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
+      {error ? (
+        <p className={compact ? "mt-1.5 text-xs text-red-600" : "mt-1 text-xs text-red-600"}>
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import { getMapyApiKey } from "@/lib/mapy/env";
-import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
+import {
+  formatHeaderLocation,
+  formatPublicListingLocation,
+} from "@/lib/posts/format-public-location";
 import type {
   MapyGeocodeEntity,
   MapyGeocodeResponse,
@@ -72,6 +75,11 @@ async function mapyGet<T>(
 /** Alias pro filtr polohy návštěvníka na homepage. */
 export function formatPublicAreaLocation(locationText: string): string {
   return formatPublicListingLocation(locationText);
+}
+
+/** Kompaktní štítek polohy do headeru. */
+export function formatHeaderAreaLocation(locationText: string): string {
+  return formatHeaderLocation(locationText);
 }
 
 /** Obec/město z Mapy `location` řetězce (první segment, bez „- město“). */

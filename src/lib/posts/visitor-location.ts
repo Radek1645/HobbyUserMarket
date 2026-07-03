@@ -6,6 +6,7 @@ export type VisitorLocation = {
 
 const STORAGE_KEY = "hum_visitor_location";
 const SEARCH_BY_LOCATION_KEY = "hum_search_by_location";
+const LOCATION_PROMPT_DISMISSED_KEY = "hum_location_prompt_dismissed";
 
 export function loadSearchByLocation(): boolean {
   if (typeof window === "undefined") return true;
@@ -15,6 +16,21 @@ export function loadSearchByLocation(): boolean {
 export function saveSearchByLocation(enabled: boolean): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(SEARCH_BY_LOCATION_KEY, String(enabled));
+}
+
+export function loadLocationPromptDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(LOCATION_PROMPT_DISMISSED_KEY) === "true";
+}
+
+export function saveLocationPromptDismissed(): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LOCATION_PROMPT_DISMISSED_KEY, "true");
+}
+
+export function clearLocationPromptDismissed(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(LOCATION_PROMPT_DISMISSED_KEY);
 }
 
 export function loadVisitorLocation(): VisitorLocation | null {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useCurrentUser } from "@/components/auth/UserContext";
 import { HomeListings } from "@/components/home/HomeListings";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
@@ -9,16 +10,21 @@ import {
   type HomeBrowseCategory,
 } from "@/config/home-themes";
 import { normalizeSearchQuery } from "@/lib/posts/search-query";
-import type { AppUser } from "@/types/auth";
+import type { PublicListingPreview } from "@/types/post";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
 type HomeBrowseProps = {
-  user: AppUser | null;
+  initialListings?: PublicListingPreview[] | null;
+  initialListingsCategory?: HomeBrowseCategory | null;
 };
 
-export function HomeBrowse({ user }: HomeBrowseProps) {
+export function HomeBrowse({
+  initialListings = null,
+  initialListingsCategory = null,
+}: HomeBrowseProps) {
+  const user = useCurrentUser();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -125,6 +131,8 @@ export function HomeBrowse({ user }: HomeBrowseProps) {
           category={category}
           theme={theme}
           searchQuery={searchQuery}
+          initialListings={initialListings}
+          initialListingsCategory={initialListingsCategory}
         />
       </div>
     </div>

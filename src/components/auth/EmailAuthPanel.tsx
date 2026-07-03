@@ -9,6 +9,7 @@ import {
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { useActionState, useState } from "react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
+import { BackButton } from "@/components/navigation/BackLink";
 
 type AuthTab = "login" | "register" | "forgot";
 
@@ -212,13 +213,11 @@ export function EmailAuthPanel({
           >
             {resetPending ? "Odesílám…" : "Odeslat odkaz"}
           </button>
-          <button
-            type="button"
+          <BackButton
+            label="Zpět na přihlášení"
             onClick={() => setTab("login")}
-            className="w-full text-sm text-gray-600 underline-offset-2 hover:text-gray-900 hover:underline"
-          >
-            ← Zpět na přihlášení
-          </button>
+            className="w-full justify-center"
+          />
         </form>
       ) : null}
     </div>
