@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.17  
+> **Verze dokumentu:** v3.18  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql) · [`016_search_posts.sql`](../supabase/016_search_posts.sql) · [`017_allow_contact_reveal.sql`](../supabase/017_allow_contact_reveal.sql) · [`018_reset_contact_opt_in.sql`](../supabase/018_reset_contact_opt_in.sql) · [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql) · [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql) · [`021_rate_limits_service_role_grants.sql`](../supabase/021_rate_limits_service_role_grants.sql) · [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql) · *v0.5 audit:* `020_audit_and_notes.sql` *(plánováno — jiný soubor než strip kontaktů)*  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql) · [`016_search_posts.sql`](../supabase/016_search_posts.sql) · [`017_allow_contact_reveal.sql`](../supabase/017_allow_contact_reveal.sql) · [`018_reset_contact_opt_in.sql`](../supabase/018_reset_contact_opt_in.sql) · [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql) · [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql) · [`021_rate_limits_service_role_grants.sql`](../supabase/021_rate_limits_service_role_grants.sql) · [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql) · [`024_posts_original_text.sql`](../supabase/024_posts_original_text.sql) · [`025_contact_privacy_hardening.sql`](../supabase/025_contact_privacy_hardening.sql) · [`026_contact_reveal_rate_limit.sql`](../supabase/026_contact_reveal_rate_limit.sql) · [`027_moderation_publish_gate.sql`](../supabase/027_moderation_publish_gate.sql) · *v0.5 audit:* `020_audit_and_notes.sql` *(plánováno — jiný soubor než strip kontaktů)*  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-06
+> **Datum:** 2026-07-07
 
 ---
 
@@ -34,9 +34,9 @@ MVP je hotové, když platí všechny body:
 
 1. **Rychlost založení:** Přihlášený uživatel zveřejní inzerát (s AI flow) do **2 minut** od otevření formuláře.
 2. **Lokální relevance:** Návštěvník s povolenou polohou vidí **6–9 inzerátů (mobil / desktop)**. Priorita: nejbližší v adaptivním okruhu (**15–60 km**). Pokud v okruhu není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** s hláškou.
-3. **Ochrana kontaktů:** V HTML zdroji detailu inzerátu **není** telefon ani e-mail před kliknutím na „Zobrazit kontakt“ (ověřitelné v DevTools).
+3. **Ochrana kontaktů:** V HTML zdroji detailu inzerátu **není** telefon ani e-mail před kliknutím na „Zobrazit kontakt“ (ověřitelné v DevTools). `posts.contact_phone` není čitelný přes veřejné SELECT (column-level REVOKE); e-mail cizího profilu není enumerovatelný přes RLS. Odhalení jde výhradně přes RPC `reveal_listing_contact` (přihlášení, viditelnost inzerátu, opt-in, rate limit 20/den).
 4. **SEO:** Detail inzerátu má server-renderovaný HTML, dynamický Title tag, JSON-LD a je v `sitemap.xml`.
-5. **Moderování:** 3 nahlášení od 3 různých uživatelů skryje inzerát; moderátor ho vidí na `/mod/karantena`. Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků. *(Od v0.5: každé stažení/skrytí má záznam v audit logu s důvodem — §11.1.)*
+5. **Moderování:** 3 nahlášení od 3 různých uživatelů skryje inzerát; moderátor ho vidí na `/mod/karantena`. Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků. Publikace na `active` vyžaduje **approval token** z Edge Function a RPC `publish_approved_post` — přímý insert/update na `active` z role `authenticated` je blokován (migrace `027`). *(Od v0.5: každé stažení/skrytí má záznam v audit logu s důvodem — §11.1.)*
 
 ### 1.2 Definition of Done (v0.1.1 — Volitelná platnost inzerátu)
 
@@ -318,8 +318,8 @@ rate_limits (volitelné, pro server-side rate limiting)
 
 | Stav | Viditelnost na webu | Sitemap | Kdy nastane |
 |------|---------------------|---------|-------------|
-| `draft` | Ne | Ne | Rozpracovaný koncept (volitelné pro MVP) |
-| `active` | Ano | Ano | Po úspěšné publikaci |
+| `draft` | Ne | Ne | Rozpracovaný koncept nebo neúspěšná publikace; jediná cesta na `active` přes `publish_approved_post` po AI schválení (migrace `027`) |
+| `active` | Ano | Ano | Po úspěšné publikaci (spotřebování approval tokenu) |
 | `archived` | Ne | Ne | Po uplynutí `expires_at` (cron nebo okamžitá neviditelnost — viz §4.1) |
 | `hidden` | Ne | Ne | 3× nahlášení od různých uživatelů nebo akce moderátora/admina |
 | `deleted` | Ne | Ne | Soft delete uživatelem nebo moderátorem |
@@ -427,8 +427,8 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * **Komunitní moderování komentářů:** Tlačítko „Nahlásit“. Pokud komentář nasbírá **3 nahlášení od 3 různých přihlášených uživatelů** (`reporter_user_id`), automaticky mění stav na `hidden` a padá do karantény.
   * **Rate limit:** Max **10 komentářů / hodinu / uživatel**.
 * **Ochrana kontaktů před scrapery (Anti-Scraping / Bot protection):**
-  * **Tlačítko „Zobrazit kontakt“:** Telefon a e-mail prodejce nejsou v HTML kódu stránky. Zobrazí se až po kliknutí **přihlášeného** uživatele. Event se loguje do `contact_reveals`.
-  * **Rate limit:** Max **20 zobrazení kontaktů / den / uživatel**.
+  * **Tlačítko „Zobrazit kontakt“:** Telefon a e-mail prodejce nejsou v HTML kódu stránky ani v veřejném SELECT na `posts`/`profiles`. Zobrazí se až po kliknutí **přihlášeného** uživatele přes RPC `reveal_listing_contact` (SECURITY DEFINER): ověří viditelnost inzerátu, opt-in vlajky `show_contact_email` / `show_contact_phone`, zapíše `contact_reveals`. Sloupec `posts.contact_phone` má `REVOKE SELECT` pro role `anon`/`authenticated` (migrace `025`).
+  * **Rate limit:** Max **20 zobrazení kontaktů / den / uživatel** (vynuceno v RPC, migrace `026`; konstanta `CONTACT_REVEAL_RATE_LIMIT_PER_DAY` v `app.ts`).
   * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá. Po úspěšném odeslání se zapíše metadata do `inquiry_events` (bez obsahu zprávy — §11.1 C).
   * **Události *(v0.2)*:** U `category_type = 'udalost'` se formulář chová jako „registrace zájmu o účast“ — tlačítko **„Mám zájem o účast“**, předmět/tělo e-mailu: *„Uživatel [jméno] se chce zúčastnit vaší akce: [Název] — [kontaktní údaje].“* Pořadatel odpovídá ze svého e-mailu; systém neukládá účastníky do DB.
 * **Komunitní moderování inzerátů:**
@@ -480,15 +480,23 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
     * Počítadlo znaků v modalu zahrnuje **projekovaný finální popis** včetně odpovědí (limit 2000).
     * Během volání AI: **full-screen overlay** se spinnerem (ne banner dole).
     * **Akce uživatele:**
-      1. **Doplnit, upravit a publikovat (Doporučeno):** Finální verze (včetně `title`) uložena do DB jako `status = 'active'`.
+      1. **Doplnit, upravit a publikovat (Doporučeno):** Finální verze (včetně `title`) uložena do DB — nejprve `status = 'draft'`, po uploadu fotek RPC `publish_approved_post` s `approvalToken` z AI → `active`.
       2. **Publikovat bez vylepšení:** Zahodí AI korektury textu, ale **vždy platí:**
-         - Bezpečnostní filtr (zbraně, drogy, porno, orgány) — neprůstřelný.
+         - Bezpečnostní filtr (zbraně, drogy, porno, orgány) — neprůstřelný; bez approval tokenu zůstane inzerát `draft`.
          - **Server-side strip kontaktů** v popisu (DB trigger + regex) — nahrazení `[SKRYTO – použij chráněné pole]`.
-      3. **Zrušit:** Koncept zahozen, v DB nevzniká zápis.
+         - **Server-side keyword scan** (`prohibited-scan.ts`) — rychlý filtr zjevných zakázaných výrazů před uložením.
+      3. **Zrušit:** Koncept zahozen, v DB nevzniká zápis (nebo zůstane `draft` při selhání publish).
+
+* **Server-side vynucení publikace *(migrace `027`)*:**
+  * Edge Function po průchodu bezpečnostním filtrem (status ≠ `REJECTED`) vloží záznam do `moderation_approvals` (TTL 30 min, jednorázový, váže `user_id` + počet moderovaných fotek) a vrátí klientovi `approvalToken`.
+  * `createListing` / `updateListing` (při re-moderaci) vkládají/aktualizují řádek jako `draft`, nahrají fotky a volají `publish_approved_post(post_id, token, target)` — jediná cesta na `active` (u pauznutého inzerátu `target = 'hidden'`).
+  * RLS `posts_insert_own` povolí insert jen se `status = 'draft'`. Trigger `enforce_post_publish_gate` blokuje přímý přechod na viditelný stav; editace obsahu (název/popis/kategorie) nebo změna fotek shodí inzerát zpět na `draft` (re-moderace). Moderátor/admin a `service_role` mají výjimku.
+  * **Gemini prompt:** Pro Gemini se používá zkrácený system prompt (`geminiSafe: true` — jen ID + label kategorií), aby Google nevypnul vstup filtrem `PROHIBITED_CONTENT` u nevinných fotek. OpenAI fallback používá plný prompt s `criteria`.
 
 * **Editace existujícího inzerátu:**
-  * Změna **názvu, popisu, fotek nebo kategorie** → povinná znovu AI kontrola (min. bezpečnostní filtr + strip kontaktů).
-  * Změna pouze **ceny nebo stavu** (štítek) → bez AI, přímé uložení.
+  * Změna **názvu, popisu, fotek nebo kategorie** → povinná znovu AI kontrola (min. bezpečnostní filtr + strip kontaktů); DB trigger degraduje inzerát na `draft` do spotřebování nového approval tokenu.
+  * Změna pouze **ceny, lokality, stavu nebo platnosti** → bez AI, přímé uložení (stav se nemění).
+  * Inzerát ve stavu `draft` (neúspěšná publikace) lze doupravit z `/moje-inzeraty` — formulář vynutí AI kontrolu (`forceModeration`).
 
 ### 5.5 Politika správy uživatelských dat (GDPR & Retence)
 
@@ -640,6 +648,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.15 | 2026-07-06 | §1.6 **Tone of Voice** (AirBank styl, vykání, jasná očekávání); sjednocení user-facing příkladů v PRD; odkazy na `messages.ts` a `home-themes.ts` |
 | v3.16 | 2026-07-06 | §1.0 **Dokumentace procesů** — závazek dokumentovat každou činnost v [`Metodika.md`](./Metodika.md); odkaz na metodiku v hlavičce dokumentu |
 | v3.17 | 2026-07-06 | §5.2 **Souhlasy při registraci** — povinný VOP + volitelný marketingový souhlas (checkboxy, odkazy `/vop`, `/marketingovy-souhlas`); patička a §11.3 rozšířeny o marketingový souhlas |
+| v3.18 | 2026-07-07 | **Bezpečnostní hardening:** migrace **025–027** (PII kontaktů, rate limit reveal 20/den, approval token + DB gating publikace); §1.1 DoD rozšířeno o RPC kontakty a server-side moderaci; §4.1 `draft` jako povinný mezistav; §5.3 + §5.4 server-side publish gate, `moderation_approvals`, Gemini-safe prompt, keyword scan; jednotky v Parametrech (cm, ml) v AI promptu |
 
 ---
 

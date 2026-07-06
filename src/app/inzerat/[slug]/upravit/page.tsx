@@ -82,6 +82,7 @@ export default async function EditListingPage({ params }: PageProps) {
         initialValues={initialValues}
         initialImages={post.images}
         userEmail={user.email}
+        forceModeration={post.status === "draft"}
       />
     </div>
   );

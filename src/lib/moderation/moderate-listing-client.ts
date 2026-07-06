@@ -38,6 +38,7 @@ function mapResponse(
       cleanedTitle: response.cleanedTitle ?? title,
       cleanedDescription: response.cleanedDescription ?? description,
       questions: response.questions?.slice(0, MODERATION_MAX_QUESTIONS),
+      approvalToken: response.approvalToken ?? undefined,
     };
   }
 
@@ -46,6 +47,7 @@ function mapResponse(
     skipped: false,
     cleanedTitle: response.cleanedTitle ?? title,
     cleanedDescription: response.cleanedDescription ?? description,
+    approvalToken: response.approvalToken ?? undefined,
   };
 }
 

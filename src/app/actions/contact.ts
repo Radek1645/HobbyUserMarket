@@ -1,5 +1,6 @@
 "use server";
 
+import { CONTACT_REVEAL_RATE_LIMIT_PER_DAY } from "@/config/app";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { postAllowsDirectContact } from "@/lib/posts/contact-display";
 import { createClient } from "@/lib/supabase/server";
@@ -20,11 +21,11 @@ export async function revealListingContact(
 
   const supabase = await createClient();
 
+  // Pre-check jen pro přesné (ne-PII) chybové hlášky. Telefon ani cizí profil
+  // se zde nečtou — PII vrací výhradně reveal_listing_contact RPC.
   const { data: post, error: postError } = await supabase
     .from("posts")
-    .select(
-      "user_id, show_contact_email, show_contact_phone, contact_phone, status, expires_at",
-    )
+    .select("show_contact_email, show_contact_phone, status, expires_at")
     .eq("id", postId)
     .maybeSingle();
 
@@ -36,33 +37,26 @@ export async function revealListingContact(
     return { error: "Zadavatel nepovolil přímé zobrazení kontaktu." };
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", post.user_id)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("reveal_listing_contact", {
+    p_post_id: postId,
+  });
 
-  if (profileError || !profile) {
+  if (error) {
+    if (error.message?.includes("contact_reveal_rate_limited")) {
+      return {
+        error: `Denní limit zobrazených kontaktů (${CONTACT_REVEAL_RATE_LIMIT_PER_DAY}) je vyčerpaný. Zkuste to prosím zítra, nebo zadavateli napište přes formulář.`,
+      };
+    }
     return { error: "Kontakt se nepodařilo načíst." };
   }
 
-  const email =
-    post.show_contact_email === true && profile.email?.trim()
-      ? profile.email.trim()
-      : null;
-  const phone =
-    post.show_contact_phone === true && post.contact_phone?.trim()
-      ? post.contact_phone.trim()
-      : null;
+  const row = Array.isArray(data) ? data[0] : data;
+  const email = row?.email ?? null;
+  const phone = row?.phone ?? null;
 
   if (!email && !phone) {
     return { error: "Zadavatel nemá u inzerátu vyplněný kontakt." };
   }
-
-  await supabase.from("contact_reveals").insert({
-    post_id: postId,
-    viewer_user_id: user.id,
-  });
 
   return { email, phone };
 }

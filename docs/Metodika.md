@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md)  
-> **Datum:** 2026-07-06
+> **Datum:** 2026-07-07
 
 ---
 
@@ -191,8 +191,10 @@ Po kliknutí na **„Publikovat inzerát“**:
 
 1. Zobrazí se celoobrazovkové načítání (AI běží).
 2. Proběhne [AI moderace a hydratace](#6-ai-moderace-a-hydratace) (viz detailní popis níže).
-3. Po schválení se inzerát uloží se stavem `active` a objeví se na webu.
+3. Po schválení Server Action uloží inzerát nejprve jako **`draft`**, nahraje fotky a přes RPC **`publish_approved_post`** (s approval tokenem z AI) přepne na **`active`**.
 4. URL má tvar `/inzerat/[slug]` — slug se generuje při první publikaci a **nemění se** při editaci.
+
+Pokud publikace selže (chybí/neplatný token), inzerát zůstane ve stavu **Koncept** (`draft`) — majitel ho najde v `/moje-inzeraty` a může doupravit.
 
 ---
 
@@ -221,15 +223,18 @@ Formulář → klik „Publikovat“ / „Uložit“
     → Edge Function moderate-listing (AI: Gemini / GPT)
         → REJECTED     → popup „Inzerát nesplňuje pravidla“, nic se neuloží
         → NEEDS_QUESTIONS → modal s náhledem textu + doplňující otázky
-        → APPROVED     → modal s náhledem upraveného textu
+        → APPROVED     → modal s náhledem upraveného textu (+ approvalToken)
     → uživatel volí v modalu
         → Doplnit, upravit a publikovat
         → Ignorovat AI a publikovat původní
         → Zrušit (návrat do formuláře)
-    → Server uloží inzerát (createListing / updateListing)
+    → Server Action createListing / updateListing
+        → insert/update jako draft
+        → upload fotek
+        → publish_approved_post(token) → active (nebo hidden u pauznutého)
 ```
 
-**Důležité:** AI se volá přímo z prohlížeče do Supabase (ne přes Next.js), aby nedocházelo k timeoutům. Klíče k AI jsou jen na serveru Edge Function.
+**Důležité:** AI se volá přímo z prohlížeče do Supabase (ne přes Next.js), aby nedocházelo k timeoutům. Klíče k AI jsou jen na serveru Edge Function. **Publikaci na `active` nelze obejít** — vyžaduje platný approval token z Edge Function (migrace `027`).
 
 ### 6.4 Co AI kontroluje na fotkách
 
@@ -284,8 +289,10 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 
 1. V modalu vidí náhled AI textu (zatím bez chybějících parametrů).
 2. Pod ním vyplní pole z dotazníku („Vylepšete svý inzerát“).
-3. Po potvrzení se odpovědi **automaticky doplní** do sekce Parametry.
+3. Po potvrzení se odpovědi **automaticky doplní** do sekce Parametry (s jednotkami — rozměry v **cm**, objem v **ml**, pokud uživatel jednotku nevyplní).
 4. Odpovědi se **neukládají zvlášť** v databázi — jsou součástí finálního popisu.
+
+**Jednotky v Parametrech:** AI se ptá s jednotkou v otázce (např. „Jaké jsou rozměry v cm?“) a `paramLabel` sladí s očekávaným parametrem (`Rozměry`, `Objem`). Klient při slučování odpovědí doplňuje `cm` / `ml`, pokud chybí.
 
 **Limity délky:**
 
@@ -325,7 +332,9 @@ Kontakty patří do chráněných polí profilu / inzerátu a zobrazí se až po
 |---------|---------|
 | Více než 20 AI kontrol za hodinu | Hláška o limitu, zkusit později |
 | AI nedostupná / timeout (30 s) | Červená hláška ve formuláři, ne popup |
+| Google zablokuje vstup (`PROHIBITED_CONTENT`) | Obsahové zamítnutí s hláškou o bezpečnostním filtru; u nevinných fotek mitigováno zkráceným Gemini promptem (`geminiSafe`) |
 | Popis obsahuje datum po expiraci inzerátu | Varování ve formuláři (u zboží/služeb) |
+| Chybí approval token při uložení | Inzerát zůstane `draft` (Koncept v UI) |
 
 ---
 
@@ -339,8 +348,9 @@ Stejný 3krokový formulář jako při založení, předvyplněný aktuálními 
 
 ### 7.2 Kdy znovu proběhne AI
 
-- Změna **názvu, popisu, kategorie nebo fotek** → plná AI kontrola (včetně modalu).
+- Změna **názvu, popisu, kategorie nebo fotek** → plná AI kontrola (včetně modalu); DB trigger dočasně degraduje inzerát na `draft`, po uložení s tokenem se obnoví na `active` (nebo `hidden`, pokud byl pauznutý).
 - Změna **jen ceny, stavu, lokality nebo platnosti** → uložení bez AI.
+- Inzerát ve stavu **Koncept** (`draft`) → AI kontrola proběhne vždy (i beze změny textu), aby vznikl nový approval token.
 
 ### 7.3 Co se nemění
 
@@ -363,10 +373,10 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 
 ### 8.2 Zobrazení kontaktu
 
-1. Telefon a e-mail **nejsou** v HTML stránky (ochrana před roboty).
+1. Telefon a e-mail **nejsou** v HTML stránky ani v přímém SELECT na `posts`/`profiles` (column-level REVOKE + RLS).
 2. Přihlášený uživatel klikne **„Zobrazit kontakt“**.
-3. Kontakt se zobrazí; událost se zapíše do `contact_reveals`.
-4. Limit: **20 zobrazení za den** na uživatele.
+3. Server zavolá RPC **`reveal_listing_contact`** — ověří viditelnost inzerátu, opt-in vlajky, rate limit; zapíše `contact_reveals`; vrátí PII.
+4. Limit: **20 zobrazení za den** na uživatele (unikátní inzeráty; opětovné otevření téhož inzerátu limit nespotřebuje).
 
 ### 8.3 Poptávkový formulář
 

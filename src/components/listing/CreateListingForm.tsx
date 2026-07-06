@@ -81,6 +81,11 @@ type CreateListingFormProps = {
   initialImages?: ListingImagePreview[];
   /** E-mail z účtu — náhled v sekci kontaktu. */
   userEmail: string;
+  /**
+   * H1: inzerát je 'draft' (neúspěšná publikace) — AI moderace musí proběhnout
+   * i beze změny obsahu, jinak by nevznikl approval token pro publikaci.
+   */
+  forceModeration?: boolean;
 };
 
 type FormState = CreateListingState | UpdateListingState;
@@ -100,6 +105,7 @@ export function CreateListingForm({
   initialValues,
   initialImages = [],
   userEmail,
+  forceModeration = false,
 }: CreateListingFormProps) {
   const isEdit = mode === "edit";
   const formAction = isEdit ? updateListing : createListing;
@@ -116,6 +122,7 @@ export function CreateListingForm({
     useState<ModerationPreviewState | null>(null);
   const [moderationApprovedOpen, setModerationApprovedOpen] = useState(false);
   const pendingPublishFormRef = useRef<HTMLFormElement | null>(null);
+  const pendingApprovalTokenRef = useRef<string | undefined>(undefined);
   const [isCheckingAi, setIsCheckingAi] = useState(false);
   const [step, setStep] = useState(isEdit ? 2 : 1);
 
@@ -270,6 +277,9 @@ export function CreateListingForm({
       formData.set("originalTitle", originalSnapshot.title);
       formData.set("originalDescription", originalSnapshot.description);
     }
+    if (pendingApprovalTokenRef.current) {
+      formData.set("moderationToken", pendingApprovalTokenRef.current);
+    }
     setTitle(titleValue);
     setDescription(descriptionValue);
     imageUploadRef.current?.appendToFormData(formData);
@@ -383,7 +393,9 @@ export function CreateListingForm({
           (priceType === "fixed" || priceType === "negotiable")
             ? parsedPriceAmount
             : undefined,
-        initialValues: isEdit ? initialValues : undefined,
+        // Bez initialValues se u draftu nevyhodnotí „beze změny → přeskočit AI“
+        // a moderace (→ approval token) proběhne vždy.
+        initialValues: isEdit && !forceModeration ? initialValues : undefined,
         imagesChanged: isEdit
           ? (imageUploadRef.current?.hasImageChanges() ?? false)
           : false,
@@ -409,6 +421,8 @@ export function CreateListingForm({
       });
       return;
     }
+
+    pendingApprovalTokenRef.current = moderation.approvalToken;
 
     if (moderation.skipped || !MODERATION_ENABLED) {
       const imagesChanged =

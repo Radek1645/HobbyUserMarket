@@ -11,15 +11,19 @@ Dokumentace k AI guardrailu podle PRD §5.4. Platí pro **založení** i **úpra
 ```
 Formulář (create / edit)
     → runListingModeration()          … jednotný vstup v prohlížeči
-        → [vypnuto] strip kontaktů, uložení
+        → [vypnuto] strip kontaktů, uložení (bez tokenu → draft, nepublikuje)
         → [zapnuto] Edge Function moderate-listing (Gemini / GPT)
-            → APPROVED → Server Action createListing / updateListing
+            → APPROVED / NEEDS_QUESTIONS → approvalToken v odpovědi
             → REJECTED → popup ModerationRejectedDialog
             → chyba sítě  → červený alert ve formuláři
+    → Server Action createListing / updateListing
+        → uložení jako draft + fotky
+        → publish_approved_post(approvalToken) → active
 ```
 
 - AI se **nevolá přes Next.js API** (riziko timeoutu na Vercel) — jen přes Supabase Edge Function z klienta.
-- Seznam zakázaného obsahu je v **konfiguračních souborech**; AI prompt se z něj **generuje automaticky**.
+- **Publikaci na `active` nelze obejít** bez approval tokenu z Edge Function (migrace `027`, viz níže).
+- Seznam zakázaného obsahu je v **konfiguračních souborech**; AI prompt se z něj **generuje automaticky** (pro Gemini zkrácená varianta bez explicitních `criteria`).
 
 ---
 
@@ -34,8 +38,10 @@ Formulář (create / edit)
 | `src/lib/moderation/` | Logika klienta (volání, strip kontaktů, příprava fotek) |
 | `src/components/moderation/ModerationRejectedDialog.tsx` | Popup při zamítnutí |
 | `src/app/podminky-inzerce/page.tsx` | Stub stránky Podmínky inzerce (odkaz z patičky) |
-| `supabase/functions/moderate-listing/` | Edge Function (zatím stub) |
+| `supabase/functions/moderate-listing/` | Edge Function (Gemini / OpenAI fallback) |
+| `supabase/functions/_shared/moderation/issue-approval.ts` | Vydání approval tokenu po AI schválení |
 | `supabase/functions/_shared/moderation/` | Kopie pravidel pro deploy (sync skriptem) |
+| `src/lib/moderation/prohibited-scan.ts` | Server-side keyword scan před uložením |
 
 ---
 
@@ -63,7 +69,7 @@ Nejde o jednoduchý „slovníček zakázaných slov“ — každá položka je 
 | `id` | Identifikátor pro logy a odpověď AI (`rejectedTopicId`). **Nepřejmenovávej** po spuštění produkce. |
 | `label` | Lidsky čitelný název — zobrazí se v popupu v seznamu „Na platformě není dovoleno…“. |
 | `criteria` | Hlavní pravidlo pro AI. Čím konkrétnější, tím lépe moderace funguje. |
-| `keywords` | Volitelné klíčové výrazy pro **budoucí** lokální pre-check před voláním AI. Dnes ještě neblokují uložení samy o sobě. |
+| `keywords` | Volitelné klíčové výrazy pro **server-side pre-check** (`prohibited-scan.ts`) před uložením. Doplňují AI, nenahrazují ji. |
 
 ### Přidání nové kategorie
 
@@ -169,9 +175,35 @@ supabase functions deploy moderate-listing
 
 4. V `src/config/moderation/index.ts`: `MODERATION_ENABLED = true` (už zapnuto v repu).
 
-5. Ověř create i edit — při `REJECTED` popup, při schválení modal „AI Náhled & Doplnění“.
+5. Ověř create i edit — při `REJECTED` popup, při schválení modal „AI Náhled & Doplnění“, po publikaci stav **Aktivní** (ne Koncept).
+
+6. Migrace bezpečnostního hardeningu (jednorázově, pokud ještě nejsou):
+
+```bash
+# Supabase SQL Editor — v pořadí:
+# supabase/025_contact_privacy_hardening.sql
+# supabase/026_contact_reveal_rate_limit.sql
+# supabase/027_moderation_publish_gate.sql
+```
 
 > **Po změně `categories.ts` nebo `prohibited-topics.ts`:** znovu `npm run sync:moderation` → `supabase functions deploy moderate-listing`. Sync **po** deployi nedává smysl — cloud už běží se starým balíkem; oprava vyžaduje **nový** deploy hned po syncu.
+
+---
+
+## Server-side vynucení publikace (migrace `027`)
+
+| Komponenta | Účel |
+|------------|------|
+| `moderation_approvals` | Tabulka approval tokenů (píše jen `service_role` z Edge Function) |
+| `issue_moderation_approval` | RPC pro vydání tokenu (TTL 30 min, váže user + počet fotek) |
+| `publish_approved_post` | Jediná cesta z `draft` na `active` / `hidden` pro vlastníka |
+| `enforce_post_publish_gate` | Trigger — blokuje přímý přechod na viditelný stav; editace obsahu → `draft` |
+| `revert_post_on_image_change` | Trigger — změna fotek → `draft` |
+| `prohibited-scan.ts` | Rychlý keyword scan v Server Action před uložením |
+
+**Gemini:** System prompt pro Gemini používá `geminiSafe: true` (jen ID + label kategorií), aby Google nevypnul vstup filtrem `PROHIBITED_CONTENT` u nevinných fotek. OpenAI fallback dostává plný prompt s `criteria`. Volitelně nastav `OPENAI_API_KEY` jako záložní provider.
+
+**Jednotky v Parametrech:** Prompt vyžaduje rozměry v cm, objem v ml; otázky v dotazníku obsahují jednotku v textu; klient (`format-question-answers.ts`) doplňuje jednotky při slučování odpovědí.
 
 ---
 

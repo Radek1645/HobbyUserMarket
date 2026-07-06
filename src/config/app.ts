@@ -48,6 +48,10 @@ export const LISTING_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"] as co
 /** Max. doba dopředu pro datum události */
 export const EVENT_DATE_MAX_DAYS_AHEAD = 365;
 
+/** Odhalení kontaktu — PRD §5.3, max 20 zobrazení / den / uživatel.
+ *  Vynuceno v DB (reveal_listing_contact RPC); tato konstanta drží hodnotu pro UI hlášku. */
+export const CONTACT_REVEAL_RATE_LIMIT_PER_DAY = 20;
+
 /** Poptávkový formulář — PRD §5.3, docs/future_jobs.md */
 export const INQUIRY_MESSAGE_MIN_LENGTH = 10;
 export const INQUIRY_MESSAGE_MAX_LENGTH = 1000;

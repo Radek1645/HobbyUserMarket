@@ -21,17 +21,26 @@ const STATUS_LABELS: Record<PostStatus, string> = {
   deleted: "Smazaný",
 };
 
+// contact_phone se v přehledu nezobrazuje a je odebraný z veřejného SELECT (C2).
+const MY_LISTING_COLUMNS =
+  "id, user_id, title, description, category_type, subcategory_slug, " +
+  "price_type, price_amount, exchange_for, condition_label, location_text, " +
+  "status, expires_at, listing_duration_days, event_date, renew_count, " +
+  "payment_status, main_image_url, slug, show_contact_email, " +
+  "show_contact_phone, created_at, updated_at";
+
 async function getMyListings(userId: string): Promise<PostRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("*")
+    .select(MY_LISTING_COLUMNS)
     .eq("user_id", userId)
     .neq("status", "deleted")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .returns<PostRow[]>();
 
   if (error || !data) return [];
-  return data as PostRow[];
+  return data;
 }
 
 export default async function MyListingsPage() {

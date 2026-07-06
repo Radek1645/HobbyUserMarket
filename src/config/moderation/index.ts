@@ -19,7 +19,12 @@ export {
   type ProhibitedTopicId,
 } from "@/config/moderation/prohibited-topics";
 
-/** Volá Edge Function `moderate-listing` před uložením (create i edit). */
+/**
+ * Volá Edge Function `moderate-listing` před uložením (create i edit).
+ * POZOR (H1): publikace vyžaduje approval token z Edge Function — vypnutí
+ * tohoto flagu tedy NEobejde moderaci, jen zablokuje publikaci nových
+ * inzerátů (zůstanou v 'draft'). DB gate viz supabase/027.
+ */
 export const MODERATION_ENABLED = true;
 
 /** Max. AI kontrol / hodinu / uživatel (PRD). */

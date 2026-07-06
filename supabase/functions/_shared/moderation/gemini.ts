@@ -36,6 +36,21 @@ export async function callGeminiModeration(params: {
         parts: [{ text: params.systemPrompt }],
       },
       contents: [{ role: "user", parts }],
+      // Moderační workload: model MÁ posuzovat hraniční obsah, ne být jím
+      // blokován. Vypíná jen konfigurovatelné kategorie; nevypnutelný filtr
+      // Google (CSAM apod.) zůstává aktivní.
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_NONE",
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_NONE",
+        },
+      ],
       generationConfig: {
         temperature: 0.2,
         responseMimeType: "application/json",
@@ -51,9 +66,43 @@ export async function callGeminiModeration(params: {
 
   const payload = await response.json();
 
-  const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+  // Text může být rozdělený do více parts (např. u „thinking“ modelů) —
+  // spoj všechny textové části, ne jen parts[0].
+  const candidate = payload?.candidates?.[0];
+  const responseParts: unknown[] = Array.isArray(candidate?.content?.parts)
+    ? candidate.content.parts
+    : [];
+  const text = responseParts
+    .map((part) => {
+      const p = part as { text?: unknown; thought?: unknown };
+      // `thought: true` = interní uvažování modelu, není součást odpovědi.
+      if (p?.thought === true) return "";
+      return typeof p?.text === "string" ? p.text : "";
+    })
+    .join("");
 
-  if (typeof text !== "string" || !text.trim()) {
+  if (!text.trim()) {
+    // Diagnostika: proč přišla prázdná odpověď (safety blok, MAX_TOKENS…).
+    console.error(
+      "Gemini empty response detail:",
+      JSON.stringify({
+        finishReason: candidate?.finishReason,
+        safetyRatings: candidate?.safetyRatings,
+        promptFeedback: payload?.promptFeedback,
+        usageMetadata: payload?.usageMetadata,
+      }),
+    );
+
+    // Vstup zablokoval nevypnutelný filtr Google (PROHIBITED_CONTENT apod.)
+    // → obsahové zamítnutí, ne technická chyba.
+    const blockReason = payload?.promptFeedback?.blockReason;
+    if (typeof blockReason === "string" && blockReason) {
+      throw new Error(`GEMINI_BLOCKED_${blockReason}`);
+    }
+    if (candidate?.finishReason === "SAFETY") {
+      throw new Error("GEMINI_BLOCKED_SAFETY");
+    }
+
     throw new Error("GEMINI_EMPTY_RESPONSE");
   }
 

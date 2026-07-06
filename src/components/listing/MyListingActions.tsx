@@ -21,7 +21,9 @@ const actionButtonClass =
   "rounded-xl border px-3 py-2 text-sm font-medium transition disabled:opacity-50";
 
 export function MyListingActions({ postId, slug, status }: MyListingActionsProps) {
-  const canEdit = status === "active" || status === "hidden";
+  // 'draft' = neúspěšně publikovaný inzerát (H1) — jde doupravit a znovu odeslat.
+  const canEdit =
+    status === "active" || status === "hidden" || status === "draft";
   const canManage =
     status === "active" ||
     status === "hidden" ||

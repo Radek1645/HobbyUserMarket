@@ -50,6 +50,8 @@ export type ModerateListingResponse = {
   cleanedTitle?: string;
   cleanedDescription?: string;
   questions?: ModerationQuestion[];
+  /** H1: token pro server-side publikaci (vydán po průchodu bezpečnostním filtrem). */
+  approvalToken?: string | null;
 };
 
 export type ListingModerationInput = {
@@ -78,6 +80,8 @@ export type ListingModerationSuccess = {
   cleanedTitle: string;
   cleanedDescription: string;
   questions?: ModerationQuestion[];
+  /** H1: token pro server-side publikaci; undefined u skipped (beze změny obsahu). */
+  approvalToken?: string;
 };
 
 export type ListingModerationFailure =

@@ -21,6 +21,7 @@ import {
   parseModerationResponse,
 } from "../_shared/moderation/parse-response.ts";
 import { assertAiModerationRateLimit } from "../_shared/moderation/rate-limit.ts";
+import { issueModerationApproval } from "../_shared/moderation/issue-approval.ts";
 import {
   assertValidCategoryPair,
   resolveCategoryAiPrompt,
@@ -32,7 +33,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const moderationSystemPrompt = buildModerationSystemPrompt();
+const moderationSystemPromptFull = buildModerationSystemPrompt();
+const moderationSystemPromptGemini = buildModerationSystemPrompt({
+  geminiSafe: true,
+});
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -67,7 +71,6 @@ async function resolveUserId(req: Request): Promise<string | null> {
 }
 
 async function callModerationAi(params: {
-  systemPrompt: string;
   userPrompt: string;
   imagesBase64: string[];
 }): Promise<string> {
@@ -80,17 +83,26 @@ async function callModerationAi(params: {
 
   if (hasGemini) {
     try {
-      return await callGeminiModeration(params);
+      return await callGeminiModeration({
+        ...params,
+        systemPrompt: moderationSystemPromptGemini,
+      });
     } catch (geminiError) {
       console.error("Gemini failed:", geminiError);
       if (hasOpenAi) {
-        return await callOpenAiModeration(params);
+        return await callOpenAiModeration({
+          ...params,
+          systemPrompt: moderationSystemPromptFull,
+        });
       }
       throw geminiError;
     }
   }
 
-  return await callOpenAiModeration(params);
+  return await callOpenAiModeration({
+    ...params,
+    systemPrompt: moderationSystemPromptFull,
+  });
 }
 
 serve(async (req) => {
@@ -208,7 +220,6 @@ serve(async (req) => {
     );
 
     const rawAiResponse = await callModerationAi({
-      systemPrompt: moderationSystemPrompt,
       userPrompt,
       imagesBase64,
     });
@@ -225,11 +236,30 @@ serve(async (req) => {
       description,
     );
 
+    // H1: po průchodu bezpečnostním filtrem vydej approval token pro publikaci.
+    if (result.status !== "REJECTED") {
+      const approvalToken = await issueModerationApproval(
+        userId,
+        imagesBase64.length,
+      );
+      return jsonResponse({ ...result, approvalToken });
+    }
+
     return jsonResponse(result);
   } catch (error) {
     console.error("moderate-listing:", error);
 
     if (error instanceof Error) {
+      // Vstup zablokoval bezpečnostní filtr Google — obsahový problém,
+      // ne výpadek. Vracíme normální zamítnutí.
+      if (error.message.startsWith("GEMINI_BLOCKED_")) {
+        return jsonResponse({
+          status: "REJECTED",
+          reason:
+            "Text nebo fotky inzerátu zablokoval bezpečnostní filtr. Zkuste jiné fotografie nebo upravte popis.",
+        });
+      }
+
       if (error.message === "AI_KEYS_MISSING") {
         return jsonResponse({
           status: "REJECTED",

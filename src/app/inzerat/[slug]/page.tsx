@@ -37,11 +37,18 @@ function resolveSlugParam(param: string): string {
   return param;
 }
 
+// contact_phone se zde záměrně nečte — odhaluje se jen přes reveal RPC (C2).
+const POST_DETAIL_COLUMNS =
+  "id, user_id, title, description, category_type, subcategory_slug, " +
+  "price_type, price_amount, exchange_for, condition_label, location_text, " +
+  "status, expires_at, event_date, main_image_url, slug, " +
+  "show_contact_email, show_contact_phone, created_at, updated_at";
+
 async function getPostBySlug(slug: string): Promise<PostRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("*")
+    .select(POST_DETAIL_COLUMNS)
     .eq("slug", slug)
     .maybeSingle<PostRow>();
 

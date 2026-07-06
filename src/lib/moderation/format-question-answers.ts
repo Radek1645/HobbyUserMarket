@@ -11,7 +11,8 @@ const QUESTION_SHORT_LABELS: [RegExp, string][] = [
   [/technick[ouá]\s+kontrol|\bstk\b/i, "STK platná do"],
   [/představa\s+o\s+cen|jaká\s+je.*cen/i, "Cena"],
   [/kde\s+přesně|lokalit|adres|místo\s+konání/i, "Místo konání"],
-  [/velikost/i, "Velikost"],
+  [/velikost|rozměr/i, "Rozměry"],
+  [/objem|kapacit|obsah\s+nádob/i, "Objem"],
   [/značk/i, "Značka"],
   [/model/i, "Model"],
   [/materiál|material/i, "Materiál"],
@@ -118,6 +119,22 @@ export function formatAnswerForDisplay(
   ) {
     const amount = parsePriceInput(trimmed);
     if (amount != null) return `${formatCzkAmount(amount)} m²`;
+  }
+
+  if (
+    (/rozměr|velikost|\bcm\b/i.test(q) || label === "rozměry" || label === "velikost") &&
+    !/\bcm\b/i.test(trimmed)
+  ) {
+    const normalized = trimmed.replace(/\s*[x×]\s*/gi, " × ");
+    if (/^\d/.test(normalized)) return `${normalized} cm`;
+  }
+
+  if (
+    (/objem|kapacit|obsah\s+nádob|\bml\b|\blitr/i.test(q) || label === "objem") &&
+    !/\b(ml|l|litr)\b/i.test(trimmed)
+  ) {
+    const amount = parsePriceInput(trimmed);
+    if (amount != null) return `${formatCzkAmount(amount)} ml`;
   }
 
   if (/rok\s+výroby/i.test(q) && /^\d{4}$/.test(trimmed)) {

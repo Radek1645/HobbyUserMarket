@@ -8,9 +8,11 @@ import {
   validateUpdateListing,
   type CreateListingInput,
 } from "@/lib/posts/validation";
+import { findProhibitedKeyword } from "@/lib/moderation/prohibited-scan";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
 import { syncListingImagesFromForm } from "@/lib/posts/listing-images";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -21,6 +23,45 @@ export type CreateListingState = {
 export type UpdateListingState = {
   error?: string;
 };
+
+const PROHIBITED_CONTENT_ERROR =
+  "Inzerát obsahuje zakázaný obsah a nelze ho zveřejnit. Viz podmínky inzerce.";
+
+const MODERATION_TOKEN_MISSING_ERROR =
+  "Chybí potvrzení AI kontroly. Vraťte se prosím o krok zpět a odešlete inzerát znovu.";
+
+/**
+ * H1: publikace (status='active') jde výhradně přes publish_approved_post RPC,
+ * který spotřebuje approval token vydaný Edge Function po bezpečnostním filtru.
+ * Bez platného tokenu zůstane inzerát ve stavu 'draft' (neviditelný).
+ */
+async function publishWithApprovalToken(
+  supabase: SupabaseClient,
+  postId: number,
+  formData: FormData,
+  target: "active" | "hidden" = "active",
+): Promise<string | null> {
+  const token = String(formData.get("moderationToken") ?? "").trim();
+  if (!token) {
+    return MODERATION_TOKEN_MISSING_ERROR;
+  }
+
+  const { error } = await supabase.rpc("publish_approved_post", {
+    p_post_id: postId,
+    p_token: token,
+    p_target: target,
+  });
+
+  if (error) {
+    console.error("publish_approved_post:", error);
+    if (error.message?.includes("image_set_mismatch")) {
+      return "Fotky neodpovídají verzi schválené AI kontrolou. Odešlete inzerát znovu.";
+    }
+    return MODERATION_TOKEN_MISSING_ERROR;
+  }
+
+  return null;
+}
 
 function buildListingPayload(data: CreateListingInput) {
   const payload: Record<string, unknown> = {
@@ -76,13 +117,20 @@ export async function createListing(
   }
 
   const data = validated.data;
+
+  // H1: rychlý server-side scan zjevně zakázaného obsahu (doplněk AI filtru).
+  if (findProhibitedKeyword(data.title, data.description)) {
+    return { error: PROHIBITED_CONTENT_ERROR };
+  }
+
   const supabase = await createClient();
   const slug = buildPostSlug(data.title);
 
+  // H1: insert jako 'draft' — RLS ani trigger nedovolí přímý 'active'.
   const insertPayload: Record<string, unknown> = {
     user_id: user.id,
     ...buildListingPayload(data),
-    status: "active",
+    status: "draft",
     slug,
   };
 
@@ -106,6 +154,11 @@ export async function createListing(
 
   if (imageResult.error) {
     return { error: imageResult.error };
+  }
+
+  const publishError = await publishWithApprovalToken(supabase, row.id, formData);
+  if (publishError) {
+    return { error: publishError };
   }
 
   revalidatePath("/");
@@ -147,13 +200,19 @@ export async function updateListing(
     return { error: "Tento inzerát může upravit jen jeho autor." };
   }
 
-  if (existing.status !== "active" && existing.status !== "hidden") {
+  // 'draft' = rozpracovaný/neúspěšně publikovaný (H1) — musí jít doupravit.
+  if (!["active", "hidden", "draft"].includes(existing.status)) {
     return { error: "Tento inzerát už nelze upravovat." };
   }
 
   const validated = validateUpdateListing(formData, existing.event_date);
   if (!validated.ok) {
     return { error: validated.error };
+  }
+
+  // H1: rychlý server-side scan zjevně zakázaného obsahu (doplněk AI filtru).
+  if (findProhibitedKeyword(validated.data.title, validated.data.description)) {
+    return { error: PROHIBITED_CONTENT_ERROR };
   }
 
   const { error: updateError } = await supabase
@@ -176,6 +235,27 @@ export async function updateListing(
 
   if (imageResult.error) {
     return { error: imageResult.error };
+  }
+
+  // H1: změna obsahu/fotek degradovala inzerát na 'draft' (DB trigger).
+  // Klient poslal approval token právě tehdy, když AI moderace proběhla —
+  // publish RPC vrátí inzerát do původního stavu (aktivní zpět na 'active',
+  // pauznutý zůstává 'hidden'). Edit bez změny obsahu token nemá a žádnou
+  // obnovu nepotřebuje (status se neměnil).
+  const hasModerationToken = Boolean(
+    String(formData.get("moderationToken") ?? "").trim(),
+  );
+
+  if (hasModerationToken) {
+    const publishError = await publishWithApprovalToken(
+      supabase,
+      postId,
+      formData,
+      existing.status === "hidden" ? "hidden" : "active",
+    );
+    if (publishError) {
+      return { error: publishError };
+    }
   }
 
   revalidatePath("/");
