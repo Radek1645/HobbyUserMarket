@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
   if (user && user.id === post.user_id) {
     return NextResponse.json(
-      { error: "Na vlastní inzerát nemůžeš reagovat." },
+      { error: "Na vlastní inzerát nemůžete reagovat." },
       { status: 400 },
     );
   }

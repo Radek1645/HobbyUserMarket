@@ -1,5 +1,5 @@
 const GENERIC_INQUIRY_SEND_ERROR =
-  "Poptávku se nepodařilo odeslat. Zkus to později.";
+  "Poptávku se nepodařilo odeslat. Zkuste to prosím později.";
 
 function extractErrorMessage(error: unknown): string | null {
   if (!error || typeof error !== "object") {

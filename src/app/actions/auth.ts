@@ -12,7 +12,7 @@ export type AuthFormState = {
 };
 
 const DUPLICATE_EMAIL_MESSAGE =
-  "Účet s tímto e-mailem už existuje. Přihlas se nebo obnov heslo.";
+  "Účet s tímto e-mailem už existuje. Přihlaste se nebo obnovte heslo.";
 
 function isDuplicateEmailSignup(user: { identities?: unknown[] | null } | null): boolean {
   return user != null && (user.identities?.length ?? 0) === 0;
@@ -39,7 +39,7 @@ function mapAuthError(message: string): string {
   }
 
   if (lower.includes("email not confirmed")) {
-    return "E-mail ještě není ověřený. Zkontroluj schránku a klikni na odkaz v e-mailu.";
+    return "E-mail ještě není ověřený. Zkontrolujte schránku a klikněte na odkaz v e-mailu.";
   }
 
   if (
@@ -115,7 +115,7 @@ export async function signInWithEmail(
   const nextPath = readNextPath(formData);
 
   if (!email || !password) {
-    return { error: "Vyplň e-mail i heslo." };
+    return { error: "Vyplňte e-mail i heslo." };
   }
 
   const supabase = await createClient();
@@ -137,11 +137,18 @@ export async function signUpWithEmail(
   const password = readPassword(formData);
 
   if (!email || !password) {
-    return { error: "Vyplň e-mail i heslo." };
+    return { error: "Vyplňte e-mail i heslo." };
   }
 
   if (password.length < 8) {
     return { error: "Heslo musí mít alespoň 8 znaků." };
+  }
+
+  if (formData.get("consent_vop") !== "1") {
+    return {
+      error:
+        "Pro založení účtu je nutný souhlas s všeobecnými obchodními podmínkami.",
+    };
   }
 
   const supabase = await createClient();
@@ -162,12 +169,12 @@ export async function signUpWithEmail(
   }
 
   if (!data.user) {
-    return { error: "Registraci se nepodařilo dokončit. Zkus to znovu." };
+    return { error: "Registraci se nepodařilo dokončit. Zkuste to prosím znovu." };
   }
 
   return {
     success:
-      "Účet je vytvořený. Ověř e-mail kliknutím na odkaz v doručené poště — bez toho se nepřihlásíš.",
+      "Účet je vytvořený. Ověřte e-mail kliknutím na odkaz v doručené poště — bez toho se nepřihlásíte.",
   };
 }
 
@@ -178,7 +185,7 @@ export async function requestPasswordReset(
   const email = readEmail(formData);
 
   if (!email) {
-    return { error: "Zadej e-mail účtu." };
+    return { error: "Zadejte e-mail účtu." };
   }
 
   const supabase = await createClient();
@@ -217,7 +224,7 @@ export async function updatePassword(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Platnost odkazu vypršela. Požádej znovu o obnovení hesla." };
+    return { error: "Platnost odkazu vypršela. Požádejte znovu o obnovení hesla." };
   }
 
   const { error } = await supabase.auth.updateUser({ password });
@@ -281,10 +288,10 @@ export async function completeOnboarding(
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "Tato přezdívka je už obsazená. Zkus jinou." };
+      return { error: "Tato přezdívka je už obsazená. Zkuste jinou." };
     }
 
-    return { error: "Nepodařilo se uložit přezdívku. Zkus to znovu." };
+    return { error: "Nepodařilo se uložit přezdívku. Zkuste to prosím znovu." };
   }
 
   redirect(nextPath);

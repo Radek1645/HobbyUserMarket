@@ -32,7 +32,10 @@ export type ModerateListingRequest = {
 
 export type ModerationQuestion = {
   id: string;
+  /** Otázka ve formuláři (lidsky, s otazníkem). */
   label: string;
+  /** Krátký popisek pro sekci Parametry v popisu (bez otazníku). */
+  paramLabel?: string;
 };
 
 /** JSON z Edge Function `moderate-listing`. */

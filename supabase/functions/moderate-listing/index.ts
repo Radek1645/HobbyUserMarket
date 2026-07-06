@@ -106,7 +106,7 @@ serve(async (req) => {
     const userId = await resolveUserId(req);
     if (!userId) {
       return jsonResponse(
-        { status: "REJECTED", reason: "Pro AI kontrolu se přihlas." },
+        { status: "REJECTED", reason: "Pro AI kontrolu se přihlaste." },
         401,
       );
     }
@@ -119,7 +119,7 @@ serve(async (req) => {
           {
             status: "REJECTED",
             reason:
-              "Příliš mnoho AI kontrol za hodinu. Zkus to znovu později nebo uprav inzerát bez další kontroly (počkej).",
+              "Příliš mnoho AI kontrol za hodinu. Zkuste to prosím znovu později, nebo upravte inzerát bez další kontroly.",
           },
           429,
         );
@@ -242,7 +242,7 @@ serve(async (req) => {
         return jsonResponse({
           status: "REJECTED",
           reason:
-            "Limit AI dotazů u Google je dočasně vyčerpaný. Zkus to za minutu znovu.",
+            "Limit AI dotazů u Google je dočasně vyčerpaný. Zkuste to prosím za minutu znovu.",
         });
       }
 
@@ -254,7 +254,7 @@ serve(async (req) => {
         return jsonResponse({
           status: "REJECTED",
           reason:
-            "AI kontrola teď nefunguje. Zkus to za chvíli znovu.",
+            "AI kontrola teď nefunguje. Zkuste to prosím za chvíli znovu.",
         });
       }
     }

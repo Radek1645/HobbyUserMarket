@@ -50,6 +50,14 @@ function buildListingPayload(data: CreateListingInput) {
     payload.event_date = null;
   }
 
+  if (
+    data.originalTitle !== undefined &&
+    data.originalDescription !== undefined
+  ) {
+    payload.original_title = stripContactInfo(data.originalTitle);
+    payload.original_description = stripContactInfo(data.originalDescription);
+  }
+
   return payload;
 }
 
@@ -59,7 +67,7 @@ export async function createListing(
 ): Promise<CreateListingState> {
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "Pro založení inzerátu se musíš přihlásit." };
+    return { error: "Pro založení inzerátu se musíte přihlásit." };
   }
 
   const validated = validateCreateListing(formData);
@@ -86,7 +94,7 @@ export async function createListing(
 
   if (error || !row) {
     console.error("createListing:", error);
-    return { error: "Inzerát se nepodařilo uložit. Zkus to znovu." };
+    return { error: "Inzerát se nepodařilo uložit. Zkuste to prosím znovu." };
   }
 
   const imageResult = await syncListingImagesFromForm(
@@ -110,7 +118,7 @@ export async function updateListing(
 ): Promise<UpdateListingState> {
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "Pro úpravu inzerátu se musíš přihlásit." };
+    return { error: "Pro úpravu inzerátu se musíte přihlásit." };
   }
 
   const postId = Number.parseInt(String(formData.get("postId") ?? ""), 10);
@@ -156,7 +164,7 @@ export async function updateListing(
 
   if (updateError) {
     console.error("updateListing:", updateError);
-    return { error: "Změny se nepodařilo uložit. Zkus to znovu." };
+    return { error: "Změny se nepodařilo uložit. Zkuste to prosím znovu." };
   }
 
   const imageResult = await syncListingImagesFromForm(

@@ -31,7 +31,7 @@ export const HOME_CATEGORY_ORDER: HomeBrowseCategory[] = [
 export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   all: {
     label: "Vše",
-    headline: "Lokální inzerce ve tvém okolí",
+    headline: "Lokální inzerce ve vašem okolí",
     subline:
       "Zboží, služby, práce, události a nemovitosti od lidí poblíž — bez složité registrace.",
     shellClass: "bg-zinc-50",
@@ -45,7 +45,7 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   },
   zbozi: {
     label: "Zboží",
-    headline: "Nakupuj a prodávej u sousedů",
+    headline: "Nakupujte a prodávejte u sousedů",
     subline:
       "Od medu po kolo — věci z okolí, bez zbytečné omáčky a provizí.",
     shellClass: "bg-emerald-50/40",
@@ -62,7 +62,7 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
     label: "Služby",
     headline: "Pomocná ruka od lidí z okolí",
     subline:
-      "Hledáš řemeslníka, doučování nebo sekání trávy? Sousedé jsou blíž než agentury.",
+      "Hledáte řemeslníka, doučování nebo sekání trávy? Sousedé jsou blíž než agentury.",
     shellClass: "bg-sky-50/40",
     heroClass: "bg-white/80 backdrop-blur-md",
     heroBorderClass: "border-sky-200/60",

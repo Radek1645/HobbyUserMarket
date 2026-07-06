@@ -131,7 +131,7 @@ export async function invokeModerateListing(
   }
 
   if (!data) {
-    return technicalFailure("AI kontrola nevrátila odpověď. Zkus to znovu.");
+    return technicalFailure("AI kontrola nevrátila odpověď. Zkuste to prosím znovu.");
   }
 
   return mapResponse(data, input.title, input.description);

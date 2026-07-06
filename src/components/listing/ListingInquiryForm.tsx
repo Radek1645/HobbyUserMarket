@@ -73,12 +73,12 @@ export function ListingInquiryForm({
     setError(null);
 
     if (senderName.trim().length < 1) {
-      setError("Zadej jméno.");
+      setError("Zadejte jméno.");
       return;
     }
 
     if (senderContact.trim().length < 5) {
-      setError("Zadej e-mail nebo telefon.");
+      setError("Zadejte e-mail nebo telefon.");
       return;
     }
 
@@ -132,7 +132,7 @@ export function ListingInquiryForm({
       <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-4 text-sm text-green-900">
         <p className="font-medium">Odesláno.</p>
         <p className="mt-1 text-green-800">
-          Zadavatel dostane tvůj kontakt e-mailem a může ti odpovědět přímo.
+          Zadavatel dostane váš kontakt e-mailem a může vám odpovědět přímo.
         </p>
         <button
           type="button"
@@ -229,7 +229,7 @@ export function ListingInquiryForm({
               ? "Krátce představ sebe a proč máš zájem o tuto pozici…"
               : categoryType === "udalost"
                 ? "Např. kolik vás přijde, máte nějaké alergie…"
-                : "Co tě na inzerátu zajímá…"
+                : "Co vás na inzerátu zajímá…"
           }
         />
         <p className="mt-1 text-xs text-gray-500">

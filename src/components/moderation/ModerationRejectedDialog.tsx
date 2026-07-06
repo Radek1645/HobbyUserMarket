@@ -96,7 +96,7 @@ export function ModerationRejectedDialog({
         </div>
 
         <p className="mt-4 text-sm text-gray-600">
-          Podrobnosti najdeš v{" "}
+          Podrobnosti najdete v{" "}
           <Link
             href={LISTING_TERMS_PATH}
             className="font-medium text-gray-900 underline-offset-2 hover:underline"

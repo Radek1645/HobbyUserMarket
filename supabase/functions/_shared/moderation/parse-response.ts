@@ -3,6 +3,7 @@ export type ModerationStatus = "APPROVED" | "REJECTED" | "NEEDS_QUESTIONS";
 export type ModerationQuestion = {
   id: string;
   label: string;
+  paramLabel?: string;
 };
 
 /** Hard limit — drž v sync s src/config/moderation/index.ts MODERATION_MAX_QUESTIONS */
@@ -54,7 +55,8 @@ function parseQuestions(value: unknown): ModerationQuestion[] | undefined {
       const label = asOptionalString(record.label);
       if (!label) return null;
       const id = asOptionalString(record.id) ?? `q${index + 1}`;
-      return { id, label };
+      const paramLabel = asOptionalString(record.paramLabel);
+      return paramLabel ? { id, label, paramLabel } : { id, label };
     })
     .filter((item): item is ModerationQuestion => item !== null);
 

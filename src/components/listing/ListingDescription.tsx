@@ -28,7 +28,7 @@ export function ListingDescription({ description }: ListingDescriptionProps) {
           {parameters.map((item, index) => (
             <li key={`${item.label}-${index}`} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
               <span className="shrink-0 font-semibold text-gray-900 sm:min-w-[9rem]">
-                {item.label}
+                {item.label}:
               </span>
               {item.value ? (
                 <span className="whitespace-pre-wrap text-gray-700">

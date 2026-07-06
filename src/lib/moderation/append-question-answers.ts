@@ -22,7 +22,7 @@ export function appendQuestionAnswersToDescription(
     .map((question) => {
       const answer = answers[question.id]?.trim();
       if (!answer) return null;
-      return formatQuestionAnswerAsBullet(question.label, answer);
+      return formatQuestionAnswerAsBullet(question, answer);
     })
     .filter((block): block is string => block !== null);
 

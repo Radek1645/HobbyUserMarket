@@ -20,6 +20,9 @@ export type CreateListingInput = {
   conditionLabel: ConditionLabel;
   title: string;
   description: string;
+  /** Před-AI snapshot — jen když klient pošle obě pole (moderace / nový inzerát). */
+  originalTitle?: string;
+  originalDescription?: string;
   locationText: string;
   latitude: number;
   longitude: number;
@@ -54,7 +57,7 @@ export function validateFutureEventDate(
 ): FutureEventDateResult {
   const trimmed = rawEvent.trim();
   if (!trimmed) {
-    return { ok: false, error: "Zadej datum a čas akce." };
+    return { ok: false, error: "Zadejte datum a čas akce." };
   }
 
   const parsed = new Date(trimmed);
@@ -87,14 +90,14 @@ function parsePriceAmount(
   const trimmed = raw.trim();
   if (!trimmed) {
     if (priceType === "fixed") {
-      throw new Error("Zadej cenu v Kč.");
+      throw new Error("Zadejte cenu v Kč.");
     }
     throw new Error("U ceny dohodou uveď orientační částku v Kč.");
   }
 
   const amount = parsePriceInput(trimmed);
   if (amount == null || amount < 0) {
-    throw new Error("Zadej platnou cenu v Kč.");
+    throw new Error("Zadejte platnou cenu v Kč.");
   }
 
   if (priceType === "negotiable" && amount < 1) {
@@ -114,6 +117,10 @@ export function validateListingForm(
     const conditionLabel = form.get("conditionLabel") as ConditionLabel;
     const title = String(form.get("title") ?? "").trim();
     const description = String(form.get("description") ?? "").trim();
+    const originalTitleField = form.get("originalTitle");
+    const originalDescriptionField = form.get("originalDescription");
+    const hasOriginalSnapshot =
+      originalTitleField !== null && originalDescriptionField !== null;
     const locationText = String(form.get("locationText") ?? "").trim();
     const latitude = Number.parseFloat(String(form.get("latitude") ?? ""));
     const longitude = Number.parseFloat(String(form.get("longitude") ?? ""));
@@ -129,11 +136,11 @@ export function validateListingForm(
 
     if (showContactPhone) {
       if (!contactPhoneRaw) {
-        throw new Error("Zadej telefonní číslo, nebo vypni zobrazení telefonu.");
+        throw new Error("Zadejte telefonní číslo, nebo vypněte zobrazení telefonu.");
       }
       if (!isValidContactPhone(contactPhoneRaw)) {
         throw new Error(
-          "Telefon musí mít 9–15 číslic (můžeš uvést mezinárodní předvolbu).",
+          "Telefon musí mít 9–15 číslic (můžete uvést mezinárodní předvolbu).",
         );
       }
       contactPhone = formatContactPhoneForStorage(contactPhoneRaw);
@@ -159,23 +166,23 @@ export function validateListingForm(
     }
 
     if (!categoryType || !getCategoryConfig(categoryType)) {
-      return { ok: false, error: "Vyber kategorii." };
+      return { ok: false, error: "Vyberte kategorii." };
     }
 
     if (!isValidSubcategory(categoryType, subcategorySlug)) {
-      return { ok: false, error: "Vyber podkategorii." };
+      return { ok: false, error: "Vyberte podkategorii." };
     }
 
     const category = getCategoryConfig(categoryType);
     if (!category.conditionLabels.some((c) => c.value === conditionLabel)) {
       return {
         ok: false,
-        error: `Vyber ${getConditionFieldLabel(categoryType).toLowerCase()}.`,
+        error: `Vyberte ${getConditionFieldLabel(categoryType).toLowerCase()}.`,
       };
     }
 
     if (!category.priceTypes.some((p) => p.value === priceType)) {
-      return { ok: false, error: "Vyber typ ceny." };
+      return { ok: false, error: "Vyberte typ ceny." };
     }
 
     if (title.length < 1 || title.length > 80) {
@@ -197,13 +204,13 @@ export function validateListingForm(
     }
 
     if (!locationText) {
-      return { ok: false, error: "Zadej a potvrď obec z našeptávače." };
+      return { ok: false, error: "Zadejte a potvrďte obec z našeptávače." };
     }
 
     if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
       return {
         ok: false,
-        error: "Vyber obec z našeptávače — bez potvrzené lokality inzerát neuložíme.",
+        error: "Vyberte obec z našeptávače — bez potvrzené lokality inzerát neuložíme.",
       };
     }
 
@@ -242,6 +249,12 @@ export function validateListingForm(
         conditionLabel,
         title,
         description,
+        ...(hasOriginalSnapshot
+          ? {
+              originalTitle: String(originalTitleField).trim(),
+              originalDescription: String(originalDescriptionField).trim(),
+            }
+          : {}),
         locationText,
         latitude,
         longitude,

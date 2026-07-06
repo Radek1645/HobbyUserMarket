@@ -58,7 +58,7 @@ async function mapyGet<T>(
   } catch {
     throw new MapyApiError(
       "network",
-      "Mapy.cz API není dostupné. Zkus to znovu za chvíli.",
+      "Mapy.cz API není dostupné. Zkuste to prosím znovu za chvíli.",
     );
   }
 

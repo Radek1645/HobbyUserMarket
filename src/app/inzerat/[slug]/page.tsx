@@ -232,12 +232,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <section className="mt-6">
         {isOwner ? (
           <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-700">
-            <p className="font-medium text-gray-900">Toto je tvůj inzerát.</p>
+            <p className="font-medium text-gray-900">Toto je váš inzerát.</p>
             <p className="mt-1">
-              Poptávky od zájemců ti přijdou na e-mail účtu, kterým jsi se
-              přihlásil. Pro test otevři odkaz na inzerát v{" "}
-              <strong>anonymním okně</strong> (nebo se odhlaš) a formulář
-              vyplň jako zájemce.
+              Poptávky od zájemců vám přijdou na e-mail účtu, kterým jste se
+              přihlásili. Pro test otevřete odkaz na inzerát v{" "}
+              <strong>anonymním okně</strong> (nebo se odhlaste) a formulář
+              vyplňte jako zájemce.
             </p>
             <Link
               href={getListingEditPath(post.slug)}

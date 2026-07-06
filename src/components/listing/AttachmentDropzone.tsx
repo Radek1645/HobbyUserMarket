@@ -111,7 +111,7 @@ export function AttachmentDropzone({
         }}
         className="cursor-pointer rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600 hover:border-gray-400 hover:bg-gray-100"
       >
-        Přetáhni soubory sem nebo klikni pro výběr
+        Přetáhněte soubory sem nebo klikněte pro výběr
       </div>
 
       <input

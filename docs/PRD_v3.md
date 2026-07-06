@@ -1,10 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.14  
+> **Verze dokumentu:** v3.17  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)**  
+> **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql) · [`016_search_posts.sql`](../supabase/016_search_posts.sql) · [`017_allow_contact_reveal.sql`](../supabase/017_allow_contact_reveal.sql) · [`018_reset_contact_opt_in.sql`](../supabase/018_reset_contact_opt_in.sql) · [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql) · [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql) · [`021_rate_limits_service_role_grants.sql`](../supabase/021_rate_limits_service_role_grants.sql) · [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql) · *v0.5 audit:* `020_audit_and_notes.sql` *(plánováno — jiný soubor než strip kontaktů)*  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-04
+> **Datum:** 2026-07-06
 
 ---
 
@@ -14,6 +15,18 @@
 * **Cílová skupina:** Věk 15–35 let (mobilní, digitálně gramotní, preferující rychlá lokální řešení).
 * **Filozofie vývoje:** Hardcore MVP stavěné metodou AI Vibecodingu (Cursor).
 * **Provozní rozpočet:** Do 1 000 Kč / měsíc. Finance jsou alokovány výhradně do stability infrastruktury, doručení e-mailů a provozu nezbytných API.
+
+### 1.0 Dokumentace procesů (Metodika)
+
+**Závazné pravidlo:** Každá uživatelská i provozní činnost v projektu musí být zdokumentována v [`docs/Metodika.md`](./Metodika.md) — srozumitelně, krok za krokem, bez nutnosti číst zdrojový kód.
+
+| Co dokumentovat | Kde |
+|-----------------|-----|
+| Nový flow (registrace, formulář, moderace, cron…) | `Metodika.md` — nová nebo rozšířená sekce |
+| Technická specifikace, DoD, datový model | `PRD_v3.md` |
+| Konfigurace AI moderace a deploy | `moderace-inzeratu.md` |
+
+Při změně chování v kódu aktualizujte metodiku **ve stejném PR** jako implementaci. PRD popisuje *co* a *proč*; metodika popisuje *jak to uživatel nebo moderátor prožije*.
 
 ### 1.1 Definition of Done (v0.1)
 
@@ -65,6 +78,39 @@ Modul je hotový, když platí všechny body:
 4. **Právní dokumenty a patička:** Patička je na všech stránkách (`AppShell`); VOP ke stažení jako PDF; FAQ stránka s accordion UI (viz §11.3).
 5. **God Mode:** Admin/moderátor prochází `/mod/inzeraty` a `/mod/karantena`, moderuje z detailu inzerátu; každá akce jde do audit logu.
 6. **SEO / AI crawlery:** Detail inzerátu má validní JSON-LD podle typu kategorie a je v `sitemap.xml`.
+
+### 1.6 Tone of Voice (komunikace s uživatelem)
+
+**Účel:** Závazná pravidla pro veškerý user-facing copy — UI, e-maily, FAQ, Site Notice, chybové hlášky a marketingové texty na webu.
+
+**Referenční styl:** AirBank — lidsky, bez žargonu, krátké věty, občas lehký humor. Komunikujeme jako spolehlivý soused, ne jako korporát.
+
+**Zásady:**
+
+1. **Srozumitelně** — běžná čeština, žádný technický slang směrem k uživateli (žádné „RPC“, „trigger“, „Edge Function“ v UI).
+2. **Vykání** — konzistentně `vy`, `váš`, imperativ `Zadejte` / `Zkuste` / `Vyplňte`.
+3. **Jasná očekávání** — vždy říct, co se stane, do kdy a co platforma **nedělá** (např. „Prověříme do 24 hodin“, „Kontakt uvidíte až po přihlášení“).
+4. **Upřímnost** — neslibujeme víc, než dodáme; limity (rate limit, expirace, moderace) říkáme na rovinu.
+5. **Laskavost** — kde to pomůže, `prosím` a `děkujeme`; žádná arogance ani obviňování uživatele.
+6. **Humor** — povolený, pokud nezastiňuje sdělení; **bez vulgarity** a bez ironie na úkor srozumitelnosti.
+
+**Praktická pravidla:**
+
+| Situace | Jak psát |
+|---------|----------|
+| Chyba / selhání | Co se stalo + co může uživatel udělat dál |
+| Rate limit | Limit + kdy to zkusit znovu |
+| Potvrzení akce | Co následuje (e-mail, moderace, časový rámec) |
+| Varování (soft) | Vysvětlení problému + návod na opravu |
+| FAQ | Lidsky čitelné vysvětlení, ne duplicitní právnická čeština z VOP |
+
+**PRD vs. UI:** Interní pojmenování v tomto dokumentu (např. „God Mode“, technické názvy stavů) **není** copy pro uživatele. Moderátorské labely v UI musí být srozumitelné i bez znalosti PRD.
+
+**Zdroje pravdy v kódu:**
+
+- Moderace a AI modal: [`src/config/moderation/messages.ts`](../src/config/moderation/messages.ts)
+- Hero a kategorie na HP: [`src/config/home-themes.ts`](../src/config/home-themes.ts)
+- Ostatní texty v komponentách musí §1.6 dodržovat
 
 ---
 
@@ -326,8 +372,8 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 
 * **Hero sekce:** Jasný, úderný value proposition (Kup/Prodej/Nabídni v okolí).
 * **AI Marketingový Hook (USP):**
-  * V Hero sekci bude dominantně komunikována hlavní konkurenční výhoda oproti Bazošu/FB/sReality: *„Zadej inzerát do 2 minut. Ty nahodíš sračky, naše AI vytvoří profi inzerát.“*
-  * Tento claim bude optimalizován pro SEO jako H1/H2 podpora pro klíčová slova spojená s rychlou, bezbolestnou lokální inzercí.
+  * V Hero sekci bude dominantně komunikována hlavní konkurenční výhoda oproti Bazošu/FB/sReality: *„Zadejte inzerát do dvou minut. Stačí hrubý nástřel — z něj AI připraví srozumitelný text. Bez románu, bez stresu.“*
+  * Tento claim bude optimalizován pro SEO jako H1/H2 podpora pro klíčová slova spojená s rychlou, bezbolestnou lokální inzercí. Copy dle §1.6; implementace v `src/config/home-themes.ts`.
 * **Geolokační logika:**
   1. Web primárně požádá o polohu přes HTML5 Geolocation API.
   2. **Success:** Souřadnice návštěvníka se uloží do `localStorage`. PostGIS RPC `get_nearby_posts` kaskádově zkouší okruhy **15 → 30 → 50 → 60 km** (konfigurovatelné v `src/config/app.ts`), dokud nenajde alespoň **6** aktivních inzerátů. V Hero sekci se zobrazí **6–9** nejbližších. Pokud ani v **60 km** není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** (`get_recent_posts`) s hláškou, že v okolí zatím nic není.
@@ -345,6 +391,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
     * Nahlásit inzerát (`/nahlasit`) — od v0.5
     * FAQ (`/faq`) — od v0.5; accordion stránka odvozená z VOP (viz §11.3)
     * Všeobecné obchodní podmínky — VOP (`/vop`, PDF ke stažení)
+    * Marketingový souhlas (`/marketingovy-souhlas`)
     * Podmínky inzerce (`/podminky-inzerce`)
     * Zásady ochrany osobních údajů — GDPR (`/gdpr`, PDF ke stažení)
     * Cookies / consent nastavení
@@ -355,6 +402,11 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 * **Registrace & Přihlášení:**
   * Integrace Google OAuth (přihlášení jedním kliknutím) – prioritní konverzní cesta.
   * Klasický e-mail + heslo (Supabase Auth vynutí okamžité potvrzení e-mailu přes verifikační link, bez verifikace je profil neaktivní). Žádné otravné e-maily při každém běžném přihlášení.
+  * **Souhlasy při registraci *(v0.5+)*:** Formulář registrace musí obsahovat **minimálně dva samostatné checkboxy** — odděleně od sebe, s odkazem na příslušný dokument v patičce / na stub stránce:
+    1. **VOP (povinný)** — souhlas s všeobecnými obchodními podmínkami (`/vop`). Bez zaškrtnutí registraci neumožnit (klient + server).
+    2. **Marketing (volitelný)** — souhlas se zasíláním marketingových sdělení (`/marketingovy-souhlas`). Nesmí být podmínkou založení účtu.
+  * **Stav implementace:** Právní texty VOP i marketingového souhlasu zatím **nejsou hotové** — v pracovní verzi stačí stub stránky a odkazy v patičce; checkboxy v registračním formuláři s odkazovanou textací. Uložení souhlasu do DB (`profiles` nebo audit) a stejný flow u Google OAuth — **až po finalizaci dokumentů**.
+  * **Doporučená textace (§1.6):** *„Souhlasím s [všeobecnými obchodními podmínkami]. Bez tohoto souhlasu účet nezaložíme.“* · *„Souhlasím se [zasíláním marketingových sdělení]. Souhlas můžete kdykoli odvolat.“* — konfigurace v `src/config/legal.ts`, komponenta `RegistrationConsentFields`.
   * **Striktní zákaz změny e-mailu:** Pole e-mailu je v UI neměnné (statický text). Změna adresy je zablokována PostgreSQL triggerem `BEFORE UPDATE ON auth.users`. Pokud uživatel potřebuje jiný e-mail: **smazat účet a založit nový** — krátká poznámka u pole v UI.
 * **Onboarding:**
   * Při prvním přihlášení povinné zadání **přezdívky (`nickname`)** — unikátní v rámci platformy (DB UNIQUE constraint).
@@ -372,7 +424,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * **Databázové zabezpečení (Supabase RLS):** Tabulka `comments` má aktivní RLS. Zápis (`INSERT`) je povolen výhradně pro roli `authenticated` s `WITH CHECK (auth.uid() = user_id)` — uživatel nemůže zfalšovat ID autora. Při INSERTu se zároveň uloží `author_nickname` (snapshot z `profiles.nickname`).
   * **Vazba na identitu:** Zobrazení autora čte `author_nickname` z řádku komentáře (ne live JOIN na `profiles`). Pokud `user_id IS NULL` (účet smazán), UI zobrazí **„[smazaný účet]“** bez ohledu na obsah `author_nickname`.
   * **FK při GDPR:** `comments.user_id` má `ON DELETE SET NULL` — smazání `auth.users` **nesmí** kaskádově smazat komentáře ani zablokovat anonymizaci.
-  * **Komunitní bič na komentáře:** Tlačítko „Nahlásit“. Pokud komentář nasbírá **3 nahlášení od 3 různých přihlášených uživatelů** (`reporter_user_id`), automaticky mění stav na `hidden` a padá do karantény.
+  * **Komunitní moderování komentářů:** Tlačítko „Nahlásit“. Pokud komentář nasbírá **3 nahlášení od 3 různých přihlášených uživatelů** (`reporter_user_id`), automaticky mění stav na `hidden` a padá do karantény.
   * **Rate limit:** Max **10 komentářů / hodinu / uživatel**.
 * **Ochrana kontaktů před scrapery (Anti-Scraping / Bot protection):**
   * **Tlačítko „Zobrazit kontakt“:** Telefon a e-mail prodejce nejsou v HTML kódu stránky. Zobrazí se až po kliknutí **přihlášeného** uživatele. Event se loguje do `contact_reveals`.
@@ -381,7 +433,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * **Události *(v0.2)*:** U `category_type = 'udalost'` se formulář chová jako „registrace zájmu o účast“ — tlačítko **„Mám zájem o účast“**, předmět/tělo e-mailu: *„Uživatel [jméno] se chce zúčastnit vaší akce: [Název] — [kontaktní údaje].“* Pořadatel odpovídá ze svého e-mailu; systém neukládá účastníky do DB.
 * **Komunitní moderování inzerátů:**
   * **Inline:** Tlačítko „Nahlásit inzerát“ na detailu (Důvody: Podvod / Nelegální obsah / Sexuální obsah / Drogy / Spam / Nevhodné chování / Jiné). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky skryje (`hidden`) do karantény.
-  * **Standalone *(v0.5)*:** Formulář na `/nahlasit` (odkaz v patičce) — pole URL inzerátu (validace domény a slug), důvod (select), volitelný popis (max 500 znaků), e-mail oznamovatele (povinné pro nepřihlášené). Po odeslání: INSERT do `reports`, záznam v `audit_events`, e-mail adminovi (Resend), UI potvrzení „Díky, prověříme to do 24 h“.
+  * **Standalone *(v0.5)*:** Formulář na `/nahlasit` (odkaz v patičce) — pole URL inzerátu (validace domény a slug), důvod (select), volitelný popis (max 500 znaků), e-mail oznamovatele (povinné pro nepřihlášené). Po odeslání: INSERT do `reports`, záznam v `audit_events`, e-mail adminovi (Resend), UI potvrzení „Děkujeme. Prověříme to do 24 hodin a dáme vám vědět.“ (§1.6).
   * Stejná logika 3× threshold platí pro komentáře (existující trigger).
 * **Automatizované On-Page SEO, Rich Snippets & AI crawlery:**
   * **Dynamická Metadata (Next.js Metadata API):** Formát: `[Název inzerátu] | [Lokalita] | Local Hobby Market`. Příklad: *„Prodám dětské kolo Velo | Brno-Líšeň | Local Hobby Market“*.
@@ -413,7 +465,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 * **Multimodální AI Guardrail & Interaktivní doplňování (Text + Foto cross-validace):**
   * Po kliknutí na **„Publikovat inzerát“** (create) / **„Uložit“** (edit) klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `categoryType`, `subcategory_slug`, metadata z formuláře (`conditionLabel`, `conditionLabelText`, `conditionFieldLabel`, `priceType`, `priceTypeLabel`, `priceAmount`, u událostí `eventDate`), **všechny nahrané fotografie** (max. 6, každá zmenšená na **512×512 px**, base64) a `mainImageIndex`. **Jedno** volání AI — bezpečnostní filtr na všech snímcích, cross-validace a hydratace z hlavní. Edge Function volá Gemini Flash / GPT-4o-mini a vrátí striktní JSON. **Žádná Next.js API Route v tomto flow.**
   * **Bezpečnostní filtr fotek:** Pokud **jakákoliv** fotografie porušuje pravidla (zbraně, drogy, porno, orgány…), celý inzerát je `REJECTED`. Volitelně `rejectedImageIndex` pro UI. Výběr „čisté“ hlavní fotky nesmí obejít kontrolu zbylých snímků.
-  * **Rate limit:** Max **20 AI kontrol / hodinu / uživatel** (`MODERATION_RATE_LIMIT_PER_HOUR`). Při překročení: HTTP 429 + srozumitelná hláška v UI.
+  * **Rate limit:** Max **20 AI kontrol / hodinu / uživatel** (`MODERATION_RATE_LIMIT_PER_HOUR`). Při překročení: HTTP 429 + srozumitelná hláška v UI (texty v `src/config/moderation/messages.ts`, tón §1.6).
   * **Logika zpracování AI (JSON výstup):**
     1. **Bezpečnostní a podvodový filtr:** Zakázaný obsah (zbraně, drogy, porno, orgány) → status `REJECTED`, proces končí chybou. Sémantická neshoda text/foto → chyba konzistence.
     2. **Čistka kontaktů (AI):** E-maily a telefony v popisu (i na fotce) nahrazeny `[SKRYTO – použij chráněné pole]`.
@@ -422,7 +474,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
        * *Služby:* Otázky jen na chybějící dojezd, materiál, rozsah.
        * *Události (v0.2):* `event_date` z formuláře — AI se na datum neptá; chybí-li lokalita/kapacita → dotazník.
     4. **Limit délky:** `cleanedDescription` max **2000** znaků celkem; u `NEEDS_QUESTIONS` max **1600** znaků (rezerva **400** na odpovědi doplněné do Parametrů).
-  * **UX Flow v modálním okně „AI náhled a doplnění“:**
+  * **UX Flow v modálním okně „AI náhled a doplnění“** (texty v `src/config/moderation/messages.ts`, tón §1.6):
     * **Učesaný text inzerátu** v editovatelné `textarea` (struktura úvod + `---` + Parametry).
     * **Dynamický dotazník („Vylepšete svůj inzerát“):** Max 5 otázek; odpovědi povinné; ukládají se jako odrážky v sekci Parametry (ne celé věty otázek).
     * Počítadlo znaků v modalu zahrnuje **projekovaný finální popis** včetně odpovědí (limit 2000).
@@ -469,7 +521,7 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
 
 * **UX Flow inline moderování (God Mode):**
   * Uživatel s rolí `moderator` nebo `admin` na detailu **cizího** inzerátu/komentáře vidí vizuálně oddělenou administrační lištu:
-    **[Skrýt (Karanténa)]** · **[Smazat natvrdo]** · **[Historie]** · **[+ Poznámka]**
+    **[Skrýt (Karanténa)]** · **[Smazat trvale]** · **[Historie]** · **[+ Poznámka]**
   * Při smazání/skrytí moderátorem: **povinný důvod** (dropdown) + volitelná textová poznámka → obojí do `audit_events` (+ volitelně `moderator_notes`).
   * Moderátor vidí reálný kontext přímo na produkčním webu; může otevřít editaci cizího inzerátu přes `/inzerat/[slug]/upravit` (Server Action ověřuje roli).
 
@@ -508,7 +560,7 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
 | AI kontrola inzerátu | **20** / hodinu / uživatel | HTTP 429 + hláška v UI |
 | Zobrazení kontaktu | 20 / den / uživatel | HTTP 429 + hláška v UI |
 | Nový komentář | 10 / hodinu / uživatel | HTTP 429 + hláška v UI |
-| AI Edge Function (Supabase, voláno přímo z klienta) | Timeout 30 s | „Zkus znovu za chvíli“; server-side bezpečnostní pre-check v Edge Function proběhne vždy |
+| AI Edge Function (Supabase, voláno přímo z klienta) | Timeout 30 s | „Zkuste to prosím znovu za chvíli.“ (§1.6); server-side bezpečnostní pre-check v Edge Function proběhne vždy |
 | Next.js API Route | **Nepoužívat pro AI** | Proxy přes Vercel = riziko 504 (Hobby legacy limit 10 s) |
 
 * **Architektonická příprava na budoucí monetizaci (bez implementace v v0.1):**
@@ -585,6 +637,9 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.12 | 2026-07-02 | §11 Modul v0.5: audit log, moderátorské poznámky, nahlášení, God Mode, JSON-LD, VOP/GDPR/FAQ accordion v patičce; §1.5 DoD v0.5; §2.2 Out of Scope v0.5; rozšíření §4, §5.1, §5.3, §5.6 |
 | v3.13 | 2026-07-03 | AI moderace nasazena: §5.4 (Gemini 2.5-flash, rate limit **20/h**, max **5** otázek, strukturovaný popis úvod+Parametry, limit **2000** znaků, UX modal); §4 + migrace **016–021**, **023**; události: pevné vstupné, validace `event_date`; oprava odkazu migrace 020 (strip kontaktů vs. plánovaný audit) |
 | v3.14 | 2026-07-04 | §11.4 **Globální informační lišta** (Site Notice): 3 varianty `info` / `marketing` / `maintenance`, config `message` + volitelný `link`, nasazení bez odstávky webu |
+| v3.15 | 2026-07-06 | §1.6 **Tone of Voice** (AirBank styl, vykání, jasná očekávání); sjednocení user-facing příkladů v PRD; odkazy na `messages.ts` a `home-themes.ts` |
+| v3.16 | 2026-07-06 | §1.0 **Dokumentace procesů** — závazek dokumentovat každou činnost v [`Metodika.md`](./Metodika.md); odkaz na metodiku v hlavičce dokumentu |
+| v3.17 | 2026-07-06 | §5.2 **Souhlasy při registraci** — povinný VOP + volitelný marketingový souhlas (checkboxy, odkazy `/vop`, `/marketingovy-souhlas`); patička a §11.3 rozšířeny o marketingový souhlas |
 
 ---
 
@@ -1039,7 +1094,7 @@ Odeslání reportu
   → INSERT audit_events (post_reported)
   → IF count distinct reporters >= 3 → DB trigger → status hidden
   → Vždy: e-mail adminovi (Resend) — URL, důvod, počet reportů, odkaz do /mod/karantena
-  → UI: „Díky, prověříme to do 24 h“
+  → UI: „Děkujeme. Prověříme to do 24 hodin a dáme vám vědět.“ (§1.6)
 ```
 
 #### Out of Scope v0.5
@@ -1059,7 +1114,8 @@ Patička je renderována v `AppShell` → `SiteFooter` na **všech stránkách**
 
 | Dokument | Formát | URL | Obsah |
 |----------|--------|-----|-------|
-| **Všeobecné obchodní podmínky (VOP)** | PDF + HTML stub | `/vop` · `/docs/vop-v1.0.pdf` | Smluvní vztah s platformou |
+| **Všeobecné obchodní podmínky (VOP)** | PDF + HTML stub | `/vop` · `/docs/vop-v1.0.pdf` | Smluvní vztah s platformou; povinný souhlas při registraci (§5.2) |
+| **Marketingový souhlas** | HTML stub | `/marketingovy-souhlas` | Volitelný souhlas se zasíláním obchodních sdělení; souhlas při registraci (§5.2) |
 | **Podmínky inzerce** | HTML | `/podminky-inzerce` | Pravidla pro inzerenty, moderace (existující stub) |
 | **Zásady ochrany osobních údajů** | PDF + HTML stub | `/gdpr` · `/docs/gdpr-v1.0.pdf` | GDPR, zpracování dat |
 | **Cookies** | HTML / modal | `/cookies` nebo consent banner | GTM consent mode |
@@ -1069,7 +1125,7 @@ PDF soubory ukládat do `public/docs/` s verzí v názvu souboru (`vop-v1.0.pdf`
 
 #### FAQ stránka (`/faq`)
 
-**Účel:** Srozumitelné odpovědi pro uživatele odvozené z VOP — ne duplicitní právní text, ale lidsky čitelné vysvětlení.
+**Účel:** Srozumitelné odpovědi pro uživatele odvozené z VOP — ne duplicitní právní text, ale lidsky čitelné vysvětlení (tón §1.6).
 
 **Obsah:**
 - Položky FAQ vycházejí z kapitol VOP (odpovědnost platformy, inzerce, moderace, osobní údaje, kontakty).
@@ -1111,10 +1167,10 @@ Tenká lišta nad headerem na **všech stránkách** (`AppShell`, včetně `/log
 | Varianta | Kód | Barva (návrh) | Typické použití |
 |----------|-----|---------------|-----------------|
 | **Informativní** | `info` | modrá / neutrální (`blue-50`, text `blue-900`) | „Nově AI úprava inzerátu“, „Beta verze“ |
-| **Marketingová** | `marketing` | zelená / brand (`emerald-50`, text `emerald-900`) | „Pozvi souseda — sdílej odkaz“, akce |
+| **Marketingová** | `marketing` | zelená / brand (`emerald-50`, text `emerald-900`) | „Pozvěte souseda — sdílejte odkaz“, akce |
 | **Odstávková** | `maintenance` | amber / oranžová (`amber-50`, text `amber-900`) | „Dnes 22:00 krátká odstávka kvůli migraci DB“ |
 
-Varianta určuje **pouze vizuální styl** (pozadí, okraj, ikona). Text je vždy konfigurovatelný.
+Varianta určuje **pouze vizuální styl** (pozadí, okraj, ikona). Text je vždy konfigurovatelný a musí dodržovat §1.6 (vykání, jasná očekávání).
 
 #### Konfigurace (MVP — bez DB)
 

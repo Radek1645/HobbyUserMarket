@@ -9,6 +9,7 @@ import {
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { useActionState, useState } from "react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
+import { RegistrationConsentFields } from "@/components/auth/RegistrationConsentFields";
 import { BackButton } from "@/components/navigation/BackLink";
 
 type AuthTab = "login" | "register" | "forgot";
@@ -174,8 +175,9 @@ export function EmailAuthPanel({
             prominent={prominent}
           />
           <p className={`text-gray-500 ${prominent ? "text-xs sm:text-sm" : "text-xs"}`}>
-            Po registraci ti pošleme ověřovací odkaz. Bez něj se nepřihlásíš.
+            Po registraci vám pošleme ověřovací odkaz. Bez něj se nepřihlásíte.
           </p>
+          <RegistrationConsentFields prominent={prominent} />
           <button
             type="submit"
             {...gtmCtaProps(GTM_CTA.REGISTER_SUBMIT)}
@@ -190,7 +192,7 @@ export function EmailAuthPanel({
       {tab === "forgot" ? (
         <form action={resetAction} className="space-y-4">
           <p className="text-sm text-gray-600">
-            Zadej e-mail účtu. Pošleme odkaz pro nastavení nového hesla.
+            Zadejte e-mail účtu. Pošleme odkaz pro nastavení nového hesla.
           </p>
           <div>
             <label htmlFor="reset-email" className={fieldLabelClass}>

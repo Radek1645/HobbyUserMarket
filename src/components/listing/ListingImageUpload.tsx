@@ -181,7 +181,7 @@ export const ListingImageUpload = forwardRef<
           setError(
             compressError instanceof Error
               ? compressError.message
-              : "Fotku se nepodařilo zpracovat. Zkus jiný soubor.",
+              : "Fotku se nepodařilo zpracovat. Zkuste jiný soubor.",
           );
           return;
         }
@@ -245,7 +245,7 @@ export const ListingImageUpload = forwardRef<
           Volitelné, max. {LISTING_IMAGE_MAX_FILES} fotek. Snímky z foťáku nebo
           galerie se automaticky zmenší (max.{" "}
           {Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024))} MB každá).
-          Hvězdičkou zvolíš náhled na homepage. Všechny fotky procházejí
+          Hvězdičkou zvolíte náhled na homepage. Všechny fotky procházejí
           bezpečnostní AI kontrolou.
         </p>
       </div>
@@ -359,7 +359,7 @@ export const ListingImageUpload = forwardRef<
             }}
             className={`hidden cursor-pointer sm:block ${listingFormDropzoneClass} disabled:cursor-wait disabled:opacity-60`}
           >
-            Přetáhni fotky sem nebo klikni pro výběr
+            Přetáhněte fotky sem nebo klikněte pro výběr
           </div>
         </>
       ) : null}

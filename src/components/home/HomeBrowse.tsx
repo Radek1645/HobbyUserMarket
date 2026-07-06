@@ -96,7 +96,7 @@ export function HomeBrowse({
                 {...gtmCtaProps(GTM_CTA.HOME_SIGN_IN_LINK)}
                 className="font-medium text-gray-900 underline-offset-2 hover:underline"
               >
-                přihlas přes Google
+                přihlaste se přes Google
               </Link>
               .
             </p>

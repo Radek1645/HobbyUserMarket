@@ -31,6 +31,8 @@ type LocationInputProps = {
   compact?: boolean;
   label?: string;
   placeholder?: string;
+  /** Při úpravě inzerátu zvýrazní nutnost potvrdit lokalitu z našeptávače. */
+  requireConfirmation?: boolean;
 };
 
 const DEBOUNCE_MS = 300;
@@ -43,6 +45,7 @@ export function LocationInput({
   compact = false,
   label,
   placeholder,
+  requireConfirmation = false,
 }: LocationInputProps) {
   const listId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -184,7 +187,7 @@ export function LocationInput({
         }
       },
       () => {
-        setError("Polohu se nepodařilo získat. Povol GPS v prohlížeči.");
+        setError("Polohu se nepodařilo získat. Povolte GPS v prohlížeči.");
         setIsGpsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 15000 },
@@ -296,17 +299,23 @@ export function LocationInput({
 
       {!compact ? (
         <div className="mt-1 space-y-1">
-          {isEmpty ? (
-            <p className={listingFormHintClass}>
-              Zadej město, abychom inzerát správně spárovali.
-            </p>
-          ) : isResolved ? (
+          {isResolved ? (
             <p className="text-xs text-green-700">
               Lokalita potvrzena: {value.locationText}
             </p>
+          ) : requireConfirmation ? (
+            <p className="text-sm font-medium text-red-600">
+              {isEmpty
+                ? "Zadejte a potvrďte lokalitu inzerátu z našeptávače."
+                : "Potvrďte lokalitu inzerátu"}
+            </p>
+          ) : isEmpty ? (
+            <p className={listingFormHintClass}>
+              Zadejte město, abychom inzerát správně spárovali.
+            </p>
           ) : (
             <p className={listingFormHintClass}>
-              Našeptávač ti pomůže vybrat správnou obec.
+              Našeptávač vám pomůže vybrat správnou obec.
             </p>
           )}
         </div>

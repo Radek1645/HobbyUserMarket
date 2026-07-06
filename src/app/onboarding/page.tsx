@@ -29,10 +29,10 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
         <h1 className="text-center text-2xl font-semibold text-gray-900">
-          Vítej na HobbyUserMarket
+          Vítejte na HobbyUserMarket
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Doplň profil — přezdívku nebo firemní údaje uvidí sousedé u tvých
+          Doplňte profil — přezdívku nebo firemní údaje uvidí sousedé u vašich
           inzerátů.
         </p>
 

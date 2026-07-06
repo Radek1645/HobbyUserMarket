@@ -138,6 +138,8 @@ CREATE TABLE IF NOT EXISTS public.posts (
   user_id           UUID NOT NULL REFERENCES auth.users (id) ON DELETE RESTRICT,
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
+  original_title    TEXT,
+  original_description TEXT,
   category_type     VARCHAR(10) NOT NULL,
   subcategory_slug  VARCHAR(50) NOT NULL,
   price_type        VARCHAR(20) NOT NULL,
@@ -208,6 +210,12 @@ CREATE TABLE IF NOT EXISTS public.posts (
 
   CONSTRAINT posts_description_length_check
     CHECK (char_length(description) <= 2000),
+
+  CONSTRAINT posts_original_title_length_check
+    CHECK (original_title IS NULL OR char_length(original_title) BETWEEN 1 AND 80),
+
+  CONSTRAINT posts_original_description_length_check
+    CHECK (original_description IS NULL OR char_length(original_description) <= 2000),
 
   CONSTRAINT posts_subcategory_slug_not_empty
     CHECK (char_length(trim(subcategory_slug)) > 0),

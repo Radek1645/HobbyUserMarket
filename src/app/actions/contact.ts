@@ -15,7 +15,7 @@ export async function revealListingContact(
 ): Promise<RevealContactState> {
   const user = await getCurrentUser();
   if (!user) {
-    return { error: "Pro zobrazení kontaktu se přihlas." };
+    return { error: "Pro zobrazení kontaktu se přihlaste." };
   }
 
   const supabase = await createClient();

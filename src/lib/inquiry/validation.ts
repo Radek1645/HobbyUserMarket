@@ -73,7 +73,7 @@ export function validateInquiryPayload(
   }
 
   if (senderContact.length < 5) {
-    return { ok: false, error: "Zadej e-mail nebo telefon pro zpětnou vazbu." };
+    return { ok: false, error: "Zadejte e-mail nebo telefon pro zpětnou vazbu." };
   }
 
   if (message.length < INQUIRY_MESSAGE_MIN_LENGTH) {

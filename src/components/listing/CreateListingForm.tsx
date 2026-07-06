@@ -18,9 +18,13 @@ import {
   getListingExpiryWarning,
   parseMentionedDatesFromText,
 } from "@/lib/posts/expiry";
+import { listingNeedsModeration } from "@/lib/moderation/needs-moderation";
 import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
 import { appendQuestionAnswersToDescription } from "@/lib/moderation/append-question-answers";
+import {
+  ModerationApprovedDialog,
+} from "@/components/moderation/ModerationApprovedDialog";
 import {
   ModerationPreviewDialog,
   type ModerationPreviewState,
@@ -110,6 +114,7 @@ export function CreateListingForm({
     useState<ModerationRejectionState | null>(null);
   const [moderationPreview, setModerationPreview] =
     useState<ModerationPreviewState | null>(null);
+  const [moderationApprovedOpen, setModerationApprovedOpen] = useState(false);
   const pendingPublishFormRef = useRef<HTMLFormElement | null>(null);
   const [isCheckingAi, setIsCheckingAi] = useState(false);
   const [step, setStep] = useState(isEdit ? 2 : 1);
@@ -127,10 +132,10 @@ export function CreateListingForm({
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [locationText, setLocationText] = useState(initialValues?.locationText ?? "");
   const [latitude, setLatitude] = useState<number | null>(
-    initialValues?.latitude ?? null,
+    isEdit ? null : (initialValues?.latitude ?? null),
   );
   const [longitude, setLongitude] = useState<number | null>(
-    initialValues?.longitude ?? null,
+    isEdit ? null : (initialValues?.longitude ?? null),
   );
   const [priceType, setPriceType] = useState<PriceType>(
     initialValues?.priceType ?? "negotiable",
@@ -256,10 +261,15 @@ export function CreateListingForm({
     form: HTMLFormElement,
     titleValue: string,
     descriptionValue: string,
+    originalSnapshot?: { title: string; description: string },
   ) {
     const formData = new FormData(form);
     formData.set("title", titleValue);
     formData.set("description", descriptionValue);
+    if (originalSnapshot) {
+      formData.set("originalTitle", originalSnapshot.title);
+      formData.set("originalDescription", originalSnapshot.description);
+    }
     setTitle(titleValue);
     setDescription(descriptionValue);
     imageUploadRef.current?.appendToFormData(formData);
@@ -272,7 +282,12 @@ export function CreateListingForm({
   function handlePreviewClose() {
     if (pending || isModerating) return;
     setModerationPreview(null);
+    setModerationApprovedOpen(false);
     pendingPublishFormRef.current = null;
+  }
+
+  function handleModerationApprovedContinue() {
+    setModerationApprovedOpen(false);
   }
 
   function handlePublishOriginalFromPreview() {
@@ -284,6 +299,10 @@ export function CreateListingForm({
       form,
       preview.originalTitle,
       stripContactInfo(preview.originalDescription),
+      {
+        title: preview.originalTitle,
+        description: preview.originalDescription,
+      },
     );
     setModerationPreview(null);
     pendingPublishFormRef.current = null;
@@ -304,7 +323,10 @@ export function CreateListingForm({
       payload.questionAnswers,
     );
 
-    publishListing(form, payload.title, finalDescription);
+    publishListing(form, payload.title, finalDescription, {
+      title: preview.originalTitle,
+      description: preview.originalDescription,
+    });
     setModerationPreview(null);
     pendingPublishFormRef.current = null;
   }
@@ -314,6 +336,7 @@ export function CreateListingForm({
     setModerationError(null);
     setModerationRejection(null);
     setModerationPreview(null);
+    setModerationApprovedOpen(false);
 
     if (isEvent && !isEventDateValid) {
       return;
@@ -388,10 +411,32 @@ export function CreateListingForm({
     }
 
     if (moderation.skipped || !MODERATION_ENABLED) {
+      const imagesChanged =
+        isEdit && (imageUploadRef.current?.hasImageChanges() ?? false);
+      const shouldPersistOriginals =
+        !isEdit ||
+        !initialValues ||
+        listingNeedsModeration(
+          {
+            title: titleTrimmed,
+            description: descriptionTrimmed,
+            categoryType,
+            subcategorySlug,
+          },
+          initialValues,
+        ) ||
+        imagesChanged;
+
       publishListing(
         form,
-        moderation.cleanedTitle,
-        moderation.cleanedDescription,
+        moderation.cleanedTitle ?? titleTrimmed,
+        moderation.cleanedDescription ?? descriptionTrimmed,
+        shouldPersistOriginals
+          ? {
+              title: titleTrimmed,
+              description: descriptionTrimmed,
+            }
+          : undefined,
       );
       pendingPublishFormRef.current = null;
       return;
@@ -404,6 +449,7 @@ export function CreateListingForm({
       aiDescription: moderation.cleanedDescription ?? descriptionTrimmed,
       questions: moderation.questions ?? [],
     });
+    setModerationApprovedOpen(true);
   }
 
   const isSaving = pending || isModerating || isCheckingAi;
@@ -415,8 +461,14 @@ export function CreateListingForm({
         onClose={() => setModerationRejection(null)}
       />
 
+      <ModerationApprovedDialog
+        open={moderationApprovedOpen}
+        isEdit={isEdit}
+        onContinue={handleModerationApprovedContinue}
+      />
+
       <ModerationPreviewDialog
-        preview={moderationPreview}
+        preview={moderationApprovedOpen ? null : moderationPreview}
         publishing={pending || isModerating}
         onClose={handlePreviewClose}
         onPublishAi={handlePublishAiFromPreview}
@@ -529,7 +581,7 @@ export function CreateListingForm({
               value={subcategorySlug}
               onChange={(e) => setSubcategorySlug(e.target.value)}
             >
-              <option value="">— vyber —</option>
+              <option value="">— vyberte —</option>
               {subcategories.map((s) => (
                 <option key={s.slug} value={s.slug}>
                   {s.label}
@@ -710,7 +762,7 @@ export function CreateListingForm({
             <div>
               <span className={labelClass}>Platnost inzerátu</span>
               <p className={hintClass}>
-                Výchozí 30 dní — můžeš přepsat.
+                Výchozí 30 dní — můžete přepsat.
               </p>
               {!customDuration ? (
                 <select
@@ -773,6 +825,7 @@ export function CreateListingForm({
             }}
             inputClass={inputClass}
             labelClass={labelClass}
+            requireConfirmation={isEdit}
           />
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -860,8 +913,8 @@ export function CreateListingForm({
                 Přímé kontakty v inzerátu
               </h3>
               <p className={`${hintClass} mt-1`}>
-                Zájemci ti vždy mohou poslat zprávu přes formulář na webu.
-                Chceš jim ukázat i přímé spojení?
+                Zájemci vám vždy mohou poslat zprávu přes formulář na webu.
+                Chcete jim ukázat i přímé spojení?
               </p>
             </div>
 
@@ -931,7 +984,7 @@ export function CreateListingForm({
             {showContactPhone ? (
               <div>
                 <label htmlFor="contactPhone" className={labelClass}>
-                  Zadej telefonní číslo <span className="text-red-600">*</span>
+                  Zadejte telefonní číslo <span className="text-red-600">*</span>
                 </label>
                 <input
                   id="contactPhone"
@@ -952,7 +1005,7 @@ export function CreateListingForm({
 
           <p className={hintClass}>
             {MODERATION_ENABLED
-              ? "Před publikací proběhne AI kontrola — uvidíš náhled a můžeš zvolit, zda AI text použiješ."
+              ? "Před publikací proběhne AI kontrola — uvidíte náhled a můžete zvolit, zda AI text použijete."
               : "AI kontrola obsahu bude brzy — teď se inzerát uloží rovnou."}
           </p>
 
@@ -993,7 +1046,7 @@ export function CreateListingForm({
                 !canPublish
                   ? isEvent && eventDateError
                     ? eventDateError
-                    : "Vyplň název, popis a potvrď obec z našeptávače"
+                    : "Vyplňte název, popis a potvrďte obec z našeptávače"
                   : undefined
               }
               className={`flex flex-1 items-center justify-center gap-2 ${listingFormPrimaryButtonClass}`}

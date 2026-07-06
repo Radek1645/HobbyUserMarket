@@ -25,7 +25,7 @@ export default async function SetPasswordPage() {
           Nové heslo
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Zadej nové heslo k účtu {user.email}.
+          Zadejte nové heslo k účtu {user.email}.
         </p>
 
         <div className="mt-6">

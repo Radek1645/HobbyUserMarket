@@ -40,7 +40,7 @@ export function HeaderSearch() {
       }
 
       if (!isSearchQueryValid(query)) {
-        setHint(`Zadej alespoň ${SEARCH_QUERY_MIN_LENGTH} znaky.`);
+        setHint(`Zadejte alespoň ${SEARCH_QUERY_MIN_LENGTH} znaky.`);
         return;
       }
 

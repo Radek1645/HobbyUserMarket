@@ -54,6 +54,8 @@ export type PostRow = {
   user_id: string;
   title: string;
   description: string;
+  original_title?: string | null;
+  original_description?: string | null;
   category_type: CategoryType;
   subcategory_slug: string;
   price_type: PriceType;

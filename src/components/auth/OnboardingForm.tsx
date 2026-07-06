@@ -27,7 +27,7 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
         Přihlášený účet:{" "}
         <span className="font-medium text-gray-900">{email}</span>
         <p className="mt-1 text-xs text-gray-500">
-          E-mail nelze později změnit — při potřebě jiné adresy založ nový účet.
+          E-mail nelze později změnit — při potřebě jiné adresy založte nový účet.
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
           <span className="font-medium text-gray-900">Registruji se jako firma</span>
           <span className="mt-0.5 block text-xs text-gray-500">
             U inzerátů se místo přezdívky zobrazí název firmy. Přezdívku si stejně
-            zvolíš pro komentáře a interní identitu.
+            zvolíte pro komentáře a interní identitu.
           </span>
         </span>
       </label>
@@ -89,7 +89,7 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
         <p className="mt-1 text-xs text-gray-500">
           {isCompany
             ? "3–30 znaků. U firem se u inzerátů zobrazí název firmy, přezdívka zůstane u komentářů."
-            : "3–30 znaků, písmena, čísla, podtržítko nebo pomlčka. Zobrazí se u tvých inzerátů."}
+            : "3–30 znaků, písmena, čísla, podtržítko nebo pomlčka. Zobrazí se u vašich inzerátů."}
         </p>
       </div>
 

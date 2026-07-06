@@ -44,6 +44,15 @@ function parseParameterLine(line: string): ListingParameter | null {
         value: content.slice(colonIndex + 2).trim(),
       };
     }
+
+    const spaceValueMatch = /^(.+?)\s+(\d[\d\s]*(?:\s*m²|\s*m2)?)$/i.exec(content);
+    if (spaceValueMatch) {
+      return {
+        label: spaceValueMatch[1]!.trim(),
+        value: spaceValueMatch[2]!.trim(),
+      };
+    }
+
     return { label: content, value: "" };
   }
 

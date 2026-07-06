@@ -28,7 +28,7 @@ export default async function NewListingPage() {
           Založit inzerát
         </h1>
         <p className="mt-1 text-sm text-gray-600">
-          Vyplň kategorii a obsah. Platnost 30 dní (u akcí podle data konání).
+          Vyplňte kategorii a obsah. Platnost 30 dní (u akcí podle data konání).
         </p>
       </div>
 

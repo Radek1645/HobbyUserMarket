@@ -111,7 +111,7 @@ Smaž objekt z `PROHIBITED_TOPICS`. Z popupu zmizí z `label` seznamu; AI prompt
 
 ## Texty pro uživatele (popup, odkazy)
 
-Soubor **`src/config/moderation/messages.ts`**:
+Soubor **`src/config/moderation/messages.ts`**. Tón a vykání: **PRD §1.6 Tone of Voice** (srozumitelně, upřímně, styl AirBank). Stejné texty musí být synchronní v `supabase/functions/moderate-listing/index.ts` (chyby rate limitu a výpadku AI).
 
 | Konstanta | Co mění |
 |-----------|---------|
@@ -192,11 +192,13 @@ Edge Function u kroku „Ignorovat AI“ **neúčinkuje** — kontakty usekne vr
 Odpovědi z modalu se **nepersistují do JSONB** — v DB není sloupec `metadata` / `ai_properties` u `posts`.
 
 Flow:
-1. AI vrátí `questions[]` v JSON odpovědi Edge Function.
-2. Uživatel volitelně vyplní pole v modalu.
-3. Při „Doplnit, upravit a publikovat“ klient zavolá `appendQuestionAnswersToDescription()` — odpovědi se **přilepí na konec sloupce `description`** jako prostý text (`Otázka: odpověď`).
+1. AI vrátí `questions[]` v JSON odpovědi Edge Function — každá položka má `label` (otázka ve formuláři) a `paramLabel` (krátký název pro sekci Parametry, např. „Účel pozemku“).
+2. Uživatel vyplní pole v modalu.
+3. Při „Doplnit, upravit a publikovat“ klient zavolá `appendQuestionAnswersToDescription()` — odpovědi se doplní do sekce **Parametry** jako odrážky `• Popisek: hodnota` (stejný formát jako AI `cleanedDescription`).
 
-Je to záměrně jednoduché (humáč, ale funkční). Strukturované uložení otázek až v budoucnu (mimo v0.5).
+Záloha bez `paramLabel` (staré inzeráty nebo chyba AI): klient odvodí popisek heuristikou v `format-question-answers.ts` (např. „Jaký je účel pozemku?“ → „Účel pozemku“).
+
+Na detailu inzerátu se parametry zobrazují jako `Popisek: hodnota` s viditelnou dvojtečkou (`ListingDescription`).
 
 ---
 
@@ -243,4 +245,5 @@ Technická chyba (AI nedostupná, rate limit) → červený text **ve formulář
 ## Související dokumentace
 
 - Kanonická specifikace: `docs/PRD_v3.md` §5.4
+- Hydratace textu, dotazník a struktura popisu: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md)
 - Terminál (sync, build): `docs/terminal-prikazy.md`

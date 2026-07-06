@@ -21,7 +21,7 @@ function resolveInitialTab(tab?: string): "login" | "register" | "forgot" {
 }
 
 const messageMap: Record<string, string> = {
-  password_updated: "Heslo bylo nastavené. Můžeš se přihlásit.",
+  password_updated: "Heslo bylo nastavené. Můžete se přihlásit.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -62,16 +62,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               className="mt-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-center text-base font-semibold leading-snug text-sky-950 sm:mt-6 sm:px-5 sm:py-5 sm:text-lg"
               role="status"
             >
-              Nejdřív si založ profil nebo se přihlas.
+              Nejdřív si založte profil nebo se přihlaste.
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-600 sm:text-base">
-              Bez účtu inzerát nezveřejníš. Pak můžeš nabízet zboží nebo služby
+              Bez účtu inzerát nezveřejníte. Pak můžete nabízet zboží nebo služby
               v okolí.
             </p>
           </>
         ) : (
           <p className="mt-2 text-center text-sm text-gray-600">
-            Přihlas se e-mailem nebo přes Google a začni prodávat nebo nakupovat
+            Přihlaste se e-mailem nebo přes Google a začněte prodávat nebo nakupovat
             lokálně.
           </p>
         )}

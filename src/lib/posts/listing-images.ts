@@ -115,7 +115,7 @@ async function uploadListingImageFile(
     });
 
   if (error) {
-    throw new Error("Fotku se nepodařilo nahrát. Zkus to znovu.");
+    throw new Error("Fotku se nepodařilo nahrát. Zkuste to prosím znovu.");
   }
 
   return {
@@ -148,7 +148,7 @@ export async function syncListingImagesFromForm(
 
   const newKeysInOrder = imageOrder.filter((key) => key.startsWith("n:"));
   if (newKeysInOrder.length !== newFiles.length) {
-    return { error: "Nepodařilo se zpracovat nahrané fotky. Zkus to znovu." };
+    return { error: "Nepodařilo se zpracovat nahrané fotky. Zkuste to prosím znovu." };
   }
 
   for (const file of newFiles) {

@@ -87,6 +87,12 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
       "Nabídka explicitně cílená na nezletilé, prodej alkoholu/tabáku tam, kde je to zakázáno.",
   },
   {
+    id: "minor_photos",
+    label: "Fotografie dětí a adolescentů",
+    criteria:
+      "Fotografie, na které je rozpoznatelně zachycen člověk vypadající jako malé dítě nebo adolescent (odhad mladší 18 let), ať už jako hlavní motiv nebo výrazná část snímku — včetně skupinových fotek. Zamítni i snímky, kde je taková osoba na pozadí nebo v odrazu. Výjimka: fotka ukazuje pouze věc bez rozpoznatelné tváře nezletilé osoby (např. dětské kolo, hračka). Samotný text typu „dětské kolo“ bez dítěte na fotografii není důvod k zamítnutí.",
+  },
+  {
     id: "gambling_illegal",
     label: "Nelegální hazard",
     criteria:

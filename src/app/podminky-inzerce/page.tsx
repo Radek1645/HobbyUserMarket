@@ -13,7 +13,7 @@ export default function ListingTermsPage() {
         {MODERATION_REJECTION_UI.termsLinkLabel}
       </h1>
       <p className="mt-3 text-gray-600">
-        Tato stránka se připravuje. Brzy zde najdeš kompletní pravidla pro
+        Tato stránka se připravuje. Brzy zde najdete kompletní pravidla pro
         vkládání inzerátů na HobbyUserMarket — co je povoleno, co zakázáno a
         jak probíhá moderace obsahu.
       </p>

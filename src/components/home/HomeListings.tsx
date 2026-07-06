@@ -163,7 +163,7 @@ export function HomeListings({
         }
       } catch (e) {
         console.error("home listings:", e);
-        setError("Inzeráty se nepodařilo načíst. Zkus obnovit stránku.");
+        setError("Inzeráty se nepodařilo načíst. Zkuste obnovit stránku.");
         setListings([]);
       } finally {
         setLoading(false);
@@ -246,7 +246,7 @@ export function HomeListings({
   const listingsSubtitle = (() => {
     if (searchActive) {
       if (!searchValid) {
-        return "Zadej alespoň 3 znaky pro fulltextové hledání";
+        return "Zadejte alespoň 3 znaky pro fulltextové hledání";
       }
       if (activeLocation) {
         return "Seřazeno podle relevance, vzdálenost doplňuje řazení";
@@ -260,7 +260,7 @@ export function HomeListings({
       return `Do ${effectiveRadiusKm} km od tebe`;
     }
     if (activeLocation && nationwideFallback) {
-      return "Ve tvém okolí zatím nic není — nejnovější inzeráty z celé republiky";
+      return "Ve vašem okolí zatím nic není — nejnovější inzeráty z celé republiky";
     }
     if (!activeLocation) {
       return locationEnabled
@@ -339,11 +339,11 @@ export function HomeListings({
       !error ? (
         <p className="mt-8 rounded-2xl border border-dashed border-gray-200/80 bg-white/70 px-4 py-10 text-center text-sm text-gray-500 backdrop-blur-sm">
           {searchActive && searchValid
-            ? `Pro „${searchQuery}" jsme nic nenašli. Zkus jiné slovo nebo kategorii.`
+            ? `Pro „${searchQuery}" jsme nic nenašli. Zkuste jiné slovo nebo kategorii.`
             : listings.length > 0 && filter.subcategorySlug
-            ? `V podkategorii „${subcategoryLabel}“ zatím nic není. Zkus jiný filtr.`
+            ? `V podkategorii „${subcategoryLabel}“ zatím nic není. Zkuste jiný filtr.`
             : fetchMode === "nearby"
-              ? `V okolí do ${effectiveRadiusKm ?? SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkus jinou kategorii nebo polohu.`
+              ? `V okolí do ${effectiveRadiusKm ?? SEARCH_RADIUS_KM} km v kategorii „${theme.label}“ zatím nic není. Zkuste jinou kategorii nebo polohu.`
               : nationwideFallback
                 ? `V okolí zatím nic není a v kategorii „${theme.label}“ není ani celostátní inzerce.`
                 : `V kategorii „${theme.label}“ zatím nic není.`}

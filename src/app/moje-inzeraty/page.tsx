@@ -55,7 +55,7 @@ export default async function MyListingsPage() {
         Správa inzerátů
       </h1>
       <p className="mt-1 text-sm text-gray-600">
-        Tvoje publikované inzeráty — uprav lokalitu, cenu nebo text.
+        Vaše publikované inzeráty — upravte lokalitu, cenu nebo text.
       </p>
 
       {listings.length === 0 ? (

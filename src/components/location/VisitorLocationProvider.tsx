@@ -120,7 +120,7 @@ export function VisitorLocationProvider({
       pickerValue.longitude == null ||
       !pickerValue.locationText.trim()
     ) {
-      setPanelError("Vyber obec z našeptávače.");
+      setPanelError("Vyberte obec z našeptávače.");
       return;
     }
 
@@ -171,7 +171,7 @@ export function VisitorLocationProvider({
         }
       },
       () => {
-        setPanelError("Polohu se nepodařilo získat. Povol GPS v prohlížeči.");
+        setPanelError("Polohu se nepodařilo získat. Povolte GPS v prohlížeči.");
         setGpsLoading(false);
       },
       { enableHighAccuracy: false, timeout: 12_000, maximumAge: 300_000 },

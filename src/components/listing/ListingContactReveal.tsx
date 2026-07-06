@@ -135,12 +135,12 @@ export function ListingContactReveal({
 
       <p className="mt-2 text-sm leading-relaxed text-neutral-700">
         {isLoggedIn ? (
-          "Chráníme soukromí inzerentů. Klikni pro zobrazení kontaktu, který zadavatel povolil."
+          "Chráníme soukromí inzerentů. Klikněte pro zobrazení kontaktu, který zadavatel povolil."
         ) : (
           <>
             Chráníme soukromí inzerentů.{" "}
-            <strong>Telefon a e-mail uvidíš po přihlášení</strong>, nebo jim
-            napiš hned přes formulář níže.
+            <strong>Telefon a e-mail uvidíte po přihlášení</strong>, nebo jim
+            napište hned přes formulář níže.
           </>
         )}
       </p>
