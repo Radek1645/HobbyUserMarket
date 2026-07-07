@@ -39,6 +39,98 @@ function extractJsonObject(raw: string): string {
   throw new Error("AI nevrátila validní JSON.");
 }
 
+function normalizeJsonQuotes(input: string): string {
+  return input
+    .replace(/\u201C|\u201D/g, '"')
+    .replace(/\u2018|\u2019/g, "'");
+}
+
+/** Odstraní trailing commas před ] nebo } — častá chyba Gemini JSON. */
+function stripTrailingCommas(input: string): string {
+  let prev = "";
+  let current = input;
+  while (prev !== current) {
+    prev = current;
+    current = current.replace(/,(\s*[}\]])/g, "$1");
+  }
+  return current;
+}
+
+/** Escapuje neescapované řádky/taby uvnitř JSON stringů. */
+function escapeControlCharsInJsonStrings(json: string): string {
+  let result = "";
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < json.length; i++) {
+    const ch = json[i]!;
+    if (!inString) {
+      result += ch;
+      if (ch === '"') inString = true;
+      escaped = false;
+      continue;
+    }
+    if (escaped) {
+      result += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      result += ch;
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      result += ch;
+      inString = false;
+      continue;
+    }
+    if (ch === "\n") {
+      result += "\\n";
+      continue;
+    }
+    if (ch === "\r") {
+      result += "\\r";
+      continue;
+    }
+    if (ch === "\t") {
+      result += "\\t";
+      continue;
+    }
+    result += ch;
+  }
+
+  return result;
+}
+
+function parseJsonFromAi(raw: string): Record<string, unknown> {
+  const extracted = extractJsonObject(raw);
+  const candidates = [
+    extracted,
+    stripTrailingCommas(extracted),
+    stripTrailingCommas(escapeControlCharsInJsonStrings(extracted)),
+    stripTrailingCommas(
+      escapeControlCharsInJsonStrings(normalizeJsonQuotes(extracted)),
+    ),
+  ];
+
+  let lastError: unknown;
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate) as Record<string, unknown>;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  console.error(
+    "parseJsonFromAi failed:",
+    lastError,
+    extracted.slice(0, 800),
+  );
+  throw new Error("AI nevrátila validní JSON.");
+}
+
 function asOptionalString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -110,7 +202,7 @@ export function filterRedundantPriceQuestions(
 }
 
 export function parseModerationResponse(raw: string): ModerationResult {
-  const parsed = JSON.parse(extractJsonObject(raw)) as Record<string, unknown>;
+  const parsed = parseJsonFromAi(raw);
   const status = parsed.status;
 
   if (
@@ -137,23 +229,121 @@ export function parseModerationResponse(raw: string): ModerationResult {
   };
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const CONTACT_PLACEHOLDER = "[SKRYTO – použij chráněné pole]";
+
+function formatCzkAmount(amount: number): string {
+  return amount.toLocaleString("cs-CZ");
+}
+
+/** Odstraní zástupný text u ceny, který AI někdy chybně vloží místo chráněného pole formuláře. */
+export function sanitizeCleanedDescription(text: string): string {
+  let result = text;
+
+  result = result.replace(
+    new RegExp(
+      `[^.!?\\n]*\\b[Cc]ena\\s*${escapeRegExp(CONTACT_PLACEHOLDER)}[^.!?\\n]*[.!?]?`,
+      "g",
+    ),
+    "",
+  );
+  result = result.replace(
+    new RegExp(
+      `\\b[Cc]ena\\s*${escapeRegExp(CONTACT_PLACEHOLDER)}\\s*Kč\\.?`,
+      "gi",
+    ),
+    "",
+  );
+  result = result.replace(/[ \t]{2,}/g, " ");
+  result = result.replace(/\n{3,}/g, "\n\n");
+
+  return result.trim();
+}
+
+/** U pevné/orientační ceny z formuláře doplní nebo opraví částku v úvodu. */
+export function applyFormPriceToCleanedDescription(
+  text: string,
+  priceType?: string,
+  priceAmount?: number,
+): string {
+  const hasFormPrice =
+    (priceType === "fixed" || priceType === "negotiable") &&
+    typeof priceAmount === "number" &&
+    !Number.isNaN(priceAmount);
+
+  if (!hasFormPrice) {
+    return sanitizeCleanedDescription(text);
+  }
+
+  const formatted = formatCzkAmount(priceAmount);
+  let result = text.replace(
+    new RegExp(
+      `\\b[Cc]ena\\s*${escapeRegExp(CONTACT_PLACEHOLDER)}\\s*Kč\\.?`,
+      "gi",
+    ),
+    `Cena ${formatted} Kč.`,
+  );
+
+  result = sanitizeCleanedDescription(result);
+
+  const intro = result.split(/\n\n---\n\n/)[0] ?? result;
+  const hasPriceInIntro = new RegExp(
+    `${escapeRegExp(formatted).replace(/\\ /g, "\\s?")}\\s*Kč`,
+  ).test(intro);
+
+  if (!hasPriceInIntro && !/\b\d[\d\s]*\s*Kč/.test(intro)) {
+    const parts = result.split(/\n\n---\n\n/);
+    const introPart = (parts[0] ?? result).trimEnd();
+    const suffix = parts.length > 1 ? `\n\n---\n\n${parts.slice(1).join("\n\n---\n\n")}` : "";
+    const trimmedIntro = introPart.replace(/\s+$/, "");
+    const needsPeriod = trimmedIntro.length > 0 && !/[.!?]$/.test(trimmedIntro);
+    const priceSentence =
+      priceType === "fixed"
+        ? `${needsPeriod ? "." : ""} Cena ${formatted} Kč.`
+        : `${needsPeriod ? "." : ""} Orientační cena ${formatted} Kč.`;
+    result = `${trimmedIntro}${priceSentence}${suffix}`;
+  }
+
+  return result.trim();
+}
+
 /** Jednoduchý strip kontaktů — záloha, když AI něco propustí. */
 export function stripContactInfo(text: string): string {
-  return text
-    .replace(
-      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-      "[SKRYTO – použij chráněné pole]",
-    )
-    .replace(
-      /(\+420\s?)?(\d[\d\s]{7,12}\d)/g,
-      "[SKRYTO – použij chráněné pole]",
-    );
+  const CONTACT_PLACEHOLDER = "[SKRYTO – použij chráněné pole]";
+  const EMAIL_PATTERN =
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const PHONE_PATTERN =
+    /(?:\+420[\s.-]?)?(?:[67]\d{2}|[2-5]\d{2})[\s.-]?\d{3}[\s.-]?\d{3}\b/g;
+  const PRICE_PHRASE_PATTERN =
+    /\b((?:[Cc]ena|[Oo]rientační cena|[Mm]zda|[Vv]stupné)\s+\d[\d\s]{0,15}\d\s*Kč\.?)/g;
+  const PRICE_TOKEN_PREFIX = "\uE000PRICE";
+
+  const saved: string[] = [];
+  const masked = text.replace(PRICE_PHRASE_PATTERN, (match) => {
+    const token = `${PRICE_TOKEN_PREFIX}${saved.length}\uE000`;
+    saved.push(match);
+    return token;
+  });
+
+  const stripped = masked
+    .replace(EMAIL_PATTERN, CONTACT_PLACEHOLDER)
+    .replace(PHONE_PATTERN, CONTACT_PLACEHOLDER);
+
+  return stripped.replace(
+    new RegExp(`${PRICE_TOKEN_PREFIX}(\\d+)\uE000`, "g"),
+    (_, index) => saved[Number(index)] ?? "",
+  );
 }
 
 export function normalizeModerationResult(
   result: ModerationResult,
   fallbackTitle: string,
   fallbackDescription: string,
+  priceType?: string,
+  priceAmount?: number,
 ): ModerationResult {
   if (result.status === "REJECTED") {
     return {
@@ -167,8 +357,10 @@ export function normalizeModerationResult(
   }
 
   const cleanedTitle = (result.cleanedTitle ?? fallbackTitle).trim();
-  const cleanedDescription = stripContactInfo(
-    (result.cleanedDescription ?? fallbackDescription).trim(),
+  const cleanedDescription = applyFormPriceToCleanedDescription(
+    stripContactInfo((result.cleanedDescription ?? fallbackDescription).trim()),
+    priceType,
+    priceAmount,
   );
 
   if (result.status === "NEEDS_QUESTIONS") {

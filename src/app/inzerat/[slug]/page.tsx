@@ -15,6 +15,7 @@ import {
   getAdvertiserPrimaryLabelTitle,
 } from "@/lib/auth/advertiser-display";
 import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
+import { getCurrentUser } from "@/lib/auth/get-user";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingImages } from "@/lib/posts/listing-images";
 import { getListingEditPath } from "@/lib/posts/listing-path";
@@ -23,7 +24,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { ListingImagePreview, PostRow } from "@/types/post";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -75,7 +76,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const slug = resolveSlugParam(param);
 
   const post = await getPostBySlug(slug);
-  if (!post || post.status !== "active") notFound();
+  if (!post) notFound();
+
+  if (post.status !== "active") {
+    const user = await getCurrentUser();
+    if (user?.id === post.user_id) {
+      redirect("/moje-inzeraty");
+    }
+    notFound();
+  }
 
   const advertiser = await getAdvertiserProfile(post.user_id);
 

@@ -1,0 +1,50 @@
+---
+description: AI moderace — Gemini, Edge Function, deploy a sync konvence
+globs:
+  - supabase/functions/**
+  - src/config/moderation/**
+  - src/lib/moderation/**
+alwaysApply: false
+---
+
+# AI moderace (moderate-listing)
+
+## Model a API klíče
+
+- **Gemini (primární):** `gemini-2.5-flash` — default v `_shared/moderation/gemini.ts`; override Supabase secretem `GEMINI_MODEL`.
+- **OpenAI (fallback):** `gpt-4o-mini` — pokud Gemini selže a je nastaven `OPENAI_API_KEY`; override `OPENAI_MODERATION_MODEL`.
+- Secrets `GEMINI_API_KEY` / `OPENAI_API_KEY` **jen** v Supabase Edge Functions secrets, ne v Next.js env ani `.env.local`.
+
+## Struktura kódu
+
+- Edge Function: `supabase/functions/moderate-listing/index.ts`
+- Gemini volání: `supabase/functions/_shared/moderation/gemini.ts`
+- Klient: `src/lib/moderation/moderate-listing-client.ts` → `supabase.functions.invoke()` (ne Next.js API route)
+- Feature flag: `MODERATION_ENABLED` v `src/config/moderation/index.ts`
+- Detailní docs: `docs/moderace-inzeratu.md`
+
+## Deploy pořadí
+
+Vždy **nejdřív sync, pak deploy** — deploy před syncem = staré prompty v cloudu.
+
+```bash
+npm run sync:moderation
+npx supabase functions deploy moderate-listing
+```
+
+`sync:moderation` kopíruje `prohibited-topics.ts`, generuje `constants.ts` z `app.ts` a spustí export kategorií.
+
+## Co vyžaduje re-sync + re-deploy
+
+- `src/config/moderation/prohibited-topics.ts`
+- `src/config/app.ts` (délky popisu, QA reserve)
+- kategorie / category prompty (`categories.ts` → export skript)
+
+## Ruční synchronizace textů
+
+`src/config/moderation/messages.ts` — uživatelské texty popupů (Next.js). Stejné chybové texty (rate limit, výpadek AI) udržuj i v `moderate-listing/index.ts` — sync skript je nekopíruje.
+
+## Úpravy kódu
+
+- Neměň `_shared/moderation/prohibited-topics.ts` ani `constants.ts` ručně — jsou generované přes `sync:moderation`.
+- Zdroj pravdy pro policy: `src/config/moderation/`.

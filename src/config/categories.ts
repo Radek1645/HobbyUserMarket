@@ -152,7 +152,12 @@ export const CATEGORIES: CategoryConfig[] = [
     conditionFieldLabel: "Typ transakce",
     priceTypes: NEMOVITOST_PRICE_TYPES,
     aiPrompt:
-      "Uživatel nabízí nemovitost. Skenuj text a fotky na: dispozice (např. 2+kk), plocha v m² a poplatky/kauce (u pronájmu). Pouze pokud tyto KRITICKÉ informace zcela chybí, vytvoř max 3 otázky. Na detaily typu patro, výtah nebo parkování se ptej, jen když je původní popis extrémně stručný.",
+      "Uživatel nabízí nemovitost — typ transakce (Prodej / Pronájem) je ve formuláři. Skenuj text a fotky.\n\n" +
+      "VŽDY se doplňujícími otázkami ověř (pokud to z textu/fotek nevyplývá), parametry pak uveď v sekci Parametry:\n" +
+      "1) Zadavatel: soukromá osoba, nebo realitní kancelář? (paramLabel: „Zadavatel“; label např. „Inzerujete jako soukromá osoba, nebo za realitní kancelář?“)\n" +
+      "2) Cena a provize RK: je uvedená cena včetně provize pro realitní kancelář? (paramLabel: „Provize v ceně“; u pronájmu můžeš formulovat i poplatky RK — label např. „Je cena včetně provize / poplatků realitní kanceláře?“)\n" +
+      "Pokud uživatel už jednoznačně napsal „soukromý prodej“, „bez RK“, „realitka“, „RK“, „včetně provize“ apod., danou otázku neopakuj.\n\n" +
+      "Další kritické údaje dle kontextu: dispozice (např. 2+kk), plocha v m²; u pronájmu též kauce a měsíční poplatky — ptej jen pokud zcela chybí. Na detaily (patro, výtah, parkování) se ptej jen při velmi stručném popisu. Celkem max 5 otázek.",
   },
   {
     type: "prace",

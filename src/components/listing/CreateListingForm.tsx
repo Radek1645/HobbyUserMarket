@@ -139,10 +139,10 @@ export function CreateListingForm({
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [locationText, setLocationText] = useState(initialValues?.locationText ?? "");
   const [latitude, setLatitude] = useState<number | null>(
-    isEdit ? null : (initialValues?.latitude ?? null),
+    initialValues?.latitude ?? null,
   );
   const [longitude, setLongitude] = useState<number | null>(
-    isEdit ? null : (initialValues?.longitude ?? null),
+    initialValues?.longitude ?? null,
   );
   const [priceType, setPriceType] = useState<PriceType>(
     initialValues?.priceType ?? "negotiable",
@@ -818,7 +818,7 @@ export function CreateListingForm({
                     onClick={() => setCustomDuration(false)}
                     className={`shrink-0 ${listingFormSecondaryButtonClass} px-3 py-2`}
                   >
-                    Presety
+                    Zpět na výběr
                   </button>
                 </div>
               )}

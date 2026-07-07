@@ -215,7 +215,7 @@ supabase functions deploy moderate-listing
 | 2 | Server Action `createListing` / `updateListing` | `stripContactInfo()` v `buildListingPayload()` — vždy před INSERT/UPDATE |
 | 3 | PostgreSQL trigger `trg_posts_strip_contacts` | Pojistka proti obejití (Postman, upravený JS, přímý Supabase SDK) |
 
-Edge Function u kroku „Ignorovat AI“ **neúčinkuje** — kontakty usekne vrstva 2 a 3. Migrace: [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql).
+Edge Function u kroku „Ignorovat AI“ **neúčinkuje** — kontakty usekne vrstva 2 a 3. Migrace: [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql). Od **032** (`strip_contacts_price_guard.sql`) regex telefonu nechytá formátovanou cenu v textu „Cena … Kč“ (chráněné fráze před strippem).
 
 ---
 

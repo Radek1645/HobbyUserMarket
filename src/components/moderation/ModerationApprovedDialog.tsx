@@ -1,4 +1,5 @@
 import { MODERATION_APPROVED_UI } from "@/config/moderation";
+import { listingFormPrimaryButtonClass } from "@/config/listing-form-ui";
 import { CheckCircle2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
@@ -84,9 +85,11 @@ export function ModerationApprovedDialog({
           ref={continueButtonRef}
           type="button"
           onClick={onContinue}
-          className="mt-6 flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+          className={`mt-6 w-full ${listingFormPrimaryButtonClass}`}
         >
-          {MODERATION_APPROVED_UI.continueLabel}
+          {isEdit
+              ? MODERATION_APPROVED_UI.continueLabelEdit
+              : MODERATION_APPROVED_UI.continueLabel}
         </button>
       </div>
     </div>

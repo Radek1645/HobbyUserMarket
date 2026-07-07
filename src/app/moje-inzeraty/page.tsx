@@ -5,20 +5,39 @@ import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
 import type { PostRow, PostStatus } from "@/types/post";
 import type { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import { BackHomeLink } from "@/components/navigation/BackHomeLink";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Moje inzeráty | HobbyUserMarket",
 };
 
-const STATUS_LABELS: Record<PostStatus, string> = {
-  active: "Aktivní",
-  archived: "Expirovaný",
-  hidden: "Pozastavený",
-  draft: "Koncept",
-  deleted: "Smazaný",
+const STATUS_BADGE: Record<
+  PostStatus,
+  { label: string; className: string } | null
+> = {
+  active: {
+    label: "Aktivní",
+    className:
+      "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  },
+  hidden: {
+    label: "Pozastaveno",
+    className: "bg-amber-50 text-amber-800 ring-amber-200",
+  },
+  draft: {
+    label: "Koncept",
+    className: "bg-neutral-100 text-neutral-600 ring-neutral-200",
+  },
+  archived: {
+    label: "Expirovaný",
+    className: "bg-red-50 text-red-700 ring-red-200",
+  },
+  deleted: null,
 };
 
 // contact_phone se v přehledu nezobrazuje a je odebraný z veřejného SELECT (C2).
@@ -30,6 +49,7 @@ const MY_LISTING_COLUMNS =
   "show_contact_phone, created_at, updated_at";
 
 async function getMyListings(userId: string): Promise<PostRow[]> {
+  noStore();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
@@ -43,8 +63,13 @@ async function getMyListings(userId: string): Promise<PostRow[]> {
   return data;
 }
 
-export default async function MyListingsPage() {
+export default async function MyListingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deleteError?: string }>;
+}) {
   const user = await getCurrentUser();
+  const { deleteError } = await searchParams;
 
   if (!user) {
     redirect("/login?next=/moje-inzeraty");
@@ -66,6 +91,12 @@ export default async function MyListingsPage() {
       <p className="mt-1 text-sm text-gray-600">
         Vaše publikované inzeráty — upravte lokalitu, cenu nebo text.
       </p>
+
+      {deleteError ? (
+        <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          Inzerát se nepodařilo smazat. Zkuste to prosím znovu.
+        </p>
+      ) : null}
 
       {listings.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-10 text-center">
@@ -98,12 +129,19 @@ export default async function MyListingsPage() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs text-gray-500">
-                      {getCategoryLabel(post.category_type)} ·{" "}
-                      {subcategory.label}
-                      <span className="text-gray-400"> · </span>
-                      {STATUS_LABELS[post.status]}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="text-xs text-gray-500">
+                        {getCategoryLabel(post.category_type)} ·{" "}
+                        {subcategory.label}
+                      </p>
+                      {STATUS_BADGE[post.status] ? (
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_BADGE[post.status]!.className}`}
+                        >
+                          {STATUS_BADGE[post.status]!.label}
+                        </span>
+                      ) : null}
+                    </div>
                     <h2 className="mt-1 text-base font-semibold text-gray-900">
                       {post.title}
                     </h2>

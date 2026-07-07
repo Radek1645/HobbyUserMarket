@@ -13,8 +13,14 @@ import {
   buildModerationUserPrompt,
   type ModerationRequestBody,
 } from "../_shared/moderation/build-user-prompt.ts";
-import { callGeminiModeration } from "../_shared/moderation/gemini.ts";
-import { callOpenAiModeration } from "../_shared/moderation/openai.ts";
+import {
+  callGeminiModeration,
+  resolveGeminiModerationModel,
+} from "../_shared/moderation/gemini.ts";
+import {
+  callOpenAiModeration,
+  resolveOpenAiModerationModel,
+} from "../_shared/moderation/openai.ts";
 import {
   filterRedundantPriceQuestions,
   normalizeModerationResult,
@@ -22,6 +28,8 @@ import {
 } from "../_shared/moderation/parse-response.ts";
 import { assertAiModerationRateLimit } from "../_shared/moderation/rate-limit.ts";
 import { issueModerationApproval } from "../_shared/moderation/issue-approval.ts";
+import { logModerationCheck } from "../_shared/moderation/log-moderation-check.ts";
+import type { ModerationResult } from "../_shared/moderation/parse-response.ts";
 import {
   assertValidCategoryPair,
   resolveCategoryAiPrompt,
@@ -38,6 +46,27 @@ const moderationSystemPromptGemini = buildModerationSystemPrompt({
   geminiSafe: true,
 });
 
+type ModerationLogContext = {
+  intent?: string;
+  title?: string;
+  categoryType?: string;
+  subcategorySlug?: string;
+  imageCount?: number;
+};
+
+function parseModerationPriceAmount(value: unknown): number | undefined {
+  if (typeof value === "number" && !Number.isNaN(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value.replace(/\s/g, ""));
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+}
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -45,22 +74,75 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-async function resolveUserId(req: Request): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return null;
-
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseUrl || !anonKey) return null;
-
-  const supabase = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
+async function respondWithLog(
+  userId: string,
+  logCtx: ModerationLogContext,
+  body: ModerationResult & { approvalToken?: string | null },
+  options?: { errorCode?: string; httpStatus?: number },
+): Promise<Response> {
+  await logModerationCheck({
+    userId,
+    intent: logCtx.intent,
+    status: body.status,
+    categoryType: logCtx.categoryType,
+    subcategorySlug: logCtx.subcategorySlug,
+    imageCount: logCtx.imageCount,
+    rejectedTopicId: body.rejectedTopicId,
+    rejectionReason: body.reason,
+    rejectedImageIndex: body.rejectedImageIndex,
+    errorCode: options?.errorCode,
+    titlePreview: logCtx.title,
   });
 
+  return jsonResponse(body, options?.httpStatus ?? 200);
+}
+
+function logRejectedFromContext(
+  userId: string,
+  logCtx: ModerationLogContext,
+  rejectionReason: string,
+  errorCode?: string,
+): Promise<void> {
+  return logModerationCheck({
+    userId,
+    intent: logCtx.intent,
+    status: "REJECTED",
+    categoryType: logCtx.categoryType,
+    subcategorySlug: logCtx.subcategorySlug,
+    imageCount: logCtx.imageCount,
+    rejectionReason,
+    errorCode,
+    titlePreview: logCtx.title,
+  });
+}
+
+async function resolveUserId(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+
+  const jwt = authHeader.slice(7).trim();
+  if (!jwt) return null;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  // invoke() posílá apikey v hlavičce — spolehlivější než env při custom secrets.
+  const apikey =
+    req.headers.get("apikey") ?? Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !apikey) {
+    console.error(
+      "resolveUserId: missing env",
+      JSON.stringify({
+        hasUrl: Boolean(supabaseUrl),
+        hasApikey: Boolean(apikey),
+      }),
+    );
+    return null;
+  }
+
+  const supabase = createClient(supabaseUrl, apikey);
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser(jwt);
 
   if (error) {
     console.error("auth.getUser:", error);
@@ -68,6 +150,17 @@ async function resolveUserId(req: Request): Promise<string | null> {
   }
 
   return user?.id ?? null;
+}
+
+function logModerationAiProvider(
+  provider: "gemini" | "openai",
+  model: string,
+  fallback: boolean,
+): void {
+  console.log(
+    "moderation-ai:",
+    JSON.stringify({ provider, model, fallback }),
+  );
 }
 
 async function callModerationAi(params: {
@@ -83,6 +176,11 @@ async function callModerationAi(params: {
 
   if (hasGemini) {
     try {
+      logModerationAiProvider(
+        "gemini",
+        resolveGeminiModerationModel(),
+        false,
+      );
       return await callGeminiModeration({
         ...params,
         systemPrompt: moderationSystemPromptGemini,
@@ -90,6 +188,11 @@ async function callModerationAi(params: {
     } catch (geminiError) {
       console.error("Gemini failed:", geminiError);
       if (hasOpenAi) {
+        logModerationAiProvider(
+          "openai",
+          resolveOpenAiModerationModel(),
+          true,
+        );
         return await callOpenAiModeration({
           ...params,
           systemPrompt: moderationSystemPromptFull,
@@ -99,6 +202,7 @@ async function callModerationAi(params: {
     }
   }
 
+  logModerationAiProvider("openai", resolveOpenAiModerationModel(), false);
   return await callOpenAiModeration({
     ...params,
     systemPrompt: moderationSystemPromptFull,
@@ -114,11 +218,17 @@ serve(async (req) => {
     return jsonResponse({ status: "REJECTED", reason: "Metoda není povolena." }, 405);
   }
 
+  let userId: string | null = null;
+  const logCtx: ModerationLogContext = {};
+
   try {
-    const userId = await resolveUserId(req);
+    userId = await resolveUserId(req);
     if (!userId) {
       return jsonResponse(
-        { status: "REJECTED", reason: "Pro AI kontrolu se přihlaste." },
+        {
+          error: "AUTH_REQUIRED",
+          message: "Pro AI kontrolu se přihlaste.",
+        },
         401,
       );
     }
@@ -127,14 +237,15 @@ serve(async (req) => {
       await assertAiModerationRateLimit(userId);
     } catch (rateError) {
       if (rateError instanceof Error && rateError.message === "RATE_LIMIT") {
-        return jsonResponse(
-          {
-            status: "REJECTED",
-            reason:
-              "Příliš mnoho AI kontrol za hodinu. Zkuste to prosím znovu později, nebo upravte inzerát bez další kontroly.",
-          },
-          429,
-        );
+        const reason =
+          "Příliš mnoho AI kontrol za hodinu. Zkuste to prosím znovu později, nebo upravte inzerát bez další kontroly.";
+        await logModerationCheck({
+          userId,
+          status: "REJECTED",
+          rejectionReason: reason,
+          errorCode: "RATE_LIMIT",
+        });
+        return jsonResponse({ status: "REJECTED", reason }, 429);
       }
       throw rateError;
     }
@@ -142,6 +253,8 @@ serve(async (req) => {
     const body = (await req.json()) as ModerationRequestBody;
     const title = String(body?.title ?? "").trim();
     const description = String(body?.description ?? "").trim();
+    logCtx.intent = String(body?.intent ?? "").trim() || undefined;
+    logCtx.title = title;
     const imagesBase64 = Array.isArray(body?.imagesBase64)
       ? body.imagesBase64
           .map((item: unknown) => String(item ?? "").trim())
@@ -150,36 +263,42 @@ serve(async (req) => {
       : [];
     const mainImageIndex =
       typeof body?.mainImageIndex === "number" ? body.mainImageIndex : 0;
+    logCtx.imageCount = imagesBase64.length;
 
     if (!title || !description) {
-      return jsonResponse({
-        status: "REJECTED",
-        reason: "Chybí název nebo popis inzerátu.",
-      }, 400);
+      const reason = "Chybí název nebo popis inzerátu.";
+      return respondWithLog(
+        userId,
+        logCtx,
+        { status: "REJECTED", reason },
+        { errorCode: "VALIDATION_MISSING_TEXT", httpStatus: 400 },
+      );
     }
 
     const categoryType = String(body?.categoryType ?? "").trim();
     const subcategorySlug = String(body?.subcategorySlug ?? "").trim();
+    logCtx.categoryType = categoryType || undefined;
+    logCtx.subcategorySlug = subcategorySlug || undefined;
 
     if (!categoryType || !subcategorySlug) {
-      return jsonResponse(
-        {
-          status: "REJECTED",
-          reason: "Chybí kategorie inzerátu.",
-        },
-        400,
+      const reason = "Chybí kategorie inzerátu.";
+      return respondWithLog(
+        userId,
+        logCtx,
+        { status: "REJECTED", reason },
+        { errorCode: "VALIDATION_MISSING_CATEGORY", httpStatus: 400 },
       );
     }
 
     try {
       assertValidCategoryPair(categoryType, subcategorySlug);
     } catch {
-      return jsonResponse(
-        {
-          status: "REJECTED",
-          reason: "Neplatná kategorie inzerátu.",
-        },
-        400,
+      const reason = "Neplatná kategorie inzerátu.";
+      return respondWithLog(
+        userId,
+        logCtx,
+        { status: "REJECTED", reason },
+        { errorCode: "VALIDATION_INVALID_CATEGORY", httpStatus: 400 },
       );
     }
 
@@ -191,11 +310,7 @@ serve(async (req) => {
     const priceType = String(body?.priceType ?? "").trim() || undefined;
     const priceTypeLabel =
       String(body?.priceTypeLabel ?? "").trim() || undefined;
-    const priceAmount =
-      typeof body?.priceAmount === "number" &&
-      !Number.isNaN(body.priceAmount)
-        ? body.priceAmount
-        : undefined;
+    const priceAmount = parseModerationPriceAmount(body?.priceAmount);
 
     const userPrompt = buildModerationUserPrompt(
       {
@@ -234,6 +349,8 @@ serve(async (req) => {
       withoutPriceQuestions,
       title,
       description,
+      priceType,
+      priceAmount,
     );
 
     // H1: po průchodu bezpečnostním filtrem vydej approval token pro publikaci.
@@ -242,10 +359,10 @@ serve(async (req) => {
         userId,
         imagesBase64.length,
       );
-      return jsonResponse({ ...result, approvalToken });
+      return respondWithLog(userId, logCtx, { ...result, approvalToken });
     }
 
-    return jsonResponse(result);
+    return respondWithLog(userId, logCtx, result);
   } catch (error) {
     console.error("moderate-listing:", error);
 
@@ -253,11 +370,17 @@ serve(async (req) => {
       // Vstup zablokoval bezpečnostní filtr Google — obsahový problém,
       // ne výpadek. Vracíme normální zamítnutí.
       if (error.message.startsWith("GEMINI_BLOCKED_")) {
-        return jsonResponse({
-          status: "REJECTED",
-          reason:
-            "Text nebo fotky inzerátu zablokoval bezpečnostní filtr. Zkuste jiné fotografie nebo upravte popis.",
-        });
+        const reason =
+          "Text nebo fotky inzerátu zablokoval bezpečnostní filtr. Zkuste jiné fotografie nebo upravte popis.";
+        if (userId) {
+          await logRejectedFromContext(
+            userId,
+            logCtx,
+            reason,
+            error.message,
+          );
+        }
+        return jsonResponse({ status: "REJECTED", reason });
       }
 
       if (error.message === "AI_KEYS_MISSING") {
@@ -269,11 +392,17 @@ serve(async (req) => {
       }
 
       if (error.message === "GEMINI_HTTP_429") {
-        return jsonResponse({
-          status: "REJECTED",
-          reason:
-            "Limit AI dotazů u Google je dočasně vyčerpaný. Zkuste to prosím za minutu znovu.",
-        });
+        const reason =
+          "Limit AI dotazů u Google je dočasně vyčerpaný. Zkuste to prosím za minutu znovu.";
+        if (userId) {
+          await logRejectedFromContext(
+            userId,
+            logCtx,
+            reason,
+            error.message,
+          );
+        }
+        return jsonResponse({ status: "REJECTED", reason });
       }
 
       if (
@@ -281,11 +410,17 @@ serve(async (req) => {
         error.message.startsWith("OPENAI_") ||
         error.message.includes("validní JSON")
       ) {
-        return jsonResponse({
-          status: "REJECTED",
-          reason:
-            "AI kontrola teď nefunguje. Zkuste to prosím za chvíli znovu.",
-        });
+        const reason =
+          "AI kontrola teď nefunguje. Zkuste to prosím za chvíli znovu.";
+        if (userId) {
+          await logRejectedFromContext(
+            userId,
+            logCtx,
+            reason,
+            error.message.slice(0, 120),
+          );
+        }
+        return jsonResponse({ status: "REJECTED", reason });
       }
     }
 

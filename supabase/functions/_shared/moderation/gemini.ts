@@ -2,6 +2,10 @@ type GeminiPart =
   | { text: string }
   | { inline_data: { mime_type: string; data: string } };
 
+export function resolveGeminiModerationModel(): string {
+  return Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+}
+
 export async function callGeminiModeration(params: {
   systemPrompt: string;
   userPrompt: string;
@@ -12,7 +16,7 @@ export async function callGeminiModeration(params: {
     throw new Error("GEMINI_API_KEY_MISSING");
   }
 
-  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+  const model = resolveGeminiModerationModel();
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 

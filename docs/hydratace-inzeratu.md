@@ -146,7 +146,7 @@ AI vrátí dotazník, když podle **kontextu kategorie** chybí zásadní údaje
 | Zboží (móda) | Velikost, značka (max. ~2 otázky) |
 | Služby | Dojezd / lokalita, materiál v ceně |
 | Události | Čas, místo, kapacita (datum už ve formuláři) |
-| Nemovitosti | Dispozice, plocha m², kauce u pronájmu |
+| Nemovitosti | Dispozice, plocha m², kauce u pronájmu; **vždy** (pokud chybí v textu): zadavatel (soukromá osoba / RK), provize v ceně |
 | Práce | Nástup, požadavky, odměna |
 
 **Hard limit:** max **5** otázek (`MODERATION_MAX_QUESTIONS` v `src/config/moderation/index.ts`). Parser na Edge Function otázky nad limit ořízne.

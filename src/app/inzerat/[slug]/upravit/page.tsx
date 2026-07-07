@@ -1,5 +1,4 @@
 import { CreateListingForm } from "@/components/listing/CreateListingForm";
-import { BackHomeLink } from "@/components/navigation/BackHomeLink";
 import { BackLink } from "@/components/navigation/BackLink";
 import { getListingForEdit } from "@/lib/posts/get-listing-for-edit";
 import {
@@ -55,18 +54,13 @@ export default async function EditListingPage({ params }: PageProps) {
   if (!post) notFound();
 
   const initialValues = postToListingFormInitialValues(post, post.location);
+  const backHref =
+    post.status === "active" ? getListingPath(slug) : "/moje-inzeraty";
 
   return (
     <div className="px-4 py-8 sm:px-6">
       <div className="mb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <BackHomeLink />
-
-          <BackLink
-            href={getListingPath(slug)}
-            label="Zpět na detail inzerátu"
-          />
-        </div>
+        <BackLink href={backHref} label="Zpět" />
 
         <h1 className="mt-4 text-2xl font-semibold text-gray-900">
           Upravit inzerát

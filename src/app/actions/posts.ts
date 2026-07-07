@@ -1,7 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/get-user";
-import { getListingPath } from "@/lib/posts/listing-path";
+import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { buildPostSlug } from "@/lib/posts/slug";
 import {
   validateCreateListing,
@@ -258,8 +258,23 @@ export async function updateListing(
     }
   }
 
+  const { data: finalPost } = await supabase
+    .from("posts")
+    .select("slug, status")
+    .eq("id", postId)
+    .maybeSingle<{ slug: string; status: string }>();
+
+  const slug = finalPost?.slug ?? existing.slug;
+  const finalStatus = finalPost?.status ?? existing.status;
+
   revalidatePath("/");
-  revalidatePath(getListingPath(existing.slug));
-  revalidatePath(`${getListingPath(existing.slug)}/upravit`);
-  redirect(getListingPath(existing.slug));
+  revalidatePath("/moje-inzeraty", "page");
+  revalidatePath(getListingPath(slug));
+  revalidatePath(getListingEditPath(slug));
+
+  if (finalStatus === "active") {
+    redirect(getListingPath(slug));
+  }
+
+  redirect("/moje-inzeraty");
 }

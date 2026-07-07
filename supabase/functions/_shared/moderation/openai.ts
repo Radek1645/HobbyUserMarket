@@ -2,6 +2,10 @@ type OpenAiContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
 
+export function resolveOpenAiModerationModel(): string {
+  return Deno.env.get("OPENAI_MODERATION_MODEL") ?? "gpt-4o-mini";
+}
+
 export async function callOpenAiModeration(params: {
   systemPrompt: string;
   userPrompt: string;
@@ -12,7 +16,7 @@ export async function callOpenAiModeration(params: {
     throw new Error("OPENAI_API_KEY_MISSING");
   }
 
-  const model = Deno.env.get("OPENAI_MODERATION_MODEL") ?? "gpt-4o-mini";
+  const model = resolveOpenAiModerationModel();
 
   const userContent: OpenAiContentPart[] = [{ type: "text", text: params.userPrompt }];
   for (const data of params.imagesBase64) {

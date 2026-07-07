@@ -2,6 +2,10 @@
 
 import { LISTING_DESCRIPTION_MAX_LENGTH } from "@/config/app";
 import { MODERATION_MAX_QUESTIONS, MODERATION_PREVIEW_UI } from "@/config/moderation";
+import {
+  listingFormPrimaryButtonClass,
+  listingFormSecondaryButtonClass,
+} from "@/config/listing-form-ui";
 import { appendQuestionAnswersToDescription } from "@/lib/moderation/append-question-answers";
 import type { ModerationQuestion } from "@/lib/moderation/types";
 import { Loader2 } from "lucide-react";
@@ -272,7 +276,7 @@ export function ModerationPreviewDialog({
               questionsIncomplete
             }
             onClick={handlePublishAi}
-            className="flex w-full flex-col items-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`flex w-full flex-col items-center ${listingFormPrimaryButtonClass}`}
           >
             {publishing ? (
               <span className="flex items-center gap-2">
@@ -283,7 +287,7 @@ export function ModerationPreviewDialog({
               <span>{MODERATION_PREVIEW_UI.publishAiLabel}</span>
             )}
             {!publishing ? (
-              <span className="mt-0.5 text-xs font-normal text-emerald-100">
+              <span className="mt-0.5 text-xs font-normal text-white/80">
                 {MODERATION_PREVIEW_UI.publishAiHint}
               </span>
             ) : null}
@@ -293,7 +297,7 @@ export function ModerationPreviewDialog({
             type="button"
             disabled={publishing}
             onClick={onPublishOriginal}
-            className="flex w-full flex-col items-center rounded-xl border border-neutral-500 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`flex w-full flex-col items-center ${listingFormSecondaryButtonClass}`}
           >
             <span>{MODERATION_PREVIEW_UI.publishOriginalLabel}</span>
             <span className="mt-0.5 text-center text-xs font-normal text-neutral-600">

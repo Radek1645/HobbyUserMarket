@@ -17,26 +17,27 @@ export const MODERATION_APPROVED_UI = {
   intro:
     "AI kontrola proběhla úspěšně. Obsah splňuje podmínky inzerce a můžete pokračovat.",
   introEdit:
-    "AI kontrola proběhla úspěšně. Obsah splňuje podmínky inzerce — můžete uložit změny.",
+    "AI kontrola proběhla úspěšně. Obsah splňuje podmínky inzerce a je správně napsaný.",
   continueLabel: "Pokračovat",
+  continueLabelEdit: "Uložit změny",
 } as const;
 
 export const MODERATION_PREVIEW_UI = {
   title: "AI náhled a doplnění",
   intro:
-    "Sousedská AI vám nabízí upravený text. Můžete ho ještě upravit, nebo publikovat původní popis.",
+    "AI navrhla upravený popis inzerátu. Návrh můžete dál upravit, nebo publikovat původní text.",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
   questionsHeading: "Vylepšete svůj inzerát",
   questionsHint:
-    "Vyplňte všechny otázky — odpovědi se přidají do popisu. Nechcete odpovídat? Zvolte „Publikovat bez vylepšení“.",
+    "Vaše odpovědi doplníme do popisu. Otázky můžete přeskočit a publikovat beze změn.",
   questionRequiredMark: " (povinné)",
   questionsIncompleteWarning: "Vyplňte všechny otázky výše.",
-  publishAiLabel: "Doplnit, upravit a publikovat",
+  publishAiLabel: "Publikovat s vylepšeným popisem",
   publishAiHint: "Doporučeno",
   publishOriginalLabel: "Publikovat bez vylepšení",
   publishOriginalHint:
-    "Bezpečnostní filtr už proběhl. Kontakty v popisu usekne server a databáze.",
+    "Kontaktní údaje v popisu se automaticky skryjí.",
   descriptionLengthWarning: (current: number, max: number) =>
     `Popis včetně odpovědí má ${current} znaků — maximum je ${max}. Zkrácením textu nebo odpovědí to vejde.`,
   descriptionLengthCounter: (current: number, max: number) =>

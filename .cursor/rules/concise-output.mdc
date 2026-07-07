@@ -1,0 +1,12 @@
+---
+description: Stručné odpovědi agenta — minimum textu, maximum kódu
+alwaysApply: true
+---
+
+# Stručný výstup
+
+- Bez pozdravů, úvodů a závěrečných shrnutí.
+- Kód má prioritu; komentáře jen na žádost nebo u nejasné logiky.
+- Vysvětlení stručně — odrážky nebo krátké věty, ne odstavce.
+- Neopisuj znovu celé soubory; u nezměněných částí použij `// ... existing code ...`.
+- Odpověď přiměřená úkolu — jednoduchá oprava ≠ architektonický esej.

@@ -33,7 +33,7 @@ async function getOwnedPost(postId: number): Promise<OwnedPost | null> {
 }
 
 function revalidateListingPaths(slug: string) {
-  revalidatePath("/moje-inzeraty");
+  revalidatePath("/moje-inzeraty", "page");
   revalidatePath("/");
   revalidatePath(getListingPath(slug));
 }
@@ -46,15 +46,17 @@ export async function deleteListing(formData: FormData): Promise<void> {
   if (!post || post.status === "deleted") redirect("/moje-inzeraty");
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("posts")
     .update({ status: "deleted" })
     .eq("id", postId)
-    .eq("user_id", post.user_id);
+    .eq("user_id", post.user_id)
+    .select("id, status")
+    .maybeSingle();
 
-  if (error) {
-    console.error("deleteListing:", error);
-    redirect("/moje-inzeraty");
+  if (error || !data || data.status !== "deleted") {
+    console.error("deleteListing:", error, data);
+    redirect("/moje-inzeraty?deleteError=1");
   }
 
   revalidateListingPaths(post.slug);

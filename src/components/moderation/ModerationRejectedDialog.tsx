@@ -1,8 +1,9 @@
 import type { ListingModerationFailure } from "@/lib/moderation/types";
 import {
-  getProhibitedTopicsSummaryLabels,
+  getProhibitedTopic,
   LISTING_TERMS_PATH,
   MODERATION_REJECTION_UI,
+  PROHIBITED_TOPICS,
 } from "@/config/moderation";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
@@ -22,7 +23,9 @@ export function ModerationRejectedDialog({
   onClose,
 }: ModerationRejectedDialogProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const summaryLabels = getProhibitedTopicsSummaryLabels();
+  const violatedTopic = rejection?.topicId
+    ? getProhibitedTopic(rejection.topicId)
+    : undefined;
 
   useEffect(() => {
     if (!rejection) return;
@@ -77,6 +80,12 @@ export function ModerationRejectedDialog({
 
         <p className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-sm text-red-900">
           {rejection.reason}
+          {violatedTopic ? (
+            <>
+              {" "}
+              <span className="font-semibold">({violatedTopic.label})</span>
+            </>
+          ) : null}
         </p>
 
         <div className="mt-4">
@@ -84,14 +93,26 @@ export function ModerationRejectedDialog({
             {MODERATION_REJECTION_UI.summaryHeading}
           </p>
           <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-sm text-gray-700">
-            {summaryLabels.map((label) => (
-              <li key={label} className="flex gap-2">
-                <span aria-hidden="true" className="text-gray-400">
-                  ·
-                </span>
-                <span>{label}</span>
-              </li>
-            ))}
+            {PROHIBITED_TOPICS.map((topic) => {
+              const isViolated = topic.id === rejection.topicId;
+              return (
+                <li key={topic.id} className="flex gap-2">
+                  <span
+                    aria-hidden="true"
+                    className={isViolated ? "text-red-400" : "text-gray-400"}
+                  >
+                    ·
+                  </span>
+                  <span
+                    className={
+                      isViolated ? "font-semibold text-red-700" : undefined
+                    }
+                  >
+                    {topic.label}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
 

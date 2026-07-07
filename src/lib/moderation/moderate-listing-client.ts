@@ -68,7 +68,13 @@ async function readModerationResponseFromError(
   }
 
   try {
-    const body = (await response.clone().json()) as ModerateListingResponse;
+    const body = (await response.clone().json()) as ModerateListingResponse & {
+      error?: string;
+      message?: string;
+    };
+    if (body?.error === "AUTH_REQUIRED") {
+      return null;
+    }
     return body?.status ? body : null;
   } catch {
     return null;
@@ -117,6 +123,11 @@ export async function invokeModerateListing(
 
   if (error) {
     const message = error.message ?? "";
+    if (message.includes("401") || message.toLowerCase().includes("unauthorized")) {
+      return technicalFailure(
+        "Sezení vypršelo. Obnovte stránku a přihlaste se znovu.",
+      );
+    }
     if (message.includes("429") || message.toLowerCase().includes("rate limit")) {
       return technicalFailure(
         MODERATION_RATE_LIMIT_MESSAGE(MODERATION_RATE_LIMIT_PER_HOUR),

@@ -35,11 +35,15 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
       : null;
 
   if (priceType === "fixed" && amount != null) {
-    return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč. Cenu uveď v cleanedDescription (např. „Cena ${formatCzkAmount(amount)} Kč.“). Na cenu se znovu neptej — uživatel ji už vyplnil.`;
+    return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč. Do cleanedDescription vlož přímo „Cena ${formatCzkAmount(amount)} Kč.“ (nebo přirozeně zapracovanou do věty). Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
   }
 
   if (priceType === "negotiable" && amount != null) {
-    return `Typ ceny z formuláře: ${label}, orientačně ${formatCzkAmount(amount)} Kč. Orientační cenu uveď v cleanedDescription. Na cenu se znovu neptej — uživatel ji už vyplnil.`;
+    return `Typ ceny z formuláře: ${label}, orientačně ${formatCzkAmount(amount)} Kč. Orientační cenu uveď v cleanedDescription přímo číslem. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
+  }
+
+  if (priceType === "negotiable" || priceType === "fixed") {
+    return `Typ ceny z formuláře: ${label}. Částka není vyplněna — cenu v cleanedDescription neuváděj a nepoužívej zástupný text za cenu.`;
   }
 
   if (

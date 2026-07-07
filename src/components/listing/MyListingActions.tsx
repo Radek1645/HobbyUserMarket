@@ -9,6 +9,14 @@ import {
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import type { PostStatus } from "@/types/post";
+import {
+  CalendarPlus,
+  Eye,
+  Pause,
+  Pencil,
+  Play,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 
 type MyListingActionsProps = {
@@ -17,8 +25,14 @@ type MyListingActionsProps = {
   status: PostStatus;
 };
 
-const actionButtonClass =
-  "rounded-xl border px-3 py-2 text-sm font-medium transition disabled:opacity-50";
+const iconButtonClass =
+  "inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50";
+
+const secondaryButtonClass =
+  "inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50";
+
+const primaryButtonClass =
+  "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50";
 
 export function MyListingActions({ postId, slug, status }: MyListingActionsProps) {
   // 'draft' = neúspěšně publikovaný inzerát (H1) — jde doupravit a znovu odeslat.
@@ -32,17 +46,36 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
   if (!canEdit && !canManage) return null;
 
   return (
-    <div className="flex shrink-0 flex-wrap gap-2">
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
       {status === "active" ? (
         <Link
           href={getListingPath(slug)}
           {...gtmCtaProps(GTM_CTA.MY_LISTINGS_VIEW, {
             "listing-id": postId,
           })}
-          className={`${actionButtonClass} border-gray-200 text-gray-700 hover:bg-gray-50`}
+          className={iconButtonClass}
+          title="Náhled"
+          aria-label="Náhled"
         >
-          Náhled
+          <Eye className="h-4 w-4" aria-hidden />
         </Link>
+      ) : null}
+
+      {canManage ? (
+        <form action={extendListingBy30Days}>
+          <input type="hidden" name="postId" value={postId} />
+          <button
+            type="submit"
+            {...gtmCtaProps(GTM_CTA.MY_LISTINGS_EXTEND, {
+              "listing-id": postId,
+            })}
+            className={iconButtonClass}
+            title="Prodloužit o 30 dnů"
+            aria-label="Prodloužit o 30 dnů"
+          >
+            <CalendarPlus className="h-4 w-4" aria-hidden />
+          </button>
+        </form>
       ) : null}
 
       {canEdit ? (
@@ -51,8 +84,9 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
           {...gtmCtaProps(GTM_CTA.MY_LISTINGS_EDIT, {
             "listing-id": postId,
           })}
-          className={`${actionButtonClass} border-gray-900 bg-gray-900 text-white hover:bg-gray-800`}
+          className={secondaryButtonClass}
         >
+          <Pencil className="h-4 w-4" aria-hidden />
           Upravit
         </Link>
       ) : null}
@@ -65,8 +99,9 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
             {...gtmCtaProps(GTM_CTA.MY_LISTINGS_PAUSE, {
               "listing-id": postId,
             })}
-            className={`${actionButtonClass} border-amber-200 text-amber-900 hover:bg-amber-50`}
+            className={`${primaryButtonClass} bg-amber-500 hover:bg-amber-600`}
           >
+            <Pause className="h-4 w-4" aria-hidden />
             Pozastavit
           </button>
         </form>
@@ -80,24 +115,10 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
             {...gtmCtaProps(GTM_CTA.MY_LISTINGS_PUBLISH, {
               "listing-id": postId,
             })}
-            className={`${actionButtonClass} border-emerald-200 text-emerald-900 hover:bg-emerald-50`}
+            className={`${primaryButtonClass} bg-emerald-600 hover:bg-emerald-700`}
           >
+            <Play className="h-4 w-4" aria-hidden />
             Zveřejnit
-          </button>
-        </form>
-      ) : null}
-
-      {canManage ? (
-        <form action={extendListingBy30Days}>
-          <input type="hidden" name="postId" value={postId} />
-          <button
-            type="submit"
-            {...gtmCtaProps(GTM_CTA.MY_LISTINGS_EXTEND, {
-              "listing-id": postId,
-            })}
-            className={`${actionButtonClass} border-gray-200 text-gray-700 hover:bg-gray-50`}
-          >
-            Prodloužit o 30 dnů
           </button>
         </form>
       ) : null}
@@ -105,6 +126,7 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
       {canManage ? (
         <form
           action={deleteListing}
+          className="ml-3"
           onSubmit={(event) => {
             if (
               !window.confirm(
@@ -121,9 +143,11 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
             {...gtmCtaProps(GTM_CTA.MY_LISTINGS_DELETE, {
               "listing-id": postId,
             })}
-            className={`${actionButtonClass} border-red-200 text-red-700 hover:bg-red-50`}
+            className={`${iconButtonClass} text-red-600 hover:bg-red-50`}
+            title="Smazat"
+            aria-label="Smazat"
           >
-            Smazat
+            <Trash2 className="h-4 w-4" aria-hidden />
           </button>
         </form>
       ) : null}
