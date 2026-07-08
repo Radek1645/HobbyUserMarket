@@ -1,7 +1,7 @@
 # TO-DO Fable — Audit projektu HobbyUserMarket
 
 > **Autor:** Fable (AI audit)
-> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-07
+> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-08
 > **Rozsah auditu:** Server Actions, API routes, Supabase schéma + RLS, Edge Functions (moderace), `src/lib`, auth/onboarding flow, browse/UX komponenty.
 > **Zdroj požadavků:** [`PRD_v3.md`](./PRD_v3.md) (v3.18)
 > **Metodika značení:** severity **Critical / High / Medium / Low**; ID `C#` (security), `P#` (proces), `U#` (UX). Stav: ✅ hotovo · 🔄 rozpracováno · ⏳ čeká.
@@ -20,12 +20,13 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 > **Stav fáze 1 (PII):** C1, C2, M1 a M2 **hotové** migracemi [`025_contact_privacy_hardening.sql`](../supabase/025_contact_privacy_hardening.sql) + [`026_contact_reveal_rate_limit.sql`](../supabase/026_contact_reveal_rate_limit.sql) + úpravou `contact.ts`, `inzerat/[slug]/page.tsx`, `moje-inzeraty/page.tsx`, `get-listing-for-edit.ts`, `config/app.ts`. **Fáze 1 dokončena.**
 >
-> **Stav fáze 2 (integrita publikace):** H1, P1 a P14 **hotové** migrací [`027_moderation_publish_gate.sql`](../supabase/027_moderation_publish_gate.sql) (approval token + DB gating stavu) + Edge `issue-approval.ts` + úpravou `posts.ts`, `CreateListingForm.tsx`, `moderate-listing-client.ts`, nový `prohibited-scan.ts`. **Fáze 2 dokončena** (zbývá M10 — ohraničení promptu). **Manuální test create s fotkou (hrnek) — prošel** (2026-07-07).
+> **Stav fáze 2 (integrita publikace):** H1, P1 a P14 **hotové** migrací [`027_moderation_publish_gate.sql`](../supabase/027_moderation_publish_gate.sql) (approval token + DB gating stavu) + Edge `issue-approval.ts` + úpravou `posts.ts`, `CreateListingForm.tsx`, `moderate-listing-client.ts`, nový `prohibited-scan.ts`. **Fáze 2 dokončena** (zbývá M10 — ohraničení promptu). **Manuální test create s fotkou (hrnek) — prošel** (2026-07-07). **Manuální testy editace inzerátu (scénáře 1–8) — prošly** (2026-07-07/08); migrace **028–032** nasazeny, EF `moderate-listing` redeploy.
 
-### ✅ Fáze 2 dokončena — další na řadě: H2 + testy editace
+### ✅ Fáze 2 dokončena — další na řadě: H2 + M10
 
 **Top věci k řešení:**
 
+0. **Site Notice (zítra)** — otestovat zapnutí/vypnutí přes Vercel env bez odstávky webu; zvýraznit vzhled lišty (hlavně `maintenance`).
 1. **H2 / P15** — Poptávkový formulář (`/api/inquiry`) nemá rate limit ani anti-spam.
 2. **P8 / U1** — Technické selhání AI se zobrazí jako „inzerát zamítnut“ místo „zkuste to znovu“.
 3. **H3** — Protocol-relative open redirect v auth Server Actions.
@@ -133,11 +134,11 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 |----|--------|---------|-------|
 | ~~**P1**~~ | ~~`actions/posts.ts`~~ | ~~Chybí DB stavy moderace; inzerát jde rovnou na `active`.~~ | ✅ **Vyřešeno s H1** (migrace 027) — insert jde do `draft`, na `active` jen přes `publish_approved_post` po ověření approval tokenu; schválení perzistováno v `moderation_approvals`. |
 | **P2** | `actions/posts.ts` (89–109) | Částečné selhání: řádek postu se vloží první; když selže `syncListingImagesFromForm`, zůstane **orphan inzerát bez fotek**. | Transakce nebo smazání postu při chybě uploadu; nabídnout „opakovat upload“ v `moje-inzeraty`. |
-| **P3** | `actions/listing-management.ts` | `deleteListing` je jen soft-delete; **žádný úklid Storage** (`post_images` + bucket objekty). | Při delete smazat soubory + řádky, nebo scheduled janitor pro `deleted`. |
+| **P3** | `actions/listing-management.ts` | `deleteListing` je jen soft-delete; **žádný úklid Storage** (`post_images` + bucket objekty). Migrace **031** opravila rollback soft-delete při chybě storage cleanup a publish-gate bypass pro `deleted`. | Při delete smazat soubory + řádky, nebo scheduled janitor pro `deleted`. |
 | **P4** | chybí migrace cronu + PRD §9 | Chybí denní cron `active`→`archived`. Majitel vidí expirovaný inzerát jako „Aktivní“, veřejně už skrytý. | pg_cron/Edge Function dle PRD; sladit UI stav s expirací. |
 | **P5** | `actions/listing-management.ts` | `extendListingBy30Days` hard-coduje +30 dní a ručně nastavuje `expires_at`, obchází `listing_duration_days` + trigger. | Renew přes update `listing_duration_days` / dedikované RPC; nechat uživatele vybrat délku. |
 | **P6** | `lib/moderation/needs-moderation.ts` | Re-moderace při editaci pokrývá jen title/description/kategorie/obrázky. Změna ceny/lokality/telefonu/data akce AI přeskočí. | Zdokumentovat jako záměr, nebo rozšířit triggery. |
-| **P7** | `CreateListingForm.tsx` (134–139, 819–828) | Při editaci se lat/long resetují na `null` i když lokalita nezměněná; uživatel musí znovu potvrdit z našeptávače. | Inicializovat souřadnice z `initialValues`, když text nezměněn. |
+| **P7** | `CreateListingForm.tsx` (134–139, 819–828) | Při editaci se lat/long resetují na `null` i když lokalita nezměněná; uživatel musí znovu potvrdit z našeptávače. | Inicializovat souřadnice z `initialValues`, když text nezměněn. *(Částečně: `parse-location.ts` + EWKB z DB při editaci — ověřit regresi.)* |
 
 ### AI moderace
 
@@ -179,8 +180,8 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **P26** | chybí `/mod/*` vs PRD §5.6 | **God Mode admin UI chybí** (`/mod/karantena`, `/mod/inzeraty`, `/mod/uzivatele`). | Implementovat minimální mod frontu, nebo označit jako post-MVP. |
 | **P27** | kód | Chybí reporting UI (`/nahlasit`), byť DB trigger 3× auto-hide existuje. | Tlačítko „Nahlásit“ na detailu + odkaz v patičce dle PRD. |
 | **P28** | kód | Chybí sitemap/robots, monitoring, backup/runbook v repu. | Ops checklist; dokumentovat Supabase PITR/zálohy. |
-| **P29** | `actions/listing-management.ts` | Chyby managementu **tiše redirectují** na `/moje-inzeraty` bez flash zprávy. | Vracet error stav / `?error=`. |
-| **P30** | `supabase_schema.sql` | `audit_events`, `moderator_notes`, `inquiry_events` v PRD, **nenapojeno** v kódu. | Inkrementálně: nejdřív logovat poptávky a výsledky moderace. |
+| **P29** | `actions/listing-management.ts` | Chyby managementu **tiše redirectují** na `/moje-inzeraty` bez flash zprávy. | Vracet error stav / `?error=`. *(Částečně: `deleteListing` → `?deleteError=1` + banner v `moje-inzeraty`.)* |
+| **P30** | `supabase_schema.sql` | `audit_events`, `moderator_notes`, `inquiry_events` v PRD, **nenapojeno** v kódu. | Inkrementálně: nejdřív logovat poptávky a výsledky moderace. *(Částečně: migrace **028** `moderation_checks` + `log-moderation-check.ts` v EF.)* |
 
 ---
 
@@ -193,8 +194,9 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **U1** | `ModerationRejectedDialog.tsx` (+ P8) | Uživatel vidí „Inzerát nesplňuje podmínky“, i **když je AI down** — zavádějící a stresující. | Samostatný panel „Technická chyba“ + retry; rejection dialog jen pro reálný obsahový zásah. |
 | **U2** | `CreateListingForm.tsx` (1044–1050) | Neplatný publish blokován jen disabled tlačítkem + `title` tooltipem — snadno přehlédnutelné (hlavně lokalita). | Inline shrnutí „Chybí: lokalita, cena…“ nad tlačítkem. |
 | **U3** | `ListingInquiryForm.tsx` (124) | Míchání ty/vy („Zkontroluj připojení“ vs. vykání jinde). | Sjednotit na vykání (PRD §1.6). |
-| **U4** | `MyListingActions.tsx` | Pauza/smazání/prodloužení bez success/error toastu — jen redirect. | Optimistic UI nebo krátký potvrzovací banner. |
+| **U4** | `MyListingActions.tsx` | Pauza/smazání/prodloužení bez success/error toastu — jen redirect. | Optimistic UI nebo krátký potvrzovací banner. *(Částečně: chyba smazání v přehledu.)* |
 | **U5** | `HomeListings.tsx` | Chybí „načíst další“ — max 9 karet z 36 bez indikace, že je víc. | „Zobrazit další“ / stránkování. |
+| **U13** | `SiteNoticeBar.tsx` | Odstávková lišta (`maintenance`) vizuálně zapadá — slabý kontrast, snadno přehlédnutelná. | Výraznější barva/pozadí, tučnější text, větší padding; ověřit na mobilu. ⏳ **Priorita zítra (2026-07-09)** |
 
 ### Formuláře a validace
 
@@ -246,7 +248,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 ### ✅ Co je UX/procesně dobře
 
 - Čeština-first copy napříč formuláři a moderačními hláškami.
-- Moderační architektura: klient + Edge Function, Gemini→OpenAI fallback, sync promptů, server-side strip kontaktů.
+- Moderační architektura: klient + Edge Function, Gemini→OpenAI fallback, sync promptů, server-side strip kontaktů (vč. **032** — cena v popisu ≠ telefon).
 - Formulář inzerátu: dvoukrokový wizard, živé počítadlo znaků, náhled/varování expirace, validace `event_date`, overlay při AI.
 - Náhled moderace: editovatelný AI text, povinné Q&A, „publikovat originál“, limity délky.
 - Obrázky: klientská komprese, validace velikosti, downscale pro moderaci, úklid při explicitním odebrání.
@@ -287,5 +289,6 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | 2026-07-06 | M1 dokončeno (migrace 026: rate limit reveal 20/den, dedup, CZ hláška); fáze 1 (PII) uzavřena |
 | 2026-07-06 | H1/P1/P14 dokončeno (migrace 027: approval token + DB gating, Edge vydává token, publish RPC, keyword scan); fáze 2 uzavřena; M4 přeformulováno |
 | 2026-07-07 | Manuální test create (hrnek + fotka) prošel; Gemini: `geminiSafe` prompt, `safetySettings`, obsahové zamítnutí `PROHIBITED_CONTENT`; jednotky cm/ml v promptu a `format-question-answers.ts`; migrace 025–027 nasazeny v Supabase |
+| 2026-07-08 | Manuální testy **editace inzerátu (1–8)** prošly; migrace **028–032** (log moderace, `profile_no`, soft-delete hardening, strip ceny vs. telefon); EF `moderate-listing` (auth JWT, JSON parser, logging, hydratace — tón, pevná cena, dotazy nemovitosti RK/provize); UX redirectů po editaci, cache `/moje-inzeraty` |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

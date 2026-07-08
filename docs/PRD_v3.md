@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.18  
+> **Verze dokumentu:** v3.19  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql) · [`016_search_posts.sql`](../supabase/016_search_posts.sql) · [`017_allow_contact_reveal.sql`](../supabase/017_allow_contact_reveal.sql) · [`018_reset_contact_opt_in.sql`](../supabase/018_reset_contact_opt_in.sql) · [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql) · [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql) · [`021_rate_limits_service_role_grants.sql`](../supabase/021_rate_limits_service_role_grants.sql) · [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql) · [`024_posts_original_text.sql`](../supabase/024_posts_original_text.sql) · [`025_contact_privacy_hardening.sql`](../supabase/025_contact_privacy_hardening.sql) · [`026_contact_reveal_rate_limit.sql`](../supabase/026_contact_reveal_rate_limit.sql) · [`027_moderation_publish_gate.sql`](../supabase/027_moderation_publish_gate.sql) · *v0.5 audit:* `020_audit_and_notes.sql` *(plánováno — jiný soubor než strip kontaktů)*  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-07
+> **Datum:** 2026-07-08
 
 ---
 
@@ -649,6 +649,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.16 | 2026-07-06 | §1.0 **Dokumentace procesů** — závazek dokumentovat každou činnost v [`Metodika.md`](./Metodika.md); odkaz na metodiku v hlavičce dokumentu |
 | v3.17 | 2026-07-06 | §5.2 **Souhlasy při registraci** — povinný VOP + volitelný marketingový souhlas (checkboxy, odkazy `/vop`, `/marketingovy-souhlas`); patička a §11.3 rozšířeny o marketingový souhlas |
 | v3.18 | 2026-07-07 | **Bezpečnostní hardening:** migrace **025–027** (PII kontaktů, rate limit reveal 20/den, approval token + DB gating publikace); §1.1 DoD rozšířeno o RPC kontakty a server-side moderaci; §4.1 `draft` jako povinný mezistav; §5.3 + §5.4 server-side publish gate, `moderation_approvals`, Gemini-safe prompt, keyword scan; jednotky v Parametrech (cm, ml) v AI promptu |
+| v3.19 | 2026-07-08 | **Site Notice implementováno:** `SiteNoticeBar` + `site-notice.ts`, env override, zapojení v `AppShell`; §11.4 stav *Implementováno*; Metodika §13 (návod nasazení) |
 
 ---
 
@@ -1158,7 +1159,7 @@ PDF soubory ukládat do `public/docs/` s verzí v názvu souboru (`vop-v1.0.pdf`
 
 ### 11.4 Globální informační lišta (Site Notice)
 
-> **Stav:** Plánováno — **neimplementováno** (viz [§11.7](#117-doporučené-pořadí-implementace)).  
+> **Stav:** Implementováno — `SiteNoticeBar` + `src/config/site-notice.ts` (env override), zapojeno v `AppShell` nad `Header`.  
 > **Cíl:** Oznámit uživatelům provozní zprávu **bez odstávky webu** — pouze zapnutí konfigurace a redeploy (ne maintenance mode).
 
 #### Účel
@@ -1277,7 +1278,7 @@ Implementace v server komponentě detailu inzerátu — viz §5.3.
 
 | Pořadí | Oblast | Odhad |
 |--------|--------|-------|
-| 0 | **Globální informační lišta** (§11.4) — rychlé nasazení bez odstávky | 1–1,5 h |
+| 0 | ~~**Globální informační lišta** (§11.4)~~ — ✅ implementováno | 1–1,5 h |
 | 1 | JSON-LD + sitemap | 2–3 h |
 | 2 | Nahlášení UI + e-mail adminovi | 3–4 h |
 | 3 | God Mode (lišta + `/mod/karantena` + `/mod/inzeraty`) | 4–6 h |
