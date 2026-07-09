@@ -138,7 +138,7 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 
 | Činnost | Kde | Poznámka |
 |---------|-----|----------|
-| Zobrazit své inzeráty | `/moje-inzeraty` | Včetně expirovaných a skrytých |
+| Zobrazit své inzeráty | `/moje-inzeraty` | Včetně expirovaných, pozastavených a zablokovaných |
 | Založit nový inzerát | `/inzerat/novy` | 3krokový formulář + AI flow |
 | Upravit vlastní inzerát | `/inzerat/[slug]/upravit` | Podle typu změny s/bez AI |
 | Obnovit expirovaný inzerát | `/moje-inzeraty` | Prodloužení platnosti |
@@ -183,7 +183,7 @@ Uživatel vybere:
 
 - Max. **6 fotek** (JPEG, PNG, WebP).
 - Každá se před nahráním zkomprimuje na max. **1 MB**.
-- Uživatel označí **hlavní fotku** (hvězdička) — ta je náhled na HP a vstup pro AI hydrataci.
+- Uživatel označí **hlavní fotku** (hvězdička) — ta je náhled na HP a referenční snímek pro cross-validaci text ↔ foto. AI hydratace vychází ze **všech** nahraných fotek.
 - **Všechny** fotky procházejí bezpečnostní kontrolou, nejen hlavní.
 
 ### Publikace
@@ -243,7 +243,7 @@ Formulář → klik „Publikovat“ / „Uložit“
 |----------|--------|
 | Bezpečnostní filtr | **Všechny** nahrané fotky (max. 6) |
 | Shoda text ↔ foto | Hlavní fotka vs. název a popis |
-| Doplňující otázky (hydratace) | Primárně z hlavní fotky a kategorie |
+| Doplňující otázky (hydratace) | **Všechny** fotografie + kategorie (hlavní fotka jen pro cross-validaci) |
 
 Pokud **jedna** fotka porušuje pravidla, celý inzerát je zamítnut — výběr „čisté“ hlavní fotky neobejde kontrolu ostatních.
 
@@ -251,7 +251,7 @@ Pokud **jedna** fotka porušuje pravidla, celý inzerát je zamítnut — výbě
 
 **Hydratace** = AI vezme hrubý nástřel od uživatele a připraví strukturovaný inzerát:
 
-1. **Úvod** — 1–3 věty (o čem inzerát je, cena, předání).
+1. **Úvod** — až 6 vět (o čem inzerát je, cena, předání).
 2. Oddělovač `---`
 3. Sekce **Parametry** — odrážky ve tvaru `• Popisek: hodnota`
 
@@ -271,7 +271,7 @@ Hydratace vychází z:
 - textu, který uživatel napsal,
 - kategorie a podkategorie (každá má vlastní AI pokyny v `categories.ts`),
 - metadat z formuláře (cena, stav, datum akce — na tato pole se AI znovu neptá, pokud už jsou vyplněná),
-- hlavní fotky (vizuální kontext).
+- **všech** nahraných fotografií (vizuální kontext; hlavní fotka navíc pro shodu text ↔ náhled).
 
 ### 6.6 Stav NEEDS_QUESTIONS — doplňující dotazník
 
@@ -351,12 +351,32 @@ Stejný 3krokový formulář jako při založení, předvyplněný aktuálními 
 
 - Změna **názvu, popisu, kategorie nebo fotek** → plná AI kontrola (včetně modalu); DB trigger dočasně degraduje inzerát na `draft`, po uložení s tokenem se obnoví na `active` (nebo `hidden`, pokud byl pauznutý).
 - Změna **jen ceny, stavu, lokality nebo platnosti** → uložení bez AI.
+- Inzerát ve stavu **Zablokováno** (`blocked`) → úprava obsahu/fotek je jediná cesta ven; po uložení s AI tokenem → `active`. Bez tlačítka „Zveřejnit“.
 - Inzerát ve stavu **Koncept** (`draft`) → AI kontrola proběhne vždy (i beze změny textu), aby vznikl nový approval token.
 
 ### 7.3 Co se nemění
 
 - **URL slug** zůstává stejný (stabilita odkazů a SEO).
-- Majitel vidí inzerát ve svém seznamu i ve stavech, které nejsou veřejné (expirovaný, skrytý).
+- Majitel vidí inzerát ve svém seznamu i ve stavech, které nejsou veřejné (expirovaný, pozastavený, zablokovaný).
+
+### 7.4 Zablokovaný inzerát (`blocked`)
+
+Inzerát přejde do stavu **Zablokováno**, pokud:
+
+1. **3 různí uživatelé** ho nahlásí (trigger `check_report_threshold`, migrace `036`), nebo
+2. **moderátor/admin** ho zablokuje (God Mode / SQL — `status_reason_code = 'moderation'`).
+
+| Co majitel vidí | Chování |
+|-----------------|---------|
+| Badge „Zablokováno“ | Červený štítek v `/moje-inzeraty` |
+| `ListingBlockedNotice` | Vysvětlení dle `status_reason_code` + návod na obnovu |
+| Akce | **Upravit**, **Smazat** — bez Zveřejnit / Prodloužit |
+
+**Obnovení:** úprava textu nebo fotek → DB trigger nastaví `draft` → AI moderace → `publish_approved_post` → `active`.
+
+**Rozdíl od pauzy (`hidden`):** u pauzy majitel klikne „Zveřejnit“ bez re-moderace. Zablokování vyžaduje opravu obsahu.
+
+Právní rámec: [Pravidla inzerce](../pravni/podminky-inzerce.md) §4, [VOP](../pravni/vop.md) §4.2, [DSA centrum](../pravni/dsa-kontaktni-centrum.md) §3.
 
 ---
 
@@ -479,7 +499,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 
 - Tlačítko „Nahlásit“ u inzerátu nebo komentáře.
 - Výběr důvodu (podvod, nelegální obsah, spam…).
-- Po **3 nahlášeních od 3 různých uživatelů** se obsah automaticky skryje (`hidden`) a spadne do karantény pro moderátory.
+- Po **3 nahlášeních od 3 různých uživatelů** se inzerát automaticky **zablokuje** (`blocked`) a spadne do karantény pro moderátory. Komentáře při stejném prahu přejdou na `hidden`.
 
 ### 10.2 Standalone formulář `/nahlasit`
 
@@ -497,7 +517,7 @@ Role: `moderator` a `admin` (uloženo v `profiles.role`).
 
 | Stránka | Účel |
 |---------|------|
-| `/mod/karantena` | Skryté inzeráty a komentáře — obnovit nebo smazat |
+| `/mod/karantena` | Zablokované inzeráty (`blocked`) a skryté komentáře (`hidden`) — obnovit nebo smazat |
 | `/mod/inzeraty` | Přehled všech inzerátů s filtry |
 | `/mod/uzivatele` | Jen admin — správa uživatelů a rolí |
 | Detail cizího inzerátu | Lišta: Skrýt, Smazat, Historie, Poznámka |
@@ -562,7 +582,7 @@ Tenká lišta **nad hlavičkou** na všech stránkách (`AppShell`). Slouží k 
 |----------|-----|-------|-----------------|
 | Informativní | `info` | modrá | „Nově AI úprava inzerátu“, „Beta verze“ |
 | Marketingová | `marketing` | zelená | „Pozvěte souseda — sdílejte odkaz“ |
-| Odstávková | `maintenance` | oranžová | „Dnes 22:00 krátká odstávka kvůli migraci DB“ |
+| Odstávková | `maintenance` | červená | „Dnes 22:00 krátká odstávka kvůli migraci DB“ |
 
 `info` a `marketing` jde uživateli zavřít (zapamatuje se v prohlížeči). `maintenance` zavřít **nelze** (nastaveno automaticky).
 

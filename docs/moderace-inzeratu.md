@@ -148,7 +148,7 @@ Logika: `src/lib/moderation/needs-moderation.ts` + `ListingImageUpload.hasImageC
 |----|-------------|------|
 | **Bezpečnostní filtr** | Všechny nahrané (max. 6) | Zbraně, drogy, porno… — zamítnutí jedné = zamítnutí celého inzerátu |
 | **Cross-validace text ↔ foto** | Hlavní fotka (`mainImageIndex`) | Konzistence názvu/popisu s náhledem |
-| **AI hydratace / dotazník** | Hlavní fotka | Doplňující otázky podle kategorie |
+| **AI hydratace / dotazník** | **Všechny** fotografie | Vizuální kontext a doplňující otázky; hlavní fotka jen pro cross-validaci |
 
 Klient připraví snímky v `src/lib/moderation/prepare-moderation-images.ts` (resize na `MODERATION_IMAGE_MAX_DIMENSION`, default 512 px) a pošle je v jednom payloadu `imagesBase64` + `mainImageIndex`. Hvězdička u miniatury = **náhled na homepage**, ne „jediná kontrolovaná fotka“.
 
@@ -184,6 +184,7 @@ supabase functions deploy moderate-listing
 # supabase/025_contact_privacy_hardening.sql
 # supabase/026_contact_reveal_rate_limit.sql
 # supabase/027_moderation_publish_gate.sql
+# supabase/036_post_status_blocked.sql
 ```
 
 > **Po změně `categories.ts` nebo `prohibited-topics.ts`:** znovu `npm run sync:moderation` → `supabase functions deploy moderate-listing`. Sync **po** deployi nedává smysl — cloud už běží se starým balíkem; oprava vyžaduje **nový** deploy hned po syncu.
@@ -199,9 +200,37 @@ supabase functions deploy moderate-listing
 | `publish_approved_post` | Jediná cesta z `draft` na `active` / `hidden` pro vlastníka |
 | `enforce_post_publish_gate` | Trigger — blokuje přímý přechod na viditelný stav; editace obsahu → `draft` |
 | `revert_post_on_image_change` | Trigger — změna fotek → `draft` |
+| `check_report_threshold` | Trigger — 3× nahlášení inzerátu → `blocked` + `status_reason_code` |
 | `prohibited-scan.ts` | Rychlý keyword scan v Server Action před uložením |
 
 **Gemini:** System prompt pro Gemini používá `geminiSafe: true` (jen ID + label kategorií), aby Google nevypnul vstup filtrem `PROHIBITED_CONTENT` u nevinných fotek. OpenAI fallback dostává plný prompt s `criteria`. Volitelně nastav `OPENAI_API_KEY` jako záložní provider.
+
+---
+
+## Stav `blocked` (migrace `036`)
+
+Odděluje **dobrovolnou pauzu** (`hidden`) od **moderátorského / komunitního zablokování**.
+
+| Stav | Kdo | Ven jak |
+|------|-----|---------|
+| `hidden` | Majitel (Pozastavit) | `publishListing` → `active` |
+| `blocked` | 3× report nebo moderátor | Úprava obsahu/fotek → `draft` → AI → `publish_approved_post` |
+
+**DB:**
+
+- `posts.status_reason_code`: `reports_threshold` | `moderation` (texty v `src/config/listing-status-reasons.ts`)
+- Trigger `check_report_threshold` — inzerát → `blocked`, komentář → `hidden`
+- `enforce_post_publish_gate` — z `blocked` nelze přejít na `active`/`hidden`/`archived` bez re-moderace; editace obsahu vynuluje `status_reason_code`
+
+**UI:** badge „Zablokováno“, komponenta `ListingBlockedNotice` v `/moje-inzeraty` a `/inzerat/.../upravit`.
+
+**Ruční blokace (do God Mode):**
+
+```sql
+UPDATE posts
+SET status = 'blocked', status_reason_code = 'moderation', updated_at = now()
+WHERE id = <post_id> AND status = 'active';
+```
 
 **Jednotky v Parametrech:** Prompt vyžaduje rozměry v cm, objem v ml; otázky v dotazníku obsahují jednotku v textu; klient (`format-question-answers.ts`) doplňuje jednotky při slučování odpovědí.
 

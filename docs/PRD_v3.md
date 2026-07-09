@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.20  
+> **Verze dokumentu:** v3.21  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql) · [`016_search_posts.sql`](../supabase/016_search_posts.sql) · [`017_allow_contact_reveal.sql`](../supabase/017_allow_contact_reveal.sql) · [`018_reset_contact_opt_in.sql`](../supabase/018_reset_contact_opt_in.sql) · [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql) · [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql) · [`021_rate_limits_service_role_grants.sql`](../supabase/021_rate_limits_service_role_grants.sql) · [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql) · [`024_posts_original_text.sql`](../supabase/024_posts_original_text.sql) · [`025_contact_privacy_hardening.sql`](../supabase/025_contact_privacy_hardening.sql) · [`026_contact_reveal_rate_limit.sql`](../supabase/026_contact_reveal_rate_limit.sql) · [`027_moderation_publish_gate.sql`](../supabase/027_moderation_publish_gate.sql) · *v0.5 audit:* `020_audit_and_notes.sql` *(plánováno — jiný soubor než strip kontaktů)*  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`027_moderation_publish_gate.sql`](../supabase/027_moderation_publish_gate.sql) · [`033_inquiry_events.sql`](../supabase/033_inquiry_events.sql) · [`034_inquiry_events_inquiry_no.sql`](../supabase/034_inquiry_events_inquiry_no.sql) · [`035_archive_expired_posts.sql`](../supabase/035_archive_expired_posts.sql) · [`036_post_status_blocked.sql`](../supabase/036_post_status_blocked.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-09
+> **Datum:** 2026-07-10
 
 ---
 
@@ -36,7 +36,7 @@ MVP je hotové, když platí všechny body:
 2. **Lokální relevance:** Návštěvník s povolenou polohou vidí **6–9 inzerátů (mobil / desktop)**. Priorita: nejbližší v adaptivním okruhu (**15–60 km**). Pokud v okruhu není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** s hláškou.
 3. **Ochrana kontaktů:** V HTML zdroji detailu inzerátu **není** telefon ani e-mail před kliknutím na „Zobrazit kontakt“ (ověřitelné v DevTools). `posts.contact_phone` není čitelný přes veřejné SELECT (column-level REVOKE); e-mail cizího profilu není enumerovatelný přes RLS. Odhalení jde výhradně přes RPC `reveal_listing_contact` (přihlášení, viditelnost inzerátu, opt-in, rate limit 20/den).
 4. **SEO:** Detail inzerátu má server-renderovaný HTML, dynamický Title tag, JSON-LD a je v `sitemap.xml`.
-5. **Moderování:** 3 nahlášení od 3 různých uživatelů skryje inzerát; moderátor ho vidí na `/mod/karantena`. Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků. Publikace na `active` vyžaduje **approval token** z Edge Function a RPC `publish_approved_post` — přímý insert/update na `active` z role `authenticated` je blokován (migrace `027`). *(Od v0.5: každé stažení/skrytí má záznam v audit logu s důvodem — §11.1.)*
+5. **Moderování:** 3 nahlášení od 3 různých uživatelů **zablokuje** inzerát (`blocked`); moderátor ho vidí na `/mod/karantena`. Majitel se z `blocked` dostane ven **jen úpravou obsahu** a novým AI schválením — nelze jedním kliknutím obnovit jako u `hidden` (pauza). Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků. Publikace na `active` vyžaduje **approval token** z Edge Function a RPC `publish_approved_post` — přímý insert/update na `active` z role `authenticated` je blokován (migrace `027`). *(Od v0.5: každé stažení/skrytí má záznam v audit logu s důvodem — §11.1.)*
 
 ### 1.2 Definition of Done (v0.1.1 — Volitelná platnost inzerátu)
 
@@ -205,7 +205,8 @@ posts
       'sale', 'rent' -- nemovitosti
     ))
   - location_text, location (GEOGRAPHY POINT)
-  - status (ENUM: draft | active | archived | hidden | deleted)
+  - status (ENUM: draft | active | archived | hidden | blocked | deleted)
+  - status_reason_code (TEXT, nullable — `reports_threshold` | `moderation`; migrace `036`)
   - expires_at, renew_count, payment_status (VARCHAR(20), výchozí: 'free')
   - listing_duration_days (INTEGER, NOT NULL, DEFAULT 30 — od v0.1.1; viz §9; u `udalost` se nevyužívá)
   - event_date (TIMESTAMPTZ, NULL — od v0.2; povinné pokud `category_type = 'udalost'`)
@@ -321,8 +322,20 @@ rate_limits (volitelné, pro server-side rate limiting)
 | `draft` | Ne | Ne | Rozpracovaný koncept nebo neúspěšná publikace; jediná cesta na `active` přes `publish_approved_post` po AI schválení (migrace `027`) |
 | `active` | Ano | Ano | Po úspěšné publikaci (spotřebování approval tokenu) |
 | `archived` | Ne | Ne | Po uplynutí `expires_at` (cron nebo okamžitá neviditelnost — viz §4.1) |
-| `hidden` | Ne | Ne | 3× nahlášení od různých uživatelů nebo akce moderátora/admina |
+| `hidden` | Ne | Ne | Dočasná pauza majitelem — lze znovu zveřejnit jedním kliknutím |
+| `blocked` | Ne | Ne | 3× nahlášení od různých uživatelů nebo zablokování moderátorem/adminem (migrace `036`) |
 | `deleted` | Ne | Ne | Soft delete uživatelem nebo moderátorem |
+
+**Rozdíl `hidden` vs. `blocked`:**
+
+| | `hidden` (pauza) | `blocked` (moderace) |
+|---|------------------|----------------------|
+| Kdo nastaví | Majitel | Systém (3× report) nebo moderátor |
+| Obnovení | Tlačítko „Zveřejnit“ → `active` | Úprava obsahu/fotek → `draft` → AI schválení → `publish_approved_post` |
+| UI majitele | Badge „Pozastaveno“ | Badge „Zablokováno“ + vysvětlení (`status_reason_code`) |
+| Právní základ | — | [Pravidla inzerce](/podminky-inzerce) §4, [VOP](/vop) §4.2 |
+
+Sloupec `status_reason_code` (`reports_threshold` | `moderation`) určuje text v UI (`ListingBlockedNotice`). Při editaci obsahu nebo fotek trigger nastaví `draft` a `status_reason_code` vynuluje.
 
 **Pravidla:**
 
@@ -432,7 +445,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá. Po úspěšném odeslání se zapíše metadata do `inquiry_events` (bez obsahu zprávy — §11.1 C).
   * **Události *(v0.2)*:** U `category_type = 'udalost'` se formulář chová jako „registrace zájmu o účast“ — tlačítko **„Mám zájem o účast“**, předmět/tělo e-mailu: *„Uživatel [jméno] se chce zúčastnit vaší akce: [Název] — [kontaktní údaje].“* Pořadatel odpovídá ze svého e-mailu; systém neukládá účastníky do DB.
 * **Komunitní moderování inzerátů:**
-  * **Inline:** Tlačítko „Nahlásit inzerát“ na detailu (Důvody: Podvod / Nelegální obsah / Sexuální obsah / Drogy / Spam / Nevhodné chování / Jiné). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky skryje (`hidden`) do karantény.
+  * **Inline:** Tlačítko „Nahlásit inzerát“ na detailu (Důvody: Podvod / Nelegální obsah / Sexuální obsah / Drogy / Spam / Nevhodné chování / Jiné). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky **zablokuje** (`blocked`, `status_reason_code = 'reports_threshold'`) — spadne do karantény pro moderátory.
   * **Standalone *(v0.5)*:** Formulář na `/nahlasit` (odkaz v patičce) — pole URL inzerátu (validace domény a slug), důvod (select), volitelný popis (max 500 znaků), e-mail oznamovatele (povinné pro nepřihlášené). Po odeslání: INSERT do `reports`, záznam v `audit_events`, e-mail adminovi (Resend), UI potvrzení „Děkujeme. Prověříme to do 24 hodin a dáme vám vědět.“ (§1.6).
   * Stejná logika 3× threshold platí pro komentáře (existující trigger).
 * **Automatizované On-Page SEO, Rich Snippets & AI crawlery:**
@@ -454,7 +467,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   1. **Kategorie a stav (Řízeno přes TS Config):** Výběr `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2) a `subcategory_slug` z `src/config/categories.ts`. Povinný štítek stavu (Zboží: Nové / Jako nové / Použité / **Poškozené / na díly** `damaged`; Služby: Jednorázově / Dlouhodobě / Záskok; Události: **Opakování** — Jednorázová akce `one_time` / Pravidelná akce `long_term`).
   2. **Obsah a Cena:**
      * **Název inzerátu:** Povinné pole (max **80 znaků**). Používá se pro SEO Title tag, Open Graph a generování URL slugu.
-     * **Textový popis:** Min. **10**, max **2000** znaků. Strukturovaný finální text (po AI nebo ručně): **úvod** (1–3 věty, včetně ceny a předání) + oddělovač `---` + sekce **Parametry** s odrážkami `• Popisek: hodnota`. *(Události v0.2: datum konání jde do `event_date`, ne do popisu; kapacita volitelně v popisu nebo AI dotazník.)*
+     * **Textový popis:** Min. **10**, max **2000** znaků. Strukturovaný finální text (po AI nebo ručně): **úvod** (až 6 vět, včetně ceny a předání) + oddělovač `---` + sekce **Parametry** s odrážkami `• Popisek: hodnota`. *(Události v0.2: datum konání jde do `event_date`, ne do popisu; kapacita volitelně v popisu nebo AI dotazník.)*
      * **Poloha inzerátu (Validace a GPS):** Povinné pole s našeptávačem Mapy.cz. Tlačítko „Použít aktuální polohu“ pro GPS z prohlížeče. Do `posts` se ukládá `location_text` (UI) i PostGIS point `location` (prostorové dotazy).
      * **Logika typu ceny (Dropdown):** Pevná (vynutí číselné pole v Kč) / Za odvoz (0 Kč) / Dohodou, Výměnou, Nabídni (skryje částku, zobrazí textový štítek).
      * **Platnost inzerátu *(v0.1.1)*:** Default **30 dní**. UI: `<select>` s preset hodnotami (7, 14, 30, 60, 90, 180, 365) **nebo** `<input type="number">` — **žádný slider** (mobilní UX). Ukládá se `listing_duration_days`; `expires_at` nastaví DB trigger (§9.2). U `udalost` (v0.2) se pole skryje — platí §8.4.1.
@@ -464,7 +477,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
      * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (náhled)“** (radio button/hvězdička). Výchozí je první nahraná. Hlavní fotka určuje náhled na homepage a slouží pro cross-validaci textu a AI hydrataci — **ne** jako jediná kontrolovaná fotka.
 
 * **Multimodální AI Guardrail & Interaktivní doplňování (Text + Foto cross-validace):**
-  * Po kliknutí na **„Publikovat inzerát“** (create) / **„Uložit“** (edit) klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `categoryType`, `subcategory_slug`, metadata z formuláře (`conditionLabel`, `conditionLabelText`, `conditionFieldLabel`, `priceType`, `priceTypeLabel`, `priceAmount`, u událostí `eventDate`), **všechny nahrané fotografie** (max. 6, každá zmenšená na **512×512 px**, base64) a `mainImageIndex`. **Jedno** volání AI — bezpečnostní filtr na všech snímcích, cross-validace a hydratace z hlavní. Edge Function volá Gemini Flash / GPT-4o-mini a vrátí striktní JSON. **Žádná Next.js API Route v tomto flow.**
+  * Po kliknutí na **„Publikovat inzerát“** (create) / **„Uložit“** (edit) klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `categoryType`, `subcategory_slug`, metadata z formuláře (`conditionLabel`, `conditionLabelText`, `conditionFieldLabel`, `priceType`, `priceTypeLabel`, `priceAmount`, u událostí `eventDate`), **všechny nahrané fotografie** (max. 6, každá zmenšená na **512×512 px**, base64) a `mainImageIndex`. **Jedno** volání AI — bezpečnostní filtr na všech snímcích, cross-validace text ↔ hlavní fotka, hydratace z **všech** fotek. Edge Function volá Gemini Flash / GPT-4o-mini a vrátí striktní JSON. **Žádná Next.js API Route v tomto flow.**
   * **Bezpečnostní filtr fotek:** Pokud **jakákoliv** fotografie porušuje pravidla (zbraně, drogy, porno, orgány…), celý inzerát je `REJECTED`. Volitelně `rejectedImageIndex` pro UI. Výběr „čisté“ hlavní fotky nesmí obejít kontrolu zbylých snímků.
   * **Rate limit:** Max **20 AI kontrol / hodinu / uživatel** (`MODERATION_RATE_LIMIT_PER_HOUR`). Při překročení: HTTP 429 + srozumitelná hláška v UI (texty v `src/config/moderation/messages.ts`, tón §1.6).
   * **Logika zpracování AI (JSON výstup):**
@@ -530,15 +543,16 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
 
 * **UX Flow inline moderování (God Mode):**
   * Uživatel s rolí `moderator` nebo `admin` na detailu **cizího** inzerátu/komentáře vidí vizuálně oddělenou administrační lištu:
-    **[Skrýt (Karanténa)]** · **[Smazat trvale]** · **[Historie]** · **[+ Poznámka]**
-  * Při smazání/skrytí moderátorem: **povinný důvod** (dropdown) + volitelná textová poznámka → obojí do `audit_events` (+ volitelně `moderator_notes`).
+    **[Zablokovat]** · **[Smazat trvale]** · **[Historie]** · **[+ Poznámka]**
+  * **Zablokovat** nastaví `blocked` + `status_reason_code = 'moderation'`. Majitel nemůže obnovit jedním kliknutím — jen úpravou a re-moderací (§4.1).
+  * Při smazání/zablokování moderátorem: **povinný důvod** (dropdown) + volitelná textová poznámka → obojí do `audit_events` (+ volitelně `moderator_notes`).
   * Moderátor vidí reálný kontext přímo na produkčním webu; může otevřít editaci cizího inzerátu přes `/inzerat/[slug]/upravit` (Server Action ověřuje roli).
 
 * **Minimální moderátorské routes:**
 
 | Route | Přístup | Obsah |
 |-------|---------|-------|
-| `/mod/karantena` | `moderator`, `admin` | Inzeráty a komentáře ve stavu `hidden`, seřazeno od nejnovějšího. Akce: obnovit (`active`) / smazat (`deleted`). |
+| `/mod/karantena` | `moderator`, `admin` | Inzeráty ve stavu `blocked` a komentáře ve stavu `hidden`, seřazeno od nejnovějšího. Akce: obnovit (`active`) / smazat (`deleted`). |
 | `/mod/inzeraty` | `moderator`, `admin` | Tabulka všech inzerátů s filtrem stavu a kategorie; odkaz na detail. |
 | `/mod/uzivatele` | **jen `admin`** | Seznam profilů, role, počet inzerátů; odkaz na historii a poznámky profilu. |
 
@@ -652,6 +666,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.18 | 2026-07-07 | **Bezpečnostní hardening:** migrace **025–027** (PII kontaktů, rate limit reveal 20/den, approval token + DB gating publikace); §1.1 DoD rozšířeno o RPC kontakty a server-side moderaci; §4.1 `draft` jako povinný mezistav; §5.3 + §5.4 server-side publish gate, `moderation_approvals`, Gemini-safe prompt, keyword scan; jednotky v Parametrech (cm, ml) v AI promptu |
 | v3.19 | 2026-07-08 | **Site Notice implementováno:** `SiteNoticeBar` + `site-notice.ts`, env override, zapojení v `AppShell`; §11.4 stav *Implementováno*; Metodika §13 (návod nasazení) |
 | v3.20 | 2026-07-09 | **SEO infrastruktura:** JSON-LD (`listing-json-ld.ts`), Open Graph na detailu, dynamická `sitemap.xml`, `robots.txt`, `public/llms.txt`; datum **Vytvořeno** na HP kartě a v metadatech detailu |
+| v3.21 | 2026-07-10 | **Stav `blocked`:** migrace `036` — oddělení pauzy (`hidden`) od moderátorského zablokování; `status_reason_code`; trigger `check_report_threshold` → `blocked`; UI `ListingBlockedNotice`; právní docs §4 |
 
 ---
 
@@ -1042,12 +1057,13 @@ Kompletní migrace: [`supabase/006_real_estate.sql`](../supabase/006_real_estate
 | Vytvoření | `post_created` | `{ status, category_type }` |
 | Publikace | `post_published` | `{ from_status }` |
 | Editace obsahu | `post_updated` | `{ fields: ['title','description',…] }` |
-| Pozastavení / skrytí | `post_hidden` | `{ reason_code, actor_role }` |
+| Pozastavení majitelem | `post_hidden` | `{ reason_code: 'owner_pause', actor_role }` |
+| Zablokování moderací | `post_blocked` | `{ reason_code, actor_role }` |
 | Expirovalo | `post_expired` | `{ expires_at }` |
 | Obnovení | `post_renewed` | `{ renew_count, new_expires_at }` |
 | Smazání majitelem | `post_deleted_by_owner` | `{ exit_poll_reason }` |
 | Smazání moderátorem | `post_deleted_by_mod` | `{ reason_code, note_id? }` |
-| 3× nahlášení | `post_auto_hidden_reports` | `{ report_count }` |
+| 3× nahlášení | `post_auto_blocked_reports` | `{ report_count }` |
 | Nahlášení (jednotlivé) | `post_reported` | `{ reason, source }` |
 | AI zamítnuto | `post_ai_rejected` | `{ topic_id }` |
 | AI schváleno | `post_ai_approved` | — |
@@ -1104,7 +1120,7 @@ Povinný dropdown při smazání/skrytí moderátorem — hodnoty synchronizovan
 Odeslání reportu
   → INSERT do reports (source = 'inline' | 'standalone')
   → INSERT audit_events (post_reported)
-  → IF count distinct reporters >= 3 → DB trigger → status hidden
+  → IF count distinct reporters >= 3 → DB trigger → status blocked (+ status_reason_code)
   → Vždy: e-mail adminovi (Resend) — URL, důvod, počet reportů, odkaz do /mod/karantena
   → UI: „Děkujeme. Prověříme to do 24 hodin a dáme vám vědět.“ (§1.6)
 ```

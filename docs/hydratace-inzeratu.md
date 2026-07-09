@@ -14,7 +14,7 @@ Dokumentace k AI **hydrataci** (úprava a strukturování popisu) podle PRD §5.
 | Přepsání hrubého nástřelu do srozumitelného textu | Chat s uživatelem po publikaci |
 | Struktura **Úvod** + `---` + **Parametry** | Samostatné sloupce v DB pro každý parametr |
 | Doplňující otázky (`NEEDS_QUESTIONS`), když chybí kritická data | Povinné vyplnění všech polí ve formuláři před odesláním |
-| Využití kategorie, formuláře a hlavní fotky jako kontextu | Překlad do jiných jazyků |
+| Využití kategorie, formuláře a **všech** fotografií jako kontextu | Překlad do jiných jazyků |
 
 **Moderace** rozhoduje, zda obsah smí na web (REJECTED). **Hydratace** se spouští jen pokud obsah **není** REJECTED — vrací `APPROVED` nebo `NEEDS_QUESTIONS` s `cleanedTitle` / `cleanedDescription`.
 
@@ -73,7 +73,7 @@ Formulář (název, popis, kategorie, cena, fotky…)
 AI musí vrátit `cleanedDescription` v **pevné struktuře** (system prompt v `build-prompt.ts`):
 
 ```
-[ÚVOD — 1–3 věty: co prodáváte, hlavní výhoda, cena z formuláře, předání]
+[ÚVOD — až 6 vět: co prodáváte, hlavní výhoda, cena z formuláře, předání]
 
 ---
 
@@ -86,10 +86,10 @@ Parametry
 
 | Část | Pravidlo |
 |------|----------|
-| **Úvod** | 1–3 věty, věcně, bez prázdných klišé („Hledáte…?“). **Cena z formuláře** patří sem (např. „Cena 2 000 Kč.“), ne do Parametrů. |
+| **Úvod** | Až 6 vět, věcně, bez prázdných klišé („Hledáte…?“). **Cena z formuláře** patří sem (např. „Cena 2 000 Kč.“), ne do Parametrů. |
 | **Oddělovač** | Prázdný řádek, `---`, prázdný řádek — konstanta `MODERATION_QA_SECTION_SEPARATOR` v kódu |
 | **Parametry** | Nadpis `Parametry` (případně legacy `Technické údaje`), odrážky `• Popisek: hodnota` |
-| **Zdroje faktů** | Text uživatele, hlavní fotka, metadata formuláře — vše zapracovat do úvodu nebo Parametrů, pokud je známo |
+| **Zdroje faktů** | Text uživatele, **všechny fotografie**, metadata formuláře — vše zapracovat do úvodu nebo Parametrů, pokud je známo |
 
 ### Příklad po hydrataci (auto, APPROVED)
 
@@ -122,9 +122,9 @@ Edge Function dostane z klienta payload (viz `moderate-listing-client.ts`):
 | Stav / typ | `conditionLabel`, `conditionLabelText`, `conditionFieldLabel` | Např. „Použité“, „Prodej“, „Jednorázová akce“ — **neptat se znovu** |
 | Cena | `priceType`, `priceTypeLabel`, `priceAmount` | Pevná/orientační cena → do úvodu; na cenu se **neptat** |
 | Událost | `eventDate` | Datum konání z formuláře — AI se na ně **neptá** |
-| Fotky | `imagesBase64[]`, `mainImageIndex` | Všechny pro bezpečnost; hlavní pro cross-validaci a vizuální kontext hydratace |
+| Fotky | `imagesBase64[]`, `mainImageIndex` | Všechny pro bezpečnost a hydrataci; `mainImageIndex` jen pro cross-validaci text ↔ náhled |
 
-User prompt sestavuje `buildModerationUserPrompt()` — sekce oddělené prázdnými řádky: úkol, limity délky, kategorie, `aiPrompt`, stav, datum, cena, index hlavní fotky, název a popis.
+User prompt sestavuje `buildModerationUserPrompt()` — sekce oddělené prázdnými řádky: úkol, limity délky, kategorie, `aiPrompt`, stav, datum, cena, index hlavní fotky (cross-validace), počet fotek (hydratace ze všech), název a popis.
 
 ---
 
@@ -146,7 +146,7 @@ AI vrátí dotazník, když podle **kontextu kategorie** chybí zásadní údaje
 | Zboží (móda) | Velikost, značka (max. ~2 otázky) |
 | Služby | Dojezd / lokalita, materiál v ceně |
 | Události | Čas, místo, kapacita (datum už ve formuláři) |
-| Nemovitosti | Dispozice, plocha m², kauce u pronájmu; **vždy** (pokud chybí v textu): zadavatel (soukromá osoba / RK), provize v ceně |
+| Nemovitosti | Dispozice, plocha m², kauce u pronájmu; **vždy ověřit** zadavatele (majitel vs. RK) a provizi RK — pokud není v textu jednoznačné, zeptat se (u RK zejména: provize v ceně vs. navíc) |
 | Práce | Nástup, požadavky, odměna |
 
 **Hard limit:** max **5** otázek (`MODERATION_MAX_QUESTIONS` v `src/config/moderation/index.ts`). Parser na Edge Function otázky nad limit ořízne.
