@@ -395,9 +395,56 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 
 ### 8.5 SEO a strojová čitelnost
 
-- Detail inzerátu obsahuje **Schema.org JSON-LD** podle typu kategorie (`Product`, `Service`, `Event`, `RealEstateListing`, `JobPosting`).
-- V `<head>` detailu jsou dynamické **meta tagy** (title, description, Open Graph, canonical URL).
-- Veřejný index: **`/sitemap.xml`** (aktivní inzeráty + statické stránky), **`/robots.txt`**, **`/llms.txt`** (popis URL pro LLM crawlery).
+Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná technická příprava **nezaručuje** okamžitou viditelnost v organickém vyhledávání — Google musí stránky nejdřív objevit, zaindexovat a teprve pak je může zobrazovat ve výsledcích. K tomu pomáhá registrace v [Google Search Console](https://search.google.com/search-console) a odeslání sitemap.
+
+#### Co uživatel / robot vidí na webu
+
+| URL | Co to je |
+|-----|----------|
+| `/sitemap.xml` | Seznam všech stránek, které chceme indexovat |
+| `/robots.txt` | Pravidla pro roboty — co smí a co nesmí procházet |
+| `/llms.txt` | Stručný popis webu pro AI modely (ChatGPT, Perplexity…) |
+| `/inzerat/{slug}` | Detail s JSON-LD strukturovanými daty v HTML |
+
+#### Detail inzerátu
+
+- **Schema.org JSON-LD** podle typu kategorie (`Product`, `Service`, `Event`, `RealEstateListing`, `JobPosting`) — helper `src/lib/seo/listing-json-ld.ts`
+- Dynamické **meta tagy** v `<head>`: title, description, Open Graph, canonical URL
+
+#### Soubory v repozitáři — co který dělá
+
+**`src/app/sitemap.ts`** → generuje `/sitemap.xml`
+
+- Next.js při požadavku na `/sitemap.xml` spustí tuto funkci a vrátí XML se seznamem URL.
+- Obsahuje **statické stránky**: `/`, `/vop`, `/podminky-inzerce`, `/marketingovy-souhlas`.
+- Obsahuje **aktivní inzeráty** — načte je přes `get-sitemap-listings.ts`.
+- **`revalidate = 300`** (5 minut): cache se obnoví nejpozději za 5 minut, takže nový nebo expirovaný inzerát se v sitemap projeví bez ručního zásahu.
+- Expirované nebo smazané inzeráty v sitemap **nejsou** — vyhledávač je nemá indexovat.
+
+**`src/app/robots.ts`** → generuje `/robots.txt`
+
+- Říká robotům (Googlebot, Bingbot…), které části webu **smí procházet**.
+- **`allow: /`** — veřejný web je povolený.
+- **`disallow`** — blokované cesty: `/api/`, `/auth/`, `/login`, `/onboarding`, `/moje-inzeraty`, `/inzerat/novy`, `/inzerat/*/upravit` (privátní a administrační oblasti).
+- Obsahuje odkaz na sitemap: `Sitemap: https://…/sitemap.xml` (URL z `NEXT_PUBLIC_SITE_URL`).
+
+**`src/lib/seo/get-sitemap-listings.ts`** → dotaz do databáze pro sitemap
+
+- Načte z tabulky `posts` pouze inzeráty se `status = 'active'` a platnou expirací (`expires_at` je null nebo v budoucnosti).
+- Vrátí slug a `updated_at` pro každý záznam — sitemap z toho sestaví URL `/inzerat/{slug}` a datum poslední změny.
+- Používá anonymní Supabase klient (`src/lib/supabase/public.ts`) — bez přihlášení, jen veřejná data povolená RLS.
+
+**`public/llms.txt`** → statický soubor na `/llms.txt`
+
+- Konvence pro **LLM crawlery** (AI asistenti, kteří procházejí web).
+- Lidsky čitelný přehled: co web dělá, které URL jsou veřejné, které vyžadují přihlášení, kde je sitemap.
+- Není povinný pro Google; doplňuje robots.txt a sitemap pro AI nástroje.
+
+#### Co ještě chybí pro plnou organiku
+
+- Registrace v **Google Search Console** a ruční odeslání sitemap
+- Vlastní doména (volitelně — `*.vercel.app` funguje, ale vlastní doména pomáhá důvěryhodnosti)
+- Čas a obsah — nový web se v organice neobjeví hned
 
 ---
 

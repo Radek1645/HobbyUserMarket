@@ -1258,9 +1258,19 @@ God Mode nahrazuje „tlustého klienta“ pro denní moderaci. Supabase Dashboa
 
 Implementace v server komponentě detailu inzerátu — viz §5.3.
 
-**Helper:** `src/lib/seo/listing-json-ld.ts` — jeden zdroj pravdy pro JSON-LD. *(✅ implementováno)*
+**Související soubory** — přehled implementace (viz také Metodika §8.5):
 
-**Související soubory:** `src/app/sitemap.ts`, `src/app/robots.ts`, `public/llms.txt`, `src/lib/seo/get-sitemap-listings.ts`.
+| Soubor | Veřejná URL | Účel |
+|--------|-------------|------|
+| `src/app/sitemap.ts` | `/sitemap.xml` | Dynamická sitemap: statické stránky + aktivní inzeráty. `revalidate = 300` (5 min). |
+| `src/app/robots.ts` | `/robots.txt` | Pravidla pro crawlery: `allow /`, `disallow` privátní cesty, odkaz na sitemap. |
+| `src/lib/seo/get-sitemap-listings.ts` | — | DB dotaz: `status = 'active'` + neexpirované; vrací slug + `updated_at`. |
+| `src/lib/supabase/public.ts` | — | Anonymní Supabase klient pro sitemap (bez cookies). |
+| `src/lib/seo/listing-json-ld.ts` | — | JSON-LD helper pro detail inzerátu. |
+| `src/components/seo/ListingJsonLd.tsx` | — | Server-render `<script type="application/ld+json">`. |
+| `public/llms.txt` | `/llms.txt` | Statický popis veřejných URL pro LLM crawlery. |
+
+**Helper:** `src/lib/seo/listing-json-ld.ts` — jeden zdroj pravdy pro JSON-LD. *(✅ implementováno)*
 
 **Validace DoD:** Google Rich Results Test + ruční kontrola v HTML zdroji.
 
