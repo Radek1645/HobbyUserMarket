@@ -101,7 +101,7 @@ export default async function MyListingsPage({
       {listings.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-10 text-center">
           <p className="text-sm text-gray-600">
-            Zatím nemáš žádný inzerát.
+            Zatím nemáte žádný inzerát.
           </p>
           <Link
             href="/inzerat/novy"

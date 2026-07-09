@@ -896,7 +896,7 @@ export function CreateListingForm({
                 labelClass={labelClass}
                 required
                 placeholder="např. 500"
-                hint="Kolik si představuješ? Finální cena se domluví."
+                hint="Orientační částka — finální cenu domluvíte přímo se zájemcem."
               />
             ) : null}
             {priceType === "exchange" ? (

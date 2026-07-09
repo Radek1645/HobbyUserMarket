@@ -226,7 +226,7 @@ export function ListingInquiryForm({
           className={inputClass}
           placeholder={
             isJob
-              ? "Krátce představ sebe a proč máš zájem o tuto pozici…"
+              ? "Stručně představte se a napište, proč máte zájem o tuto pozici…"
               : categoryType === "udalost"
                 ? "Např. kolik vás přijde, máte nějaké alergie…"
                 : "Co vás na inzerátu zajímá…"

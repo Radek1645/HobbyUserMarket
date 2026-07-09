@@ -350,7 +350,7 @@ export function normalizeModerationResult(
       status: "REJECTED",
       reason:
         result.reason ??
-        "Inzerát porušuje pravidla platformy. Uprav obsah a zkus to znovu.",
+        "Inzerát porušuje pravidla platformy. Upravte obsah a zkuste to znovu.",
       rejectedTopicId: result.rejectedTopicId,
       rejectedImageIndex: result.rejectedImageIndex,
     };

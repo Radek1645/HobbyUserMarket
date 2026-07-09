@@ -255,16 +255,16 @@ export function HomeListings({
     }
     if (activeLocation && fetchMode === "nearby" && effectiveRadiusKm != null) {
       if (effectiveRadiusKm > SEARCH_RADIUS_KM) {
-        return `V bezprostředním okolí málo inzerátů — zobrazujeme do ${effectiveRadiusKm} km od tebe`;
+        return `V bezprostředním okolí je málo inzerátů — zobrazujeme do ${effectiveRadiusKm} km od vaší polohy`;
       }
-      return `Do ${effectiveRadiusKm} km od tebe`;
+      return `Do ${effectiveRadiusKm} km od vaší polohy`;
     }
     if (activeLocation && nationwideFallback) {
       return "Ve vašem okolí zatím nic není — nejnovější inzeráty z celé republiky";
     }
     if (!activeLocation) {
       return locationEnabled
-        ? "Nastav polohu ikonou špendlíku v horní liště"
+        ? "Pro inzeráty z okolí zvolte obec v horní liště"
         : "Zobrazujeme nejnovější inzeráty bez filtrování podle polohy";
     }
     return "Nejnovější inzeráty";

@@ -54,7 +54,7 @@ export function HeaderLocationPanel() {
 
   const locationTitle = hasActiveLocation
     ? `Vaše aktuální poloha: ${locationFullLabel}`
-    : "Nastavte si vaši polohu";
+    : "Nastavte svou polohu";
 
   const inputEmpty = !pickerValue.locationText.trim();
 
