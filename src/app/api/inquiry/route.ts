@@ -1,9 +1,26 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import {
+  INQUIRY_GENERIC_ERROR,
+  INQUIRY_HONEYPOT_ERROR,
+  INQUIRY_RATE_LIMIT_IP_ERROR,
+  INQUIRY_RATE_LIMIT_POST_ERROR,
+  INQUIRY_SERVICE_UNAVAILABLE_ERROR,
+  INQUIRY_UNAVAILABLE_ERROR,
+} from "@/lib/inquiry/api-errors";
+import { getClientIpAddress } from "@/lib/inquiry/client-ip";
 import { buildInquiryEmail, extractReplyTo } from "@/lib/inquiry/email";
+import {
+  assertInquiryRateLimit,
+  markInquiryDelivered,
+  recordInquiryAttempt,
+} from "@/lib/inquiry/rate-limit";
 import { resolveOwnerEmail } from "@/lib/inquiry/resolve-owner-email";
 import { inquirySendErrorMessage } from "@/lib/inquiry/send-error";
-import { validateInquiryPayload } from "@/lib/inquiry/validation";
+import {
+  isInquiryHoneypotFilled,
+  validateInquiryPayload,
+} from "@/lib/inquiry/validation";
 import { getListingPath } from "@/lib/posts/listing-path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteUrl } from "@/lib/supabase/env";
@@ -11,12 +28,15 @@ import { createClient } from "@/lib/supabase/server";
 import type { CategoryType, PostRow } from "@/types/post";
 
 export async function POST(request: Request) {
+  const clientIp = getClientIpAddress(request);
+
   const resendKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.INQUIRY_FROM_EMAIL;
 
   if (!resendKey || !fromEmail) {
+    console.error("inquiry: missing RESEND_API_KEY or INQUIRY_FROM_EMAIL");
     return NextResponse.json(
-      { error: "E-mailová služba není nakonfigurována." },
+      { error: INQUIRY_SERVICE_UNAVAILABLE_ERROR },
       { status: 503 },
     );
   }
@@ -28,13 +48,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Neplatný JSON." }, { status: 400 });
   }
 
+  if (isInquiryHoneypotFilled(body)) {
+    return NextResponse.json({ error: INQUIRY_HONEYPOT_ERROR }, { status: 400 });
+  }
+
   const postId = Number((body as { postId?: unknown })?.postId);
   if (!Number.isInteger(postId) || postId < 1) {
     return NextResponse.json({ error: "Neplatný inzerát." }, { status: 400 });
   }
 
-  // Inzerát načítáme stejným klientem jako detail stránka (RLS: veřejně viditelné posty).
-  // Service role se používá jen pro lookup e-mailu zadavatele v profiles.
+  const adminResult = createAdminClient();
+  if (!adminResult.ok) {
+    console.error("inquiry admin client:", adminResult.error);
+    return NextResponse.json(
+      { error: INQUIRY_SERVICE_UNAVAILABLE_ERROR },
+      { status: 503 },
+    );
+  }
+
+  const rateLimit = await assertInquiryRateLimit(
+    adminResult.client,
+    clientIp,
+    postId,
+  );
+
+  if (!rateLimit.ok) {
+    if (rateLimit.reason === "ip") {
+      return NextResponse.json(
+        { error: INQUIRY_RATE_LIMIT_IP_ERROR },
+        { status: 429 },
+      );
+    }
+    if (rateLimit.reason === "post") {
+      return NextResponse.json(
+        { error: INQUIRY_RATE_LIMIT_POST_ERROR },
+        { status: 429 },
+      );
+    }
+    return NextResponse.json(
+      { error: INQUIRY_SERVICE_UNAVAILABLE_ERROR },
+      { status: 503 },
+    );
+  }
+
   const supabase = await createClient();
   const { data: post, error: postError } = await supabase
     .from("posts")
@@ -51,10 +107,7 @@ export async function POST(request: Request) {
 
   if (postError) {
     console.error("inquiry post lookup:", postError);
-    return NextResponse.json(
-      { error: "Inzerát se nepodařilo načíst." },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: INQUIRY_GENERIC_ERROR }, { status: 500 });
   }
 
   if (!post) {
@@ -85,19 +138,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const adminResult = createAdminClient();
-  if (!adminResult.ok) {
-    return NextResponse.json({ error: adminResult.error }, { status: 503 });
+  const attempt = await recordInquiryAttempt(adminResult.client, {
+    postId,
+    ipAddress: clientIp,
+    viewerUserId: user?.id ?? null,
+  });
+
+  if (!attempt.ok) {
+    return NextResponse.json(
+      { error: INQUIRY_SERVICE_UNAVAILABLE_ERROR },
+      { status: 503 },
+    );
   }
 
   const ownerEmail = await resolveOwnerEmail(adminResult.client, post.user_id);
 
   if (!ownerEmail) {
+    console.error("inquiry: owner email not found for user", post.user_id);
     return NextResponse.json(
-      {
-        error:
-          "Kontakt zadavatele není k dispozici. Spusť migraci 010_inquiry_recipient_email.sql a zkontroluj service_role klíč v .env.local.",
-      },
+      { error: INQUIRY_UNAVAILABLE_ERROR },
       { status: 422 },
     );
   }
@@ -130,6 +189,8 @@ export async function POST(request: Request) {
       { status: 502 },
     );
   }
+
+  await markInquiryDelivered(adminResult.client, attempt.id);
 
   return NextResponse.json({ ok: true });
 }

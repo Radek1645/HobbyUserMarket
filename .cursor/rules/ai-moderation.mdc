@@ -37,6 +37,8 @@ npx supabase functions deploy moderate-listing
 ## Co vyžaduje re-sync + re-deploy
 
 - `src/config/moderation/prohibited-topics.ts`
+- `src/config/moderation/bound-user-content.ts`
+- `src/lib/moderation/prohibited-scan.ts`
 - `src/config/app.ts` (délky popisu, QA reserve)
 - kategorie / category prompty (`categories.ts` → export skript)
 

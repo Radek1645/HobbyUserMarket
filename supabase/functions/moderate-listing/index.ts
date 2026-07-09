@@ -26,6 +26,12 @@ import {
   normalizeModerationResult,
   parseModerationResponse,
 } from "../_shared/moderation/parse-response.ts";
+import {
+  applyPostModerationSafetyChecks,
+  containsPromptInjection,
+  PROMPT_INJECTION_REJECTION_REASON,
+} from "../_shared/moderation/prompt-injection-guard.ts";
+import { findProhibitedKeyword } from "../_shared/moderation/prohibited-scan.ts";
 import { assertAiModerationRateLimit } from "../_shared/moderation/rate-limit.ts";
 import { issueModerationApproval } from "../_shared/moderation/issue-approval.ts";
 import { logModerationCheck } from "../_shared/moderation/log-moderation-check.ts";
@@ -275,6 +281,15 @@ serve(async (req) => {
       );
     }
 
+    if (containsPromptInjection(`${title}\n${description}`)) {
+      return respondWithLog(
+        userId,
+        logCtx,
+        { status: "REJECTED", reason: PROMPT_INJECTION_REJECTION_REASON },
+        { errorCode: "PROMPT_INJECTION", httpStatus: 400 },
+      );
+    }
+
     const categoryType = String(body?.categoryType ?? "").trim();
     const subcategorySlug = String(body?.subcategorySlug ?? "").trim();
     logCtx.categoryType = categoryType || undefined;
@@ -345,12 +360,17 @@ serve(async (req) => {
       priceType,
       priceAmount,
     );
-    const result = normalizeModerationResult(
+    const normalized = normalizeModerationResult(
       withoutPriceQuestions,
       title,
       description,
       priceType,
       priceAmount,
+    );
+    const result = applyPostModerationSafetyChecks(
+      normalized,
+      { title, description },
+      findProhibitedKeyword,
     );
 
     // H1: po průchodu bezpečnostním filtrem vydej approval token pro publikaci.

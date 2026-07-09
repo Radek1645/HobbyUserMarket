@@ -1,0 +1,40 @@
+---
+description: Konvence ID u nových DB tabulek — inkrementální číslo řádku
+globs: supabase/**/*.sql,supabase_schema.sql
+alwaysApply: false
+---
+
+# DB tabulky — inkrementální ID
+
+U **nových tabulek** (migrace, `supabase_schema.sql`) přidej lidsky čitelné inkrementální ID, pokud to dává smysl.
+
+## Vzor v projektu
+
+| Tabulka | Sloupec | Poznámka |
+|---------|---------|----------|
+| `posts` | `id BIGSERIAL` | PK |
+| `moderation_checks` | `log_no BIGINT GENERATED ALWAYS AS IDENTITY` | PK |
+| `profiles` | `profile_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
+| `inquiry_events` | `inquiry_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
+
+## Pravidla
+
+1. **Log / audit / event tabulky** — vždy `{entity}_no BIGINT GENERATED ALWAYS AS IDENTITY` + `UNIQUE` index (nebo jako PK).
+2. **Hlavní entity** — `id BIGSERIAL` nebo `BIGINT GENERATED ALWAYS AS IDENTITY` jako PK.
+3. **UUID** smí zůstat jako technický PK (např. `contact_reveals`), ale přidej vedle `{entity}_no` pro čitelnost v SQL editoru a God Mode.
+4. **Výjimka** — čisté M:N vazební tabulky bez vlastního životního cyklu (composite PK stačí).
+
+## Šablona migrace
+
+```sql
+CREATE TABLE public.example_events (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_no   BIGINT GENERATED ALWAYS AS IDENTITY,
+  -- ...
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX example_events_event_no_idx ON public.example_events (event_no);
+```
+
+Při návrhu tabulky vždy zvaž: *„Budu tento řádek hledat podle čísla v Supabase / moderaci?“* — pokud ano, `{entity}_no` je povinné.

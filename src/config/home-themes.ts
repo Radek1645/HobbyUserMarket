@@ -31,9 +31,9 @@ export const HOME_CATEGORY_ORDER: HomeBrowseCategory[] = [
 export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   all: {
     label: "Vše",
-    headline: "Lokální inzerce ve vašem okolí",
+    headline: "Inzerát hotový do 2 minut s AI",
     subline:
-      "Zboží, služby, práce, události a nemovitosti od lidí poblíž — bez složité registrace.",
+      "Stačí fotka a pár slov. AI se doptá na detaily a vytvoří inzerát pro lidi z tvého okolí.",
     shellClass: "bg-zinc-50",
     heroClass: "bg-white",
     heroBorderClass: "border-zinc-200",

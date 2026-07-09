@@ -18,7 +18,7 @@ export function getAdvertiserPrimaryLabel(profile: AdvertiserProfile): string {
 export function getAdvertiserPrimaryLabelTitle(
   profile: AdvertiserProfile,
 ): string {
-  return profile.is_company ? "Firma" : "Zadavatel";
+  return profile.is_company ? "Název firmy" : "Zadavatel";
 }
 
 export function getAdvertiserIcoDisplay(

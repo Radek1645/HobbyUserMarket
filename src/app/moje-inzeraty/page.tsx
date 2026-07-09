@@ -1,7 +1,13 @@
 import { getCategoryLabel, getSubcategoryLabel } from "@/config/categories";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { MyListingActions } from "@/components/listing/MyListingActions";
+import { ListingBlockedNotice } from "@/components/listing/ListingBlockedNotice";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { archiveExpiredPosts } from "@/lib/posts/archive-expired";
+import {
+  getOwnerDisplayStatus,
+  isListingExpired,
+} from "@/lib/posts/listing-status";
 import { createClient } from "@/lib/supabase/server";
 import type { PostRow, PostStatus } from "@/types/post";
 import type { Metadata } from "next";
@@ -37,6 +43,10 @@ const STATUS_BADGE: Record<
     label: "Expirovaný",
     className: "bg-red-50 text-red-700 ring-red-200",
   },
+  blocked: {
+    label: "Zablokováno",
+    className: "bg-red-50 text-red-800 ring-red-300",
+  },
   deleted: null,
 };
 
@@ -44,7 +54,7 @@ const STATUS_BADGE: Record<
 const MY_LISTING_COLUMNS =
   "id, user_id, title, description, category_type, subcategory_slug, " +
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
-  "status, expires_at, listing_duration_days, event_date, renew_count, " +
+  "status, status_reason_code, expires_at, listing_duration_days, event_date, renew_count, " +
   "payment_status, main_image_url, slug, show_contact_email, " +
   "show_contact_phone, created_at, updated_at";
 
@@ -79,6 +89,7 @@ export default async function MyListingsPage({
     redirect("/onboarding?next=/moje-inzeraty");
   }
 
+  await archiveExpiredPosts();
   const listings = await getMyListings(user.id);
 
   return (
@@ -121,6 +132,8 @@ export default async function MyListingsPage({
             const expiresLabel = post.expires_at
               ? new Date(post.expires_at).toLocaleDateString("cs-CZ")
               : null;
+            const displayStatus = getOwnerDisplayStatus(post.status, post.expires_at);
+            const expired = isListingExpired(post.expires_at);
 
             return (
               <li
@@ -134,11 +147,11 @@ export default async function MyListingsPage({
                         {getCategoryLabel(post.category_type)} ·{" "}
                         {subcategory.label}
                       </p>
-                      {STATUS_BADGE[post.status] ? (
+                      {STATUS_BADGE[displayStatus] ? (
                         <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_BADGE[post.status]!.className}`}
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_BADGE[displayStatus]!.className}`}
                         >
-                          {STATUS_BADGE[post.status]!.label}
+                          {STATUS_BADGE[displayStatus]!.label}
                         </span>
                       ) : null}
                     </div>
@@ -147,7 +160,11 @@ export default async function MyListingsPage({
                     </h2>
                     <p className="mt-0.5 text-sm text-gray-600">
                       {post.location_text}
-                      {expiresLabel ? ` · platí do ${expiresLabel}` : ""}
+                      {expiresLabel
+                        ? expired
+                          ? ` · platnost vypršela ${expiresLabel}`
+                          : ` · platí do ${expiresLabel}`
+                        : ""}
                     </p>
                   </div>
 
@@ -155,8 +172,13 @@ export default async function MyListingsPage({
                     postId={post.id}
                     slug={post.slug}
                     status={post.status}
+                    expiresAt={post.expires_at}
                   />
                 </div>
+
+                {post.status === "blocked" ? (
+                  <ListingBlockedNotice reasonCode={post.status_reason_code} />
+                ) : null}
               </li>
             );
           })}

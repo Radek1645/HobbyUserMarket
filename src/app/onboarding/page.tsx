@@ -32,8 +32,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
           Vítejte na HobbyUserMarket
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Doplňte profil — přezdívku nebo firemní údaje uvidí sousedé u vašich
-          inzerátů.
+          Doplňte profil — u inzerátů se zobrazí přezdívka nebo název firmy.
         </p>
 
         <div className="mt-6">

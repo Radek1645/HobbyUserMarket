@@ -95,8 +95,7 @@ export const CATEGORIES: CategoryConfig[] = [
       {
         slug: "moda-obleceni",
         label: "Móda a oblečení",
-        aiPrompt:
-          "Uživatel prodává módu. Pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj maximálně 2 stručné, lidské otázky (např. „Jaká je to velikost?“). Na volitelné parametry (materiál, sezóna) se ptej, jen pokud text neobsahuje téměř nic.",
+        aiPrompt:          "Uživatel prodává módu. Pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj maximálně 2 stručné, lidské otázky (např. „Jaká je to velikost?“). Na volitelné parametry (materiál, sezóna) se ptej, jen pokud text neobsahuje téměř nic.",
       },
       { slug: "ostatni", label: "Ostatní" },
     ],
@@ -152,11 +151,14 @@ export const CATEGORIES: CategoryConfig[] = [
     conditionFieldLabel: "Typ transakce",
     priceTypes: NEMOVITOST_PRICE_TYPES,
     aiPrompt:
-      "Uživatel nabízí nemovitost — typ transakce (Prodej / Pronájem) je ve formuláři. Skenuj text a fotky.\n\n" +
-      "VŽDY se doplňujícími otázkami ověř (pokud to z textu/fotek nevyplývá), parametry pak uveď v sekci Parametry:\n" +
-      "1) Zadavatel: soukromá osoba, nebo realitní kancelář? (paramLabel: „Zadavatel“; label např. „Inzerujete jako soukromá osoba, nebo za realitní kancelář?“)\n" +
-      "2) Cena a provize RK: je uvedená cena včetně provize pro realitní kancelář? (paramLabel: „Provize v ceně“; u pronájmu můžeš formulovat i poplatky RK — label např. „Je cena včetně provize / poplatků realitní kanceláře?“)\n" +
-      "Pokud uživatel už jednoznačně napsal „soukromý prodej“, „bez RK“, „realitka“, „RK“, „včetně provize“ apod., danou otázku neopakuj.\n\n" +
+      "Uživatel nabízí nemovitost — typ transakce (Prodej / Pronájem) a podkategorie (byt, dům, pozemek…) jsou ve formuláři. Skenuj text a všechny fotky.\n\n" +
+      "Povinná pravidla — zadavatel a provize RK (priorita před ostatními otázkami):\n" +
+      "Kupující/nájemce musí vždy vědět, zda inzeruje majitel (soukromá osoba), nebo realitní kancelář, a jak je to s provizí RK.\n" +
+      "Logika: buď je vše jednoznačné v textu nebo na fotkách → zapiš do Parametrů (• Zadavatel: …, • Provize RK: …) a neptej se; nebo něco chybí / je nejasné → NEEDS_QUESTIONS (nikdy nehádej).\n\n" +
+      "1) Zadavatel — ptej se jen pokud z textu/fotek nevyplývá, zda jde o majitele (soukromá inzerce), nebo realitní kancelář. (paramLabel: „Zadavatel“; label např. „Inzerujete jako majitel, nebo za realitní kancelář?“)\n" +
+      "2) Provize RK — ptej se vždy, když: (a) je v textu zmíněna realitka / RK / makléř, ale není jasné, zda je provize v ceně, nebo navíc (hradí ji kupující/nájemce); (b) není jasné, zda jde o soukromou inzerci, nebo přes RK; (c) RK je potvrzená, ale chybí info o provizi. (paramLabel: „Provize RK“; label např. „Je provize realitní kanceláře zahrnutá v uvedené ceně, nebo se platí navíc?“)\n" +
+      "U jednoznačné soukromé inzerce bez RK zapiš do Parametrů „Provize RK: bez provize“ — na provizi se neptej.\n" +
+      "Jednoznačné formulace v textu (otázku neopakuj): „soukromý prodej“, „prodám vlastní“, „bez RK“, „realitka“, „RK“, „včetně provize“, „provize v ceně“, „provize navíc“, „provizi hradí kupující“, „provizi hradí nájemce“.\n\n" +
       "Další kritické údaje dle kontextu: dispozice (např. 2+kk), plocha v m²; u pronájmu též kauce a měsíční poplatky — ptej jen pokud zcela chybí. Na detaily (patro, výtah, parkování) se ptej jen při velmi stručném popisu. Celkem max 5 otázek.",
   },
   {

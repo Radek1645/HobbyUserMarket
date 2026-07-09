@@ -75,7 +75,7 @@ export async function generateMetadata({
     `${post.title} — ${location}`;
 
   return {
-    title: `${post.title} | ${location} | HobbyUserMarket`,
+    title: `${post.title} | ${location}`,
     description,
     alternates: { canonical: pageUrl },
     openGraph: {
@@ -229,14 +229,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
                   {getAdvertiserPrimaryLabel(advertiser)}
                 </dd>
               </div>
-              {advertiser.is_company ? (
-                <div>
-                  <dt className="text-gray-500">Kontaktní přezdívka</dt>
-                  <dd className="font-medium text-gray-900">
-                    {advertiser.nickname}
-                  </dd>
-                </div>
-              ) : null}
               {getAdvertiserIcoDisplay(advertiser) ? (
                 <div>
                   <dt className="text-gray-500">IČO</dt>

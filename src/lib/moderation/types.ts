@@ -26,7 +26,7 @@ export type ModerateListingRequest = {
   priceAmount?: number;
   /** Všechny nahrané fotky (max. 6) — bezpečnostní filtr. */
   imagesBase64?: string[];
-  /** Index hlavní fotky v `imagesBase64` — cross-validace textu a hydratace. */
+  /** Index hlavní fotky v `imagesBase64` — cross-validace textu s náhledem; hydratace z všech fotek. */
   mainImageIndex?: number;
 };
 

@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getListingPath } from "@/lib/posts/listing-path";
+import { isListingExpired } from "@/lib/posts/listing-status";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -68,7 +69,13 @@ export async function pauseListing(formData: FormData): Promise<void> {
   if (Number.isNaN(postId)) redirect("/moje-inzeraty");
 
   const post = await getOwnedPost(postId);
-  if (!post || post.status !== "active") redirect("/moje-inzeraty");
+  if (
+    !post ||
+    post.status !== "active" ||
+    isListingExpired(post.expires_at)
+  ) {
+    redirect("/moje-inzeraty");
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -134,7 +141,7 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
     renew_count: post.renew_count + 1,
   };
 
-  if (post.status === "archived") {
+  if (post.status === "archived" || isListingExpired(post.expires_at)) {
     updates.status = "active";
   }
 

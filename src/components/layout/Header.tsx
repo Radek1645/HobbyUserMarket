@@ -82,21 +82,25 @@ export function Header({ user }: HeaderProps) {
             <Link
               href="/inzerat/novy"
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
-              aria-label="Vytvořit inzerát"
+              aria-label="Vytvořit inzerát přes AI"
               className={CREATE_LISTING_CLASS}
             >
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2.5} />
-              <span className="hidden min-[480px]:inline">Vytvořit inzerát</span>
+              <span className="hidden min-[480px]:inline">
+                Vytvořit inzerát přes AI
+              </span>
             </Link>
           ) : (
             <Link
               href="/login?next=/inzerat/novy&message=create_listing&tab=register"
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
-              aria-label="Vytvořit inzerát — nejdřív profil"
+              aria-label="Vytvořit inzerát přes AI"
               className={CREATE_LISTING_CLASS}
             >
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2.5} />
-              <span className="hidden min-[480px]:inline">Vytvořit inzerát</span>
+              <span className="hidden min-[480px]:inline">
+                Vytvořit inzerát přes AI
+              </span>
             </Link>
           )}
 

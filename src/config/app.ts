@@ -57,6 +57,11 @@ export const INQUIRY_MESSAGE_MIN_LENGTH = 10;
 export const INQUIRY_MESSAGE_MAX_LENGTH = 1000;
 export const INQUIRY_SENDER_NAME_MAX_LENGTH = 80;
 export const INQUIRY_RATE_LIMIT_PER_DAY = 20;
+/** Max. poptávek z jedné IP na stejný inzerát za 24 h (H2/P15). */
+export const INQUIRY_RATE_LIMIT_PER_POST_PER_DAY = 3;
+
+/** Honeypot pole — musí zůstat prázdné (P16). */
+export const INQUIRY_HONEYPOT_FIELD = "website";
 
 export const INQUIRY_ATTACHMENT_MAX_FILES = 3;
 export const INQUIRY_ATTACHMENT_MAX_TOTAL_BYTES = 5 * 1024 * 1024;

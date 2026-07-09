@@ -201,7 +201,7 @@ export async function updateListing(
   }
 
   // 'draft' = rozpracovaný/neúspěšně publikovaný (H1) — musí jít doupravit.
-  if (!["active", "hidden", "draft"].includes(existing.status)) {
+  if (!["active", "hidden", "draft", "blocked"].includes(existing.status)) {
     return { error: "Tento inzerát už nelze upravovat." };
   }
 

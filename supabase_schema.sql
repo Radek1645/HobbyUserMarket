@@ -19,7 +19,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE public.post_status AS ENUM ('draft', 'active', 'archived', 'hidden', 'deleted');
+  CREATE TYPE public.post_status AS ENUM ('draft', 'active', 'archived', 'hidden', 'blocked', 'deleted');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -150,6 +150,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   location_text     TEXT NOT NULL,
   location          extensions.geography(POINT, 4326) NOT NULL,
   status            public.post_status NOT NULL DEFAULT 'draft',
+  status_reason_code TEXT,
   expires_at        TIMESTAMPTZ,
   renew_count       INTEGER NOT NULL DEFAULT 0,
   payment_status    VARCHAR(20) NOT NULL DEFAULT 'free',
@@ -228,7 +229,13 @@ CREATE TABLE IF NOT EXISTS public.posts (
     CHECK (payment_status IN ('free', 'paid', 'pending')),
 
   CONSTRAINT posts_renew_count_non_negative
-    CHECK (renew_count >= 0)
+    CHECK (renew_count >= 0),
+
+  CONSTRAINT posts_status_reason_code_check
+    CHECK (
+      status_reason_code IS NULL
+      OR status_reason_code IN ('reports_threshold', 'moderation')
+    )
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS posts_slug_unique_idx ON public.posts (slug);
@@ -292,6 +299,19 @@ CREATE TABLE IF NOT EXISTS public.contact_reveals (
   revealed_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- inquiry_events (metadata poptávek — PRD §11.1 C; rate limit H2)
+CREATE TABLE IF NOT EXISTS public.inquiry_events (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inquiry_no      BIGINT GENERATED ALWAYS AS IDENTITY,
+  post_id         BIGINT NOT NULL REFERENCES public.posts (id) ON DELETE CASCADE,
+  viewer_user_id  UUID REFERENCES auth.users (id) ON DELETE SET NULL,
+  ip_address      TEXT NOT NULL,
+  delivered       BOOLEAN NOT NULL DEFAULT false,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT inquiry_events_ip_not_empty CHECK (char_length(trim(ip_address)) > 0)
+);
+
 -- rate_limits
 CREATE TABLE IF NOT EXISTS public.rate_limits (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -332,6 +352,16 @@ CREATE INDEX IF NOT EXISTS reports_reporter_idx ON public.reports (reporter_user
 
 CREATE INDEX IF NOT EXISTS contact_reveals_viewer_idx ON public.contact_reveals (viewer_user_id, revealed_at);
 CREATE INDEX IF NOT EXISTS contact_reveals_post_idx ON public.contact_reveals (post_id);
+
+CREATE INDEX IF NOT EXISTS inquiry_events_ip_created_idx
+  ON public.inquiry_events (ip_address, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS inquiry_events_inquiry_no_idx
+  ON public.inquiry_events (inquiry_no);
+CREATE INDEX IF NOT EXISTS inquiry_events_ip_post_created_idx
+  ON public.inquiry_events (ip_address, post_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS inquiry_events_post_created_idx
+  ON public.inquiry_events (post_id, created_at DESC)
+  WHERE delivered = true;
 
 CREATE INDEX IF NOT EXISTS rate_limits_user_action_idx ON public.rate_limits (user_id, action_type, window_start);
 
@@ -417,7 +447,10 @@ BEGIN
   IF report_count >= 3 THEN
     IF NEW.target_type = 'post' THEN
       UPDATE public.posts
-      SET status = 'hidden', updated_at = now()
+      SET
+        status = 'blocked',
+        status_reason_code = 'reports_threshold',
+        updated_at = now()
       WHERE id = NEW.target_post_id
         AND status = 'active';
     ELSIF NEW.target_type = 'comment' THEN
@@ -582,6 +615,7 @@ ALTER TABLE public.post_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_reveals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inquiry_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rate_limits ENABLE ROW LEVEL SECURITY;
 
 -- profiles
@@ -829,6 +863,24 @@ CREATE POLICY contact_reveals_insert_own ON public.contact_reveals
     )
   );
 
+-- inquiry_events
+DROP POLICY IF EXISTS inquiry_events_select_moderator ON public.inquiry_events;
+CREATE POLICY inquiry_events_select_moderator ON public.inquiry_events
+  FOR SELECT TO authenticated
+  USING (public.is_moderator_or_admin());
+
+DROP POLICY IF EXISTS inquiry_events_select_post_owner ON public.inquiry_events;
+CREATE POLICY inquiry_events_select_post_owner ON public.inquiry_events
+  FOR SELECT TO authenticated
+  USING (
+    delivered = true
+    AND EXISTS (
+      SELECT 1 FROM public.posts p
+      WHERE p.id = inquiry_events.post_id
+        AND p.user_id = auth.uid()
+    )
+  );
+
 -- rate_limits
 DROP POLICY IF EXISTS rate_limits_select_own ON public.rate_limits;
 CREATE POLICY rate_limits_select_own ON public.rate_limits
@@ -905,6 +957,8 @@ GRANT INSERT, UPDATE, DELETE ON public.comments TO authenticated;
 
 GRANT SELECT, INSERT ON public.reports TO authenticated;
 GRANT SELECT, INSERT ON public.contact_reveals TO authenticated;
+GRANT SELECT ON public.inquiry_events TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.inquiry_events TO service_role;
 GRANT SELECT, INSERT, UPDATE ON public.rate_limits TO authenticated;
 
 -- =============================================================================
@@ -1032,8 +1086,8 @@ ALTER TABLE public.moderation_approvals ENABLE ROW LEVEL SECURITY;
 -- moderátor/admin platí:
 --   a) editace obsahu (název/popis/kategorie) → status 'draft' = re-moderace,
 --   b) do viditelného stavu ('active'/'hidden'/'archived') jen z jiného
---      viditelného stavu (unpause, prodloužení). Z 'draft'/'deleted' vede ven
---      výhradně publish_approved_post.
+--      viditelného stavu (unpause, prodloužení). Z 'draft'/'blocked'/'deleted'
+--      vede ven výhradně publish_approved_post.
 CREATE OR REPLACE FUNCTION public.enforce_post_publish_gate()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -1042,8 +1096,6 @@ SET search_path = public
 AS $$
 DECLARE
   v_gate BOOLEAN := COALESCE(current_setting('app.publish_gate', true) = 'on', false);
-  -- Omezené jen API role anon/authenticated; service_role, přímé DB session
-  -- (migrace, SQL editor) a moderátor/admin projdou.
   v_privileged BOOLEAN :=
     COALESCE(auth.role(), '') NOT IN ('anon', 'authenticated')
     OR public.is_moderator_or_admin();
@@ -1052,7 +1104,12 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- a) Editace obsahu → 'draft' (mazání se nemění).
+  IF TG_OP = 'UPDATE'
+     AND NEW.status = 'deleted'
+     AND OLD.status IS DISTINCT FROM 'deleted' THEN
+    RETURN NEW;
+  END IF;
+
   IF TG_OP = 'UPDATE'
      AND NEW.status <> 'deleted'
      AND (
@@ -1062,10 +1119,10 @@ BEGIN
        OR NEW.subcategory_slug IS DISTINCT FROM OLD.subcategory_slug
      ) THEN
     NEW.status := 'draft';
+    NEW.status_reason_code := NULL;
     RETURN NEW;
   END IF;
 
-  -- b) Do viditelného stavu jen z jiného viditelného stavu.
   IF NEW.status IN ('active', 'hidden', 'archived')
      AND (
        TG_OP = 'INSERT'
@@ -1100,9 +1157,9 @@ DECLARE
 BEGIN
   IF NOT (v_gate OR v_privileged) THEN
     UPDATE public.posts
-    SET status = 'draft'
+    SET status = 'draft', status_reason_code = NULL
     WHERE id = COALESCE(NEW.post_id, OLD.post_id)
-      AND status IN ('active', 'hidden', 'archived');
+      AND status IN ('active', 'hidden', 'archived', 'blocked');
   END IF;
   RETURN COALESCE(NEW, OLD);
 END;
@@ -1249,3 +1306,27 @@ CREATE POLICY moderation_checks_select_moderator ON public.moderation_checks
   USING (public.is_moderator_or_admin());
 
 GRANT INSERT, SELECT ON public.moderation_checks TO service_role;
+
+-- =============================================================================
+-- 12. CRON ARCHIVACE EXPIROVANÝCH INZERÁTŮ (035)
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.archive_expired_posts()
+RETURNS INTEGER
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  WITH updated AS (
+    UPDATE public.posts
+    SET status = 'archived', updated_at = now()
+    WHERE status = 'active'
+      AND expires_at IS NOT NULL
+      AND expires_at <= now()
+    RETURNING id
+  )
+  SELECT count(*)::INTEGER FROM updated;
+$$;
+
+REVOKE ALL ON FUNCTION public.archive_expired_posts() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.archive_expired_posts() TO service_role;

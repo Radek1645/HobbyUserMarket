@@ -1,6 +1,11 @@
 "use server";
 
-import { isPlaceholderNickname, normalizeNickname, validateNickname } from "@/lib/auth/nickname";
+import {
+  generateCompanyNickname,
+  isPlaceholderNickname,
+  normalizeNickname,
+  validateNickname,
+} from "@/lib/auth/nickname";
 import { normalizeIco, validateIco } from "@/lib/company/ico";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/supabase/env";
@@ -243,13 +248,6 @@ export async function completeOnboarding(
 ): Promise<AuthFormState> {
   const rawNickname = String(formData.get("nickname") ?? "");
   const nextPath = readNextPath(formData);
-  const validationError = validateNickname(rawNickname);
-
-  if (validationError) {
-    return { error: validationError };
-  }
-
-  const nickname = normalizeNickname(rawNickname);
   const isCompany = formData.get("isCompany") === "true";
   const companyName = String(formData.get("companyName") ?? "").trim();
   const companyIcoRaw = String(formData.get("companyIco") ?? "");
@@ -266,6 +264,14 @@ export async function completeOnboarding(
     }
   }
 
+  const validationError = validateNickname(rawNickname, {
+    optional: isCompany,
+  });
+
+  if (validationError) {
+    return { error: validationError };
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -274,6 +280,12 @@ export async function completeOnboarding(
   if (!user) {
     redirect("/login");
   }
+
+  const normalizedNickname = normalizeNickname(rawNickname);
+  const nickname =
+    isCompany && !normalizedNickname
+      ? generateCompanyNickname(companyName, user.id)
+      : normalizedNickname;
 
   const { error } = await supabase
     .from("profiles")

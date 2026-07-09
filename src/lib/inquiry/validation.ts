@@ -2,6 +2,7 @@ import {
   INQUIRY_ATTACHMENT_ALLOWED_EXTENSIONS,
   INQUIRY_ATTACHMENT_MAX_FILES,
   INQUIRY_ATTACHMENT_MAX_TOTAL_BYTES,
+  INQUIRY_HONEYPOT_FIELD,
   INQUIRY_MESSAGE_MAX_LENGTH,
   INQUIRY_MESSAGE_MIN_LENGTH,
   INQUIRY_SENDER_NAME_MAX_LENGTH,
@@ -48,6 +49,18 @@ function getExtension(filename: string): string {
   const dot = filename.lastIndexOf(".");
   if (dot < 0) return "";
   return filename.slice(dot).toLowerCase();
+}
+
+export function isInquiryHoneypotFilled(body: unknown): boolean {
+  if (!body || typeof body !== "object") {
+    return false;
+  }
+
+  const value = String(
+    (body as Record<string, unknown>)[INQUIRY_HONEYPOT_FIELD] ?? "",
+  ).trim();
+
+  return value.length > 0;
 }
 
 export function validateInquiryPayload(

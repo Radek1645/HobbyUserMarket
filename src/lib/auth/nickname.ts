@@ -10,8 +10,15 @@ export function normalizeNickname(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
-export function validateNickname(raw: string): string | null {
+export function validateNickname(
+  raw: string,
+  options?: { optional?: boolean },
+): string | null {
   const nickname = normalizeNickname(raw);
+
+  if (options?.optional && nickname.length === 0) {
+    return null;
+  }
 
   if (nickname.length < NICKNAME_MIN) {
     return `Přezdívka musí mít alespoň ${NICKNAME_MIN} znaky.`;
@@ -30,4 +37,25 @@ export function validateNickname(raw: string): string | null {
   }
 
   return null;
+}
+
+function slugifyForNickname(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, NICKNAME_MAX);
+}
+
+export function generateCompanyNickname(
+  companyName: string,
+  userId: string,
+): string {
+  const suffix = userId.replace(/-/g, "").slice(0, 6);
+  const maxBaseLength = Math.max(NICKNAME_MIN, NICKNAME_MAX - suffix.length - 1);
+  const base = slugifyForNickname(companyName).slice(0, maxBaseLength) || "firma";
+
+  return `${base}_${suffix}`.slice(0, NICKNAME_MAX);
 }

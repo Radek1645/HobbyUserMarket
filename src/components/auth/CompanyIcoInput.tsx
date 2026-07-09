@@ -8,6 +8,7 @@ type CompanyIcoInputProps = {
   name?: string;
   defaultValue?: string;
   disabled?: boolean;
+  onInput?: () => void;
 };
 
 const inputClass =
@@ -18,6 +19,7 @@ export function CompanyIcoInput({
   name = "companyIco",
   defaultValue = "",
   disabled = false,
+  onInput,
 }: CompanyIcoInputProps) {
   return (
     <div>
@@ -40,6 +42,7 @@ export function CompanyIcoInput({
         onInput={(event) => {
           const input = event.currentTarget;
           input.value = normalizeIco(input.value);
+          onInput?.();
         }}
         className={inputClass}
       />

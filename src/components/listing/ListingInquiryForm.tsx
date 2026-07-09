@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  INQUIRY_HONEYPOT_FIELD,
   INQUIRY_MESSAGE_MAX_LENGTH,
   INQUIRY_MESSAGE_MIN_LENGTH,
   INQUIRY_SENDER_NAME_MAX_LENGTH,
@@ -61,6 +62,7 @@ export function ListingInquiryForm({
   const [senderContact, setSenderContact] = useState("");
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+  const [honeypot, setHoneypot] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -104,6 +106,7 @@ export function ListingInquiryForm({
           senderContact: senderContact.trim(),
           message: messageTrimmed,
           attachments: attachmentPayload,
+          [INQUIRY_HONEYPOT_FIELD]: honeypot,
         }),
       });
 
@@ -120,6 +123,7 @@ export function ListingInquiryForm({
       setSenderContact("");
       setMessage("");
       setAttachments([]);
+      setHoneypot("");
     } catch {
       setError("Odeslání se nepodařilo. Zkontroluj připojení.");
     } finally {
@@ -235,6 +239,22 @@ export function ListingInquiryForm({
         <p className="mt-1 text-xs text-gray-500">
           {message.length}/{INQUIRY_MESSAGE_MAX_LENGTH}
         </p>
+      </div>
+
+      <div
+        className="absolute -left-[9999px] h-px w-px overflow-hidden"
+        aria-hidden
+      >
+        <label htmlFor="inquiry-website">Web</label>
+        <input
+          id="inquiry-website"
+          name={INQUIRY_HONEYPOT_FIELD}
+          type="text"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+        />
       </div>
 
       {isJob ? (

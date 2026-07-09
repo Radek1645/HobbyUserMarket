@@ -72,6 +72,15 @@ export function HomeBrowse({
           </h1>
           <p className="mt-3 max-w-xl text-gray-600">{theme.subline}</p>
 
+          {!user ? (
+            <div className="mt-3 w-fit max-w-md">
+              <div className="border-t border-gray-200" aria-hidden="true" />
+              <p className="pt-2 text-xs text-gray-500">
+                Bez registrace – přihlášení přes Google jedním kliknutím.
+              </p>
+            </div>
+          ) : null}
+
           {user ? (
             <p className="mt-6 flex flex-wrap items-center gap-3">
               <Link
@@ -88,19 +97,7 @@ export function HomeBrowse({
                 </span>
               </span>
             </p>
-          ) : (
-            <p className="mt-6 text-sm text-gray-600">
-              Pro vytváření inzerátů se{" "}
-              <Link
-                href="/login"
-                {...gtmCtaProps(GTM_CTA.HOME_SIGN_IN_LINK)}
-                className="font-medium text-gray-900 underline-offset-2 hover:underline"
-              >
-                přihlaste se přes Google
-              </Link>
-              .
-            </p>
-          )}
+          ) : null}
         </section>
 
         <nav

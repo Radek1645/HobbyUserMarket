@@ -1,4 +1,5 @@
 import { CreateListingForm } from "@/components/listing/CreateListingForm";
+import { ListingBlockedNotice } from "@/components/listing/ListingBlockedNotice";
 import { BackLink } from "@/components/navigation/BackLink";
 import { getListingForEdit } from "@/lib/posts/get-listing-for-edit";
 import {
@@ -68,6 +69,10 @@ export default async function EditListingPage({ params }: PageProps) {
         <p className="mt-1 text-sm text-gray-600">
           Oprav lokalitu, popis nebo cenu. URL inzerátu zůstává stejné.
         </p>
+
+        {post.status === "blocked" ? (
+          <ListingBlockedNotice reasonCode={post.status_reason_code} />
+        ) : null}
       </div>
 
       <CreateListingForm
@@ -76,7 +81,7 @@ export default async function EditListingPage({ params }: PageProps) {
         initialValues={initialValues}
         initialImages={post.images}
         userEmail={user.email}
-        forceModeration={post.status === "draft"}
+        forceModeration={post.status === "draft" || post.status === "blocked"}
       />
     </div>
   );

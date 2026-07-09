@@ -23,8 +23,8 @@ const VARIANT_STYLES: Record<
     icon: Megaphone,
   },
   maintenance: {
-    bar: "bg-amber-50 text-amber-900 border-amber-200",
-    link: "text-amber-900 decoration-amber-400 hover:decoration-amber-700",
+    bar: "bg-red-100 text-red-950 border-red-400",
+    link: "text-red-950 decoration-red-600 hover:decoration-red-800",
     icon: Wrench,
   },
 };
@@ -86,7 +86,9 @@ export function SiteNoticeBar() {
     >
       <div className="mx-auto flex max-w-5xl items-center justify-center gap-2 px-9 py-2 text-center text-sm">
         <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <p className="leading-snug">
+        <p
+          className={`leading-snug ${config.variant === "maintenance" ? "font-semibold" : ""}`}
+        >
           {config.message}
           {config.link ? (
             <>

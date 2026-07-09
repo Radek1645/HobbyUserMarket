@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/listing-management";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
+import { getOwnerDisplayStatus } from "@/lib/posts/listing-status";
 import type { PostStatus } from "@/types/post";
 import {
   CalendarPlus,
@@ -23,6 +24,7 @@ type MyListingActionsProps = {
   postId: number;
   slug: string;
   status: PostStatus;
+  expiresAt: string | null;
 };
 
 const iconButtonClass =
@@ -34,20 +36,35 @@ const secondaryButtonClass =
 const primaryButtonClass =
   "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50";
 
-export function MyListingActions({ postId, slug, status }: MyListingActionsProps) {
-  // 'draft' = neúspěšně publikovaný inzerát (H1) — jde doupravit a znovu odeslat.
-  const canEdit =
-    status === "active" || status === "hidden" || status === "draft";
-  const canManage =
-    status === "active" ||
-    status === "hidden" ||
-    status === "archived";
+export function MyListingActions({
+  postId,
+  slug,
+  status,
+  expiresAt,
+}: MyListingActionsProps) {
+  const displayStatus = getOwnerDisplayStatus(status, expiresAt);
 
-  if (!canEdit && !canManage) return null;
+  // 'draft' = neúspěšně publikovaný inzerát (H1) — jde doupravit a znovu odeslat.
+  // 'blocked' = skrytý moderací/nahlášením — ven jen přes úpravu + re-moderace.
+  const canEdit =
+    displayStatus === "active" ||
+    displayStatus === "hidden" ||
+    displayStatus === "archived" ||
+    status === "draft" ||
+    status === "blocked";
+  const canManage =
+    displayStatus === "active" ||
+    displayStatus === "hidden" ||
+    displayStatus === "archived";
+  const canDelete =
+    canManage || status === "blocked" || status === "draft";
+  const isArchived = displayStatus === "archived";
+
+  if (!canEdit && !canDelete) return null;
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {status === "active" ? (
+      {displayStatus === "active" ? (
         <Link
           href={getListingPath(slug)}
           {...gtmCtaProps(GTM_CTA.MY_LISTINGS_VIEW, {
@@ -69,11 +86,22 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
             {...gtmCtaProps(GTM_CTA.MY_LISTINGS_EXTEND, {
               "listing-id": postId,
             })}
-            className={iconButtonClass}
-            title="Prodloužit o 30 dnů"
-            aria-label="Prodloužit o 30 dnů"
+            className={
+              isArchived
+                ? `${primaryButtonClass} bg-emerald-600 hover:bg-emerald-700`
+                : iconButtonClass
+            }
+            title={isArchived ? "Obnovit inzerát" : "Prodloužit o 30 dnů"}
+            aria-label={isArchived ? "Obnovit inzerát" : "Prodloužit o 30 dnů"}
           >
-            <CalendarPlus className="h-4 w-4" aria-hidden />
+            {isArchived ? (
+              <>
+                <CalendarPlus className="h-4 w-4" aria-hidden />
+                Obnovit
+              </>
+            ) : (
+              <CalendarPlus className="h-4 w-4" aria-hidden />
+            )}
           </button>
         </form>
       ) : null}
@@ -91,7 +119,7 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
         </Link>
       ) : null}
 
-      {status === "active" ? (
+      {displayStatus === "active" ? (
         <form action={pauseListing}>
           <input type="hidden" name="postId" value={postId} />
           <button
@@ -107,7 +135,7 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
         </form>
       ) : null}
 
-      {status === "hidden" ? (
+      {displayStatus === "hidden" ? (
         <form action={publishListing}>
           <input type="hidden" name="postId" value={postId} />
           <button
@@ -123,7 +151,7 @@ export function MyListingActions({ postId, slug, status }: MyListingActionsProps
         </form>
       ) : null}
 
-      {canManage ? (
+      {canDelete ? (
         <form
           action={deleteListing}
           className="ml-3"

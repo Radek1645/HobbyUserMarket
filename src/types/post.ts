@@ -7,7 +7,15 @@ export type CategoryType =
   | "nemovitost"
   | "prace";
 
-export type PostStatus = "draft" | "active" | "archived" | "hidden" | "deleted";
+export type PostStatus =
+  | "draft"
+  | "active"
+  | "archived"
+  | "hidden"
+  | "blocked"
+  | "deleted";
+
+export type PostStatusReasonCode = "reports_threshold" | "moderation";
 
 export type PriceType =
   | "fixed"
@@ -64,6 +72,7 @@ export type PostRow = {
   condition_label: ConditionLabel;
   location_text: string;
   status: PostStatus;
+  status_reason_code?: PostStatusReasonCode | null;
   expires_at: string | null;
   listing_duration_days: number;
   event_date: string | null;

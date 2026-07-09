@@ -19,9 +19,14 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
   const [state, action, pending] = useActionState(completeOnboarding, initialState);
   const [isCompany, setIsCompany] = useState(false);
 
+  const enableCompanyMode = () => {
+    setIsCompany(true);
+  };
+
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="next" value={nextPath} />
+      <input type="hidden" name="isCompany" value={isCompany ? "true" : "false"} />
 
       <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm text-gray-600">
         Přihlášený účet:{" "}
@@ -34,8 +39,6 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
       <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 px-3 py-3">
         <input
           type="checkbox"
-          name="isCompany"
-          value="true"
           checked={isCompany}
           onChange={(event) => setIsCompany(event.target.checked)}
           className="mt-0.5 h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-300"
@@ -43,8 +46,7 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
         <span className="text-sm text-gray-700">
           <span className="font-medium text-gray-900">Registruji se jako firma</span>
           <span className="mt-0.5 block text-xs text-gray-500">
-            U inzerátů se místo přezdívky zobrazí název firmy. Přezdívku si stejně
-            zvolíte pro komentáře a interní identitu.
+            V inzerátech se zobrazí název firmy.
           </span>
         </span>
       </label>
@@ -65,30 +67,38 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
               maxLength={150}
               autoComplete="organization"
               placeholder="např. Novák s.r.o."
+              onInput={enableCompanyMode}
               className={inputClass}
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Tento název se zobrazí u vašich inzerátů.
+            </p>
           </div>
-          <CompanyIcoInput />
+          <CompanyIcoInput onInput={enableCompanyMode} />
         </div>
       ) : null}
 
       <div>
         <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">
-          Přezdívka <span className="text-red-600">*</span>
+          {isCompany ? "Interní jméno" : "Přezdívka"}
+          {!isCompany ? <span className="text-red-600"> *</span> : null}
+          {isCompany ? (
+            <span className="font-normal text-gray-500"> (volitelné)</span>
+          ) : null}
         </label>
         <input
           id="nickname"
           name="nickname"
-          required
-          minLength={3}
+          required={!isCompany}
+          minLength={isCompany ? undefined : 3}
           maxLength={30}
           autoComplete="nickname"
-          placeholder="např. Honza_63"
+          placeholder={isCompany ? "např. admin_novak" : "např. Honza_63"}
           className={inputClass}
         />
         <p className="mt-1 text-xs text-gray-500">
           {isCompany
-            ? "3–30 znaků. U firem se u inzerátů zobrazí název firmy, přezdívka zůstane u komentářů."
+            ? "Volitelné — pro budoucí komentáře. V inzerátech se zobrazí název firmy."
             : "3–30 znaků, písmena, čísla, podtržítko nebo pomlčka. Zobrazí se u vašich inzerátů."}
         </p>
       </div>

@@ -12,7 +12,7 @@ export type ListingForEdit = PostRow & {
 const EDIT_COLUMNS =
   "id, user_id, title, description, original_title, original_description, " +
   "category_type, subcategory_slug, price_type, price_amount, exchange_for, " +
-  "condition_label, location_text, status, expires_at, listing_duration_days, " +
+  "condition_label, location_text, status, status_reason_code, expires_at, listing_duration_days, " +
   "event_date, renew_count, payment_status, main_image_url, slug, " +
   "show_contact_email, show_contact_phone, created_at, updated_at, location";
 
@@ -28,7 +28,7 @@ export async function getListingForEdit(
     .eq("user_id", userId)
     // 'draft' = neúspěšně publikovaný inzerát (H1) — vlastník ho musí umět
     // doupravit a znovu odeslat.
-    .in("status", ["active", "hidden", "draft"])
+    .in("status", ["active", "hidden", "draft", "blocked"])
     .maybeSingle<PostRow & { location: unknown }>();
 
   if (error || !data) return null;

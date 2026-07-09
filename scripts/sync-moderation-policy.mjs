@@ -13,6 +13,29 @@ const target = join(
 copyFileSync(source, target);
 console.log("Synced moderation policy:", target);
 
+const boundUserContentSource = join(
+  root,
+  "src/config/moderation/bound-user-content.ts",
+);
+const boundUserContentTarget = join(
+  root,
+  "supabase/functions/_shared/moderation/bound-user-content.ts",
+);
+copyFileSync(boundUserContentSource, boundUserContentTarget);
+console.log("Synced bound-user-content:", boundUserContentTarget);
+
+const prohibitedScanSource = join(root, "src/lib/moderation/prohibited-scan.ts");
+const prohibitedScanTarget = join(
+  root,
+  "supabase/functions/_shared/moderation/prohibited-scan.ts",
+);
+const prohibitedScanContent = readFileSync(prohibitedScanSource, "utf8").replace(
+  '@/config/moderation/prohibited-topics',
+  "./prohibited-topics.ts",
+);
+writeFileSync(prohibitedScanTarget, prohibitedScanContent);
+console.log("Synced prohibited-scan:", prohibitedScanTarget);
+
 const appConfig = readFileSync(join(root, "src/config/app.ts"), "utf8");
 const maxMatch = appConfig.match(
   /export const LISTING_DESCRIPTION_MAX_LENGTH = (\d+)/,

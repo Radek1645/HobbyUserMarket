@@ -2,6 +2,10 @@ import {
   LISTING_DESCRIPTION_MAX_LENGTH,
   MODERATION_DESCRIPTION_QA_RESERVE,
 } from "./constants.ts";
+import {
+  LISTING_PROMPT_TAGS,
+  wrapListingUserField,
+} from "./bound-user-content.ts";
 
 export type ModerationRequestBody = {
   intent?: string;
@@ -87,7 +91,7 @@ export function buildModerationUserPrompt(
 
   const sections = [
     "Úkol: moderuj inzerát (text + fotografie) a vrať JSON dle system promptu.",
-    "Formát cleanedDescription: nejdřív úvod (1–3 věty), pak „---“, nadpis „Parametry“ a odrážky • Popisek: hodnota.",
+    "Formát cleanedDescription: nejdřív úvod (až 6 vět), pak „---“, nadpis „Parametry“ a odrážky • Popisek: hodnota.",
     `Tvrdý limit délky: publikovaný popis max ${LISTING_DESCRIPTION_MAX_LENGTH} znaků. U NEEDS_QUESTIONS drž cleanedDescription do ${needsQuestionsMax} znaků (rezerva na odpovědi z dotazníku).`,
     body.intent ? `Akce: ${body.intent}` : null,
     body.categoryType
@@ -97,20 +101,20 @@ export function buildModerationUserPrompt(
       ? `Kontext kategorie pro hydrataci a doplňující otázky:\n${categoryAiPrompt}`
       : null,
     body.conditionLabelText
-      ? `${conditionFieldLabel} z formuláře: ${body.conditionLabelText}`
+      ? `${conditionFieldLabel} z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.condition, body.conditionLabelText)}`
       : body.conditionLabel
         ? `${conditionFieldLabel} z formuláře (kód): ${body.conditionLabel}`
         : null,
     body.eventDate
-      ? `Datum a čas konání z formuláře: ${formatEventDateForPrompt(body.eventDate)}`
+      ? `Datum a čas konání z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.eventDate, formatEventDateForPrompt(body.eventDate))}`
       : null,
     formatPriceFromForm(body),
-    `mainImageIndex (hlavní fotka pro cross-validaci): ${mainIndex}`,
+    `mainImageIndex (hlavní fotka — jen cross-validace textu s náhledem): ${mainIndex}`,
     imageCount > 0
-      ? `Přiloženo ${imageCount} fotografií v pořadí indexů 0–${imageCount - 1}.`
+      ? `Přiloženo ${imageCount} fotografií v pořadí indexů 0–${imageCount - 1}. Pro hydrataci a dotazník posuzuj všechny fotografie; fakta z jakékoli fotky zapracuj do textu.`
       : "Bez fotografií — posuzuj pouze text.",
-    `Název inzerátu:\n${body.title}`,
-    `Popis inzerátu:\n${body.description}`,
+    `Název inzerátu:\n${wrapListingUserField(LISTING_PROMPT_TAGS.title, body.title)}`,
+    `Popis inzerátu:\n${wrapListingUserField(LISTING_PROMPT_TAGS.description, body.description)}`,
   ];
 
   return sections.filter(Boolean).join("\n\n");
