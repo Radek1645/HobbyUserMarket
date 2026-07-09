@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.19  
+> **Verze dokumentu:** v3.20  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · [`004_recurring_events.sql`](../supabase/004_recurring_events.sql) · [`005_damaged_goods.sql`](../supabase/005_damaged_goods.sql) · [`006_real_estate.sql`](../supabase/006_real_estate.sql) · [`015_adaptive_nearby_posts.sql`](../supabase/015_adaptive_nearby_posts.sql) · [`016_search_posts.sql`](../supabase/016_search_posts.sql) · [`017_allow_contact_reveal.sql`](../supabase/017_allow_contact_reveal.sql) · [`018_reset_contact_opt_in.sql`](../supabase/018_reset_contact_opt_in.sql) · [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql) · [`020_strip_contacts_in_posts.sql`](../supabase/020_strip_contacts_in_posts.sql) · [`021_rate_limits_service_role_grants.sql`](../supabase/021_rate_limits_service_role_grants.sql) · [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql) · [`024_posts_original_text.sql`](../supabase/024_posts_original_text.sql) · [`025_contact_privacy_hardening.sql`](../supabase/025_contact_privacy_hardening.sql) · [`026_contact_reveal_rate_limit.sql`](../supabase/026_contact_reveal_rate_limit.sql) · [`027_moderation_publish_gate.sql`](../supabase/027_moderation_publish_gate.sql) · *v0.5 audit:* `020_audit_and_notes.sql` *(plánováno — jiný soubor než strip kontaktů)*  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-08
+> **Datum:** 2026-07-09
 
 ---
 
@@ -437,14 +437,15 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * Stejná logika 3× threshold platí pro komentáře (existující trigger).
 * **Automatizované On-Page SEO, Rich Snippets & AI crawlery:**
   * **Dynamická Metadata (Next.js Metadata API):** Formát: `[Název inzerátu] | [Lokalita] | Local Hobby Market`. Příklad: *„Prodám dětské kolo Velo | Brno-Líšeň | Local Hobby Market“*.
-  * **Strukturovaná data (Schema.org JSON-LD):** Server-renderovaný `<script type="application/ld+json">` na detailu inzerátu — helper `buildListingJsonLd()` v `src/lib/seo/listing-json-ld.ts`. Mapování podle `category_type`:
+  * **Strukturovaná data (Schema.org JSON-LD):** Server-renderovaný `<script type="application/ld+json">` na detailu inzerátu — helper `buildListingJsonLd()` v `src/lib/seo/listing-json-ld.ts`, komponenta `ListingJsonLd`. *(✅ implementováno 2026-07-09)* Mapování podle `category_type`:
     * `zbozi` → `Schema.org/Product` (název, popis, `offers` s cenou v CZK, `itemCondition`)
     * `sluzby` → `Schema.org/Service` (lokalita, popis) — preferováno před `LocalBusiness` u jednotlivců
     * `udalost` → `Schema.org/Event` (`startDate` z `event_date`, popis, lokalita)
     * `nemovitost` → `Schema.org/RealEstateListing` (cena, adresa)
     * `prace` → `Schema.org/JobPosting` (odměna, typ úvazku)
-  * **Volitelně *(v0.5.1+)*:** Soubor `public/llms.txt` s popisem veřejných URL pro LLM crawlery.
-  * **Sitemap:** Aktivní inzeráty (`status = 'active'`, `expires_at > now()`) v `sitemap.xml`.
+  * **Volitelně *(v0.5.1+)*:** Soubor `public/llms.txt` s popisem veřejných URL pro LLM crawlery. *(✅ implementováno 2026-07-09)*
+  * **Sitemap:** Aktivní inzeráty (`status = 'active'`, `expires_at > now()`) v `sitemap.xml`. *(✅ `src/app/sitemap.ts`, revalidate 5 min)*
+  * **Robots:** `src/app/robots.ts` — odkaz na sitemap, disallow privátních cest.
   * **SEO přívětivé URL (Slugs):** Tvar `/inzerat/[url-slug]`, např. `/inzerat/prace-v-kavarne-j59d`. Interní `id` záznamu se v URL **neuvádí**. `[url-slug]` = slugifikovaný název inzerátu + krátký unikátní suffix (ukládá se do `posts.slug`), generuje se z `title` při první publikaci a **nemění se** při editaci. Staré URL ve tvaru `/inzerat/[id]-[url-slug]` trvale přesměrují na `/inzerat/[url-slug]`.
 
 ### 5.4 Tvorba inzerátu & Synchronní AI Guardrail
@@ -650,6 +651,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.17 | 2026-07-06 | §5.2 **Souhlasy při registraci** — povinný VOP + volitelný marketingový souhlas (checkboxy, odkazy `/vop`, `/marketingovy-souhlas`); patička a §11.3 rozšířeny o marketingový souhlas |
 | v3.18 | 2026-07-07 | **Bezpečnostní hardening:** migrace **025–027** (PII kontaktů, rate limit reveal 20/den, approval token + DB gating publikace); §1.1 DoD rozšířeno o RPC kontakty a server-side moderaci; §4.1 `draft` jako povinný mezistav; §5.3 + §5.4 server-side publish gate, `moderation_approvals`, Gemini-safe prompt, keyword scan; jednotky v Parametrech (cm, ml) v AI promptu |
 | v3.19 | 2026-07-08 | **Site Notice implementováno:** `SiteNoticeBar` + `site-notice.ts`, env override, zapojení v `AppShell`; §11.4 stav *Implementováno*; Metodika §13 (návod nasazení) |
+| v3.20 | 2026-07-09 | **SEO infrastruktura:** JSON-LD (`listing-json-ld.ts`), Open Graph na detailu, dynamická `sitemap.xml`, `robots.txt`, `public/llms.txt`; datum **Vytvořeno** na HP kartě a v metadatech detailu |
 
 ---
 
@@ -1256,7 +1258,9 @@ God Mode nahrazuje „tlustého klienta“ pro denní moderaci. Supabase Dashboa
 
 Implementace v server komponentě detailu inzerátu — viz §5.3.
 
-**Helper:** `src/lib/seo/listing-json-ld.ts` — jeden zdroj pravdy pro JSON-LD.
+**Helper:** `src/lib/seo/listing-json-ld.ts` — jeden zdroj pravdy pro JSON-LD. *(✅ implementováno)*
+
+**Související soubory:** `src/app/sitemap.ts`, `src/app/robots.ts`, `public/llms.txt`, `src/lib/seo/get-sitemap-listings.ts`.
 
 **Validace DoD:** Google Rich Results Test + ruční kontrola v HTML zdroji.
 
@@ -1270,7 +1274,7 @@ Implementace v server komponentě detailu inzerátu — viz §5.3.
 | `nemovitost` | `RealEstateListing` |
 | `prace` | `JobPosting` |
 
-**Volitelně v0.5.1:** `public/llms.txt` — popis veřejných URL pro LLM crawlery.
+**Volitelně v0.5.1:** `public/llms.txt` — popis veřejných URL pro LLM crawlery. *(✅ implementováno)*
 
 ---
 
@@ -1279,7 +1283,7 @@ Implementace v server komponentě detailu inzerátu — viz §5.3.
 | Pořadí | Oblast | Odhad |
 |--------|--------|-------|
 | 0 | ~~**Globální informační lišta** (§11.4)~~ — ✅ implementováno | 1–1,5 h |
-| 1 | JSON-LD + sitemap | 2–3 h |
+| 1 | ~~JSON-LD + sitemap~~ — ✅ implementováno (2026-07-09) | 2–3 h |
 | 2 | Nahlášení UI + e-mail adminovi | 3–4 h |
 | 3 | God Mode (lišta + `/mod/karantena` + `/mod/inzeraty`) | 4–6 h |
 | 4 | `audit_events` + triggery | 4–5 h |

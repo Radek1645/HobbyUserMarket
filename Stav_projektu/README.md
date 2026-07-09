@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-09 | [2026-07-09.md](./2026-07-09.md) — SEO (JSON-LD, sitemap, robots, llms.txt), datum Vytvořeno na HP a detailu, PRD v3.20 |
 | 2026-07-08 | [2026-07-08.md](./2026-07-08.md) — Site Notice lišta (3 varianty, env override), PRD v3.19, Metodika §13 |
 | 2026-07-07 | [2026-07-07.md](./2026-07-07.md) — migrace 025–032, testy editace ✅, UX redirectů, AI hydratace, strip ceny vs. telefon |
 | 2026-07-03 | [2026-07-03.md](./2026-07-03.md) — AI moderace, strukturovaný popis, limit 2000 znaků |

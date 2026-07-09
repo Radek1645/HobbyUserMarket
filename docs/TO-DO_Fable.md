@@ -1,7 +1,7 @@
 # TO-DO Fable — Audit projektu HobbyUserMarket
 
 > **Autor:** Fable (AI audit)
-> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-08
+> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-09
 > **Rozsah auditu:** Server Actions, API routes, Supabase schéma + RLS, Edge Functions (moderace), `src/lib`, auth/onboarding flow, browse/UX komponenty.
 > **Zdroj požadavků:** [`PRD_v3.md`](./PRD_v3.md) (v3.18)
 > **Metodika značení:** severity **Critical / High / Medium / Low**; ID `C#` (security), `P#` (proces), `U#` (UX). Stav: ✅ hotovo · 🔄 rozpracováno · ⏳ čeká.
@@ -179,7 +179,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 |----|--------|---------|-------|
 | **P26** | chybí `/mod/*` vs PRD §5.6 | **God Mode admin UI chybí** (`/mod/karantena`, `/mod/inzeraty`, `/mod/uzivatele`). | Implementovat minimální mod frontu, nebo označit jako post-MVP. |
 | **P27** | kód | Chybí reporting UI (`/nahlasit`), byť DB trigger 3× auto-hide existuje. | Tlačítko „Nahlásit“ na detailu + odkaz v patičce dle PRD. |
-| **P28** | kód | Chybí sitemap/robots, monitoring, backup/runbook v repu. | Ops checklist; dokumentovat Supabase PITR/zálohy. |
+| **P28** | kód | ~~Chybí sitemap/robots~~ — ✅ `sitemap.ts`, `robots.ts`, `llms.txt` (2026-07-09). Zbývá: monitoring, backup/runbook v repu. | Ops checklist; dokumentovat Supabase PITR/zálohy. |
 | **P29** | `actions/listing-management.ts` | Chyby managementu **tiše redirectují** na `/moje-inzeraty` bez flash zprávy. | Vracet error stav / `?error=`. *(Částečně: `deleteListing` → `?deleteError=1` + banner v `moje-inzeraty`.)* |
 | **P30** | `supabase_schema.sql` | `audit_events`, `moderator_notes`, `inquiry_events` v PRD, **nenapojeno** v kódu. | Inkrementálně: nejdřív logovat poptávky a výsledky moderace. *(Částečně: migrace **028** `moderation_checks` + `log-moderation-check.ts` v EF.)* |
 
@@ -290,5 +290,6 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | 2026-07-06 | H1/P1/P14 dokončeno (migrace 027: approval token + DB gating, Edge vydává token, publish RPC, keyword scan); fáze 2 uzavřena; M4 přeformulováno |
 | 2026-07-07 | Manuální test create (hrnek + fotka) prošel; Gemini: `geminiSafe` prompt, `safetySettings`, obsahové zamítnutí `PROHIBITED_CONTENT`; jednotky cm/ml v promptu a `format-question-answers.ts`; migrace 025–027 nasazeny v Supabase |
 | 2026-07-08 | Manuální testy **editace inzerátu (1–8)** prošly; migrace **028–032** (log moderace, `profile_no`, soft-delete hardening, strip ceny vs. telefon); EF `moderate-listing` (auth JWT, JSON parser, logging, hydratace — tón, pevná cena, dotazy nemovitosti RK/provize); UX redirectů po editaci, cache `/moje-inzeraty` |
+| 2026-07-09 | **P28 částečně:** JSON-LD, `sitemap.xml`, `robots.txt`, `llms.txt` implementovány; datum Vytvořeno na HP a detailu |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

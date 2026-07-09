@@ -5,6 +5,7 @@ import {
   getSubcategoryLabel,
 } from "@/config/categories";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
+import { ListingJsonLd } from "@/components/seo/ListingJsonLd";
 import { ListingDescription } from "@/components/listing/ListingDescription";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
 import { BackLink } from "@/components/navigation/BackLink";
@@ -18,8 +19,9 @@ import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingImages } from "@/lib/posts/listing-images";
-import { getListingEditPath } from "@/lib/posts/listing-path";
+import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { formatCzkAmount } from "@/lib/posts/price-input";
+import { getSiteUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingImagePreview, PostRow } from "@/types/post";
 import type { Metadata } from "next";
@@ -66,8 +68,27 @@ export async function generateMetadata({
   const post = await getPostBySlug(slug);
   if (!post) return { title: "Inzerát | HobbyUserMarket" };
 
+  const location = formatPublicListingLocation(post.location_text);
+  const pageUrl = `${getSiteUrl()}${getListingPath(post.slug)}`;
+  const description =
+    post.description?.trim().slice(0, 160) ||
+    `${post.title} — ${location}`;
+
   return {
-    title: `${post.title} | ${formatPublicListingLocation(post.location_text)} | HobbyUserMarket`,
+    title: `${post.title} | ${location} | HobbyUserMarket`,
+    description,
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title: post.title,
+      description,
+      url: pageUrl,
+      siteName: "HobbyUserMarket",
+      locale: "cs_CZ",
+      type: "website",
+      ...(post.main_image_url
+        ? { images: [{ url: post.main_image_url, alt: post.title }] }
+        : {}),
+    },
   };
 }
 
@@ -107,6 +128,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
     ? new Date(post.expires_at).toLocaleDateString("cs-CZ")
     : null;
 
+  const createdLabel = new Date(post.created_at).toLocaleDateString("cs-CZ");
+
   const conditionText =
     post.category_type === "udalost" ||
     post.category_type === "nemovitost" ||
@@ -141,8 +164,22 @@ export default async function ListingDetailPage({ params }: PageProps) {
   } = await supabase.auth.getUser();
   const isOwner = user?.id === post.user_id;
 
+  const pageUrl = `${getSiteUrl()}${getListingPath(post.slug)}`;
+  const jsonLdImageUrls = galleryImages.map((image) => image.url);
+  if (jsonLdImageUrls.length === 0 && post.main_image_url) {
+    jsonLdImageUrls.push(post.main_image_url);
+  }
+
   return (
     <article className="px-4 py-8 sm:px-6">
+      <ListingJsonLd
+        input={{
+          post,
+          pageUrl,
+          imageUrls: jsonLdImageUrls,
+          subcategoryLabel: subcategory.label,
+        }}
+      />
       <BackLink
         href="/"
         label="Zpět"
@@ -210,11 +247,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
               ) : null}
             </>
           ) : null}
-          <div>
+          <div className="min-w-0 sm:col-span-2">
             <dt className="text-gray-500">Lokalita</dt>
-            <dd className="font-medium text-gray-900">
+            <dd className="break-words font-medium text-gray-900">
               {formatPublicListingLocation(post.location_text)}
             </dd>
+          </div>
+          <div>
+            <dt className="text-gray-500">Vytvořeno</dt>
+            <dd className="font-medium text-gray-900">{createdLabel}</dd>
           </div>
           <div>
             <dt className="text-gray-500">Typ ceny</dt>

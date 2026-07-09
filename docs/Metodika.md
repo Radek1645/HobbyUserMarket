@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md)  
-> **Datum:** 2026-07-08
+> **Datum:** 2026-07-09
 
 ---
 
@@ -44,7 +44,7 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 
 1. Návštěvník otevře úvodní stránku `/`.
 2. V hero sekci vidí hlavní sdělení: rychlá lokální inzerce s pomocí AI.
-3. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou, názvem, cenou a lokalitou.
+3. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou, názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo).
 
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
 
@@ -367,7 +367,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 ### 8.1 Co detail zobrazuje
 
 - Název, galerie (až 6 fotek), strukturovaný popis (úvod + Parametry)
-- Cena, stav, lokalita, typ kategorie
+- Cena, stav, lokalita, typ kategorie, datum **Vytvořeno** (`created_at`)
 - U událostí: datum konání
 - U nemovitostí: Prodej / Pronájem
 - Komentáře od přihlášených uživatelů
@@ -392,6 +392,12 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 2. Zobrazí se přezdívka autora (uložená v okamžiku odeslání).
 3. Limit: **10 komentářů za hodinu**.
 4. Komentář lze nahlásit — po **3 nahlášeních od 3 různých uživatelů** se skryje.
+
+### 8.5 SEO a strojová čitelnost
+
+- Detail inzerátu obsahuje **Schema.org JSON-LD** podle typu kategorie (`Product`, `Service`, `Event`, `RealEstateListing`, `JobPosting`).
+- V `<head>` detailu jsou dynamické **meta tagy** (title, description, Open Graph, canonical URL).
+- Veřejný index: **`/sitemap.xml`** (aktivní inzeráty + statické stránky), **`/robots.txt`**, **`/llms.txt`** (popis URL pro LLM crawlery).
 
 ---
 

@@ -1,7 +1,7 @@
 # Modul: Práce a brigády — rychlý přehled (v0.4)
 
 > **Kanonická specifikace:** [`PRD_v3.md` §11](./PRD_v3.md#11-modul-práce-a-brigády-v04)  
-> **Stav:** Implementováno (JSON-LD `JobPosting` — viz §12.6, zatím ne)  
+> **Stav:** Implementováno (JSON-LD `JobPosting` — viz §11.6 PRD, ✅ 2026-07-09)  
 > **Migrace DB:** [`007_jobs.sql`](../supabase/007_jobs.sql)
 
 Tento soubor je **doplňkový cheat sheet** — při rozporu platí PRD.

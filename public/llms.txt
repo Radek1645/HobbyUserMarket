@@ -1,0 +1,33 @@
+# HobbyUserMarket
+
+> Lokální tržiště pro hobby uživatele v Česku — inzerce zboží, služeb, událostí, nemovitostí a práce v okolí.
+
+## Veřejné stránky
+
+- Homepage (přehled inzerátů): /
+- Detail inzerátu: /inzerat/{slug}
+- Obchodní podmínky: /vop
+- Podmínky inzerce: /podminky-inzerce
+- Marketingový souhlas: /marketingovy-souhlas
+
+## Strukturovaná data
+
+Detail každého aktivního inzerátu obsahuje Schema.org JSON-LD (`Product`, `Service`, `Event`, `RealEstateListing` nebo `JobPosting` podle kategorie).
+
+## Vyžaduje přihlášení
+
+Tyto URL nejsou určeny pro veřejné indexování:
+
+- /login
+- /onboarding
+- /moje-inzeraty
+- /inzerat/novy
+- /inzerat/{slug}/upravit
+
+## API
+
+- /api/inquiry — odeslání poptávky na inzerát (POST, veřejné)
+
+## Sitemap
+
+- /sitemap.xml — pouze aktivní, neexpirované inzeráty
