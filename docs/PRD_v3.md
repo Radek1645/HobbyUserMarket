@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.21  
+> **Verze dokumentu:** v3.22  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`027_moderation_publish_gate.sql`](../supabase/027_moderation_publish_gate.sql) · [`033_inquiry_events.sql`](../supabase/033_inquiry_events.sql) · [`034_inquiry_events_inquiry_no.sql`](../supabase/034_inquiry_events_inquiry_no.sql) · [`035_archive_expired_posts.sql`](../supabase/035_archive_expired_posts.sql) · [`036_post_status_blocked.sql`](../supabase/036_post_status_blocked.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`036_post_status_blocked.sql`](../supabase/036_post_status_blocked.sql) · [`037_delete_user_account.sql`](../supabase/037_delete_user_account.sql) · [`038_listing_quota.sql`](../supabase/038_listing_quota.sql) · [`039_listing_quota_lifetime.sql`](../supabase/039_listing_quota_lifetime.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-10
+> **Datum:** 2026-07-11
 
 ---
 
@@ -333,7 +333,7 @@ rate_limits (volitelné, pro server-side rate limiting)
 | Kdo nastaví | Majitel | Systém (3× report) nebo moderátor |
 | Obnovení | Tlačítko „Zveřejnit“ → `active` | Úprava obsahu/fotek → `draft` → AI schválení → `publish_approved_post` |
 | UI majitele | Badge „Pozastaveno“ | Badge „Zablokováno“ + vysvětlení (`status_reason_code`) |
-| Právní základ | — | [Pravidla inzerce](/podminky-inzerce) §4, [VOP](/vop) §4.2 |
+| Právní základ | — | [Pravidla inzerce](/podminky-inzerce) §4, [VOP](/vop) §4.5 |
 
 Sloupec `status_reason_code` (`reports_threshold` | `moderation`) určuje text v UI (`ListingBlockedNotice`). Při editaci obsahu nebo fotek trigger nastaví `draft` a `status_reason_code` vynuluje.
 
@@ -586,9 +586,13 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
 | AI Edge Function (Supabase, voláno přímo z klienta) | Timeout 30 s | „Zkuste to prosím znovu za chvíli.“ (§1.6); server-side bezpečnostní pre-check v Edge Function proběhne vždy |
 | Next.js API Route | **Nepoužívat pro AI** | Proxy přes Vercel = riziko 504 (Hobby legacy limit 10 s) |
 
-* **Architektonická příprava na budoucí monetizaci (bez implementace v v0.1):**
+* **Limity publikací inzerátů (lifetime kredity, migrace `038`/`039`):**
+  * Nový účet dostane balíček `free` — **20** lifetime publikací (každá první publikace spotřebuje 1 kredit, smazání/expirace kredit nevrací).
+  * Tabulky `listing_packages`, `user_listing_entitlements`; sloupec `posts.listing_quota_consumed`.
+  * UI: `/profil/nastaveni` (počítadlo), `/balicky-inzerce` (právní info); admin přiděluje balíčky v `/mod/uzivatele`.
+  * Platby (Stripe) zatím **ne** — `is_purchasable = false`; ruční grant přes God Mode nebo SQL.
+* **Architektonická příprava na budoucí monetizaci:**
   * `posts.expires_at`, `posts.listing_duration_days` (v0.1.1), `posts.renew_count`, `posts.payment_status` (výchozí `free`).
-  * `profiles` připraveno pro budoucí limit aktivních inzerátů na neplatícího uživatele.
   * Integrace platební brány (např. Stripe) až po validaci MVP.
 * **Cookie consent (EU):**
   * Consent banner před aktivací GA4 (GTM consent mode).
@@ -667,6 +671,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.19 | 2026-07-08 | **Site Notice implementováno:** `SiteNoticeBar` + `site-notice.ts`, env override, zapojení v `AppShell`; §11.4 stav *Implementováno*; Metodika §13 (návod nasazení) |
 | v3.20 | 2026-07-09 | **SEO infrastruktura:** JSON-LD (`listing-json-ld.ts`), Open Graph na detailu, dynamická `sitemap.xml`, `robots.txt`, `public/llms.txt`; datum **Vytvořeno** na HP kartě a v metadatech detailu |
 | v3.21 | 2026-07-10 | **Stav `blocked`:** migrace `036` — oddělení pauzy (`hidden`) od moderátorského zablokování; `status_reason_code`; trigger `check_report_threshold` → `blocked`; UI `ListingBlockedNotice`; právní docs §4 |
+| v3.22 | 2026-07-11 | **Smazání účtu (P23):** migrace `037`, RPC `prepare_user_account_deletion`, `/profil/nastaveni`, `/mod/uzivatele`; **checkbox věku 15+ (P31)**; **limity inzerátů:** migrace `038`/`039`, lifetime kredity, `/balicky-inzerce`; God Mode `/mod/uzivatele` částečně hotové |
 
 ---
 

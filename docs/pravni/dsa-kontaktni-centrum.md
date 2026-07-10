@@ -1,7 +1,7 @@
 # DSA kontaktní centrum (hlášení obsahu)
 
 **Platforma:** HobbyUserMarket  
-**Verze:** Draft 1.0 · **Datum účinnosti:** [doplnit]
+**Verze:** Draft 1.1 · **Datum účinnosti:** [doplnit]
 
 ---
 
@@ -42,7 +42,7 @@ Bez uvedení URL a důvodu nemusíme být schopni hlášení efektivně vyřídi
 
 1. Po obdržení hlášení obsah **neprodleně prověříme** (přiměřená doba dle závažnosti a rozsahu).
 2. Pokud inzerát **zablokujeme** (skryjeme z veřejného zobrazení) nebo **odstraníme**, zašleme inzerentovi **vysvětlení (Statement of Reasons)** s konkrétním odůvodněním, proč k tomuto kroku došlo, včetně informace o možnosti odvolání dle [VOP](/vop).
-3. Při automatickém zablokování po opakovaných hlášeních (tři různé uživatele) informujeme inzerenta stejným způsobem.
+3. Při automatickém zablokování po opakovaných hlášeních (tři různé uživatele) informujeme inzerenta stejným způsobem. Provozovatel může automatické zablokování **zrušit i bez úpravy obsahu**, pokud vyhodnotí hlášení jako zjevně nedůvodná nebo účelová.
 4. O výsledku vyřízení můžeme informovat oznamovatele, pokud nám poskytl kontakt.
 
 ---

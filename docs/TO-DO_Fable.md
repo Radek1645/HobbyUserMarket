@@ -1,7 +1,7 @@
 # TO-DO Fable — Audit projektu HobbyUserMarket
 
 > **Autor:** Fable (AI audit)
-> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-09
+> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-11
 > **Rozsah auditu:** Server Actions, API routes, Supabase schéma + RLS, Edge Functions (moderace), `src/lib`, auth/onboarding flow, browse/UX komponenty.
 > **Zdroj požadavků:** [`PRD_v3.md`](./PRD_v3.md) (v3.18)
 > **Metodika značení:** severity **Critical / High / Medium / Low**; ID `C#` (security), `P#` (proces), `U#` (UX). Stav: ✅ hotovo · 🔄 rozpracováno · ⏳ čeká.
@@ -109,7 +109,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **L3** | schéma (846–853) | Bucket `post-images` je public + široký SELECT. | Pro fotky inzerátů OK; signed URL, až budou neveřejné obrázky. |
 | **L4** | `lib/posts/listing-images.ts` (107–115) | Upload probíhá před insertem `post_images` → orphan soubory při chybě. | Upload až po insertu řádku, nebo periodický cleanup. |
 | **L5** | `lib/mapy/env.ts`, `client.ts` | `NEXT_PUBLIC_MAPY_CZ_API_KEY` v prohlížeči (očekávané). | Omezit klíč HTTP-referrerem v dashboardu Mapy.cz. |
-| **L6** | — | `/mod/*` routes neexistují; moderátorská práva jen přes přímé Supabase API. | Při stavbě mod UI vynutit `role IN ('moderator','admin')` v middleware + Server Actions (PRD §11). |
+| **L6** | `src/app/mod/` | Částečně: **`/mod/uzivatele`** (admin — uživatelé, smazání účtu, balíčky). Chybí `/mod/karantena`, `/mod/inzeraty`, moderátorská lišta na detailu. | Dokončit zbývající God Mode stránky; vynutit `role IN ('moderator','admin')` v layoutu a Server Actions. Bootstrap rolí: [`supabase-prikazy.md`](./supabase-prikazy.md#nastavení-admina-a-moderátora). |
 | **L7** | `src/middleware.ts` | Middleware negatuje auth-only routes, spoléhá na per-page `getCurrentUser()`. | Volitelný matcher pro `/moje-inzeraty`, `/inzerat/novy`, `/inzerat/*/upravit`. |
 
 ### ✅ Co je udělané dobře (kalibrace severity)
@@ -117,6 +117,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 - Service role klíč jen server-side (`lib/supabase/admin.ts`), žádné hardcoded klíče v repu.
 - IDOR na app vrstvě ošetřen (`updateListing` kontroluje `user_id`, `getOwnedPost`).
 - DB triggery `prevent_role_escalation` a `prevent_email_change` (auth.users).
+- Bootstrap admina/moderátora zdokumentován (`supabase-prikazy.md`, Metodika §11.1); God Mode `/mod/uzivatele` nasazeno.
 - Ochrana PII kontaktů: migrace 025, RPC `reveal_listing_contact`, column-level REVOKE na `contact_phone`.
 - Silná validace poptávky (délky, typ/velikost příloh, `sanitizeFilename`, blok self-inquiry).
 - Žádný `dangerouslySetInnerHTML`; `ListingDescription` renderuje plain text (bez XSS).
@@ -168,8 +169,9 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 |----|--------|---------|-------|
 | **P20** | `auth.ts` (`signUpWithEmail`) vs `RegistrationConsentFields.tsx` | **`consent_marketing` se nikdy nečte ani neukládá** — chybí sloupec v `profiles`. | Přidat `marketing_consent_at` (+ verze), ukládat při signupu, respektovat odvolání. |
 | **P21** | `auth.ts` (`signInWithGoogle`) | Google OAuth **nesbírá souhlas s VOP** (na rozdíl od e-mailové registrace). | Consent obrazovka po OAuth před prvním použitím; blokovat do přijetí VOP. |
+| **P31** | ✅ `RegistrationConsentFields.tsx`, `registration-consents.ts`, `auth.ts`, `legal.ts` | ~~Chybí checkbox věku 15+~~ | **Hotovo 2026-07-11.** Povinný checkbox `consent_age`; validace e-mail signup + Google onboarding (`requiresRegistrationConsentsOnboarding`). `age_consent_at` v DB zatím ne. |
 | **P22** | `marketingovy-souhlas/page.tsx` | Stránka je stub, přitom registrace už marketingový checkbox nabízí. | Dokončit právní text + mechanismus odvolání před sběrem souhlasu. |
-| **P23** | celý kód | **Chybí flow smazání účtu** (PRD/Metodika slibují GDPR delete). | Stránka nastavení + Server Action: anonymizace profilu, soft-delete inzerátů, Auth Admin delete, úklid Storage. |
+| **P23** | ✅ `account.ts`, `delete-user.ts`, migrace `037` | ~~Chybí flow smazání účtu~~ | **Hotovo 2026-07-11.** Self-delete `/profil/nastaveni` (confirm e-mail + checkbox); admin `/mod/uzivatele` (důvod); RPC + Auth Admin delete; e-mail potvrzení. |
 | **P24** | `auth/callback/route.ts` | Chyby OAuth/e-mail redirect s **raw anglickou** hláškou v `?error=`. | Mapovat na CZ přes `mapAuthError`. |
 | **P25** | produkt vs kód | PRD zmiňuje OTP; implementace je heslo + verifikační link, ne OTP login. | Sladit dokumentaci nebo doplnit magic-link/OTP. |
 
@@ -177,7 +179,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **P26** | chybí `/mod/*` vs PRD §5.6 | **God Mode admin UI chybí** (`/mod/karantena`, `/mod/inzeraty`, `/mod/uzivatele`). | Implementovat minimální mod frontu, nebo označit jako post-MVP. |
+| **P26** | `src/app/mod/` | **God Mode UI částečně** — hotové: `/mod/uzivatele` (admin). Chybí: `/mod/karantena`, `/mod/inzeraty`, lišta na detailu cizího inzerátu. | Dokončit minimální mod frontu; bootstrap admina zdokumentován v `supabase-prikazy.md` + Metodika §11.1. |
 | **P27** | kód | Chybí reporting UI (`/nahlasit`), byť DB trigger 3× auto-hide existuje. | Tlačítko „Nahlásit“ na detailu + odkaz v patičce dle PRD. |
 | **P28** | kód | ~~Chybí sitemap/robots~~ — ✅ `sitemap.ts`, `robots.ts`, `llms.txt` (2026-07-09). Zbývá: monitoring, backup/runbook v repu. | Ops checklist; dokumentovat Supabase PITR/zálohy. |
 | **P29** | `actions/listing-management.ts` | Chyby managementu **tiše redirectují** na `/moje-inzeraty` bez flash zprávy. | Vracet error stav / `?error=`. *(Částečně: `deleteListing` → `?deleteError=1` + banner v `moje-inzeraty`.)* |
@@ -217,6 +219,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **U13** | `ModerationRejectedDialog.tsx` | „Rozumím, upravím inzerát“ je fajn, ale **bez navádění**, které pole opravit. | Akční copy + focus na první nevalidní pole. |
 | **U14** | `ModerationPreviewDialog.tsx` | „Publikovat bez vylepšení“ může mást (uživatel myslí, že musí použít AI text). | Vysvětlit v úvodu, že obě cesty jsou v pořádku. |
 | **U15** | `CreateListingForm.tsx` | Při zamítnutí chybí „zkusit znovu bez AI“ pro rate-limit/výpadek (blokováno P8). | Nouzová cesta po N selháních. |
+| **U25** | `ModerationPreviewDialog.tsx`, `ModerationApprovedDialog.tsx`, `CreateListingForm.tsx` | **Chybí AI disclaimer** — nikde není upozornění typu „AI může udělat chyby, zkontrolujte si text“ (viz Claude). PRD §5.1 footer stub + `podminky-inzerce.md` §3 vyžaduje označení „Vytvořeno s pomocí AI“ (AI Act). | Do `MODERATION_PREVIEW_UI` (intro pod dialogem hydratace) + volitelně overlay „Probíhá AI kontrola“ a patička. CZ copy dle PRD §1.6, např. *„AI může udělat chybu — před publikací si text zkontrolujte.“* U publikovaného inzerátu s AI textem badge „Vytvořeno s pomocí AI“ (flag v DB?). |
 
 ### Vyhledávání / procházení / poloha
 
@@ -278,7 +281,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 - **DoD §1.1/3 (ochrana kontaktů):** ✅ **splněno** — C1/C2 (migrace 025) + rate limit reveal PRD §5.3 (M1, migrace 026).
 - **DoD §1.1/5 (bezpečnostní filtr projde vždy):** ✅ **splněno** — H1/P1/P14 (migrace 027): publikace jen přes approval token z Edge Function, DB gating stavů. Reziduum: obsah plných fotek není hashově vázán na moderovaný náhled (viz H1).
-- **DoD §1.5 (v0.5 audit/God Mode):** neimplementováno (P26, P27, P30) — konzistentní s tím, že v0.5 je „plánováno“.
+- **DoD §1.5 (v0.5 audit/God Mode):** částečně — `/mod/uzivatele` hotové; chybí karanténa, přehled inzerátů, audit UI (P26, P27, P30).
 
 ### Changelog revizí
 
@@ -291,5 +294,6 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | 2026-07-07 | Manuální test create (hrnek + fotka) prošel; Gemini: `geminiSafe` prompt, `safetySettings`, obsahové zamítnutí `PROHIBITED_CONTENT`; jednotky cm/ml v promptu a `format-question-answers.ts`; migrace 025–027 nasazeny v Supabase |
 | 2026-07-08 | Manuální testy **editace inzerátu (1–8)** prošly; migrace **028–032** (log moderace, `profile_no`, soft-delete hardening, strip ceny vs. telefon); EF `moderate-listing` (auth JWT, JSON parser, logging, hydratace — tón, pevná cena, dotazy nemovitosti RK/provize); UX redirectů po editaci, cache `/moje-inzeraty` |
 | 2026-07-09 | **P28 částečně:** JSON-LD, `sitemap.xml`, `robots.txt`, `llms.txt` implementovány; datum Vytvořeno na HP a detailu |
+| 2026-07-11 | **God Mode částečně:** `/mod/uzivatele` (admin); bootstrap rolí v `supabase-prikazy.md` + Metodika §11.1; **P23 ✅** smazání účtu; **P31 ✅** checkbox věku 15+; migrace **037–039** (delete + listing quota) |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

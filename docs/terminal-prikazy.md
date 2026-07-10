@@ -109,7 +109,8 @@ npm run build
 | `rm -rf .next` | Smaže cache Next.js — pomůže při podivných chybách buildu. | `rm -rf .next` |
 | `rm -rf node_modules && npm install` | Čistá reinstalace závislostí. | `rm -rf node_modules && npm install` |
 | `cp .env.example .env.local` | Vytvoří lokální env soubor ze šablony (pokud existuje). | `cp .env.example .env.local` |
+| Viz [`supabase-prikazy.md`](./supabase-prikazy.md) | Migrace SQL, deploy Edge Functions, secrets. | `npm run sync:moderation` |
 | `cursor .` | Otevře aktuální složku v Cursoru. | `cursor .` |
 | `code .` | Otevře aktuální složku ve VS Code. | `code .` |
 
-Před prvním `npm run dev` zkontroluj, že máš vyplněný `.env.local` se Supabase klíči — viz `README.md`.
+Před prvním `npm run dev` zkontroluj, že máš vyplněný `.env.local` se Supabase klíči — viz `README.md`. Pro migrace a deploy moderace viz [`supabase-prikazy.md`](./supabase-prikazy.md).

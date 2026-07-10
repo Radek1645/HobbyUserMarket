@@ -12,6 +12,8 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-11 | [2026-07-11.md](./2026-07-11.md) — P23 smazání účtu, P31 věk 15+, quota 038/039, `/mod/uzivatele`, PRD v3.22 |
+| 2026-07-11 | [2026-07-11-plan.md](./2026-07-11-plan.md) — plán session (archiv) |
 | 2026-07-10 | [2026-07-10.md](./2026-07-10.md) — stav `blocked` (036), právní drafty, inquiry_events, archive cron, PRD v3.21 |
 | 2026-07-09 | [2026-07-09.md](./2026-07-09.md) — SEO (JSON-LD, sitemap, robots, llms.txt), datum Vytvořeno na HP a detailu, PRD v3.20 |
 | 2026-07-08 | [2026-07-08.md](./2026-07-08.md) — Site Notice lišta (3 varianty, env override), PRD v3.19, Metodika §13 |

@@ -22,6 +22,8 @@ git push origin main
 
 Před `git add .` si občas ověř `git status` — ať omylem necommitneš `.env` nebo jiný citlivý soubor. Commit zprávu piš stručně a výstižně (typ + co se změnilo).
 
+**Související:** [`terminal-prikazy.md`](./terminal-prikazy.md) · [`supabase-prikazy.md`](./supabase-prikazy.md)
+
 ---
 
 ## Reference příkazů
