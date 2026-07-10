@@ -5,8 +5,20 @@ import { AppLogo } from "@/components/brand/AppLogo";
 import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { HeaderLocationPanel } from "@/components/location/HeaderLocationPanel";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import {
+  headerCreateListingButtonClass,
+  iconSmClass,
+} from "@/config/ui-primitives";
 import type { AppUser } from "@/types/auth";
-import { LogOut, Menu, Plus, X, LayoutList } from "lucide-react";
+import {
+  LogOut,
+  Menu,
+  Sparkles,
+  X,
+  LayoutList,
+  Settings,
+  Shield,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -14,9 +26,6 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 type HeaderProps = {
   user: AppUser | null;
 };
-
-const CREATE_LISTING_CLASS =
-  "flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 p-0 text-sm font-semibold text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-600/15 transition hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:h-11 sm:w-auto sm:px-4 sm:text-[0.9375rem] md:px-6";
 
 export function Header({ user }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -83,9 +92,12 @@ export function Header({ user }: HeaderProps) {
               href="/inzerat/novy"
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
               aria-label="Vytvořit inzerát přes AI"
-              className={CREATE_LISTING_CLASS}
+              className={headerCreateListingButtonClass}
             >
-              <Plus className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+              <Sparkles
+                className={`${iconSmClass} shrink-0 min-[480px]:mr-2`}
+                strokeWidth={2.5}
+              />
               <span className="hidden min-[480px]:inline">
                 Vytvořit inzerát přes AI
               </span>
@@ -95,9 +107,12 @@ export function Header({ user }: HeaderProps) {
               href="/login?next=/inzerat/novy&message=create_listing&tab=register"
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
               aria-label="Vytvořit inzerát přes AI"
-              className={CREATE_LISTING_CLASS}
+              className={headerCreateListingButtonClass}
             >
-              <Plus className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+              <Sparkles
+                className={`${iconSmClass} shrink-0 min-[480px]:mr-2`}
+                strokeWidth={2.5}
+              />
               <span className="hidden min-[480px]:inline">
                 Vytvořit inzerát přes AI
               </span>
@@ -181,6 +196,27 @@ export function Header({ user }: HeaderProps) {
                     <LayoutList className="h-4 w-4" aria-hidden="true" />
                     Správa inzerátů
                   </Link>
+
+                  <Link
+                    href="/profil/nastaveni"
+                    {...gtmCtaProps(GTM_CTA.HEADER_ACCOUNT_SETTINGS)}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    <Settings className="h-4 w-4" aria-hidden="true" />
+                    Nastavení účtu
+                  </Link>
+
+                  {user.role === "admin" ? (
+                    <Link
+                      href="/mod/uzivatele"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
+                    >
+                      <Shield className="h-4 w-4" aria-hidden="true" />
+                      God Mode · Uživatelé
+                    </Link>
+                  ) : null}
 
                   <form action={signOut}>
                     <button

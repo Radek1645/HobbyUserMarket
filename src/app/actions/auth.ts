@@ -4,11 +4,16 @@ import {
   generateCompanyNickname,
   isPlaceholderNickname,
   normalizeNickname,
+  resolveCompanyInternalNickname,
   validateNickname,
 } from "@/lib/auth/nickname";
 import { normalizeIco, validateIco } from "@/lib/company/ico";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/supabase/env";
+import {
+  userRequiresRegistrationConsentsOnboarding,
+  validateRegistrationConsents,
+} from "@/lib/auth/registration-consents";
 import { redirect } from "next/navigation";
 
 export type AuthFormState = {
@@ -149,11 +154,9 @@ export async function signUpWithEmail(
     return { error: "Heslo musí mít alespoň 8 znaků." };
   }
 
-  if (formData.get("consent_vop") !== "1") {
-    return {
-      error:
-        "Pro založení účtu je nutný souhlas s všeobecnými obchodními podmínkami.",
-    };
+  const consentError = validateRegistrationConsents(formData);
+  if (consentError) {
+    return consentError;
   }
 
   const supabase = await createClient();
@@ -262,14 +265,11 @@ export async function completeOnboarding(
     if (icoError) {
       return { error: icoError };
     }
-  }
-
-  const validationError = validateNickname(rawNickname, {
-    optional: isCompany,
-  });
-
-  if (validationError) {
-    return { error: validationError };
+  } else {
+    const validationError = validateNickname(rawNickname);
+    if (validationError) {
+      return { error: validationError };
+    }
   }
 
   const supabase = await createClient();
@@ -281,11 +281,20 @@ export async function completeOnboarding(
     redirect("/login");
   }
 
-  const normalizedNickname = normalizeNickname(rawNickname);
+  if (userRequiresRegistrationConsentsOnboarding(user)) {
+    const consentError = validateRegistrationConsents(formData);
+    if (consentError) {
+      return consentError;
+    }
+  }
+
+  const internalNickname = isCompany
+    ? resolveCompanyInternalNickname(rawNickname)
+    : normalizeNickname(rawNickname);
   const nickname =
-    isCompany && !normalizedNickname
+    isCompany && !internalNickname
       ? generateCompanyNickname(companyName, user.id)
-      : normalizedNickname;
+      : (internalNickname ?? normalizeNickname(rawNickname));
 
   const { error } = await supabase
     .from("profiles")

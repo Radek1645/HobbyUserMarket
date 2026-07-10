@@ -22,6 +22,7 @@ function resolveInitialTab(tab?: string): "login" | "register" | "forgot" {
 
 const messageMap: Record<string, string> = {
   password_updated: "Heslo bylo nastavené. Můžete se přihlásit.",
+  account_deleted: "Účet byl smazán. Můžete se kdykoli znovu registrovat.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {

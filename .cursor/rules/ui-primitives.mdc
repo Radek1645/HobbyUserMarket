@@ -1,0 +1,17 @@
+---
+description: UI primitivy — konstanty z ui-primitives.ts, bez glow efektů
+globs: src/**/*.tsx
+alwaysApply: false
+---
+
+# UI primitivy
+
+Při stylování opakujících se prvků (CTA, modály, pilulky) importuj konstanty z `src/config/ui-primitives.ts`. Dokumentace: `docs/ui-prvky.md`.
+
+- Zelená CTA: `emeraldPrimaryButtonClass`, `headerCreateListingButtonClass` (flat `bg-emerald-600`, Sparkles), `emeraldPrimaryButtonCompactClass`
+- Modály: `modalOverlayClass`, `modalPanelClass`, tlačítka `modalCancel*` / `modalDangerButtonClass`
+- Homepage kategorie: `homeCategoryTabActiveClass`, `homeCategoryTabInactiveClass`, `iconSmClass`
+
+**Zakázáno** na zelených tlačítkách: `shadow-emerald-600/*`, `ring-emerald-*` (kromě `focus-visible:ring-emerald-500`), barevné `hover:shadow-lg`.
+
+Novou konstantu přidej do `ui-primitives.ts` a zapiš do `docs/ui-prvky.md`.

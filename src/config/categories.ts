@@ -4,6 +4,10 @@ export type SubcategoryConfig = {
   slug: string;
   label: string;
   aiPrompt?: string;
+  /** Nápověda v poli „Název inzerátu“ */
+  titlePlaceholder?: string;
+  /** Nápověda v poli „Popis“ */
+  descriptionPlaceholder?: string;
 };
 
 export type CategoryConfig = {
@@ -15,6 +19,13 @@ export type CategoryConfig = {
   conditionFieldLabel?: string;
   priceTypes: { value: PriceType; label: string }[];
   aiPrompt?: string;
+  /** Výchozí nápověda názvu, pokud podkategorie nemá vlastní */
+  titlePlaceholder?: string;
+  /** Výchozí nápověda popisu, pokud podkategorie nemá vlastní */
+  descriptionPlaceholder?: string;
+  /** U pravidelných událostí (condition long_term) */
+  titlePlaceholderRecurring?: string;
+  descriptionPlaceholderRecurring?: string;
 };
 
 const ZBOZI_CONDITIONS: CategoryConfig["conditionLabels"] = [
@@ -72,35 +83,74 @@ const PRACE_PRICE_TYPES: CategoryConfig["priceTypes"] = [
   { value: "offer", label: "Nabídněte odměnu" },
 ];
 
+/** AI moderace — soukromá osoba vs. Podnikatel (VOP §7). */
+const ADVERTISER_TYPE_AI_RULES =
+  "Povinná pravidla — typ inzerenta (priorita před ostatními otázkami):\n" +
+  "Zájemce musí vědět, zda inzerent jedná jako soukromá osoba, nebo v rámci podnikání (Podnikatel — firma, OSVČ apod.).\n" +
+  "Logika: buď je jednoznačné v textu nebo na fotkách → zapiš do Parametrů (• Typ inzerenta: …) a neptej se; nebo chybí / je nejasné → NEEDS_QUESTIONS (nikdy nehádej).\n" +
+  "Ptej se jen pokud z textu/fotek nevyplývá typ (paramLabel: „Typ inzerenta“; label např. „Inzerujete jako soukromá osoba, nebo v rámci podnikání (firma/OSVČ)?“).\n" +
+  "Jednoznačné formulace (otázku neopakuj): „soukromě“, „osobně“, „jako majitel“, název firmy, „s.r.o.“, „v.o.s.“, „OSVČ“, „IČO“, „realitní kancelář“, „RK“.\n" +
+  "Je-li Podnikatel, v Parametrech uveď firmu a IČO, pokud jsou v textu nebo na fotkách; chybí-li IČO u zjevného Podnikatele, ptej se (paramLabel: „IČO“; label např. „Jaké je vaše IČO?“).";
+
 export const CATEGORIES: CategoryConfig[] = [
   {
     type: "zbozi",
     label: "Zboží",
     subcategories: [
-      { slug: "potraviny-domaci", label: "Potraviny a domácí výrobky" },
-      { slug: "kola-sport", label: "Kola a sport" },
-      { slug: "nabytek-domacnost", label: "Nábytek a domácnost" },
+      {
+        slug: "potraviny-domaci",
+        label: "Potraviny a domácí výrobky",
+        titlePlaceholder: "např. Prodám med z vlastní včelny",
+        descriptionPlaceholder:
+          "Druh výrobku, množství, způsob předání, alergeny…",
+      },
+      {
+        slug: "kola-sport",
+        label: "Kola a sport",
+        titlePlaceholder: "např. Dětské kolo Velo 20″",
+        descriptionPlaceholder: "Značka, velikost, stav, příslušenství…",
+      },
+      {
+        slug: "nabytek-domacnost",
+        label: "Nábytek a domácnost",
+        titlePlaceholder: "např. Jídelní stůl z masivu",
+        descriptionPlaceholder: "Rozměry, materiál, stav, možnost odvozu…",
+      },
       {
         slug: "elektronika",
         label: "Elektronika",
+        titlePlaceholder: "např. iPhone 13, 128 GB",
+        descriptionPlaceholder: "Model, stav, výbava, baterie, příslušenství…",
         aiPrompt:
           "Úvod + Parametry (model, stav, výbava, baterie u mobilů…). Dotazník jen pokud chybí klíčové parametry.",
       },
       {
         slug: "auta-moto",
         label: "Auta a moto",
+        titlePlaceholder: "např. Škoda Octavia 2.0 TDI",
+        descriptionPlaceholder: "Rok, nájezd, motorizace, STK, výbava, stav…",
         aiPrompt:
           "Úvod + Parametry (rok, nájezd, motorizace, STK, výbava, stav). Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu. Dotazník jen na chybějící údaje.",
       },
       {
         slug: "moda-obleceni",
         label: "Móda a oblečení",
-        aiPrompt:          "Uživatel prodává módu. Pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj maximálně 2 stručné, lidské otázky (např. „Jaká je to velikost?“). Na volitelné parametry (materiál, sezóna) se ptej, jen pokud text neobsahuje téměř nic.",
+        titlePlaceholder: "např. Zimní bunda North Face, vel. M",
+        descriptionPlaceholder: "Značka, velikost, stav, materiál, sezóna…",
+        aiPrompt:
+          "Uživatel prodává módu. Pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj maximálně 2 stručné, lidské otázky (např. „Jaká je to velikost?“). Na volitelné parametry (materiál, sezóna) se ptej, jen pokud text neobsahuje téměř nic.",
       },
-      { slug: "ostatni", label: "Ostatní" },
+      {
+        slug: "ostatni",
+        label: "Ostatní",
+        titlePlaceholder: "např. Nabízím zahradní sekačku",
+        descriptionPlaceholder: "Co nabízíte, stav, rozměry, způsob předání…",
+      },
     ],
     conditionLabels: ZBOZI_CONDITIONS,
     priceTypes: COMMON_PRICE_TYPES,
+    titlePlaceholder: "např. Nabízím použité zboží",
+    descriptionPlaceholder: "Popis zboží, stav, rozměry, způsob předání…",
     aiPrompt:
       "Analyzuj nabízené zboží. cleanedDescription: úvod (co prodáváš + cena v textu) a sekce Parametry s odrážkami (nájezd, rozměry, materiál, výbava, stav…). Ve formuláři dostaneš stav — u „Poškozené / na díly“ bez rozsahu vady se ptej. Doplňující otázky jen na chybějící zásadní parametry. Na cenu se neptej, pokud je ve formuláři.",
   },
@@ -108,31 +158,94 @@ export const CATEGORIES: CategoryConfig[] = [
     type: "sluzby",
     label: "Služby",
     subcategories: [
-      { slug: "remeslo-opravy", label: "Řemeslo a opravy" },
-      { slug: "stehovani-doprava", label: "Stěhování a doprava" },
-      { slug: "pece-zahrada", label: "Péče a zahrada" },
-      { slug: "ostatni", label: "Ostatní" },
+      {
+        slug: "remeslo-opravy",
+        label: "Řemeslo a opravy",
+        titlePlaceholder: "např. Opravy truhlářských prací",
+        descriptionPlaceholder: "Rozsah prací, materiál v ceně, lokalita/dojezd…",
+      },
+      {
+        slug: "stehovani-doprava",
+        label: "Stěhování a doprava",
+        titlePlaceholder: "např. Stěhování bytu v Brně",
+        descriptionPlaceholder: "Co přesunete, patro, výtah, vzdálenost…",
+      },
+      {
+        slug: "pece-zahrada",
+        label: "Péče a zahrada",
+        titlePlaceholder: "např. Údržba zahrady a sekání trávy",
+        descriptionPlaceholder: "Rozsah práce, frekvence, lokalita/dojezd…",
+      },
+      {
+        slug: "ostatni",
+        label: "Ostatní",
+        titlePlaceholder: "např. Nabízím doučování matematiky",
+        descriptionPlaceholder: "Co nabízíte, lokalita/dojezd, cena/materiál…",
+      },
     ],
     conditionLabels: SLUZBY_CONDITIONS,
     priceTypes: COMMON_PRICE_TYPES,
+    titlePlaceholder: "např. Nabízím službu v okolí",
+    descriptionPlaceholder: "Co nabízíte, lokalita/dojezd, materiál v ceně…",
     aiPrompt:
-      "Uživatel nabízí službu. Pokud v textu chybí lokalita/dojezd (kde službu poskytuje) nebo informace o materiálu (zda je v ceně), zeptej se na to jednou či dvěma přátelskými otázkami. Pokud je text dostatečně jasný, neptej se na nic.",
+      "Uživatel nabízí službu. Pokud v textu chybí lokalita/dojezd (kde službu poskytuje) nebo informace o materiálu (zda je v ceně), zeptej se na to jednou či dvěma přátelskými otázkami. Pokud je text dostatečně jasný, neptej se na nic.\n\n" +
+      ADVERTISER_TYPE_AI_RULES,
   },
   {
     type: "udalost",
     label: "Událost",
     subcategories: [
-      { slug: "koncert", label: "Koncert" },
-      { slug: "narozeniny", label: "Narozeniny" },
-      { slug: "opekani", label: "Opékání" },
-      { slug: "sport", label: "Sport" },
-      { slug: "workshop", label: "Workshop" },
-      { slug: "setkani", label: "Setkání / komunitní akce" },
-      { slug: "ostatni", label: "Ostatní" },
+      {
+        slug: "koncert",
+        label: "Koncert",
+        titlePlaceholder: "např. Koncert na zahradě u Sokolovny",
+        descriptionPlaceholder: "Datum, čas, místo, vstupné, kapacita…",
+      },
+      {
+        slug: "narozeniny",
+        label: "Narozeniny",
+        titlePlaceholder: "např. Narozeninová oslava pro děti",
+        descriptionPlaceholder: "Datum, čas, místo, program, kapacita…",
+      },
+      {
+        slug: "opekani",
+        label: "Opékání",
+        titlePlaceholder: "např. Opékání na zahradě",
+        descriptionPlaceholder: "Kapacita, co s sebou, jak se přihlásit…",
+      },
+      {
+        slug: "sport",
+        label: "Sport",
+        titlePlaceholder: "např. Fotbalový turnaj na hřišti",
+        descriptionPlaceholder: "Datum, čas, místo, pravidla, přihlášky…",
+      },
+      {
+        slug: "workshop",
+        label: "Workshop",
+        titlePlaceholder: "např. Workshop výroby svíček",
+        descriptionPlaceholder: "Datum, čas, místo, co s sebou, kapacita…",
+      },
+      {
+        slug: "setkani",
+        label: "Setkání / komunitní akce",
+        titlePlaceholder: "např. Sousedské setkání u grilu",
+        descriptionPlaceholder: "Datum, čas, místo, kapacita, co s sebou…",
+      },
+      {
+        slug: "ostatni",
+        label: "Ostatní",
+        titlePlaceholder: "např. Komunitní akce v sousedství",
+        descriptionPlaceholder: "Datum, čas, místo, kapacita, jak se přihlásit…",
+      },
     ],
     conditionLabels: UDALOST_CONDITIONS,
     conditionFieldLabel: "Opakování",
     priceTypes: UDALOST_PRICE_TYPES,
+    titlePlaceholder: "např. Opékání na zahradě",
+    descriptionPlaceholder: "Kapacita, co s sebou, jak se přihlásit…",
+    titlePlaceholderRecurring: "např. Čtvrteční poker u Honzy",
+    descriptionPlaceholderRecurring:
+      "Frekvence (každý čtvrtek 18:00…), kapacita, co s sebou, jak se přihlásit…",
     aiPrompt:
       "Analyzuj akci. Ve formuláři může být datum konání — na to se znovu neptej. Kritické parametry jsou: DATUM (pokud chybí ve formuláři i v textu), ČAS a LOKALITA. Pokud některý chybí, vygeneruj cílené otázky. U opakovaných akcí chtěj upřesnit frekvenci (např. „Které dny v týdnu akce platí?“).",
   },
@@ -140,16 +253,49 @@ export const CATEGORIES: CategoryConfig[] = [
     type: "nemovitost",
     label: "Nemovitosti",
     subcategories: [
-      { slug: "byty", label: "Byty" },
-      { slug: "domy", label: "Domy" },
-      { slug: "pozemky", label: "Pozemky" },
-      { slug: "chata-chalupa", label: "Rekreační objekty" },
-      { slug: "komercni", label: "Komerční objekty" },
-      { slug: "ostatni", label: "Ostatní" },
+      {
+        slug: "byty",
+        label: "Byty",
+        titlePlaceholder: "např. Pronájem bytu 2+kk v centru",
+        descriptionPlaceholder: "Dispozice, plocha v m², patro, kauce, poplatky…",
+      },
+      {
+        slug: "domy",
+        label: "Domy",
+        titlePlaceholder: "např. Prodej rodinného domu se zahradou",
+        descriptionPlaceholder: "Dispozice, plocha, pozemek, stav, vybavení…",
+      },
+      {
+        slug: "pozemky",
+        label: "Pozemky",
+        titlePlaceholder: "např. Stavební pozemek 800 m²",
+        descriptionPlaceholder: "Plocha, územní plán, inženýrské sítě, přístup…",
+      },
+      {
+        slug: "chata-chalupa",
+        label: "Rekreační objekty",
+        titlePlaceholder: "např. Prodej chaty u lesa",
+        descriptionPlaceholder: "Dispozice, plocha, pozemek, sezónní využití…",
+      },
+      {
+        slug: "komercni",
+        label: "Komerční objekty",
+        titlePlaceholder: "např. Pronájem skladových prostor",
+        descriptionPlaceholder: "Plocha, využití, přístup, náklady navíc…",
+      },
+      {
+        slug: "ostatni",
+        label: "Ostatní",
+        titlePlaceholder: "např. Nabízím nemovitost",
+        descriptionPlaceholder: "Dispozice, plocha v m², stav, parkování…",
+      },
     ],
     conditionLabels: NEMOVITOST_CONDITIONS,
     conditionFieldLabel: "Typ transakce",
     priceTypes: NEMOVITOST_PRICE_TYPES,
+    titlePlaceholder: "např. Pronájem bytu 2+kk v centru",
+    descriptionPlaceholder:
+      "Dispozice, plocha v m², patro, kauce, poplatky, stav objektu, parkování…",
     aiPrompt:
       "Uživatel nabízí nemovitost — typ transakce (Prodej / Pronájem) a podkategorie (byt, dům, pozemek…) jsou ve formuláři. Skenuj text a všechny fotky.\n\n" +
       "Povinná pravidla — zadavatel a provize RK (priorita před ostatními otázkami):\n" +
@@ -165,19 +311,58 @@ export const CATEGORIES: CategoryConfig[] = [
     type: "prace",
     label: "Práce a brigády",
     subcategories: [
-      { slug: "brigady-jednorazove", label: "Brigády a jednorázové úkoly" },
-      { slug: "retail-pohostinstvi", label: "Prodej a pohostinství" },
-      { slug: "administrativa", label: "Administrativa a kancelář" },
-      { slug: "it-digital", label: "IT a digitál" },
-      { slug: "remeslo-stavba", label: "Řemeslo a stavba" },
-      { slug: "pece-zahrada", label: "Péče, zahrada, domácnost" },
-      { slug: "ostatni", label: "Ostatní" },
+      {
+        slug: "brigady-jednorazove",
+        label: "Brigády a jednorázové úkoly",
+        titlePlaceholder: "např. Brigáda v kavárně o víkendu",
+        descriptionPlaceholder: "Rozsah práce, termín, počet hodin, požadavky…",
+      },
+      {
+        slug: "retail-pohostinstvi",
+        label: "Prodej a pohostinství",
+        titlePlaceholder: "např. Brigáda v kavárně o víkendu",
+        descriptionPlaceholder: "Rozsah práce, směny, požadavky, termín nástupu…",
+      },
+      {
+        slug: "administrativa",
+        label: "Administrativa a kancelář",
+        titlePlaceholder: "např. Administrativní podpora na DPP",
+        descriptionPlaceholder: "Náplň práce, úvazek, požadavky, termín nástupu…",
+      },
+      {
+        slug: "it-digital",
+        label: "IT a digitál",
+        titlePlaceholder: "např. Junior frontend developer na DPP",
+        descriptionPlaceholder: "Náplň práce, technologie, úvazek, požadavky…",
+      },
+      {
+        slug: "remeslo-stavba",
+        label: "Řemeslo a stavba",
+        titlePlaceholder: "např. Pomocník na stavbě — brigáda",
+        descriptionPlaceholder: "Rozsah práce, lokalita, požadavky, termín…",
+      },
+      {
+        slug: "pece-zahrada",
+        label: "Péče, zahrada, domácnost",
+        titlePlaceholder: "např. Pomoc se zahradou na víkend",
+        descriptionPlaceholder: "Rozsah práce, termín, požadavky, odměna…",
+      },
+      {
+        slug: "ostatni",
+        label: "Ostatní",
+        titlePlaceholder: "např. Nabízím práci v okolí",
+        descriptionPlaceholder: "Náplň práce, požadavky, termín nástupu, odměna…",
+      },
     ],
     conditionLabels: PRACE_CONDITIONS,
     conditionFieldLabel: "Typ úvazku",
     priceTypes: PRACE_PRICE_TYPES,
+    titlePlaceholder: "např. Brigáda v kavárně o víkendu",
+    descriptionPlaceholder:
+      "Rozsah práce, požadavky (věk, praxe), termín nástupu, počet hodin…",
     aiPrompt:
-      "Uživatel nabízí práci/brigádu. Zaměř se na: termín nástupu, požadavky na pracovníka a odměnu. Chybí-li tyto informace, zeptej se na ně. NEPOKOUŠEJ SE v tomto kroku upravovat nebo cenzurovat telefonní čísla a e-maily, to řeší systém jinde.",
+      "Uživatel nabízí práci/brigádu. Zaměř se na: termín nástupu, požadavky na pracovníka a odměnu. Chybí-li tyto informace, zeptej se na ně. NEPOKOUŠEJ SE v tomto kroku upravovat nebo cenzurovat telefonní čísla a e-maily, to řeší systém jinde.\n\n" +
+      ADVERTISER_TYPE_AI_RULES,
   },
 ];
 
@@ -273,4 +458,62 @@ export function getPriceTypeLabel(
   const found = category?.priceTypes.find((p) => p.value === priceType);
   if (found) return found.label;
   return formatSlugAsLabel(priceType);
+}
+
+const DEFAULT_TITLE_PLACEHOLDER = "např. Název vašeho inzerátu";
+const DEFAULT_DESCRIPTION_PLACEHOLDER = "Popis inzerátu…";
+
+export type ListingPlaceholderOptions = {
+  isRecurringEvent?: boolean;
+};
+
+function resolveListingPlaceholder(
+  categoryType: string,
+  subcategorySlug: string,
+  field: "titlePlaceholder" | "descriptionPlaceholder",
+  recurringField: "titlePlaceholderRecurring" | "descriptionPlaceholderRecurring",
+  defaultValue: string,
+  options?: ListingPlaceholderOptions,
+): string {
+  const category = CATEGORIES.find((c) => c.type === categoryType);
+  if (!category) return defaultValue;
+
+  if (options?.isRecurringEvent && category[recurringField]) {
+    return category[recurringField]!;
+  }
+
+  const sub = category.subcategories.find((s) => s.slug === subcategorySlug);
+  return sub?.[field] ?? category[field] ?? defaultValue;
+}
+
+/** Nápověda v poli „Název inzerátu“ podle kategorie a podkategorie. */
+export function getListingTitlePlaceholder(
+  categoryType: string,
+  subcategorySlug: string,
+  options?: ListingPlaceholderOptions,
+): string {
+  return resolveListingPlaceholder(
+    categoryType,
+    subcategorySlug,
+    "titlePlaceholder",
+    "titlePlaceholderRecurring",
+    DEFAULT_TITLE_PLACEHOLDER,
+    options,
+  );
+}
+
+/** Nápověda v poli „Popis“ podle kategorie a podkategorie. */
+export function getListingDescriptionPlaceholder(
+  categoryType: string,
+  subcategorySlug: string,
+  options?: ListingPlaceholderOptions,
+): string {
+  return resolveListingPlaceholder(
+    categoryType,
+    subcategorySlug,
+    "descriptionPlaceholder",
+    "descriptionPlaceholderRecurring",
+    DEFAULT_DESCRIPTION_PLACEHOLDER,
+    options,
+  );
 }

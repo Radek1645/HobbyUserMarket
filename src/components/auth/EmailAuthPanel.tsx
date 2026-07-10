@@ -7,6 +7,7 @@ import {
   type AuthFormState,
 } from "@/app/actions/auth";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { Mail } from "lucide-react";
 import { useActionState, useState } from "react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { RegistrationConsentFields } from "@/components/auth/RegistrationConsentFields";
@@ -39,6 +40,63 @@ const primaryButtonClass =
 const prominentPrimaryButtonClass =
   "flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base";
 
+function AuthSuccessNotice({
+  title,
+  message,
+  onContinue,
+  continueLabel = "Přejít na přihlášení",
+  prominent = false,
+}: {
+  title: string;
+  message: string;
+  onContinue?: () => void;
+  continueLabel?: string;
+  prominent?: boolean;
+}) {
+  return (
+    <div
+      role="status"
+      className="rounded-xl border-2 border-emerald-400 bg-emerald-50 px-4 py-5 shadow-md shadow-emerald-900/10 ring-4 ring-emerald-100"
+    >
+      <div className="flex gap-3">
+        <div
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white"
+          aria-hidden="true"
+        >
+          <Mail className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p
+            className={`font-semibold text-emerald-950 ${
+              prominent ? "text-lg sm:text-xl" : "text-base"
+            }`}
+          >
+            {title}
+          </p>
+          <p
+            className={`mt-2 leading-relaxed text-emerald-900 ${
+              prominent ? "text-sm sm:text-base" : "text-sm"
+            }`}
+          >
+            {message}
+          </p>
+        </div>
+      </div>
+      {onContinue ? (
+        <button
+          type="button"
+          onClick={onContinue}
+          className={`mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 font-medium text-white transition hover:bg-emerald-800 ${
+            prominent ? "text-sm sm:text-base" : "text-sm"
+          }`}
+        >
+          {continueLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function EmailAuthPanel({
   nextPath,
   initialTab = "login",
@@ -64,6 +122,9 @@ export function EmailAuthPanel({
   const fieldInputClass = prominent ? prominentInputClass : inputClass;
   const fieldLabelClass = prominent ? prominentLabelClass : labelClass;
   const submitButtonClass = prominent ? prominentPrimaryButtonClass : primaryButtonClass;
+
+  const registerComplete = Boolean(registerState.success);
+  const resetComplete = Boolean(resetState.success);
 
   return (
     <div className={`space-y-4 ${prominent ? "mt-8 sm:mt-10" : "mt-6"}`}>
@@ -102,10 +163,22 @@ export function EmailAuthPanel({
         </p>
       ) : null}
 
-      {state.success ? (
-        <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          {state.success}
-        </p>
+      {tab === "register" && registerComplete && registerState.success ? (
+        <AuthSuccessNotice
+          prominent={prominent}
+          title="Účet je vytvořený"
+          message="Ověřte e-mail kliknutím na odkaz v doručené poště — bez toho se nepřihlásíte."
+          onContinue={() => setTab("login")}
+        />
+      ) : null}
+
+      {tab === "forgot" && resetComplete && resetState.success ? (
+        <AuthSuccessNotice
+          prominent={prominent}
+          title="E-mail odeslán"
+          message={resetState.success}
+          onContinue={() => setTab("login")}
+        />
       ) : null}
 
       {tab === "login" ? (
@@ -150,7 +223,7 @@ export function EmailAuthPanel({
         </form>
       ) : null}
 
-      {tab === "register" ? (
+      {tab === "register" && !registerComplete ? (
         <form action={registerAction} className="space-y-4">
           <div>
             <label htmlFor="register-email" className={fieldLabelClass}>
@@ -189,7 +262,7 @@ export function EmailAuthPanel({
         </form>
       ) : null}
 
-      {tab === "forgot" ? (
+      {tab === "forgot" && !resetComplete ? (
         <form action={resetAction} className="space-y-4">
           <p className="text-sm text-gray-600">
             Zadejte e-mail účtu. Pošleme odkaz pro nastavení nového hesla.

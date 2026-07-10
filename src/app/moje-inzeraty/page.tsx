@@ -2,7 +2,12 @@ import { getCategoryLabel, getSubcategoryLabel } from "@/config/categories";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { MyListingActions } from "@/components/listing/MyListingActions";
 import { ListingBlockedNotice } from "@/components/listing/ListingBlockedNotice";
+import { ListingQuotaSummary } from "@/components/account/ListingQuotaSummary";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import {
+  getUserListingQuota,
+  LISTING_QUOTA_EXCEEDED_MESSAGE,
+} from "@/lib/listings/quota";
 import { archiveExpiredPosts } from "@/lib/posts/archive-expired";
 import {
   getOwnerDisplayStatus,
@@ -76,10 +81,10 @@ async function getMyListings(userId: string): Promise<PostRow[]> {
 export default async function MyListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ deleteError?: string }>;
+  searchParams: Promise<{ deleteError?: string; quotaError?: string }>;
 }) {
   const user = await getCurrentUser();
-  const { deleteError } = await searchParams;
+  const { deleteError, quotaError } = await searchParams;
 
   if (!user) {
     redirect("/login?next=/moje-inzeraty");
@@ -90,7 +95,10 @@ export default async function MyListingsPage({
   }
 
   await archiveExpiredPosts();
-  const listings = await getMyListings(user.id);
+  const [listings, quota] = await Promise.all([
+    getMyListings(user.id),
+    getUserListingQuota(user.id),
+  ]);
 
   return (
     <div className="px-4 py-8 sm:px-6">
@@ -103,9 +111,17 @@ export default async function MyListingsPage({
         Vaše publikované inzeráty — upravte lokalitu, cenu nebo text.
       </p>
 
+      {quota ? <ListingQuotaSummary quota={quota} /> : null}
+
       {deleteError ? (
         <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           Inzerát se nepodařilo smazat. Zkuste to prosím znovu.
+        </p>
+      ) : null}
+
+      {quotaError ? (
+        <p role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {LISTING_QUOTA_EXCEEDED_MESSAGE}
         </p>
       ) : null}
 

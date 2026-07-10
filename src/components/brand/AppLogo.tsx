@@ -1,4 +1,5 @@
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { emeraldLogoMarkClass } from "@/config/ui-primitives";
 import Link from "next/link";
 
 type AppLogoProps = {
@@ -14,7 +15,7 @@ export function AppLogo({ showWordmark = true }: AppLogoProps) {
       aria-label="HobbyUserMarket — úvodní stránka"
       className="group flex h-10 shrink-0 items-center gap-2 rounded-xl outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500/40"
     >
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 shadow-sm shadow-emerald-600/20 transition group-hover:bg-emerald-700">
+      <span className={emeraldLogoMarkClass}>
         <svg
           aria-hidden="true"
           viewBox="0 0 32 32"

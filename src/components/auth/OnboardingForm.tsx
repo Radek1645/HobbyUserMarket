@@ -2,12 +2,14 @@
 
 import { completeOnboarding, type AuthFormState } from "@/app/actions/auth";
 import { CompanyIcoInput } from "@/components/auth/CompanyIcoInput";
+import { RegistrationConsentFields } from "@/components/auth/RegistrationConsentFields";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { useActionState, useState } from "react";
 
 type OnboardingFormProps = {
   nextPath: string;
   email: string;
+  requiresRegistrationConsents?: boolean;
 };
 
 const initialState: AuthFormState = {};
@@ -15,7 +17,11 @@ const initialState: AuthFormState = {};
 const inputClass =
   "mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:ring-2 focus:ring-gray-200";
 
-export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
+export function OnboardingForm({
+  nextPath,
+  email,
+  requiresRegistrationConsents = false,
+}: OnboardingFormProps) {
   const [state, action, pending] = useActionState(completeOnboarding, initialState);
   const [isCompany, setIsCompany] = useState(false);
 
@@ -98,10 +104,14 @@ export function OnboardingForm({ nextPath, email }: OnboardingFormProps) {
         />
         <p className="mt-1 text-xs text-gray-500">
           {isCompany
-            ? "Volitelné — pro budoucí komentáře. V inzerátech se zobrazí název firmy."
+            ? "Volitelné — pro komentáře. Můžete nechat prázdné (vygenerujeme z názvu firmy). Povolená jsou písmena, čísla, _ a -."
             : "3–30 znaků, písmena, čísla, podtržítko nebo pomlčka. Zobrazí se u vašich inzerátů."}
         </p>
       </div>
+
+      {requiresRegistrationConsents ? (
+        <RegistrationConsentFields />
+      ) : null}
 
       {state.error ? (
         <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

@@ -10,6 +10,10 @@ import {
 } from "@/lib/posts/validation";
 import { findProhibitedKeyword } from "@/lib/moderation/prohibited-scan";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
+import {
+  isListingQuotaExceededError,
+  LISTING_QUOTA_EXCEEDED_MESSAGE,
+} from "@/lib/listings/quota";
 import { syncListingImagesFromForm } from "@/lib/posts/listing-images";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -54,6 +58,9 @@ async function publishWithApprovalToken(
 
   if (error) {
     console.error("publish_approved_post:", error);
+    if (isListingQuotaExceededError(error.message)) {
+      return LISTING_QUOTA_EXCEEDED_MESSAGE;
+    }
     if (error.message?.includes("image_set_mismatch")) {
       return "Fotky neodpovídají verzi schválené AI kontrolou. Odešlete inzerát znovu.";
     }

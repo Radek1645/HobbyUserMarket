@@ -1,5 +1,6 @@
 import {
   LEGAL_UI,
+  LISTING_PACKAGES_PATH,
   MARKETING_CONSENT_PATH,
   VOP_PATH,
 } from "@/config/legal";
@@ -26,6 +27,9 @@ export function SiteFooter() {
           </Link>
           <Link href={MARKETING_CONSENT_PATH} className={footerLinkClass}>
             {LEGAL_UI.marketingConsentLinkLabel}
+          </Link>
+          <Link href={LISTING_PACKAGES_PATH} className={footerLinkClass}>
+            {LEGAL_UI.listingPackagesLinkLabel}
           </Link>
           <Link href={LISTING_TERMS_PATH} className={footerLinkClass}>
             {MODERATION_REJECTION_UI.termsLinkLabel}

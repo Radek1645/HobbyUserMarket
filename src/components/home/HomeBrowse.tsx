@@ -4,16 +4,48 @@ import { useCurrentUser } from "@/components/auth/UserContext";
 import { HomeListings } from "@/components/home/HomeListings";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
-  HOME_CATEGORY_ORDER,
+  CATEGORIES_CONFIG,
   HOME_THEMES,
   parseHomeBrowseCategory,
   type HomeBrowseCategory,
 } from "@/config/home-themes";
+import {
+  homeCategoryTabActiveClass,
+  homeCategoryTabInactiveClass,
+  iconSmClass,
+} from "@/config/ui-primitives";
 import { normalizeSearchQuery } from "@/lib/posts/search-query";
 import type { PublicListingPreview } from "@/types/post";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+
+function HeroHeadline({
+  headline,
+  highlightAi = false,
+}: {
+  headline: string;
+  highlightAi?: boolean;
+}) {
+  const baseClass = "mt-1 text-2xl font-semibold text-zinc-900 sm:text-3xl";
+
+  if (!highlightAi) {
+    return <h1 className={baseClass}>{headline}</h1>;
+  }
+
+  const aiMatch = headline.match(/^(.*\s)(AI)$/);
+  if (!aiMatch) {
+    return <h1 className={baseClass}>{headline}</h1>;
+  }
+
+  return (
+    <h1 className={baseClass}>
+      {aiMatch[1]}
+      <span className="text-emerald-600 [text-shadow:0_0_18px_rgba(16,185,129,0.55),0_0_36px_rgba(16,185,129,0.25)]">
+        {aiMatch[2]}
+      </span>
+    </h1>
+  );
+}
 
 type HomeBrowseProps = {
   initialListings?: PublicListingPreview[] | null;
@@ -55,74 +87,60 @@ export function HomeBrowse({
   );
 
   return (
-    <div
-      className={`min-h-[calc(100vh-3.5rem)] transition-[background] duration-500 ease-out ${theme.shellClass}`}
-    >
+    <div className="min-h-[calc(100vh-3.5rem)] bg-zinc-50">
       <div className="px-4 py-8 sm:px-6">
-        <section
-          className={`rounded-2xl border p-6 shadow-sm transition-[background,border-color] duration-500 sm:p-8 ${theme.heroClass} ${theme.heroBorderClass}`}
-        >
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-            {theme.label}
-          </p>
-          <h1
-            className={`mt-1 text-2xl font-semibold sm:text-3xl ${theme.accentClass}`}
-          >
-            {theme.headline}
-          </h1>
-          <p className="mt-3 max-w-xl text-gray-600">{theme.subline}</p>
-
-          {!user ? (
-            <div className="mt-3 w-fit max-w-md">
-              <div className="border-t border-gray-200" aria-hidden="true" />
-              <p className="pt-2 text-xs text-gray-500">
-                Bez registrace – přihlášení přes Google jedním kliknutím.
-              </p>
-            </div>
-          ) : null}
-
-          {user ? (
-            <p className="mt-6 flex flex-wrap items-center gap-3">
-              <Link
-                href="/inzerat/novy"
-                {...gtmCtaProps(GTM_CTA.HOME_CREATE_LISTING)}
-                className={`inline-flex rounded-xl px-5 py-2.5 text-sm font-medium transition ${theme.ctaClass}`}
-              >
-                Založit inzerát
-              </Link>
-              <span className="text-sm text-gray-600">
-                Přihlášen jako{" "}
-                <span className="font-medium text-gray-900">
-                  {user.displayName}
-                </span>
-              </span>
+        <section className="relative overflow-hidden rounded-2xl border border-orange-200/60 bg-gradient-to-r from-orange-200 via-amber-50 to-emerald-200 shadow-sm">
+          <div className="p-6 sm:p-8">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+              {theme.label}
             </p>
-          ) : null}
-        </section>
+            <HeroHeadline
+              headline={theme.headline}
+              highlightAi={category === "all"}
+            />
+            <p className="mt-3 max-w-xl text-gray-700">{theme.subline}</p>
 
-        <nav
-          aria-label="Kategorie inzerátů"
-          className="mt-6 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {HOME_CATEGORY_ORDER.map((id) => {
-            const item = HOME_THEMES[id];
-            const isActive = category === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                {...gtmCtaProps(GTM_CTA.HOME_CATEGORY_TAB, { category: id })}
-                onClick={() => setCategory(id)}
-                aria-current={isActive ? "page" : undefined}
-                className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition duration-300 ${
-                  isActive ? item.tabActiveClass : item.tabInactiveClass
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
+            {!user ? (
+              <div className="mt-3 w-fit max-w-md">
+                <div
+                  className="border-t border-gray-300/70"
+                  aria-hidden="true"
+                />
+                <p className="pt-2 text-xs text-gray-600">
+                  Bez registrace – přihlášení přes Google jedním kliknutím.
+                </p>
+              </div>
+            ) : null}
+
+            <nav
+              aria-label="Kategorie inzerátů"
+              className="mt-6 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {CATEGORIES_CONFIG.map(({ id, label, icon: Icon }) => {
+                const isActive = category === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    {...gtmCtaProps(GTM_CTA.HOME_CATEGORY_TAB, {
+                      category: id,
+                    })}
+                    onClick={() => setCategory(id)}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
+                      isActive
+                        ? homeCategoryTabActiveClass
+                        : homeCategoryTabInactiveClass
+                    }`}
+                  >
+                    <Icon className={iconSmClass} aria-hidden="true" />
+                    {label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </section>
 
         <HomeListings
           category={category}

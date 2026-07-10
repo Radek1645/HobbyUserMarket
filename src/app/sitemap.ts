@@ -16,6 +16,11 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
     priority: 0.3,
   },
   {
+    url: "/balicky-inzerce",
+    changeFrequency: "monthly",
+    priority: 0.3,
+  },
+  {
     url: "/podminky-inzerce",
     changeFrequency: "monthly",
     priority: 0.3,

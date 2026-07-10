@@ -1,7 +1,31 @@
 import type { CategoryType } from "@/types/post";
+import {
+  Briefcase,
+  Building,
+  Calendar,
+  LayoutGrid,
+  Package,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 
 /** Filtr homepage — null = všechny kategorie */
 export type HomeBrowseCategory = CategoryType | "all";
+
+export type HomeCategoryTabConfig = {
+  id: HomeBrowseCategory;
+  label: string;
+  icon: LucideIcon;
+};
+
+export const CATEGORIES_CONFIG: HomeCategoryTabConfig[] = [
+  { id: "all", label: "Vše", icon: LayoutGrid },
+  { id: "zbozi", label: "Zboží", icon: Package },
+  { id: "sluzby", label: "Služby", icon: Wrench },
+  { id: "prace", label: "Práce a brigády", icon: Briefcase },
+  { id: "nemovitost", label: "Nemovitosti", icon: Building },
+  { id: "udalost", label: "Události", icon: Calendar },
+];
 
 export type HomeTheme = {
   label: string;
@@ -19,14 +43,9 @@ export type HomeTheme = {
   ctaClass: string;
 };
 
-export const HOME_CATEGORY_ORDER: HomeBrowseCategory[] = [
-  "all",
-  "zbozi",
-  "sluzby",
-  "prace",
-  "nemovitost",
-  "udalost",
-];
+export const HOME_CATEGORY_ORDER: HomeBrowseCategory[] = CATEGORIES_CONFIG.map(
+  (c) => c.id,
+);
 
 export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   all: {
@@ -35,8 +54,9 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
     subline:
       "Stačí fotka a pár slov. AI se doptá na detaily a vytvoří inzerát pro lidi z tvého okolí.",
     shellClass: "bg-zinc-50",
-    heroClass: "bg-white",
-    heroBorderClass: "border-zinc-200",
+    heroClass:
+      "bg-gradient-to-r from-orange-200 via-amber-50 to-emerald-200",
+    heroBorderClass: "border-orange-200/60",
     accentClass: "text-zinc-900",
     tabActiveClass: "bg-zinc-800 text-white border-zinc-800 shadow-sm shadow-zinc-800/10",
     tabInactiveClass:

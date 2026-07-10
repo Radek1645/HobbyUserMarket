@@ -52,6 +52,16 @@ export const EVENT_DATE_MAX_DAYS_AHEAD = 365;
  *  Vynuceno v DB (reveal_listing_contact RPC); tato konstanta drží hodnotu pro UI hlášku. */
 export const CONTACT_REVEAL_RATE_LIMIT_PER_DAY = 20;
 
+/** Výchozí počet lifetime publikací inzerátů pro nový účet (balíček `free`). */
+export const LISTING_QUOTA_FREE_DEFAULT = 20;
+
+/** Slug balíčku zobrazeného v UI pro dokoupení kreditu. */
+export const LISTING_UPSELL_PACKAGE_SLUG = "standard_20";
+
+/** Kontakt provozovatele — dokoupení balíčků (zatím bez platební brány). */
+export const OPERATOR_CONTACT_EMAIL =
+  process.env.NEXT_PUBLIC_OPERATOR_CONTACT_EMAIL?.trim() || "";
+
 /** Poptávkový formulář — PRD §5.3, docs/future_jobs.md */
 export const INQUIRY_MESSAGE_MIN_LENGTH = 10;
 export const INQUIRY_MESSAGE_MAX_LENGTH = 1000;

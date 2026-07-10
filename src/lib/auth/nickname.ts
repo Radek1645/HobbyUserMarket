@@ -49,6 +49,30 @@ function slugifyForNickname(input: string): string {
     .slice(0, NICKNAME_MAX);
 }
 
+/** Pro firmu: prázdné → null; neplatné znaky → slug (např. „Infotec s.r.o“ → infotec_sro). */
+export function resolveCompanyInternalNickname(raw: string): string | null {
+  const normalized = normalizeNickname(raw);
+  if (!normalized) {
+    return null;
+  }
+
+  const validationError = validateNickname(raw);
+  if (!validationError) {
+    return normalized;
+  }
+
+  const slugified = slugifyForNickname(raw);
+  if (
+    slugified.length >= NICKNAME_MIN &&
+    NICKNAME_PATTERN.test(slugified) &&
+    !isPlaceholderNickname(slugified)
+  ) {
+    return slugified;
+  }
+
+  return null;
+}
+
 export function generateCompanyNickname(
   companyName: string,
   userId: string,

@@ -3,6 +3,7 @@
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getListingPath } from "@/lib/posts/listing-path";
 import { isListingExpired } from "@/lib/posts/listing-status";
+import { isListingQuotaExceededError } from "@/lib/listings/quota";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -109,6 +110,9 @@ export async function publishListing(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("publishListing:", error);
+    if (isListingQuotaExceededError(error.message)) {
+      redirect("/moje-inzeraty?quotaError=1");
+    }
     redirect("/moje-inzeraty");
   }
 
@@ -154,6 +158,9 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("extendListingBy30Days:", error);
+    if (isListingQuotaExceededError(error.message)) {
+      redirect("/moje-inzeraty?quotaError=1");
+    }
     redirect("/moje-inzeraty");
   }
 

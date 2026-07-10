@@ -79,6 +79,16 @@ export const GTM_CTA = {
   AUTH_TAB_LOGIN: "cta_auth_tab_login",
   AUTH_TAB_REGISTER: "cta_auth_tab_register",
   AUTH_TAB_FORGOT: "cta_auth_tab_forgot",
+
+  // Profil / účet
+  HEADER_ACCOUNT_SETTINGS: "cta_header_account_settings",
+  ACCOUNT_DELETE_OPEN: "cta_account_delete_open",
+  ACCOUNT_DELETE_SUBMIT: "cta_account_delete_submit",
+
+  // God Mode
+  MOD_USER_DELETE_OPEN: "cta_mod_user_delete_open",
+  MOD_USER_DELETE_SUBMIT: "cta_mod_user_delete_submit",
+  MOD_USER_GRANT_PACKAGE: "cta_mod_user_grant_package",
 } as const;
 
 export type GtmCtaId = (typeof GTM_CTA)[keyof typeof GTM_CTA];

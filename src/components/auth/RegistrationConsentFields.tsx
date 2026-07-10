@@ -1,3 +1,5 @@
+"use client";
+
 import {
   LEGAL_UI,
   MARKETING_CONSENT_PATH,
@@ -25,6 +27,17 @@ export function RegistrationConsentFields({
   return (
     <fieldset className="space-y-3">
       <legend className="sr-only">Souhlasy při registraci</legend>
+
+      <label className={`flex items-start gap-2.5 ${textClass}`}>
+        <input
+          type="checkbox"
+          name="consent_age"
+          value="1"
+          required
+          className={checkboxClass}
+        />
+        <span className={labelClass}>{LEGAL_UI.registrationAgeConsent}</span>
+      </label>
 
       <label className={`flex items-start gap-2.5 ${textClass}`}>
         <input

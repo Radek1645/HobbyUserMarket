@@ -1,3 +1,5 @@
+"use client";
+
 import { gtmCtaProps, type GtmCtaId } from "@/config/gtm-ids";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";

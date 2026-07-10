@@ -12,7 +12,7 @@ import {
   LISTING_DESCRIPTION_MIN_LENGTH,
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
-import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getConditionLabel, getPriceTypeLabel, getSubcategoryLabel } from "@/config/categories";
+import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getConditionLabel, getListingDescriptionPlaceholder, getListingTitlePlaceholder, getPriceTypeLabel, getSubcategoryLabel } from "@/config/categories";
 import {
   computeListingExpiresAt,
   getListingExpiryWarning,
@@ -181,9 +181,24 @@ export function CreateListingForm({
   }, [state.error, step]);
 
   const isEvent = categoryType === "udalost";
-  const isRealEstate = categoryType === "nemovitost";
   const isJob = categoryType === "prace";
   const isRecurringEvent = isEvent && conditionLabel === "long_term";
+
+  const titlePlaceholder = useMemo(
+    () =>
+      getListingTitlePlaceholder(categoryType, subcategorySlug, {
+        isRecurringEvent,
+      }),
+    [categoryType, subcategorySlug, isRecurringEvent],
+  );
+
+  const descriptionPlaceholder = useMemo(
+    () =>
+      getListingDescriptionPlaceholder(categoryType, subcategorySlug, {
+        isRecurringEvent,
+      }),
+    [categoryType, subcategorySlug, isRecurringEvent],
+  );
 
   const subcategories = category.subcategories;
 
@@ -648,17 +663,7 @@ export function CreateListingForm({
               onChange={(e) => setTitle(e.target.value)}
               className={inputClass}
               aria-invalid={title.length > 0 && !isTitleValid}
-              placeholder={
-                isEvent
-                  ? isRecurringEvent
-                    ? "např. Čtvrteční poker u Honzy"
-                    : "např. Opékání na zahradě"
-                  : isRealEstate
-                    ? "např. Pronájem bytu 2+kk v centru"
-                    : isJob
-                      ? "např. Brigáda v kavárně o víkendu"
-                      : "např. Prodám med z vlastní včelny"
-              }
+              placeholder={titlePlaceholder}
             />
             <p className={hintClass}>{title.length}/80</p>
             {title.length > 0 && !isTitleValid ? (
@@ -683,17 +688,7 @@ export function CreateListingForm({
               onChange={(e) => setDescription(e.target.value)}
               className={inputClass}
               aria-invalid={description.length > 0 && !isDescriptionValid}
-              placeholder={
-                isEvent
-                  ? isRecurringEvent
-                    ? "Frekvence (každý čtvrtek 18:00…), kapacita, co s sebou, jak se přihlásit…"
-                    : "Kapacita, co s sebou, jak se přihlásit…"
-                  : isRealEstate
-                    ? "Dispozice, plocha v m², patro, kauce, poplatky, stav objektu, parkování…"
-                    : isJob
-                      ? "Rozsah práce, požadavky (věk, praxe), termín nástupu, počet hodin…"
-                      : "Popis zboží nebo služby…"
-              }
+              placeholder={descriptionPlaceholder}
             />
             <p className={hintClass}>
               {description.length}/{LISTING_DESCRIPTION_MAX_LENGTH}
