@@ -8,6 +8,7 @@ import {
   LISTING_TERMS_PATH,
   MODERATION_REJECTION_UI,
 } from "@/config/moderation";
+import { REPORT_UI } from "@/config/reports";
 import Link from "next/link";
 
 const footerLinkClass =
@@ -30,6 +31,9 @@ export function SiteFooter() {
           </Link>
           <Link href={LISTING_PACKAGES_PATH} className={footerLinkClass}>
             {LEGAL_UI.listingPackagesLinkLabel}
+          </Link>
+          <Link href="/nahlasit" className={footerLinkClass}>
+            {REPORT_UI.footerLinkLabel}
           </Link>
           <Link href={LISTING_TERMS_PATH} className={footerLinkClass}>
             {MODERATION_REJECTION_UI.termsLinkLabel}

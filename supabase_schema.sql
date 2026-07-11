@@ -277,6 +277,7 @@ CREATE TABLE IF NOT EXISTS public.comments (
 -- reports (target_post_id BIGINT | target_comment_id UUID — dle target_type)
 CREATE TABLE IF NOT EXISTS public.reports (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  report_no         BIGINT GENERATED ALWAYS AS IDENTITY,
   target_type       public.report_target_type NOT NULL,
   target_post_id    BIGINT REFERENCES public.posts (id) ON DELETE CASCADE,
   target_comment_id UUID REFERENCES public.comments (id) ON DELETE CASCADE,
@@ -349,6 +350,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS reports_one_per_user_per_comment_idx
   ON public.reports (reporter_user_id, target_comment_id)
   WHERE target_comment_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS reports_reporter_idx ON public.reports (reporter_user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS reports_report_no_idx ON public.reports (report_no);
 
 CREATE INDEX IF NOT EXISTS contact_reveals_viewer_idx ON public.contact_reveals (viewer_user_id, revealed_at);
 CREATE INDEX IF NOT EXISTS contact_reveals_post_idx ON public.contact_reveals (post_id);
@@ -956,6 +958,7 @@ GRANT SELECT ON public.comments TO anon, authenticated;
 GRANT INSERT, UPDATE, DELETE ON public.comments TO authenticated;
 
 GRANT SELECT, INSERT ON public.reports TO authenticated;
+GRANT INSERT ON public.reports TO service_role;
 GRANT SELECT, INSERT ON public.contact_reveals TO authenticated;
 GRANT SELECT ON public.inquiry_events TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.inquiry_events TO service_role;

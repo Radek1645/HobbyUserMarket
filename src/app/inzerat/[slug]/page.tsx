@@ -5,6 +5,8 @@ import {
   getSubcategoryLabel,
 } from "@/config/categories";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
+import { ReportListingButton } from "@/components/listing/ReportListingButton";
+import { ModeratorListingBar } from "@/components/mod/ModeratorListingBar";
 import { ListingJsonLd } from "@/components/seo/ListingJsonLd";
 import { ListingDescription } from "@/components/listing/ListingDescription";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
@@ -17,19 +19,40 @@ import {
 } from "@/lib/auth/advertiser-display";
 import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingImages } from "@/lib/posts/listing-images";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { getSiteUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
-import type { ListingImagePreview, PostRow } from "@/types/post";
+import type { ListingImagePreview, PostRow, PostStatusReasonCode } from "@/types/post";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
+};
+
+const REPORT_ERROR_MESSAGES: Record<string, string> = {
+  invalid_report_reason: "Vyberte platný důvod nahlášení.",
+  report_target_unavailable: "Inzerát nelze nahlásit.",
+  cannot_report_own_listing: "Vlastní inzerát nelze nahlásit.",
+  already_reported: "Tento inzerát jste už nahlásili.",
+  report_failed: "Nahlášení se nepodařilo odeslat.",
+};
+
+const MOD_ERROR_MESSAGES: Record<string, string> = {
+  invalid_post: "Neplatný inzerát.",
+  post_not_found: "Inzerát nebyl nalezen.",
+  post_already_restricted: "Inzerát je už zablokovaný.",
+  post_already_deleted: "Inzerát je už smazaný.",
+  post_not_blocked: "Inzerát není ve stavu blocked.",
+  block_failed: "Zablokování se nepodařilo.",
+  delete_failed: "Smazání se nepodařilo.",
+  restore_failed: "Obnovení se nepodařilo.",
 };
 
 function resolveSlugParam(param: string): string {
@@ -44,7 +67,7 @@ function resolveSlugParam(param: string): string {
 const POST_DETAIL_COLUMNS =
   "id, user_id, title, description, category_type, subcategory_slug, " +
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
-  "status, expires_at, event_date, main_image_url, slug, " +
+  "status, status_reason_code, expires_at, event_date, main_image_url, slug, " +
   "show_contact_email, show_contact_phone, created_at, updated_at";
 
 async function getPostBySlug(slug: string): Promise<PostRow | null> {
@@ -92,19 +115,28 @@ export async function generateMetadata({
   };
 }
 
-export default async function ListingDetailPage({ params }: PageProps) {
+export default async function ListingDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { slug: param } = await params;
   const slug = resolveSlugParam(param);
+  const query = await searchParams;
 
   const post = await getPostBySlug(slug);
   if (!post) notFound();
 
+  const currentUser = await getCurrentUser();
+  const isOwner = currentUser?.id === post.user_id;
+  const isStaff = isStaffRole(currentUser?.role);
+
   if (post.status !== "active") {
-    const user = await getCurrentUser();
-    if (user?.id === post.user_id) {
+    if (isOwner) {
       redirect("/moje-inzeraty");
     }
-    notFound();
+    if (!isStaff) {
+      notFound();
+    }
   }
 
   const advertiser = await getAdvertiserProfile(post.user_id);
@@ -169,7 +201,16 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const isOwner = user?.id === post.user_id;
+
+  const pageError = query.error
+    ? (REPORT_ERROR_MESSAGES[query.error] ??
+        MOD_ERROR_MESSAGES[query.error] ??
+        decodeURIComponent(query.error))
+    : undefined;
+  const statusReasonCode = post.status_reason_code as
+    | PostStatusReasonCode
+    | null
+    | undefined;
 
   const pageUrl = `${getSiteUrl()}${getListingPath(post.slug)}`;
   const jsonLdImageUrls = galleryImages.map((image) => image.url);
@@ -192,6 +233,45 @@ export default async function ListingDetailPage({ params }: PageProps) {
         label="Zpět"
         gtmId={GTM_CTA.DETAIL_BACK_HOME}
       />
+
+      {isStaff && !isOwner ? (
+        <div className="mt-4">
+          <ModeratorListingBar
+            postId={post.id}
+            postSlug={post.slug}
+            postTitle={post.title}
+            status={post.status}
+            statusReasonCode={statusReasonCode ?? null}
+          />
+        </div>
+      ) : null}
+
+      {query.reported === "1" ? (
+        <p
+          className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+          role="status"
+        >
+          Děkujeme. Prověříme to do 24 hodin a dáme vám vědět.
+        </p>
+      ) : null}
+
+      {pageError ? (
+        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {pageError}
+        </p>
+      ) : null}
+
+      {query.listing_blocked === "1" ||
+      query.listing_deleted === "1" ||
+      query.listing_restored === "1" ? (
+        <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {query.listing_restored === "1"
+            ? "Inzerát byl obnoven."
+            : query.listing_deleted === "1"
+              ? "Inzerát byl smazán."
+              : "Inzerát byl zablokován."}
+        </p>
+      ) : null}
 
       <header className="mt-4">
         <p className="text-sm text-gray-500">
@@ -308,16 +388,30 @@ export default async function ListingDetailPage({ params }: PageProps) {
               Upravit inzerát
             </Link>
           </div>
+        ) : post.status === "active" ? (
+          <>
+            <ListingContactSection
+              postId={post.id}
+              postSlug={post.slug}
+              postTitle={post.title}
+              categoryType={post.category_type}
+              showContactEmail={post.show_contact_email === true}
+              showContactPhone={post.show_contact_phone === true}
+              isLoggedIn={Boolean(user)}
+            />
+            <div className="mt-4 text-center">
+              <ReportListingButton
+                postId={post.id}
+                postSlug={post.slug}
+                isLoggedIn={Boolean(user)}
+              />
+            </div>
+          </>
         ) : (
-          <ListingContactSection
-            postId={post.id}
-            postSlug={post.slug}
-            postTitle={post.title}
-            categoryType={post.category_type}
-            showContactEmail={post.show_contact_email === true}
-            showContactPhone={post.show_contact_phone === true}
-            isLoggedIn={Boolean(user)}
-          />
+          <p className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-600">
+            Inzerát není veřejně viditelný. Kontakt a poptávka nejsou k
+            dispozici.
+          </p>
         )}
       </section>
     </article>

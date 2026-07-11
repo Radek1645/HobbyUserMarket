@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/nickname";
 import { normalizeIco, validateIco } from "@/lib/company/ico";
 import { createClient } from "@/lib/supabase/server";
+import { isUniqueViolation } from "@/lib/supabase/postgres-errors";
 import { getSiteUrl } from "@/lib/supabase/env";
 import {
   userRequiresRegistrationConsentsOnboarding,
@@ -318,7 +319,7 @@ export async function completeOnboarding(
     .eq("id", user.id);
 
   if (error) {
-    if (error.code === "23505") {
+    if (isUniqueViolation(error)) {
       return { error: "Tato přezdívka je už obsazená. Zkuste jinou." };
     }
 

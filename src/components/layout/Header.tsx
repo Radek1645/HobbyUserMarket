@@ -204,15 +204,33 @@ export function Header({ user }: HeaderProps) {
                     Nastavení účtu
                   </Link>
 
-                  {user.role === "admin" ? (
-                    <Link
-                      href="/mod/uzivatele"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
-                    >
-                      <Shield className="h-4 w-4" aria-hidden="true" />
-                      God Mode · Uživatelé
-                    </Link>
+                  {user.role === "admin" || user.role === "moderator" ? (
+                    <>
+                      <Link
+                        href="/mod/karantena"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
+                      >
+                        <Shield className="h-4 w-4" aria-hidden="true" />
+                        Moderace · Karanténa
+                      </Link>
+                      <Link
+                        href="/mod/inzeraty"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 px-4 py-2.5 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
+                      >
+                        Všechny inzeráty
+                      </Link>
+                      {user.role === "admin" ? (
+                        <Link
+                          href="/mod/uzivatele"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 px-4 py-2.5 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
+                        >
+                          Uživatelé
+                        </Link>
+                      ) : null}
+                    </>
                   ) : null}
 
                   <form action={signOut}>
