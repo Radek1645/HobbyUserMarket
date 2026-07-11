@@ -72,7 +72,7 @@ Následující kategorie jsou **zakázané nebo omezené** a kontroluje je autom
 |-----------|---------------|
 | Drogy a omamné látky | Prodej, nákup nebo propagace nelegálních drog a prekurzorů |
 | Zbraně a munice | Střelné zbraně, munice, výbušniny mimo legální rámec |
-| Sexuální služby a pornografie | Escort, erotické služby, pornografický obsah |
+| Sexuální služby a pornografie | Escort, erotické služby, pornografie; u módy i eroticky laděné „prodeje prádla“ bez produktové fotky |
 | Lidské orgány a tkáně | Prodej orgánů nebo tkání mimo legální dárcovství |
 | Kradené věci | Vědomá nabídka kradeného zboží |
 | Padělky a nelegální repliky | Padělky prezentované jako originál |
@@ -83,6 +83,14 @@ Následující kategorie jsou **zakázané nebo omezené** a kontroluje je autom
 | Alkohol a tabák pro nezletilé | Nabídka explicitně cílená na nezletilé |
 | Fotografie dětí a adolescentů | Snímky s rozpoznatelným nezletilým (kromě věcí bez tváře) |
 | Nelegální hazard | Hazard bez licence |
+
+### 2.3 Spodní a intimní prádlo (Móda a oblečení)
+
+Spodní a intimní prádlo **lze** inzerovat v kategorii **Zboží → Móda a oblečení**, pokud inzerát jasně prodává **věc**, ne osobu:
+
+- **Fotografie** ukazuje samotné prádlo (věšák, rozložený kus, detail) — ne modela v prádle na posteli ani boudoir styl.
+- **Popis** obsahuje **velikost** a stav; doporučujeme uvést i značku.
+- Inzerát musí působit jako běžný sousedský prodej oblečení. Vágní text („spodní prádlo“ bez parametrů) v kombinaci s erotickou fotografií je považován za zakázaný obsah (sexuální služby / escort návnada).
 
 ---
 

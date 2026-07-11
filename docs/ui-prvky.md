@@ -19,19 +19,34 @@ Hlavní akce (vytvořit inzerát, potvrdit formulář, modál).
 | `emeraldPrimaryButtonClass` | Obecné zelené CTA, `rounded-xl` |
 | `emeraldPrimaryButtonCompactClass` | Modály, kompaktní akční řádek |
 | `headerCreateListingSurfaceClass` | Flat zelený povrch header CTA (`bg-emerald-600`, hover `bg-emerald-700`) — shodně s logem HUM |
-| `headerCreateListingButtonClass` | Header „Vytvořit inzerát přes AI“ — pill (`rounded-full`), `font-semibold`, ikona Sparkles |
+| `createListingCtaLabel` | Text hlavního CTA — „Vytvořit inzerát s AI“ (header + FAB) |
+| `headerCreateListingButtonClass` | Header CTA — jen desktop (`md+`), pill, ikona Sparkles |
+| `createListingFabClass` | Mobilní FAB pro tvorbu inzerátu (`md:hidden`), extended → ikona při scrollu |
 | `emeraldLogoMarkClass` | Zelený čtverec s domečkem v logu |
 
 ### Header CTA (hlavní akce)
 
-Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani tloušťkou písma:
+Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani tloušťkou písma. Na mobilu je nahrazeno FAB (`CreateListingFab`).
 
 - Povrch: `headerCreateListingSurfaceClass` — `bg-emerald-600`, hover `bg-emerald-700` (stejně jako logo)
+- Viditelnost: `hidden md:flex` — pouze desktop
 - Přechod: `transition-colors duration-200`
 - Typografie: `font-semibold`, bílý text
-- Ikona: `Sparkles` (`iconSmClass`), `min-[480px]:mr-2` od textu
-- Tvar: `rounded-full`, padding beze změny (`sm:px-4`, `md:px-6`)
+- Ikona: `Sparkles` (`iconSmClass`), `mr-2` od textu
+- Tvar: `rounded-full`, padding `px-6` (24px), `whitespace-nowrap`
 - **Bez stínu** — žádný `shadow-*` na tomto tlačítku
+
+### Mobilní FAB
+
+| Konstanta | Použití |
+|-----------|---------|
+| `createListingFabClass` | Plovoucí CTA vpravo dole, jen `< md` |
+
+- Extended při načtení (plný text `createListingCtaLabel`), po scrollu > 80 px jen ikona
+- `whitespace-nowrap`, horizontální padding `px-6` (24px)
+- Skrytý na `/inzerat/novy` a stránkách úpravy inzerátu
+- Safe area: `bottom-[max(1rem,env(safe-area-inset-bottom))]`
+- GTM: `GTM_CTA.FAB_CREATE_LISTING`
 
 Ostatní zelená CTA (`emeraldSurfaceClass`) používají `bg-emerald-600` / hover `bg-emerald-700` a jemný stín.
 

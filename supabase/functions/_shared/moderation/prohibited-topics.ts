@@ -33,8 +33,10 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
     id: "sexual_services",
     label: "Sexuální služby a pornografie",
     criteria:
-      "Nabídka nebo poptávka sexuálních služeb, erotických masáží s explicitním sexuálním kontextem, pornografického obsahu, eskort služeb, „privátů“.",
-    keywords: ["escort", "erotika", "sex ", "porno"],
+      "Nabídka nebo poptávka sexuálních služeb, erotických masáží s explicitním sexuálním kontextem, pornografického obsahu, eskort služeb, „privátů“. " +
+      "Také inzeráty u zboží nebo módy, které primárně sexualizují osobu na fotografii (model v negližé na posteli, boudoir póza) místo produktu — zejména u vágního textu typu „spodní prádlo“ bez velikosti, značky a produktové fotografie (typický vzor escort návnady). " +
+      "U módy platí: spodní a intimní prádlo jen s fotkou věci a uvedenou velikostí; jinak REJECTED.",
+    keywords: ["escort", "erotika", "sex ", "porno", "privát"],
   },
   {
     id: "human_organs",

@@ -1,6 +1,7 @@
 import { OnboardingForm } from "@/components/auth/OnboardingForm";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { userRequiresRegistrationConsentsOnboarding } from "@/lib/auth/registration-consents";
+import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -25,7 +26,8 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
   }
 
   const { next } = await searchParams;
-  const nextPath = next?.startsWith("/") && !next.startsWith("/onboarding") ? next : "/";
+  const sanitized = sanitizeInternalPath(next);
+  const nextPath = sanitized.startsWith("/onboarding") ? "/" : sanitized;
 
   const supabase = await createClient();
   const {

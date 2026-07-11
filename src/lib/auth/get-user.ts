@@ -11,6 +11,8 @@ type ProfileRow = {
   surname: string | null;
   avatar_url: string | null;
   role: UserRole;
+  is_company: boolean;
+  company_name: string | null;
 };
 
 function buildDisplayName(
@@ -47,7 +49,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, nickname, name, surname, avatar_url, role")
+    .select("id, email, nickname, name, surname, avatar_url, role, is_company, company_name")
     .eq("id", user.id)
     .maybeSingle<ProfileRow>();
 
@@ -72,6 +74,8 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       role: "user",
       displayName: metaName?.trim() ?? user.email,
       needsNicknameSetup: true,
+      isCompany: false,
+      companyName: null,
     };
   }
 
@@ -92,5 +96,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     role: profile.role,
     displayName: buildDisplayName(profile.name, nickname, metadata),
     needsNicknameSetup: isPlaceholderNickname(nickname),
+    isCompany: profile.is_company,
+    companyName: profile.company_name,
   };
 });

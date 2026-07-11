@@ -8,6 +8,8 @@ export type SubcategoryConfig = {
   titlePlaceholder?: string;
   /** Nápověda v poli „Popis“ */
   descriptionPlaceholder?: string;
+  /** Info box ve formuláři — pravidla prodeje v dané podkategorii */
+  listingNotice?: string;
 };
 
 export type CategoryConfig = {
@@ -83,11 +85,18 @@ const PRACE_PRICE_TYPES: CategoryConfig["priceTypes"] = [
   { value: "offer", label: "Nabídněte odměnu" },
 ];
 
+const SLUZBY_PRICE_TYPES: CategoryConfig["priceTypes"] = [
+  { value: "fixed", label: "Hodinová sazba (Kč/h)" },
+  { value: "negotiable", label: "Cena za zakázku (Kč)" },
+  { value: "offer", label: "Dohodou" },
+];
+
 /** AI moderace — soukromá osoba vs. Podnikatel (VOP §7). */
 const ADVERTISER_TYPE_AI_RULES =
   "Povinná pravidla — typ inzerenta (priorita před ostatními otázkami):\n" +
   "Zájemce musí vědět, zda inzerent jedná jako soukromá osoba, nebo v rámci podnikání (Podnikatel — firma, OSVČ apod.).\n" +
-  "Logika: buď je jednoznačné v textu nebo na fotkách → zapiš do Parametrů (• Typ inzerenta: …) a neptej se; nebo chybí / je nejasné → NEEDS_QUESTIONS (nikdy nehádej).\n" +
+  "Logika: buď je jednoznačné v textu nebo na fotkách → zapiš do Parametrů konkrétní hodnotu (např. • Typ inzerenta: soukromá osoba nebo • Typ inzerenta: Podnikatel) a neptej se; nebo chybí / je nejasné → NEEDS_QUESTIONS (nikdy nehádej).\n" +
+  "U NEEDS_QUESTIONS neuváděj v Parametrech řádek Typ inzerenta s placeholderem (…, -, prázdně) — chybějící typ ptej jen v dotazníku; odpověď se doplní automaticky.\n" +
   "Ptej se jen pokud z textu/fotek nevyplývá typ (paramLabel: „Typ inzerenta“; label např. „Inzerujete jako soukromá osoba, nebo v rámci podnikání (firma/OSVČ)?“).\n" +
   "Jednoznačné formulace (otázku neopakuj): „soukromě“, „osobně“, „jako majitel“, název firmy, „s.r.o.“, „v.o.s.“, „OSVČ“, „IČO“, „realitní kancelář“, „RK“.\n" +
   "Je-li Podnikatel, v Parametrech uveď firmu a IČO, pokud jsou v textu nebo na fotkách; chybí-li IČO u zjevného Podnikatele, ptej se (paramLabel: „IČO“; label např. „Jaké je vaše IČO?“).";
@@ -135,10 +144,19 @@ export const CATEGORIES: CategoryConfig[] = [
       {
         slug: "moda-obleceni",
         label: "Móda a oblečení",
-        titlePlaceholder: "např. Zimní bunda North Face, vel. M",
-        descriptionPlaceholder: "Značka, velikost, stav, materiál, sezóna…",
+        titlePlaceholder: "např. Podprsenka Triumph 75B, nošená 2×",
+        descriptionPlaceholder:
+          "Značka, velikost, stav, materiál — u spodního prádla vždy velikost",
+        listingNotice:
+          "Prodáváte spodní nebo intimní prádlo? Na fotce ukažte samotnou věc (věšák, rozložený kus) — ne sebe v prádle. V popisu uveďte velikost a stav. Inzerát má působit jako běžný prodej oblečení; eroticky laděné fotky nebo vágní text neprojdou kontrolou.",
         aiPrompt:
-          "Uživatel prodává módu. Pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj maximálně 2 stručné, lidské otázky (např. „Jaká je to velikost?“). Na volitelné parametry (materiál, sezóna) se ptej, jen pokud text neobsahuje téměř nic.",
+          "Uživatel prodává módu a oblečení.\n\n" +
+          "SPODNÍ A INTIMNÍ PRÁDLO — povinná pravidla:\n" +
+          "- Fotografie musí ukazovat pouze věc (věšák, flat lay, detail materiálu), ne osobu v prádle, postel ani boudoir styl.\n" +
+          "- V popisu nebo Parametrech musí být velikost; doporuč značku a stav.\n" +
+          "- Zamítnout (REJECTED, sexual_services), pokud foto sexualizuje osobu nebo inzerát působí jako nabídka sexuální služby místo prodeje věci.\n" +
+          "- Pro předání piš „osobní předání po domluvě“ nebo „vyzvednutí po domluvě“, NIKDY „osobní prohlídka“ (to platí jen u nemovitostí).\n\n" +
+          "Obecně: pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj maximálně 2 stručné otázky. Na volitelné parametry (materiál, sezóna) se ptej jen pokud text neobsahuje téměř nic.",
       },
       {
         slug: "ostatni",
@@ -172,9 +190,12 @@ export const CATEGORIES: CategoryConfig[] = [
       },
       {
         slug: "pece-zahrada",
-        label: "Péče a zahrada",
-        titlePlaceholder: "např. Údržba zahrady a sekání trávy",
-        descriptionPlaceholder: "Rozsah práce, frekvence, lokalita/dojezd…",
+        label: "Péče, zahrada, domácnost",
+        titlePlaceholder: "např. Úklid bytu nebo sekání trávy",
+        descriptionPlaceholder:
+          "Rozsah úklidu nebo práce, frekvence, materiál v ceně, lokalita/dojezd…",
+        aiPrompt:
+          "Uživatel nabízí službu v domácnosti (úklid, hlídání, drobné práce), péči nebo zahradu. U úklidu doplň rozsah (byt, dům, kancelář), frekvenci a zda je materiál v ceně. U zahrady rozsah a dojezd.",
       },
       {
         slug: "ostatni",
@@ -184,11 +205,12 @@ export const CATEGORIES: CategoryConfig[] = [
       },
     ],
     conditionLabels: SLUZBY_CONDITIONS,
-    priceTypes: COMMON_PRICE_TYPES,
+    priceTypes: SLUZBY_PRICE_TYPES,
     titlePlaceholder: "např. Nabízím službu v okolí",
     descriptionPlaceholder: "Co nabízíte, lokalita/dojezd, materiál v ceně…",
     aiPrompt:
-      "Uživatel nabízí službu. Pokud v textu chybí lokalita/dojezd (kde službu poskytuje) nebo informace o materiálu (zda je v ceně), zeptej se na to jednou či dvěma přátelskými otázkami. Pokud je text dostatečně jasný, neptej se na nic.\n\n" +
+      "Uživatel nabízí službu (ne prodává zboží). Cena ve formuláři je buď hodinová sazba (Kč/h), orientační cena za celou zakázku, nebo „Dohodou“ — respektuj typ z formuláře, neptej se znovu na cenu.\n\n" +
+      "Pokud v textu chybí lokalita/dojezd (kde službu poskytuje) nebo informace o materiálu (zda je v ceně), zeptej se na to jednou či dvěma přátelskými otázkami. Pokud je text dostatečně jasný, neptej se na nic.\n\n" +
       ADVERTISER_TYPE_AI_RULES,
   },
   {
@@ -484,6 +506,15 @@ function resolveListingPlaceholder(
 
   const sub = category.subcategories.find((s) => s.slug === subcategorySlug);
   return sub?.[field] ?? category[field] ?? defaultValue;
+}
+
+export function getListingCategoryNotice(
+  categoryType: string,
+  subcategorySlug: string,
+): string | undefined {
+  const category = CATEGORIES.find((c) => c.type === categoryType);
+  const sub = category?.subcategories.find((s) => s.slug === subcategorySlug);
+  return sub?.listingNotice;
 }
 
 /** Nápověda v poli „Název inzerátu“ podle kategorie a podkategorie. */

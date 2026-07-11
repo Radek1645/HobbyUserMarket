@@ -1,6 +1,7 @@
 "use client";
 
 import { UserProvider } from "@/components/auth/UserContext";
+import { CreateListingFab } from "@/components/layout/CreateListingFab";
 import { Header } from "@/components/layout/Header";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteNoticeBar } from "@/components/layout/SiteNoticeBar";
@@ -19,6 +20,7 @@ export function AppShell({ user, children }: AppShellProps) {
         <SiteNoticeBar />
         <Header user={user} />
         <main className="mx-auto w-full max-w-5xl flex-1">{children}</main>
+        <CreateListingFab user={user} />
         <SiteFooter />
       </VisitorLocationProvider>
     </UserProvider>

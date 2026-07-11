@@ -8,6 +8,10 @@ import {
 } from "@/lib/posts/listing-path";
 import { postToListingFormInitialValues } from "@/lib/posts/listing-form";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { isNewPublicationQuotaBlocked } from "@/lib/listings/quota-shared";
+import {
+  getUserListingQuota,
+} from "@/lib/listings/quota";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
@@ -55,6 +59,11 @@ export default async function EditListingPage({ params }: PageProps) {
   if (!post) notFound();
 
   const initialValues = postToListingFormInitialValues(post, post.location);
+  const quota = await getUserListingQuota(user.id);
+  const publishBlockedByQuota = isNewPublicationQuotaBlocked(
+    quota,
+    post.listing_quota_consumed,
+  );
   const backHref =
     post.status === "active" ? getListingPath(slug) : "/moje-inzeraty";
 
@@ -82,6 +91,7 @@ export default async function EditListingPage({ params }: PageProps) {
         initialImages={post.images}
         userEmail={user.email}
         forceModeration={post.status === "draft" || post.status === "blocked"}
+        publishBlockedByQuota={publishBlockedByQuota}
       />
     </div>
   );

@@ -55,9 +55,23 @@ export default async function ProfileSettingsPage({
         <section className="mt-8 space-y-4 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
           <h2 className="text-lg font-semibold text-gray-900">Profil</h2>
           <dl className="space-y-3 text-sm">
+            {user.isCompany && user.companyName ? (
+              <div>
+                <dt className="font-medium text-gray-500">Název firmy</dt>
+                <dd className="text-gray-900">{user.companyName}</dd>
+              </div>
+            ) : null}
             <div>
-              <dt className="font-medium text-gray-500">Přezdívka</dt>
+              <dt className="font-medium text-gray-500">
+                {user.isCompany ? "Interní jméno" : "Přezdívka"}
+              </dt>
               <dd className="text-gray-900">{user.nickname}</dd>
+              {user.isCompany ? (
+                <dd className="mt-1 text-xs text-gray-500">
+                  Slouží jen pro interní účely — u inzerátů se zobrazuje název
+                  firmy.
+                </dd>
+              ) : null}
             </div>
             <div>
               <dt className="font-medium text-gray-500">E-mail</dt>

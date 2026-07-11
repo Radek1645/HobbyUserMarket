@@ -14,8 +14,8 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 | Oblast | Kritické | Vysoké | Střední | Nízké |
 |--------|:--------:|:------:|:-------:|:-----:|
-| **Security** | ~~2~~ ✅ 0 otevřených | ~~3~~ 2 otevřené | ~~10~~ 8 otevřených | 7 |
-| **Proces** | — | — | ~~15~~ 12 otevřených | — |
+| **Security** | ~~2~~ ✅ 0 otevřených | ~~3~~ ~~2~~ **1** otevřená | ~~10~~ 8 otevřených | 7 |
+| **Proces** | — | — | ~~12~~ 13 otevřených | — |
 | **UX** | — | — | ~28 | — |
 
 > **Stav fáze 1 (PII):** C1, C2, M1 a M2 **hotové** migracemi [`025_contact_privacy_hardening.sql`](../supabase/025_contact_privacy_hardening.sql) + [`026_contact_reveal_rate_limit.sql`](../supabase/026_contact_reveal_rate_limit.sql) + úpravou `contact.ts`, `inzerat/[slug]/page.tsx`, `moje-inzeraty/page.tsx`, `get-listing-for-edit.ts`, `config/app.ts`. **Fáze 1 dokončena.**
@@ -29,7 +29,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 0. **Site Notice (zítra)** — otestovat zapnutí/vypnutí přes Vercel env bez odstávky webu; zvýraznit vzhled lišty (hlavně `maintenance`).
 1. **H2 / P15** — Poptávkový formulář (`/api/inquiry`) nemá rate limit ani anti-spam.
 2. **P8 / U1** — Technické selhání AI se zobrazí jako „inzerát zamítnut“ místo „zkuste to znovu“.
-3. **H3** — Protocol-relative open redirect v auth Server Actions.
+3. ~~**H3** — Protocol-relative open redirect v auth Server Actions.~~ ✅ **Vyřešeno 2026-07-11** — `sanitizeInternalPath()` v `src/lib/auth/sanitize-internal-path.ts`.
 4. **P20–P22** — GDPR: marketingový souhlas, Google OAuth VOP, smazání účtu.
 
 ---
@@ -69,11 +69,11 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 - **Popis:** `POST /api/inquiry` je neautentizované, bez IP/user rate limitu, bez CAPTCHA, bez logu do `inquiry_events`. Umožňuje spamovat majitele inzerátů přes Resend (obtěžování + náklady, ohrožení rozpočtu 1000 Kč/měsíc).
 - **Návrh:** Rate limit (IP + volitelně user) přes `rate_limits`; přidat Turnstile/hCaptcha + honeypot; logovat metadata do `inquiry_events`; generické chybové hlášky (viz M5).
 
-#### H3 — Protocol-relative open redirect v auth Server Actions
+#### H3 — Protocol-relative open redirect v auth Server Actions — ✅ VYŘEŠENO
 
-- **Soubor:** `src/app/actions/auth.ts` (29–32, 81, 297)
-- **Popis:** `readNextPath` propustí `//evil.com`, protože `startsWith("/")` je true. `redirect("//evil.com")` je protokolově-relativní redirect na externí doménu → phishing po loginu/onboardingu. `next` je skryté attacker-controlled pole v `EmailAuthPanel` / `OnboardingForm`. *(Pozn.: `auth/callback/route.ts` je díky `${origin}${safeNext}` bezpečné — problém je v Server Action `redirect()`.)*
-- **Návrh:** Centralizovat `sanitizeInternalPath()` — odmítnout, pokud nezačíná `/`, nebo začíná `//`, nebo obsahuje `\`; normalizovat přes `new URL(raw, "http://local")` a vracet jen `pathname+search+hash`. Použít všude, kde se `next` konzumuje.
+- **Soubor:** `src/lib/auth/sanitize-internal-path.ts`, `src/app/actions/auth.ts`, `src/app/auth/callback/route.ts`, `src/app/login/page.tsx`, `src/app/onboarding/page.tsx`
+- **Popis:** `readNextPath` propustil `//evil.com` → protocol-relative redirect po loginu.
+- **✅ Řešení (2026-07-11):** `sanitizeInternalPath()` — odmítá `//`, `\`, encoded `//`; normalizace přes `URL`. Použito ve všech auth redirect tocích. Manuální test `/login?next=//example.com` prošel.
 
 ### 🟡 Medium
 
@@ -175,6 +175,12 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **P24** | `auth/callback/route.ts` | Chyby OAuth/e-mail redirect s **raw anglickou** hláškou v `?error=`. | Mapovat na CZ přes `mapAuthError`. |
 | **P25** | produkt vs kód | PRD zmiňuje OTP; implementace je heslo + verifikační link, ne OTP login. | Sladit dokumentaci nebo doplnit magic-link/OTP. |
 
+### P2B / Podnikatelé (EU 2019/1150)
+
+| ID | Soubor | Slabina | Návrh |
+|----|--------|---------|-------|
+| **P32** | `docs/pravni/vop.md` (čl. 2.3, 4.5, 8.2), provoz | VOP Draft 1.5 deklaruje P2B lhůty pro Podnikatele (**15 dní** před zhoršením ceníku/balíčků nebo změnou VOP; **30 dní** před trvalým zrušením účtu), ale **proces je neimplementovaný** — text sám o sobě notifikace nespustí. | Implementovat e-mailové notifikace na trvalém nosiči (Resend) min. 15/30 dní před: (a) zhoršením ceníku/parametrů balíčků, (b) podstatnou změnou VOP, (c) trvalým zrušením/pozastavením účtu Podnikatele (výjimky dle čl. 4.5 VOP). Admin/cron workflow + šablony; účinnost změny až po uplynutí lhůty. **Trigger:** před prvním živnostníkem na portálu. |
+
 ### Admin, monitoring, data lifecycle
 
 | ID | Soubor | Slabina | Návrh |
@@ -269,9 +275,10 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **1. Ochrana PII (blokátor)** | ~~C1~~ ✅, ~~C2~~ ✅, ~~M1~~ ✅, ~~M2~~ ✅ | Jádro slibu soukromí + DoD §1.1/3. **Dokončeno** (migrace 025 + 026). | hotovo |
 | **2. Integrita publikace** | ~~H1~~ ✅, ~~P1~~ ✅, ~~P14~~ ✅, M10 | Server-side vynucení moderace. **Dokončeno** (migrace 027); zbývá M10 (ohraničení promptu). | hotovo (M10 ⏳) |
 | **3. Anti-spam & náklady** | H2, P15, P16, M6/P10, M7 | Ochrana rozpočtu 1000 Kč/měs a majitelů před spamem. | 1 den |
-| **4. Redirect & DB integrita** | H3, M3, M4 | Phishing + self-eskalace polí. | 0,5 dne |
+| **4. Redirect & DB integrita** | ~~H3~~ ✅, M3, M4 | Phishing + self-eskalace polí. | 0,5 dne |
 | **5. Robustnost procesů** | P2, P3, P4, P8/U1, P9, P11 | Orphan data, chybný cron, chybné hlášení výpadku AI. | 1–2 dny |
 | **6. GDPR compliance** | P20, P21, P22, P23, P24 | Souhlasy + smazání účtu (právní riziko). | 1–2 dny |
+| **6b. P2B provoz (Podnikatelé)** | P32 | E-mailové lhůty 15/30 dní dle VOP — před prvním IČO uživatelem. | 0,5–1 dne |
 | **7. UX vylepšení** | U1, U2, U3, U16, U21, P7, U5 | Rychlé výhry v důvěře a konverzi. | 1 den |
 | **8. Admin/ops (post-MVP)** | P26, P27, P28, P30, L6 | God Mode, reporting, monitoring, audit log dle PRD §11. | dle PRD |
 
@@ -295,5 +302,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | 2026-07-08 | Manuální testy **editace inzerátu (1–8)** prošly; migrace **028–032** (log moderace, `profile_no`, soft-delete hardening, strip ceny vs. telefon); EF `moderate-listing` (auth JWT, JSON parser, logging, hydratace — tón, pevná cena, dotazy nemovitosti RK/provize); UX redirectů po editaci, cache `/moje-inzeraty` |
 | 2026-07-09 | **P28 částečně:** JSON-LD, `sitemap.xml`, `robots.txt`, `llms.txt` implementovány; datum Vytvořeno na HP a detailu |
 | 2026-07-11 | **God Mode částečně:** `/mod/uzivatele` (admin); bootstrap rolí v `supabase-prikazy.md` + Metodika §11.1; **P23 ✅** smazání účtu; **P31 ✅** checkbox věku 15+; migrace **037–039** (delete + listing quota) |
+| 2026-07-11 | **VOP Draft 1.5:** P2B pasáže (lhůty, ranking, data access, mikropodnik); **P32 ⏳** provozní implementace e-mailových notifikací 15/30 dní pro Podnikatele |
+| 2026-07-11 | **H3 ✅** open redirect — `sanitizeInternalPath()`; **quota před AI**; **PRD v3.23** §12 monetizace (bankovní převod); manuální testy quota + H3 |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

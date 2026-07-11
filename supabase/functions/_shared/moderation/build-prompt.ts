@@ -57,7 +57,8 @@ Hydratace a kvalita textu (pokud obsah NENÍ REJECTED):
 - Příklad struktury cleanedDescription (zboží):
   „Prodávám … [úvod včetně ceny a předání].\n\n---\n\nParametry\n• Nájezd: 587 km\n• Stav: …“
 - Do cleanedDescription vždy zapracuj vše, co už znáš z textu, fotek a formuláře.
-- U statusu NEEDS_QUESTIONS: úvod + Parametry jen s fakty, které už znáš; chybějící údaje ptej v dotazníku (odpovědi se doplní do Parametrů automaticky).
+- U statusu NEEDS_QUESTIONS: úvod + Parametry jen s fakty, které už znáš; chybějící údaje ptej v dotazníku (odpovědi se doplní do Parametrů automaticky). Nikdy nevkládej do Parametrů placeholder „…“ nebo prázdnou hodnotu — neznámý parametr vynech, dokud nemáš odpověď.
+- Frázi „osobní prohlídka po domluvě“ používej pouze u nemovitostí (viz příklad níže). U zboží a módy piš „osobní předání po domluvě“ nebo „vyzvednutí po domluvě“ — „prohlídka“ u věci působí jako escort návnada.
 - U každé otázky v poli questions uveď label (otázka pro uživatele) a paramLabel (krátký název parametru pro sekci Parametry — např. „Účel pozemku“, „Plocha“, max. 4 slova, bez otazníku, stejný styl jako odrážky v cleanedDescription).
 - U otázek na měřitelné veličiny uveď jednotku přímo v label otázky a slad paramLabel s očekávaným parametrem:
   • rozměry / velikost → label např. „Jaké jsou rozměry v cm?“, paramLabel „Rozměry“; odpověď uživatele se pak objeví v Parametrech jako „• Rozměry: … cm“.

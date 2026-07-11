@@ -10,4 +10,6 @@ export type AppUser = {
   role: UserRole;
   displayName: string;
   needsNicknameSetup: boolean;
+  isCompany: boolean;
+  companyName: string | null;
 };

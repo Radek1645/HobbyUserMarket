@@ -2,8 +2,10 @@ import { formatQuestionAnswerAsBullet } from "@/lib/moderation/format-question-a
 import {
   buildParametersSection,
   joinIntroAndParameters,
+  mergeListingParameters,
   MODERATION_QA_SECTION_SEPARATOR,
   parseListingDescription,
+  parseParameterLine,
   type ListingParameter,
 } from "@/lib/moderation/parse-listing-description";
 import type { ModerationQuestion } from "@/lib/moderation/types";
@@ -31,13 +33,20 @@ export function appendQuestionAnswersToDescription(
   }
 
   const parsed = parseListingDescription(safeDescription);
-  const existingLines = parsed.parameters.map(
+  const newParameters = bullets
+    .map((bullet) => parseParameterLine(bullet))
+    .filter(
+      (item): item is ListingParameter =>
+        item !== null && item.label.length > 0 && item.value.length > 0,
+    );
+  const mergedParameters = mergeListingParameters(
+    parsed.parameters,
+    newParameters,
+  );
+  const parameterLines = mergedParameters.map(
     (item) => `• ${item.label}: ${item.value}`,
   );
-  const parametersSection = buildParametersSection([
-    ...existingLines,
-    ...bullets,
-  ]);
+  const parametersSection = buildParametersSection(parameterLines);
 
   return joinIntroAndParameters(parsed.intro, parametersSection);
 }

@@ -43,34 +43,26 @@ function slugifyForNickname(input: string): string {
   return input
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
+    .replace(/(?<=\p{L})\.(?=\p{L})/gu, "")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, "_")
+    .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, NICKNAME_MAX);
 }
 
-/** Pro firmu: prázdné → null; neplatné znaky → slug (např. „Infotec s.r.o“ → infotec_sro). */
+/** Pro firmu: prázdné → null; jinak musí projít validateNickname (bez tichého přepisu). */
 export function resolveCompanyInternalNickname(raw: string): string | null {
   const normalized = normalizeNickname(raw);
   if (!normalized) {
     return null;
   }
 
-  const validationError = validateNickname(raw);
-  if (!validationError) {
-    return normalized;
+  if (validateNickname(raw)) {
+    return null;
   }
 
-  const slugified = slugifyForNickname(raw);
-  if (
-    slugified.length >= NICKNAME_MIN &&
-    NICKNAME_PATTERN.test(slugified) &&
-    !isPlaceholderNickname(slugified)
-  ) {
-    return slugified;
-  }
-
-  return null;
+  return normalized;
 }
 
 export function generateCompanyNickname(

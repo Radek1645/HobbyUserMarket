@@ -6,6 +6,7 @@ import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { HeaderLocationPanel } from "@/components/location/HeaderLocationPanel";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
+  createListingCtaLabel,
   headerCreateListingButtonClass,
   iconSmClass,
 } from "@/config/ui-primitives";
@@ -91,31 +92,27 @@ export function Header({ user }: HeaderProps) {
             <Link
               href="/inzerat/novy"
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
-              aria-label="Vytvořit inzerát přes AI"
+              aria-label={createListingCtaLabel}
               className={headerCreateListingButtonClass}
             >
               <Sparkles
-                className={`${iconSmClass} shrink-0 min-[480px]:mr-2`}
+                className={`${iconSmClass} mr-2 shrink-0`}
                 strokeWidth={2.5}
               />
-              <span className="hidden min-[480px]:inline">
-                Vytvořit inzerát přes AI
-              </span>
+              {createListingCtaLabel}
             </Link>
           ) : (
             <Link
               href="/login?next=/inzerat/novy&message=create_listing&tab=register"
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
-              aria-label="Vytvořit inzerát přes AI"
+              aria-label={createListingCtaLabel}
               className={headerCreateListingButtonClass}
             >
               <Sparkles
-                className={`${iconSmClass} shrink-0 min-[480px]:mr-2`}
+                className={`${iconSmClass} mr-2 shrink-0`}
                 strokeWidth={2.5}
               />
-              <span className="hidden min-[480px]:inline">
-                Vytvořit inzerát přes AI
-              </span>
+              {createListingCtaLabel}
             </Link>
           )}
 

@@ -19,31 +19,40 @@ import type { PublicListingPreview } from "@/types/post";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
-function HeroHeadline({
-  headline,
+const aiHighlightClass =
+  "font-[850] text-[1.1em] tracking-[0.5px] text-[#00875a]";
+
+function HeroHeadline({ headline }: { headline: string }) {
+  return (
+    <h1 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">
+      {headline}
+    </h1>
+  );
+}
+
+function HeroSubline({
+  subline,
   highlightAi = false,
 }: {
-  headline: string;
+  subline: string;
   highlightAi?: boolean;
 }) {
-  const baseClass = "mt-1 text-2xl font-semibold text-zinc-900 sm:text-3xl";
+  const baseClass = "mt-3 max-w-xl text-gray-700";
 
   if (!highlightAi) {
-    return <h1 className={baseClass}>{headline}</h1>;
+    return <p className={baseClass}>{subline}</p>;
   }
 
-  const aiMatch = headline.match(/^(.*\s)(AI)$/);
+  const aiMatch = subline.match(/^(AI)(\s.*)$/);
   if (!aiMatch) {
-    return <h1 className={baseClass}>{headline}</h1>;
+    return <p className={baseClass}>{subline}</p>;
   }
 
   return (
-    <h1 className={baseClass}>
-      {aiMatch[1]}
-      <span className="text-emerald-600 [text-shadow:0_0_18px_rgba(16,185,129,0.55),0_0_36px_rgba(16,185,129,0.25)]">
-        {aiMatch[2]}
-      </span>
-    </h1>
+    <p className={baseClass}>
+      <span className={aiHighlightClass}>AI</span>
+      {aiMatch[2]}
+    </p>
   );
 }
 
@@ -91,14 +100,11 @@ export function HomeBrowse({
       <div className="px-4 py-8 sm:px-6">
         <section className="relative overflow-hidden rounded-2xl border border-orange-200/60 bg-gradient-to-r from-orange-200 via-amber-50 to-emerald-200 shadow-sm">
           <div className="p-6 sm:p-8">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
-              {theme.label}
-            </p>
-            <HeroHeadline
-              headline={theme.headline}
+            <HeroHeadline headline={theme.headline} />
+            <HeroSubline
+              subline={theme.subline}
               highlightAi={category === "all"}
             />
-            <p className="mt-3 max-w-xl text-gray-700">{theme.subline}</p>
 
             {!user ? (
               <div className="mt-3 w-fit max-w-md">

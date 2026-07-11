@@ -260,7 +260,7 @@ export function HomeListings({
       return `Do ${effectiveRadiusKm} km od vaší polohy`;
     }
     if (activeLocation && nationwideFallback) {
-      return "Ve vašem okolí zatím nic není — nejnovější inzeráty z celé republiky";
+      return "Ve vašem okolí zatím nic není. Zobrazujeme nejnovější inzeráty z celé republiky.";
     }
     if (!activeLocation) {
       return locationEnabled

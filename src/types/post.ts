@@ -78,6 +78,7 @@ export type PostRow = {
   event_date: string | null;
   renew_count: number;
   payment_status: PaymentStatus;
+  listing_quota_consumed?: boolean;
   main_image_url: string | null;
   slug: string;
   show_contact_email?: boolean;

@@ -11,7 +11,9 @@ import {
 import { findProhibitedKeyword } from "@/lib/moderation/prohibited-scan";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
 import {
+  getUserListingQuota,
   isListingQuotaExceededError,
+  isNewPublicationQuotaBlocked,
   LISTING_QUOTA_EXCEEDED_MESSAGE,
 } from "@/lib/listings/quota";
 import { syncListingImagesFromForm } from "@/lib/posts/listing-images";
@@ -130,6 +132,11 @@ export async function createListing(
     return { error: PROHIBITED_CONTENT_ERROR };
   }
 
+  const quota = await getUserListingQuota(user.id);
+  if (isNewPublicationQuotaBlocked(quota)) {
+    return { error: LISTING_QUOTA_EXCEEDED_MESSAGE };
+  }
+
   const supabase = await createClient();
   const slug = buildPostSlug(data.title);
 
@@ -189,7 +196,7 @@ export async function updateListing(
   const supabase = await createClient();
   const { data: existing, error: fetchError } = await supabase
     .from("posts")
-    .select("id, slug, user_id, event_date, status")
+    .select("id, slug, user_id, event_date, status, listing_quota_consumed")
     .eq("id", postId)
     .maybeSingle<{
       id: number;
@@ -197,6 +204,7 @@ export async function updateListing(
       user_id: string;
       event_date: string | null;
       status: string;
+      listing_quota_consumed: boolean;
     }>();
 
   if (fetchError || !existing) {
@@ -254,6 +262,11 @@ export async function updateListing(
   );
 
   if (hasModerationToken) {
+    const quota = await getUserListingQuota(user.id);
+    if (isNewPublicationQuotaBlocked(quota, existing.listing_quota_consumed)) {
+      return { error: LISTING_QUOTA_EXCEEDED_MESSAGE };
+    }
+
     const publishError = await publishWithApprovalToken(
       supabase,
       postId,

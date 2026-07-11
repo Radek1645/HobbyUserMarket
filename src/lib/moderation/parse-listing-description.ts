@@ -16,6 +16,64 @@ export type ListingParameter = {
   value: string;
 };
 
+function normalizeParameterLabel(label: string): string {
+  return label.trim().toLocaleLowerCase("cs");
+}
+
+/** Placeholder bez skutečné hodnoty — AI je nemá nechat v Parametrech u NEEDS_QUESTIONS. */
+export function isPlaceholderParameterValue(value: string): boolean {
+  const trimmed = value.trim();
+  return (
+    trimmed === "…" ||
+    trimmed === "..." ||
+    trimmed === ".." ||
+    trimmed === "–" ||
+    trimmed === "—" ||
+    trimmed === "-" ||
+    trimmed === "?" ||
+    trimmed === "???" ||
+    trimmed.toLocaleLowerCase("cs") === "neuvedeno"
+  );
+}
+
+/** Sloučí existující parametry s odpověďmi z dotazníku — stejný label se nepřidává dvakrát. */
+export function mergeListingParameters(
+  existing: ListingParameter[],
+  additions: ListingParameter[],
+): ListingParameter[] {
+  const additionMap = new Map<string, ListingParameter>();
+  for (const item of additions) {
+    additionMap.set(normalizeParameterLabel(item.label), item);
+  }
+
+  const merged: ListingParameter[] = [];
+  const seen = new Set<string>();
+
+  for (const item of existing) {
+    const key = normalizeParameterLabel(item.label);
+    if (seen.has(key)) continue;
+
+    const replacement = additionMap.get(key);
+    if (replacement) {
+      merged.push(replacement);
+      additionMap.delete(key);
+      seen.add(key);
+      continue;
+    }
+
+    if (isPlaceholderParameterValue(item.value)) continue;
+
+    merged.push(item);
+    seen.add(key);
+  }
+
+  for (const item of additionMap.values()) {
+    merged.push(item);
+  }
+
+  return merged;
+}
+
 export type ParsedListingDescription = {
   intro: string;
   parametersHeading: string;
@@ -31,7 +89,7 @@ function findQaSectionMarker(description: string): {
   return { index: match.index, length: match[0].length };
 }
 
-function parseParameterLine(line: string): ListingParameter | null {
+export function parseParameterLine(line: string): ListingParameter | null {
   const trimmed = line.trim();
   if (!trimmed || PARAMETERS_HEADING_PATTERN.test(trimmed)) return null;
 

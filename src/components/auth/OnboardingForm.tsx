@@ -104,7 +104,7 @@ export function OnboardingForm({
         />
         <p className="mt-1 text-xs text-gray-500">
           {isCompany
-            ? "Volitelné — pro komentáře. Můžete nechat prázdné (vygenerujeme z názvu firmy). Povolená jsou písmena, čísla, _ a -."
+            ? "Volitelné — jen pro interní účely (ne zobrazuje se u inzerátů). Povolená jsou písmena, čísla, _ a -. Nechte prázdné, vygenerujeme z názvu firmy."
             : "3–30 znaků, písmena, čísla, podtržítko nebo pomlčka. Zobrazí se u vašich inzerátů."}
         </p>
       </div>

@@ -12,12 +12,13 @@ import {
   LISTING_DESCRIPTION_MIN_LENGTH,
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
-import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getConditionLabel, getListingDescriptionPlaceholder, getListingTitlePlaceholder, getPriceTypeLabel, getSubcategoryLabel } from "@/config/categories";
+import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getConditionLabel, getListingCategoryNotice, getListingDescriptionPlaceholder, getListingTitlePlaceholder, getPriceTypeLabel, getSubcategoryLabel } from "@/config/categories";
 import {
   computeListingExpiresAt,
   getListingExpiryWarning,
   parseMentionedDatesFromText,
 } from "@/lib/posts/expiry";
+import { LISTING_QUOTA_EXCEEDED_MESSAGE } from "@/lib/listings/quota-shared";
 import { listingNeedsModeration } from "@/lib/moderation/needs-moderation";
 import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
@@ -86,6 +87,8 @@ type CreateListingFormProps = {
    * i beze změny obsahu, jinak by nevznikl approval token pro publikaci.
    */
   forceModeration?: boolean;
+  /** Vyčerpaný limit — nová publikace se neodešle (AI moderace se nespustí). */
+  publishBlockedByQuota?: boolean;
 };
 
 type FormState = CreateListingState | UpdateListingState;
@@ -106,6 +109,7 @@ export function CreateListingForm({
   initialImages = [],
   userEmail,
   forceModeration = false,
+  publishBlockedByQuota = false,
 }: CreateListingFormProps) {
   const isEdit = mode === "edit";
   const formAction = isEdit ? updateListing : createListing;
@@ -182,6 +186,7 @@ export function CreateListingForm({
 
   const isEvent = categoryType === "udalost";
   const isJob = categoryType === "prace";
+  const isService = categoryType === "sluzby";
   const isRecurringEvent = isEvent && conditionLabel === "long_term";
 
   const titlePlaceholder = useMemo(
@@ -204,6 +209,14 @@ export function CreateListingForm({
 
   const selectedSubcategory = useMemo(
     () => getSubcategoryLabel(categoryType, subcategorySlug),
+    [categoryType, subcategorySlug],
+  );
+
+  const listingCategoryNotice = useMemo(
+    () =>
+      subcategorySlug
+        ? getListingCategoryNotice(categoryType, subcategorySlug)
+        : undefined,
     [categoryType, subcategorySlug],
   );
 
@@ -362,6 +375,15 @@ export function CreateListingForm({
     setModerationRejection(null);
     setModerationPreview(null);
     setModerationApprovedOpen(false);
+
+    if (publishBlockedByQuota) {
+      setModerationError(LISTING_QUOTA_EXCEEDED_MESSAGE);
+      submitErrorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+      return;
+    }
 
     if (isEvent && !isEventDateValid) {
       return;
@@ -619,6 +641,12 @@ export function CreateListingForm({
             </select>
           </div>
 
+          {listingCategoryNotice ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
+              {listingCategoryNotice}
+            </p>
+          ) : null}
+
           <button
             type="button"
             {...gtmCtaProps(GTM_CTA.CREATE_STEP_CONTINUE)}
@@ -649,6 +677,12 @@ export function CreateListingForm({
               Upravit
             </button>
           </div>
+
+          {listingCategoryNotice ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
+              {listingCategoryNotice}
+            </p>
+          ) : null}
 
           <div>
             <label htmlFor="title" className={labelClass}>
@@ -865,7 +899,9 @@ export function CreateListingForm({
                       ? "Mzda (Kč)"
                       : isEvent
                         ? "Vstupné (Kč)"
-                        : "Cena (Kč)"}{" "}
+                        : isService
+                          ? "Sazba (Kč/h)"
+                          : "Cena (Kč)"}{" "}
                     <span className="text-red-600">*</span>
                   </>
                 }
@@ -881,7 +917,11 @@ export function CreateListingForm({
                 id="priceAmount"
                 label={
                   <>
-                    {isJob ? "Orientační odměna (Kč)" : "Orientační cena (Kč)"}{" "}
+                    {isJob
+                      ? "Orientační odměna (Kč)"
+                      : isService
+                        ? "Orientační cena zakázky (Kč)"
+                        : "Orientační cena (Kč)"}{" "}
                     <span className="text-red-600">*</span>
                   </>
                 }
@@ -890,8 +930,12 @@ export function CreateListingForm({
                 inputClass={inputClass}
                 labelClass={labelClass}
                 required
-                placeholder="např. 500"
-                hint="Orientační částka — finální cenu domluvíte přímo se zájemcem."
+                placeholder={isService ? "např. 3 000" : "např. 500"}
+                hint={
+                  isService
+                    ? "Orientační cena za celou zakázku — finální rozsah domluvíte se zákazníkem."
+                    : "Orientační částka — finální cenu domluvíte přímo se zájemcem."
+                }
               />
             ) : null}
             {priceType === "exchange" ? (
@@ -1018,6 +1062,12 @@ export function CreateListingForm({
               : "AI kontrola obsahu bude brzy — teď se inzerát uloží rovnou."}
           </p>
 
+          {publishBlockedByQuota ? (
+            <div role="alert" className={errorAlertClass}>
+              {LISTING_QUOTA_EXCEEDED_MESSAGE}
+            </div>
+          ) : null}
+
           {moderationError ? (
             <div ref={submitErrorRef} role="alert" className={errorAlertClass}>
               {moderationError}
@@ -1050,9 +1100,11 @@ export function CreateListingForm({
                 isEdit ? GTM_CTA.EDIT_SAVE : GTM_CTA.CREATE_PUBLISH,
                 { category: categoryType },
               )}
-              disabled={isSaving || !canPublish}
+              disabled={isSaving || !canPublish || publishBlockedByQuota}
               title={
-                !canPublish
+                publishBlockedByQuota
+                  ? "Vyčerpali jste limit publikací"
+                  : !canPublish
                   ? isEvent && eventDateError
                     ? eventDateError
                     : "Vyplňte název, popis a potvrďte obec z našeptávače"

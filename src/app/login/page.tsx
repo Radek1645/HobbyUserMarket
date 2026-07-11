@@ -2,6 +2,7 @@ import { signInWithGoogle } from "@/app/actions/auth";
 import { EmailAuthPanel } from "@/components/auth/EmailAuthPanel";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { redirect } from "next/navigation";
 
 type LoginPageProps = {
@@ -36,7 +37,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   const { error, message, next, tab } = await searchParams;
-  const nextPath = next?.startsWith("/") ? next : "/";
+  const nextPath = sanitizeInternalPath(next);
   const infoMessage = message ? messageMap[message] : undefined;
   const isCreateListingFlow = message === "create_listing";
 

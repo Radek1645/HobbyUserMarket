@@ -22,9 +22,16 @@ export const emeraldPrimaryButtonCompactClass =
 export const headerCreateListingSurfaceClass =
   "bg-emerald-600 text-white transition-colors duration-200 hover:bg-emerald-700";
 
-/** Header „Vytvořit inzerát přes AI“ — pill na mobilu, text od 480px, ikona Sparkles. */
+/** Sdílený text hlavního CTA pro tvorbu inzerátu (header + FAB). */
+export const createListingCtaLabel = "Vytvořit inzerát s AI";
+
+/** Header „Vytvořit inzerát s AI“ — jen desktop (md+), pill s textem, ikona Sparkles. */
 export const headerCreateListingButtonClass =
-  `flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 text-sm font-semibold ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass} sm:h-11 sm:w-auto sm:px-4 sm:text-[0.9375rem] md:px-6`;
+  `hidden h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-6 text-[0.9375rem] font-semibold md:flex ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+
+/** Mobilní FAB pro tvorbu inzerátu — plovoucí, extended → ikona při scrollu. */
+export const createListingFabClass =
+  `fixed right-4 z-40 flex h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 md:hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
 
 /** Logo mark (domeček vlevo v headeru). */
 export const emeraldLogoMarkClass =

@@ -14,6 +14,7 @@ import {
   userRequiresRegistrationConsentsOnboarding,
   validateRegistrationConsents,
 } from "@/lib/auth/registration-consents";
+import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { redirect } from "next/navigation";
 
 export type AuthFormState = {
@@ -37,8 +38,7 @@ function readPassword(formData: FormData): string {
 }
 
 function readNextPath(formData: FormData): string {
-  const next = String(formData.get("next") ?? "/");
-  return next.startsWith("/") ? next : "/";
+  return sanitizeInternalPath(String(formData.get("next") ?? "/"));
 }
 
 function mapAuthError(message: string): string {
@@ -92,12 +92,13 @@ async function redirectAfterAuth(nextPath: string) {
 }
 
 export async function signInWithGoogle(nextPath = "/") {
+  const safeNextPath = sanitizeInternalPath(nextPath);
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+      redirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent(safeNextPath)}`,
       queryParams: {
         access_type: "offline",
         prompt: "consent",
@@ -264,6 +265,15 @@ export async function completeOnboarding(
     const icoError = companyIco ? validateIco(companyIco) : null;
     if (icoError) {
       return { error: icoError };
+    }
+
+    if (rawNickname.trim()) {
+      const internalNicknameError = validateNickname(rawNickname);
+      if (internalNicknameError) {
+        return {
+          error: `${internalNicknameError} Pro zobrazení u inzerátů použijte pole „Název firmy“ — interní jméno nechte prázdné, vygenerujeme ho automaticky.`,
+        };
+      }
     }
   } else {
     const validationError = validateNickname(rawNickname);

@@ -5,6 +5,13 @@ import type {
   ListingQuotaSnapshot,
 } from "@/types/listing-quota";
 
+export {
+  formatPackagePrice,
+  isListingQuotaExceededError,
+  isNewPublicationQuotaBlocked,
+  LISTING_QUOTA_EXCEEDED_MESSAGE,
+} from "@/lib/listings/quota-shared";
+
 type QuotaRow = {
   plan_label: string;
   used_count: number;
@@ -20,13 +27,6 @@ type PackageRow = {
   description: string | null;
   is_purchasable: boolean;
 };
-
-export const LISTING_QUOTA_EXCEEDED_MESSAGE =
-  "Dosáhli jste limitu publikovaných inzerátů. Smazání nebo archivace starého inzerátu kredit nevrátí — další publikaci získáte dokoupením balíčku v nastavení profilu.";
-
-export function isListingQuotaExceededError(message?: string | null): boolean {
-  return Boolean(message?.includes("listing_quota_exceeded"));
-}
 
 export async function getUserListingQuota(
   userId: string,
@@ -117,9 +117,4 @@ export async function getListingUpsellPackage(): Promise<ListingPackageCatalogIt
     description: data.description,
     isPurchasable: data.is_purchasable,
   };
-}
-
-export function formatPackagePrice(priceCents: number | null): string | null {
-  if (priceCents == null) return null;
-  return `${Math.round(priceCents / 100)} Kč`;
 }

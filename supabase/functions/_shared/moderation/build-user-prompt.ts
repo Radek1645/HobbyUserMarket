@@ -32,6 +32,8 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
   const priceType = body.priceType?.trim();
   if (!priceType) return null;
 
+  const categoryType = body.categoryType?.trim();
+  const isService = categoryType === "sluzby";
   const label = body.priceTypeLabel?.trim() || priceType;
   const amount =
     typeof body.priceAmount === "number" && !Number.isNaN(body.priceAmount)
@@ -39,10 +41,16 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
       : null;
 
   if (priceType === "fixed" && amount != null) {
+    if (isService) {
+      return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč/h. Do cleanedDescription vlož „${formatCzkAmount(amount)} Kč/h“ (nebo přirozeně zapracovanou hodinovou sazbu). Nepoužívej formulaci „Cena ${formatCzkAmount(amount)} Kč“ bez /h — jde o sazbu za hodinu, ne prodejní cenu věci. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
+    }
     return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč. Do cleanedDescription vlož přímo „Cena ${formatCzkAmount(amount)} Kč.“ (nebo přirozeně zapracovanou do věty). Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
   }
 
   if (priceType === "negotiable" && amount != null) {
+    if (isService) {
+      return `Typ ceny z formuláře: ${label}, orientačně ${formatCzkAmount(amount)} Kč za celou zakázku. Uveď např. „od ${formatCzkAmount(amount)} Kč“ nebo „cena za zakázku od ${formatCzkAmount(amount)} Kč“. Nepoužívej formulaci jako prodejní cenu jedné věci. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
+    }
     return `Typ ceny z formuláře: ${label}, orientačně ${formatCzkAmount(amount)} Kč. Orientační cenu uveď v cleanedDescription přímo číslem. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
   }
 
@@ -55,6 +63,9 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
     priceType === "offer" ||
     priceType === "exchange"
   ) {
+    if (isService && priceType === "offer") {
+      return `Typ ceny z formuláře: ${label}. Cenu v cleanedDescription neuveduj — domluví se individuálně.`;
+    }
     return `Typ ceny z formuláře: ${label}. Na prodejní cenu se neptej — u tohoto typu není relevantní.`;
   }
 

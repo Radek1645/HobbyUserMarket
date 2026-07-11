@@ -12,6 +12,7 @@ export const GTM_CTA = {
   // Header
   HEADER_HOME: "cta_header_home",
   HEADER_CREATE_LISTING: "cta_header_create_listing",
+  FAB_CREATE_LISTING: "cta_fab_create_listing",
   HEADER_SEARCH_SUBMIT: "cta_header_search_submit",
   HEADER_LOCATION: "cta_header_location",
   HEADER_MENU_TOGGLE: "cta_header_menu_toggle",

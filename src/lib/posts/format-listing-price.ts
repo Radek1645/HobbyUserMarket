@@ -10,6 +10,18 @@ export function formatListingPrice(
 ): string {
   const label = getPriceTypeLabel(categoryType, priceType);
 
+  if (categoryType === "sluzby") {
+    if (priceType === "fixed" && priceAmount != null) {
+      return `${formatCzkAmount(priceAmount)} Kč/h`;
+    }
+
+    if (priceType === "negotiable" && priceAmount != null) {
+      return `od ${formatCzkAmount(priceAmount)} Kč za zakázku`;
+    }
+
+    return label;
+  }
+
   if (priceType === "fixed" && priceAmount != null) {
     return `${formatCzkAmount(priceAmount)} Kč`;
   }

@@ -1,9 +1,9 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.22  
-> **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)**  
+> **Verze dokumentu:** v3.23  
+> **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`036_post_status_blocked.sql`](../supabase/036_post_status_blocked.sql) · [`037_delete_user_account.sql`](../supabase/037_delete_user_account.sql) · [`038_listing_quota.sql`](../supabase/038_listing_quota.sql) · [`039_listing_quota_lifetime.sql`](../supabase/039_listing_quota_lifetime.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`038_listing_quota.sql`](../supabase/038_listing_quota.sql) · [`039_listing_quota_lifetime.sql`](../supabase/039_listing_quota_lifetime.sql) · [`040_bank_payments.sql`](../supabase/040_bank_payments.sql) *(plánováno)*  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
 > **Datum:** 2026-07-11
 
@@ -111,6 +111,16 @@ Modul je hotový, když platí všechny body:
 - Moderace a AI modal: [`src/config/moderation/messages.ts`](../src/config/moderation/messages.ts)
 - Hero a kategorie na HP: [`src/config/home-themes.ts`](../src/config/home-themes.ts)
 - Ostatní texty v komponentách musí §1.6 dodržovat
+
+### 1.7 Definition of Done (v0.6 — Monetizace bankovním převodem)
+
+Modul je hotový, když platí všechny body:
+
+1. **Nákup balíčku:** Přihlášený uživatel na `/balicky-inzerce` (nebo upsell v `/profil/nastaveni`) zvolí **Balíček +20 inzerátů (50 Kč)** → systém vytvoří záznam platby, zobrazí **QR kód (SPAYD)** a variabilní symbol pro ruční převod.
+2. **Automatické párování:** Cron (5–10 min) stáhne příchozí platby z **Fio bankovního API**, spáruje **částku + VS** s pending platbou a přidělí balíček přes existující `grant_listing_package('standard_20')`.
+3. **Potvrzení:** Po spárování e-mail uživateli („Platba dorazila, +20 publikací je aktivních“) + záznam v `audit_events` (`package_purchased`).
+4. **Ruční fallback:** Admin v God Mode (`/mod/platby`) vidí nespárované / expirované platby a může balíček připsat jedním kliknutím (s audit logem).
+5. **Bez platební brány:** Žádný Stripe/SDK; provozní náklady ≈ 0 Kč (Fio API zdarma, QR generovaný v aplikaci).
 
 ---
 
@@ -590,10 +600,11 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
   * Nový účet dostane balíček `free` — **20** lifetime publikací (každá první publikace spotřebuje 1 kredit, smazání/expirace kredit nevrací).
   * Tabulky `listing_packages`, `user_listing_entitlements`; sloupec `posts.listing_quota_consumed`.
   * UI: `/profil/nastaveni` (počítadlo), `/balicky-inzerce` (právní info); admin přiděluje balíčky v `/mod/uzivatele`.
-  * Platby (Stripe) zatím **ne** — `is_purchasable = false`; ruční grant přes God Mode nebo SQL.
-* **Architektonická příprava na budoucí monetizaci:**
-  * `posts.expires_at`, `posts.listing_duration_days` (v0.1.1), `posts.renew_count`, `posts.payment_status` (výchozí `free`).
-  * Integrace platební brány (např. Stripe) až po validaci MVP.
+  * **Placený nákup:** plánováno v [§12](#12-modul-monetizace-v06--bankovní-převod--qr) — bankovní převod + Fio API (bez platební brány). Do implementace v0.6: `is_purchasable = false`, ruční grant přes God Mode nebo SQL.
+* **Architektonická příprava na monetizaci *(hotovo + v0.6)*:**
+  * `listing_packages`, `user_listing_entitlements`, `grant_listing_package` — katalog a přidělení kreditů.
+  * `posts.payment_status` (výchozí `free`) — rezervováno pro budoucí topování/prodloužení.
+  * **v0.6:** tabulka `bank_payments`, Fio API sync, SPAYD QR — viz §12. Platební brána (Stripe) záměrně **ne** — nevyplatí se při rozpočtu 1 000 Kč/měsíc a objemu Vibecoding MVP.
 * **Cookie consent (EU):**
   * Consent banner před aktivací GA4 (GTM consent mode).
   * Stránky: Zásady ochrany osobních údajů, Podmínky použití.
@@ -672,6 +683,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.20 | 2026-07-09 | **SEO infrastruktura:** JSON-LD (`listing-json-ld.ts`), Open Graph na detailu, dynamická `sitemap.xml`, `robots.txt`, `public/llms.txt`; datum **Vytvořeno** na HP kartě a v metadatech detailu |
 | v3.21 | 2026-07-10 | **Stav `blocked`:** migrace `036` — oddělení pauzy (`hidden`) od moderátorského zablokování; `status_reason_code`; trigger `check_report_threshold` → `blocked`; UI `ListingBlockedNotice`; právní docs §4 |
 | v3.22 | 2026-07-11 | **Smazání účtu (P23):** migrace `037`, RPC `prepare_user_account_deletion`, `/profil/nastaveni`, `/mod/uzivatele`; **checkbox věku 15+ (P31)**; **limity inzerátů:** migrace `038`/`039`, lifetime kredity, `/balicky-inzerce`; God Mode `/mod/uzivatele` částečně hotové |
+| v3.23 | 2026-07-11 | **§12 Monetizace v0.6:** schválený směr bankovní převod + SPAYD QR + Fio API (bez platební brány); §1.7 DoD; úprava §6 — odkaz místo Stripe |
 
 ---
 
@@ -1327,3 +1339,226 @@ Audit log implementovat **po** God Mode a nahlášení — ať loguje reálné p
 ### 11.8 Out of Scope (v0.5)
 
 Viz [§2.2](#22-mimo-rozsah-v05-out-of-scope--provoz-a-moderace).
+
+---
+
+## 12. Modul Monetizace (v0.6 — bankovní převod + QR)
+
+> **Stav:** Schválený směr, plánováno po validaci limitů inzerátů (migrace `038`/`039`).  
+> **Proč tato cesta:** Pro AI Vibecoding s provozním rozpočtem **1 000 Kč/měsíc** je kombinace **SPAYD QR plateb** + **bezplatného Fio bankovního API** ideální — bez schvalování platebních bran, bez transakčních poplatků (~2 % u Stripe), bez SDK. Okamžité tuzemské platby dorazí obvykle do **5–10 minut** (interval cronu), což u lokální inzerce stačí.
+
+### 12.1 Koncept
+
+**„Dokoupit lifetime kredity bankovním převodem s automatickým párováním.“**
+
+- Uživatel nekupuje „slot na inzerát“, ale **balíček z katalogu** `listing_packages` — první placená nabídka: slug `standard_20`, **+20 publikací**, **50 Kč** (`price_cents = 5000`, migrace `038`).
+- Po zaplacení systém **nepřepisuje** `profiles`, ale volá existující RPC `grant_listing_package(user_id, 'standard_20', …)` → řádek v `user_listing_entitlements` (stejný model jako partnerský grant v God Mode).
+- **Neimplementovat** samostatný sloupec `allowed_listings_count` na `profiles` — limit už počítá `user_listing_quota_limit()`.
+
+**Co tím získáme vs. platební brána:**
+
+| Aspekt | Bankovní převod + Fio API | Stripe / brána |
+|--------|---------------------------|----------------|
+| Měsíční fix | 0 Kč (Fio API zdarma) | poplatky + možný Pro tier |
+| Implementace | Edge Function + cron + QR | KYC, webhooky, 3DS, refund API |
+| UX | Naskenovat QR v bankovní appce | Karta v checkoutu (~1 min) |
+| Vhodné pro | CZ, nízký objem, MVP | vyšší objem, karty, EU |
+
+### 12.2 Předpoklady provozu
+
+1. **Účet u Fio banky** (osobní nebo podnikatelský) s IBAN pro příjem plateb.
+2. V internetovém bankovnictví vygenerovat **API token** s oprávněním **„Pouze číst historii“** (read-only).
+3. Token uložit do Supabase secrets jako `FIO_API_TOKEN` — **nikdy** do frontendu ani do repozitáře.
+4. IBAN a název příjemce v `src/config/payments.ts` (nebo env `PAYMENT_IBAN`, `PAYMENT_ACCOUNT_NAME`).
+5. Před spuštěním placeného režimu aktualizovat [`docs/pravni/balicky-inzerce.md`](./pravni/balicky-inzerce.md) §4 (online platba převodem) a VOP.
+
+**Alternativy (mimo v0.6):** Raiffeisenbank / ČSOB nabízejí obdobná API, ale Fio má nejjednodušší onboarding pro tento use-case. Platební brána zůstává volitelná až při výrazně vyšším objemu.
+
+### 12.3 Datový model
+
+**Nová tabulka `bank_payments`** — sleduje intent platby a stav párování (migrace `040_bank_payments.sql`):
+
+```sql
+CREATE TABLE public.bank_payments (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  payment_no          BIGINT GENERATED ALWAYS AS IDENTITY,
+  user_id             UUID NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
+  package_id          BIGINT NOT NULL REFERENCES public.listing_packages (id) ON DELETE RESTRICT,
+  variable_symbol     BIGINT NOT NULL,
+  amount_cents        INTEGER NOT NULL,
+  status              TEXT NOT NULL DEFAULT 'pending',
+  -- pending | paid | expired | manual_paid
+  fio_transaction_id  BIGINT UNIQUE,
+  entitlement_no      BIGINT,
+  expires_at          TIMESTAMPTZ NOT NULL,
+  paid_at             TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT bank_payments_variable_symbol_unique UNIQUE (variable_symbol),
+  CONSTRAINT bank_payments_status_check
+    CHECK (status IN ('pending', 'paid', 'expired', 'manual_paid')),
+  CONSTRAINT bank_payments_amount_positive CHECK (amount_cents > 0)
+);
+
+CREATE UNIQUE INDEX bank_payments_payment_no_idx ON public.bank_payments (payment_no);
+CREATE INDEX bank_payments_user_status_idx ON public.bank_payments (user_id, status);
+CREATE INDEX bank_payments_pending_vs_idx ON public.bank_payments (variable_symbol)
+  WHERE status = 'pending';
+```
+
+**Pravidla:**
+
+| Pole | Chování |
+|------|---------|
+| `variable_symbol` | **`payment_no`** (max 10 cifer, dobře opisovatelné). Generuje DB při INSERTu — frontend neposílá vlastní VS. |
+| `amount_cents` | Kopie z `listing_packages.price_cents` v okamžiku vytvoření (ochrana před změnou ceníku u rozpracované platby). |
+| `expires_at` | Default **`now() + 7 dní`** — po expiraci cron nastaví `expired`; VS se neznovupoužívá. |
+| `fio_transaction_id` | ID pohybu z Fio JSON — **idempotence** (stejná platba se nezpracuje dvakrát). |
+| `entitlement_no` | `entitlement_no` z `user_listing_entitlements` po úspěšném grantu — auditovatelná vazba. |
+
+**RLS:** Uživatel `SELECT` pouze vlastní řádky. `INSERT` pending platby přes Server Action / RPC (ověřený `auth.uid()`). Zápis `paid` pouze `service_role` (Edge Function).
+
+**Existující tabulky beze změny logiky:** `listing_packages`, `user_listing_entitlements`, `grant_listing_package`.
+
+Po nasazení v0.6: `UPDATE listing_packages SET is_purchasable = true WHERE slug = 'standard_20'`.
+
+### 12.4 SPAYD QR — generování na frontendu
+
+Po vytvoření pending platby Server Action vrátí `variableSymbol`, `amountCents`, `spaydString`.
+
+Formát **SPAYD** (Short Payment Descriptor), příklad pro 50 Kč:
+
+```text
+SPD*1.0*ACC:CZ6508000000192000145399*AM:50.00*CC:CZK*X-VS:1234567890*MSG:HobbyUserMarket
+```
+
+| Klíč | Hodnota |
+|------|---------|
+| `ACC` | IBAN provozovatele (bez mezer) |
+| `AM` | Částka s desetinnou tečkou (`amount_cents / 100`) |
+| `CC` | `CZK` |
+| `X-VS` | `variable_symbol` z `bank_payments` |
+| `MSG` | Krátký identifikátor (max ~35 znaků) |
+
+QR vykreslit knihovnou `qrcode.react` (nebo ekvivalent) v klientské komponentě — **bez** volání externího API.
+
+**UI copy (§1.6):** *„Naskenujte QR kód v mobilním bankovnictví, nebo převeďte 50 Kč na účet … s variabilním symbolem …. Balíček aktivujeme do 10 minut po připsání.“*
+
+### 12.5 Flow — nákup balíčku (frontend)
+
+```
+Uživatel → „Koupit balíček +20“ (/balicky-inzerce nebo upsell v nastavení)
+  → Server Action: ověř auth, package is_purchasable, vytvoř bank_payments (pending)
+  → UI: QR + VS + částka + IBAN + countdown expirace (7 dní)
+  → (volitelně) polling get_payment_status(payment_id) každých 30 s na stránce „Čekáme na platbu“
+  → Po paid: redirect + toast „Balíček je aktivní“
+```
+
+**Edge cases UI:**
+
+- Uživatel má jinou **pending** platbu na stejný balíček → zobrazit existující QR (ne vytvářet duplicitu).
+- Po `expired` → tlačítko „Vygenerovat novou platbu“.
+
+### 12.6 Automatické párování (Edge Function + cron)
+
+**Edge Function:** `sync-bank-payments` (analogicky k `archive-expired` / GDPR cronu).
+
+**Spouštění:** Vercel Cron nebo Supabase `pg_cron` každých **5–10 minut**; volání s `CRON_SECRET` / service role.
+
+**Krok 1 — stažení pohybů:**
+
+```http
+GET https://www.fio.cz/ib_api/rest/last/{FIO_API_TOKEN}/transactions.json
+```
+
+Volitelně per-účet endpoint s datem od posledního úspěšného běhu (ukládat `last_synced_at` v config tabulce nebo env — MVP stačí `last` + dedup přes `fio_transaction_id`).
+
+**Krok 2 — párovací logika** (pouze **příchozí** kreditní pohyby):
+
+1. Normalizovat VS z Fio pole (`variableSymbol` / `VS`).
+2. Shoda: `amount` (Kč) = `amount_cents / 100` **a** existuje `bank_payments` se `status = 'pending'` a stejným VS.
+3. Pokud shoda:
+   - `UPDATE bank_payments SET status = 'paid', fio_transaction_id = …, paid_at = now()`
+   - `SELECT grant_listing_package(user_id, 'standard_20', NULL, 'bank_payment:' || payment_no)` přes **service_role**
+   - Uložit `entitlement_no` zpět do `bank_payments`
+   - `INSERT audit_events` — `event_type = 'package_purchased'`, `entity_type = 'profile'`, payload: `{ package_slug, payment_no, amount_cents, variable_symbol }`
+   - E-mail přes Resend (šablona dle §1.6)
+
+**Krok 3 — expirace pending** (stejný job):
+
+```sql
+UPDATE public.bank_payments
+SET status = 'expired', updated_at = now()
+WHERE status = 'pending' AND expires_at <= now();
+```
+
+### 12.7 Ruční fallback (God Mode)
+
+Route **`/mod/platby`** *(jen `admin`)*:
+
+| Sekce | Obsah |
+|-------|-------|
+| **Čekající** | `bank_payments` se `status = 'pending'`, VS, uživatel, stáří |
+| **Nespárované z banky** | Příchozí pohyby z posledního syncu bez matching pending VS (špatný/chybějící VS, jiná částka) |
+| **Akce** | „Připsat balíček“ → `manual_paid` + `grant_listing_package` + audit (`note: manual_reconciliation`) |
+
+Tím se pokryje lidský faktor (uživatel smaže VS, pošle jinou částku).
+
+### 12.8 Audit a notifikace
+
+**Nová událost v `audit_events` (§11.1):**
+
+| Událost | `event_type` | `payload` |
+|---------|--------------|-----------|
+| Automatický nákup | `package_purchased` | `{ package_slug, payment_no, amount_cents, source: 'fio_auto' }` |
+| Ruční připsání | `package_purchased` | `{ package_slug, payment_no?, source: 'manual', admin_user_id }` |
+
+**E-mail po úspěchu:** předmět např. *„Platba dorazila — máte +20 publikací“*; tělo: nový limit z `get_user_listing_quota`, odkaz na `/moje-inzeraty`.
+
+### 12.9 Bezpečnost a provozní limity
+
+| Riziko | Mitigace |
+|--------|----------|
+| Double spend jedné bankovní platby | `UNIQUE (fio_transaction_id)` + transakční zpracování v Edge Function |
+| Únik Fio tokenu | Pouze Supabase secret; Edge Function; token read-only |
+| Záměna VS | Párovat **VS + částku**; neaktivovat při neshodě částky |
+| Replay starých pohybů | Dedup na `fio_transaction_id`; u pending kontrolovat `expires_at` |
+| Uživatel pošle méně/víc | Nespárovat automaticky → God Mode |
+| Rate limit vytváření pending | Max **3** aktivní pending platby / uživatel (RPC check) |
+
+**Fio API limity:** cca 1 req / 30 s na token — interval cronu **≥ 5 min** je v pohodě.
+
+### 12.10 Implementační checklist
+
+| Oblast | Změna | Odhad |
+|--------|-------|-------|
+| Migrace `040` | Tabulka `bank_payments`, RLS, RPC `create_bank_payment`, `get_bank_payment_status` | ~2 h |
+| `src/config/payments.ts` | IBAN, MSG, TTL pending, mapování slug → cena | ~30 min |
+| Server Action | Vytvoření pending platby, validace `is_purchasable` | ~1 h |
+| UI `/balicky-inzerce` | CTA „Koupit“, QR komponenta, stav čekání | ~2–3 h |
+| Edge Function `sync-bank-payments` | Fio fetch, párování, grant, audit, e-mail | ~3–4 h |
+| Cron | Vercel `vercel.json` nebo Supabase scheduler | ~30 min |
+| `/mod/platby` | Admin tabulka + ruční grant | ~2 h |
+| Právní docs | §4 `balicky-inzerce.md`, FAQ položka | ~1 h |
+| Metodika | Nová sekce „Dokoupení balíčku“ | ~30 min |
+
+**Celkem:** cca **1–1,5 dne**.
+
+### 12.11 Out of Scope (v0.6)
+
+- Platební brána (Stripe, GoPay, Comgate) a platby kartou
+- Apple Pay / Google Pay
+- Automatické faktury (PDF) — ručně nebo až v0.7+
+- Refundy přes API — ručně bankovním převodem
+- Recurring / předplatné
+- Topování inzerátů a placené prodloužení (`posts.payment_status` — až později)
+- Multi-měna (jen CZK)
+
+### 12.12 Budoucí upgrade cesty
+
+Pokud objem překročí ~50 plateb/měsíc nebo uživatelé požadují kartu:
+
+1. Ponechat `bank_payments` jako abstrakci — přidat sloupec `provider` (`fio` | `stripe`).
+2. Stripe webhook může volat stejný `grant_listing_package` + audit path jako Fio sync.
+3. QR převod zůstane jako levná alternativa v ceníku.

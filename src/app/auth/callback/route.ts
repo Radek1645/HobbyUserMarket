@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
+import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  let next = searchParams.get("next") ?? "/";
+  let next = sanitizeInternalPath(searchParams.get("next"));
 
   if (!code) {
     return NextResponse.redirect(
@@ -41,6 +42,5 @@ export async function GET(request: Request) {
     }
   }
 
-  const safeNext = next.startsWith("/") ? next : "/";
-  return NextResponse.redirect(`${origin}${safeNext}`);
+  return NextResponse.redirect(`${origin}${next}`);
 }

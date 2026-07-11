@@ -17,10 +17,10 @@ import {
 } from "@/lib/auth/advertiser-display";
 import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { formatListingPrice } from "@/lib/posts/format-listing-price";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingImages } from "@/lib/posts/listing-images";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
-import { formatCzkAmount } from "@/lib/posts/price-input";
 import { getSiteUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingImagePreview, PostRow } from "@/types/post";
@@ -149,15 +149,22 @@ export default async function ListingDetailPage({ params }: PageProps) {
     : null;
 
   const priceTypeLabel = getPriceTypeLabel(post.category_type, post.price_type);
+  const isService = post.category_type === "sluzby";
 
   const priceAmountLabel =
     post.category_type === "prace"
       ? post.price_type === "negotiable"
         ? "Orientační odměna"
         : "Odměna"
-      : post.price_type === "negotiable"
-        ? "Orientačně"
-        : "Cena";
+      : isService
+        ? post.price_type === "negotiable"
+          ? "Orientační cena zakázky"
+          : post.price_type === "fixed"
+            ? "Hodinová sazba"
+            : "Cena"
+        : post.price_type === "negotiable"
+          ? "Orientačně"
+          : "Cena";
 
   const {
     data: { user },
@@ -257,9 +264,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
             <div>
               <dt className="text-gray-500">{priceAmountLabel}</dt>
               <dd className="font-medium text-gray-900">
-                {post.price_type === "negotiable"
-                  ? `cca ${formatCzkAmount(post.price_amount)} Kč (dohodou)`
-                  : `${formatCzkAmount(post.price_amount)} Kč`}
+                {formatListingPrice(
+                  post.category_type,
+                  post.price_type,
+                  post.price_amount,
+                  post.exchange_for,
+                )}
               </dd>
             </div>
           ) : null}

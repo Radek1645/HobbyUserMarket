@@ -115,6 +115,8 @@ Na všech stránkách je společná hlavička (logo, přihlášení, tlačítko 
 
 U Google OAuth se souhlasy vyplní na **onboardingu** (`/onboarding`), pokud účet nemá e-mailovou identitu.
 
+**Kam jít po přihlášení (`next`):** Odkazy typu „Přihlásit se a založit inzerát“ mohou nést parametr `next=/inzerat/novy`. Systém povolí jen **interní cesty** na stejném webu — pokusy o `//cizí-doména` se ignorují a uživatel skončí na `/` (ochrana proti phishing redirectu).
+
 ### 3.2 První přihlášení — onboarding
 
 1. Po prvním přihlášení systém zkontroluje, zda má uživatel **přezdívku** (`nickname`).
@@ -143,6 +145,8 @@ Každý nový účet dostane **20 lifetime publikací** zdarma (balíček `free`
 - dlaždice budoucích balíčků (zatím vedou na kontakt provozovatele).
 
 **Lifetime model:** každá **první publikace** inzerátu spotřebuje 1 kredit navždy. Smazání nebo expirace kredit **nevrátí**. Obnovení starého inzerátu kredit znovu nebere.
+
+**Vyčerpaný limit:** Na `/profil/nastaveni` a `/inzerat/novy` uživatel vidí upozornění. Tlačítko **Publikovat** je neaktivní; **AI moderace se nespouští** (šetření tokenů). Další publikace až po dokoupení balíčku v nastavení profilu.
 
 Zvýšení limitu pro konkrétního uživatele — viz [§11.6](#116-zvýšení-limitu-inzerátů-supabase).
 
@@ -194,7 +198,7 @@ Uživatel vybere:
 | Název | Povinný, max. 80 znaků; slouží i pro SEO a URL |
 | Popis | Min. 10, max. 2000 znaků; hrubý text stačí — AI ho může upravit |
 | Lokalita | Povinná; našeptávač Mapy.cz nebo „Použít aktuální polohu“ |
-| Cena | Pevná / Za odvoz / Dohodou / Výměnou / Nabídni |
+| Typ ceny | Podle kategorie — detail v [§12](#12-speciální-typy-inzerátů). U **zboží**: Pevná, Za odvoz, Dohodou, Výměnou, Nabídni. U **služeb**: Hodinová sazba, Cena za zakázku, Dohodou. |
 | Platnost | U zboží, služeb a nemovitostí: 1–365 dní (výchozí 30); u událostí se nevybírá — platí datum akce |
 | Datum akce | U událostí povinné; musí být v budoucnosti (při novém založení) |
 | Kontaktní preference | Volitelné zobrazení e-mailu / telefonu po kliknutí na „Zobrazit kontakt“ |
@@ -208,7 +212,7 @@ Uživatel vybere:
 
 ### Publikace
 
-Po kliknutí na **„Publikovat inzerát“**:
+Po kliknutí na **„Publikovat inzerát“** (pokud má uživatel **zbývající kredit**):
 
 1. Zobrazí se celoobrazovkové načítání (AI běží).
 2. Proběhne [AI moderace a hydratace](#6-ai-moderace-a-hydratace) (viz detailní popis níže).
@@ -302,7 +306,7 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 | Kategorie | Co AI typicky doplní / na co se zeptá |
 |-----------|--------------------------------------|
 | Zboží (auto, elektronika) | Rok, nájezd, kapacita, záruka… |
-| Služby | Dojezd, materiál, rozsah práce |
+| Služby | Dojezd, materiál, rozsah práce; typ ceny (hodina vs. zakázka) respektuje formulář |
 | Události | Kapacita, přesná lokalita (datum už je ve formuláři) |
 | Nemovitosti | Dispozice, výměra, vybavení |
 
@@ -407,7 +411,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 ### 8.1 Co detail zobrazuje
 
 - Název, galerie (až 6 fotek), strukturovaný popis (úvod + Parametry)
-- Cena, stav, lokalita, typ kategorie, datum **Vytvořeno** (`created_at`)
+- Cena (formát podle kategorie — u služeb např. `500 Kč/h` nebo `od 3 000 Kč za zakázku`), stav, lokalita, typ kategorie, datum **Vytvořeno** (`created_at`)
 - U událostí: datum konání
 - U nemovitostí: Prodej / Pronájem
 - Komentáře od přihlášených uživatelů
@@ -728,7 +732,33 @@ Detailní technická reference: [`supabase-prikazy.md` § Ruční přidělení b
 - Cenové modely: Pevná, Dohodou, Nabídni (bez „Za odvoz“ / „Výměnou“).
 - Stejná platnost jako u zboží a služeb.
 
-### 12.3 Zboží ve stavu „Poškozené / na díly“
+### 12.3 Služby
+
+Služby (řemeslo, stěhování, úklid, zahrada…) **nepoužívají** cenové typy ze zboží („Za odvoz“, „Výměnou“). Majitel nabízí práci zákazníkovi, ne prodává věc — proto má kategorie `sluzby` vlastní sadu typů ceny v `src/config/categories.ts` (`SLUZBY_PRICE_TYPES`).
+
+**Podkategorie:** Řemeslo a opravy, Stěhování a doprava, **Péče, zahrada, domácnost** (úklid bytu, údržba zahrady…), Ostatní. Stejný název podkategorie existuje i u **Práce a brigád** — tam ale inzerent **hledá pracovníka** (např. „hledám paní na úklid“), ne nabízí službu zákazníkům.
+
+| Typ ve formuláři | Hodnota v DB | Pole částky | Zobrazení na webu |
+|------------------|--------------|-------------|-------------------|
+| Hodinová sazba (Kč/h) | `fixed` | povinné | `500 Kč/h` |
+| Cena za zakázku (Kč) | `negotiable` | povinné (orientační) | `od 3 000 Kč za zakázku` |
+| Dohodou | `offer` | — | jen štítek „Dohodou“ |
+
+**Proč stejné DB hodnoty jako u zboží:** Stejný sloupec `price_type` v tabulce `posts`; liší se jen labely ve formuláři, validace a formátování (`format-listing-price.ts`). Migrace DB není potřeba.
+
+**AI moderace:** Edge Function dostane typ ceny z formuláře a do popisu zapíše správnou jednotku — u hodinové sazby např. „500 Kč/h“, ne „Cena 500 Kč“ (prodejní formulace). Pokyny jsou v `build-user-prompt.ts` a v AI promptu kategorie Služby v `categories.ts`.
+
+**Příklad hydratace (hodinová sazba):**
+
+```
+Nabízím opravu nábytku a výrobu nábytku na zakázku. Sazba 500 Kč/h, dojezd v okolí Brna.
+---
+Parametry
+• Typ inzerenta: OSVČ
+• Materiál: dle domluvy
+```
+
+### 12.4 Zboží ve stavu „Poškozené / na díly“
 
 - Samostatná volba stavu pro inzeráty určené k opravě nebo na náhradní díly.
 
