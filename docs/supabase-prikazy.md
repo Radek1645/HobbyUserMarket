@@ -86,7 +86,7 @@ npx supabase link --project-ref <PROJECT_REF>
 **Ruční SQL (moderace / ops):**
 
 ```sql
--- Zablokovat inzerát moderátorem (do God Mode UI)
+-- Zablokovat inzerát moderátorem (alternativa k God Mode UI)
 UPDATE posts
 SET status = 'blocked', status_reason_code = 'moderation', updated_at = now()
 WHERE id = 123 AND status = 'active';
@@ -94,6 +94,42 @@ WHERE id = 123 AND status = 'active';
 -- Ověřit enum stavů
 SELECT unnest(enum_range(NULL::post_status));
 ```
+
+**Nahlášení (`reports`) — migrace `040`, `041`:**
+
+```sql
+-- Jedno nahlášení podle report_no
+SELECT *
+FROM public.reports
+WHERE report_no = 1;
+
+-- Všechna nahlášení inzerátu (důvod + popis)
+SELECT report_no, reason, detail_text, source, reporter_user_id, reporter_email, created_at
+FROM public.reports
+WHERE target_type = 'post' AND target_post_id = 123   -- ID inzerátu
+ORDER BY report_no DESC;
+
+-- Počty důvodů pro inzerát
+SELECT reason, count(*) AS pocet
+FROM public.reports
+WHERE target_type = 'post' AND target_post_id = 123
+GROUP BY reason;
+
+-- Inzeráty s alespoň jedním nahlášením
+SELECT
+  p.id,
+  p.title,
+  p.status,
+  p.status_reason_code,
+  count(DISTINCT r.reporter_user_id) AS unikatni_uzivatele,
+  count(*) AS vsechna_nahlaseni
+FROM public.posts p
+JOIN public.reports r ON r.target_post_id = p.id AND r.target_type = 'post'
+GROUP BY p.id, p.title, p.status, p.status_reason_code
+ORDER BY count(*) DESC;
+```
+
+Viz [`Metodika.md` §10.3](./Metodika.md#103-databáze-publicreports).
 
 ### Nastavení admina a moderátora
 
@@ -136,13 +172,14 @@ WHERE id = 'UUID-JINEHO-UCTU';
 **3. Ověření v aplikaci**
 
 1. Odhlásit se a znovu přihlásit (role se načítá z DB při requestu).
-2. Admin: v menu **„God Mode · Uživatelé“** → `/mod/uzivatele`.
-3. SQL kontrola: `SELECT email, role FROM public.profiles WHERE id = 'UUID';`
+2. Moderátor/admin: v menu **Moderace** → `/mod/karantena`, `/mod/inzeraty`.
+3. Admin navíc: **Uživatelé** → `/mod/uzivatele`.
+4. SQL kontrola: `SELECT email, role FROM public.profiles WHERE id = 'UUID';`
 
-| Role | God Mode UI dnes | DB oprávnění |
-|------|------------------|--------------|
-| `admin` | `/mod/uzivatele` (uživatelé, smazání účtu, balíčky) | plná + změna rolí |
-| `moderator` | zatím bez `/mod/*` stránek | smazat/skrýt inzeráty přes SQL nebo budoucí UI |
+| Role | God Mode UI | DB oprávnění |
+|------|-------------|--------------|
+| `admin` | Karanténa, Inzeráty, Uživatelé (smazání účtu, balíčky) | plná + změna rolí |
+| `moderator` | Karanténa, Inzeráty, lišta na detailu | smazat/zablokovat/obnovit inzeráty |
 | `user` | — | standardní uživatel |
 
 Viz také [`Metodika.md` §11](./Metodika.md#11-moderátoři-a-administrátoři-god-mode).

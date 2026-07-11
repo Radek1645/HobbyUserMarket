@@ -531,6 +531,52 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 - Pole: URL inzerátu, důvod, volitelný popis, e-mail oznamovatele.
 - Po odeslání: záznam v databázi, e-mail administrátorovi, potvrzení uživateli.
 
+### 10.3 Databáze (`public.reports`)
+
+Každé nahlášení = jeden řádek v tabulce **`reports`**. Počet nahlášení **není sloupec na `posts`** — počítá se agregací z `reports`.
+
+**Migrace:** `040_reports_v05.sql` (standalone, důvody, popis) · `041_reports_report_no.sql` (`report_no`).
+
+| Sloupec | Význam |
+|---------|--------|
+| `report_no` | Lidsky čitelné číslo řádku (1, 2, 3…) — hledej v SQL Editoru podle něj |
+| `id` | Technické UUID (PK) |
+| `target_type` | `post` nebo `comment` |
+| `target_post_id` | ID inzerátu (u `target_type = 'post'`) |
+| `reason` | Důvod: `fraud`, `illegal`, `sexual`, `drugs`, `spam`, `misconduct`, `other` |
+| `detail_text` | Volný popis od oznamovatele (max 500 znaků) |
+| `source` | `inline` (detail) nebo `standalone` (`/nahlasit`) |
+| `reporter_user_id` | Přihlášený oznamovatel (NULL u anonymního standalone) |
+| `reporter_email` | E-mail u standalone / volitelně u přihlášeného |
+| `created_at` | Čas nahlášení |
+
+**Auto-block (3×):** trigger `check_report_threshold` (migrace `036`) počítá **`count(DISTINCT reporter_user_id)`** — jen přihlášení uživatelé. Po 3 různých účtech: `posts.status = 'blocked'`, `posts.status_reason_code = 'reports_threshold'`.
+
+**Ukázkové dotazy** (viz také [`supabase-prikazy.md`](./supabase-prikazy.md)):
+
+```sql
+-- Všechna nahlášení jednoho inzerátu
+SELECT report_no, reason, detail_text, source, reporter_user_id, reporter_email, created_at
+FROM public.reports
+WHERE target_type = 'post' AND target_post_id = 123
+ORDER BY report_no DESC;
+
+-- Souhrn: kolik inzerátů bylo nahlášeno
+SELECT
+  p.id,
+  p.title,
+  p.status,
+  p.status_reason_code,
+  count(DISTINCT r.reporter_user_id) AS unikatni_uzivatele,
+  count(*) AS vsechna_nahlaseni
+FROM public.posts p
+JOIN public.reports r ON r.target_post_id = p.id AND r.target_type = 'post'
+GROUP BY p.id, p.title, p.status, p.status_reason_code
+ORDER BY count(*) DESC;
+```
+
+**UI:** `/mod/karantena` a `/mod/inzeraty` ukazují počet unikátních přihlášených uživatelů. Detailní důvody zatím jen v DB (God Mode historie — viz §11.4, plánováno).
+
 ---
 
 ## 11. Moderátoři a administrátoři (God Mode)
@@ -547,20 +593,25 @@ Role se **nastavuje v databázi**, ne v aplikaci. Postup je v [`supabase-prikazy
 2. V Supabase SQL Editoru najdi UUID: `SELECT id, email, role FROM profiles WHERE email = '…';`
 3. **První admin:** trigger `prevent_role_escalation` blokuje změnu role → dočasně `DISABLE TRIGGER trg_profiles_prevent_role_escalation`, pak `UPDATE profiles SET role = 'admin'`, pak `ENABLE TRIGGER`.
 4. **Další admin/moderátor:** stejný `UPDATE` (pokud už jeden admin existuje a SQL Editor má kontext admina; jinak znovu bootstrap postup).
-5. Odhlásit se a znovu přihlásit — v menu admin uvidí **„God Mode · Uživatelé“**.
+5. Odhlásit se a znovu přihlásit — moderátor/admin uvidí v menu **Moderace** (Karanténa, Inzeráty; admin navíc Uživatelé).
 
-**Co funguje po nastavení admina:** `/mod/uzivatele` — seznam uživatelů, smazání účtu (včetně inzerátů), přidělení partnerského balíčku (+20 inzerátů).
+**Co funguje po nastavení role:**
+
+| Role | UI |
+|------|-----|
+| `moderator` | `/mod/karantena`, `/mod/inzeraty`, lišta na detailu cizího inzerátu |
+| `admin` | navíc `/mod/uzivatele` — smazání účtu, partnerský balíček (+20 inzerátů) |
 
 ### 11.2 Kde moderátor pracuje
 
 | Stránka | Účel | Stav |
 |---------|------|------|
-| `/mod/karantena` | Zablokované inzeráty (`blocked`) a skryté komentáře (`hidden`) — obnovit nebo smazat | zatím ne |
-| `/mod/inzeraty` | Přehled všech inzerátů s filtry | zatím ne |
+| `/mod/karantena` | Zablokované inzeráty (`blocked`) a skryté komentáře (`hidden`) — obnovit nebo smazat | **ano** |
+| `/mod/inzeraty` | Přehled inzerátů s filtry stavu | **ano** |
 | `/mod/uzivatele` | Jen admin — správa uživatelů, smazání účtu, balíčky | **ano** |
-| Detail cizího inzerátu | Lišta: Skrýt, Smazat, Historie, Poznámka | zatím ne |
+| Detail cizího inzerátu | Lišta: Zablokovat, Smazat, Obnovit, Upravit | **ano** (Historie, Poznámka — zatím ne) |
 
-Do doby dokončení UI lze inzeráty moderovat přes SQL Editor (viz `supabase-prikazy.md`) nebo smazáním celého účtu v `/mod/uzivatele`.
+Ruční SQL (blokace, dotazy na nahlášení): [`supabase-prikazy.md`](./supabase-prikazy.md).
 
 ### 11.3 Typický postup moderátora
 

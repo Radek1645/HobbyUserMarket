@@ -1,9 +1,9 @@
 # Product Requirement Document (PRD) – Projekt: Local Hobby Market
 
-> **Verze dokumentu:** v3.23  
+> **Verze dokumentu:** v3.24  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`038_listing_quota.sql`](../supabase/038_listing_quota.sql) · [`039_listing_quota_lifetime.sql`](../supabase/039_listing_quota_lifetime.sql) · [`040_bank_payments.sql`](../supabase/040_bank_payments.sql) *(plánováno)*  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`039_listing_quota_lifetime.sql`](../supabase/039_listing_quota_lifetime.sql) · [`040_reports_v05.sql`](../supabase/040_reports_v05.sql) · [`041_reports_report_no.sql`](../supabase/041_reports_report_no.sql) · [`042_reports_service_role_insert.sql`](../supabase/042_reports_service_role_insert.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
 > **Datum:** 2026-07-11
 
@@ -236,12 +236,12 @@ comments
   - created_at
 
 reports
-  - id, target_type (post | comment), target_id
-  - reporter_user_id, reason, created_at
-  - source (inline | standalone) — od v0.5
-  - detail_text (TEXT, nullable) — volný popis od v0.5
-  - reporter_email (TEXT, nullable) — pro anonymní standalone report od v0.5
-  - UNIQUE(reporter_user_id, target_type, target_id)  -- 1 report per user per item
+  - id (UUID, PK), report_no (BIGINT IDENTITY — migrace 041)
+  - target_type (post | comment), target_post_id / target_comment_id
+  - reporter_user_id (nullable u anonymního standalone), reason, created_at
+  - source (inline | standalone) — migrace 040
+  - detail_text (TEXT, nullable), reporter_email (TEXT, nullable) — migrace 040
+  - UNIQUE(reporter_user_id, target_post_id) WHERE post — 1 report per user per item
 
 audit_events — od v0.5; append-only systémový log (viz §11.1)
   - id (UUID)
@@ -684,6 +684,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.21 | 2026-07-10 | **Stav `blocked`:** migrace `036` — oddělení pauzy (`hidden`) od moderátorského zablokování; `status_reason_code`; trigger `check_report_threshold` → `blocked`; UI `ListingBlockedNotice`; právní docs §4 |
 | v3.22 | 2026-07-11 | **Smazání účtu (P23):** migrace `037`, RPC `prepare_user_account_deletion`, `/profil/nastaveni`, `/mod/uzivatele`; **checkbox věku 15+ (P31)**; **limity inzerátů:** migrace `038`/`039`, lifetime kredity, `/balicky-inzerce`; God Mode `/mod/uzivatele` částečně hotové |
 | v3.23 | 2026-07-11 | **§12 Monetizace v0.6:** schválený směr bankovní převod + SPAYD QR + Fio API (bez platební brány); §1.7 DoD; úprava §6 — odkaz místo Stripe |
+| v3.24 | 2026-07-11 | **P26/P27:** nahlášení (inline + `/nahlasit`), God Mode `/mod/karantena` + `/mod/inzeraty` + lišta na detailu; migrace **040–042** (`reports` standalone, `report_no`, service_role INSERT); §4 `reports.report_no` |
 
 ---
 

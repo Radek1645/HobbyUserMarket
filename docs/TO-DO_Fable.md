@@ -1,7 +1,7 @@
 # TO-DO Fable — Audit projektu HobbyUserMarket
 
 > **Autor:** Fable (AI audit)
-> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-11
+> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-11 (P26/P27)
 > **Rozsah auditu:** Server Actions, API routes, Supabase schéma + RLS, Edge Functions (moderace), `src/lib`, auth/onboarding flow, browse/UX komponenty.
 > **Zdroj požadavků:** [`PRD_v3.md`](./PRD_v3.md) (v3.18)
 > **Metodika značení:** severity **Critical / High / Medium / Low**; ID `C#` (security), `P#` (proces), `U#` (UX). Stav: ✅ hotovo · 🔄 rozpracováno · ⏳ čeká.
@@ -109,7 +109,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **L3** | schéma (846–853) | Bucket `post-images` je public + široký SELECT. | Pro fotky inzerátů OK; signed URL, až budou neveřejné obrázky. |
 | **L4** | `lib/posts/listing-images.ts` (107–115) | Upload probíhá před insertem `post_images` → orphan soubory při chybě. | Upload až po insertu řádku, nebo periodický cleanup. |
 | **L5** | `lib/mapy/env.ts`, `client.ts` | `NEXT_PUBLIC_MAPY_CZ_API_KEY` v prohlížeči (očekávané). | Omezit klíč HTTP-referrerem v dashboardu Mapy.cz. |
-| **L6** | `src/app/mod/` | Částečně: **`/mod/uzivatele`** (admin — uživatelé, smazání účtu, balíčky). Chybí `/mod/karantena`, `/mod/inzeraty`, moderátorská lišta na detailu. | Dokončit zbývající God Mode stránky; vynutit `role IN ('moderator','admin')` v layoutu a Server Actions. Bootstrap rolí: [`supabase-prikazy.md`](./supabase-prikazy.md#nastavení-admina-a-moderátora). |
+| **L6** | `src/app/mod/` | ✅ **`/mod/karantena`**, **`/mod/inzeraty`**, lišta na detailu; **`/mod/uzivatele`** (admin). Layout pro `moderator`+`admin`. | Zbývá: audit UI (P30). |
 | **L7** | `src/middleware.ts` | Middleware negatuje auth-only routes, spoléhá na per-page `getCurrentUser()`. | Volitelný matcher pro `/moje-inzeraty`, `/inzerat/novy`, `/inzerat/*/upravit`. |
 
 ### ✅ Co je udělané dobře (kalibrace severity)
@@ -185,8 +185,8 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **P26** | `src/app/mod/` | **God Mode UI částečně** — hotové: `/mod/uzivatele` (admin). Chybí: `/mod/karantena`, `/mod/inzeraty`, lišta na detailu cizího inzerátu. | Dokončit minimální mod frontu; bootstrap admina zdokumentován v `supabase-prikazy.md` + Metodika §11.1. |
-| **P27** | kód | Chybí reporting UI (`/nahlasit`), byť DB trigger 3× auto-hide existuje. | Tlačítko „Nahlásit“ na detailu + odkaz v patičce dle PRD. |
+| **P26** | `src/app/mod/` | ✅ **`/mod/karantena`**, **`/mod/inzeraty`**, moderátorská lišta na detailu; layout `moderator`+`admin`. | Audit timeline (P30). |
+| **P27** | kód | ✅ Inline „Nahlásit“, `/nahlasit`, patička; migrace **040–042**; e-mail adminovi (`ADMIN_NOTIFICATION_EMAIL`). | Redirect po 3× report (404); `audit_events` insert. |
 | **P28** | kód | ~~Chybí sitemap/robots~~ — ✅ `sitemap.ts`, `robots.ts`, `llms.txt` (2026-07-09). Zbývá: monitoring, backup/runbook v repu. | Ops checklist; dokumentovat Supabase PITR/zálohy. |
 | **P29** | `actions/listing-management.ts` | Chyby managementu **tiše redirectují** na `/moje-inzeraty` bez flash zprávy. | Vracet error stav / `?error=`. *(Částečně: `deleteListing` → `?deleteError=1` + banner v `moje-inzeraty`.)* |
 | **P30** | `supabase_schema.sql` | `audit_events`, `moderator_notes`, `inquiry_events` v PRD, **nenapojeno** v kódu. | Inkrementálně: nejdřív logovat poptávky a výsledky moderace. *(Částečně: migrace **028** `moderation_checks` + `log-moderation-check.ts` v EF.)* |
@@ -288,7 +288,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 - **DoD §1.1/3 (ochrana kontaktů):** ✅ **splněno** — C1/C2 (migrace 025) + rate limit reveal PRD §5.3 (M1, migrace 026).
 - **DoD §1.1/5 (bezpečnostní filtr projde vždy):** ✅ **splněno** — H1/P1/P14 (migrace 027): publikace jen přes approval token z Edge Function, DB gating stavů. Reziduum: obsah plných fotek není hashově vázán na moderovaný náhled (viz H1).
-- **DoD §1.5 (v0.5 audit/God Mode):** částečně — `/mod/uzivatele` hotové; chybí karanténa, přehled inzerátů, audit UI (P26, P27, P30).
+- **DoD §1.5 (v0.5 audit/God Mode):** částečně — nahlášení + karanténa + inzeráty ✅ (P26/P27); zbývá audit UI (P30), moderátorské poznámky, FAQ accordion.
 
 ### Changelog revizí
 
@@ -303,6 +303,6 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | 2026-07-09 | **P28 částečně:** JSON-LD, `sitemap.xml`, `robots.txt`, `llms.txt` implementovány; datum Vytvořeno na HP a detailu |
 | 2026-07-11 | **God Mode částečně:** `/mod/uzivatele` (admin); bootstrap rolí v `supabase-prikazy.md` + Metodika §11.1; **P23 ✅** smazání účtu; **P31 ✅** checkbox věku 15+; migrace **037–039** (delete + listing quota) |
 | 2026-07-11 | **VOP Draft 1.5:** P2B pasáže (lhůty, ranking, data access, mikropodnik); **P32 ⏳** provozní implementace e-mailových notifikací 15/30 dní pro Podnikatele |
-| 2026-07-11 | **H3 ✅** open redirect — `sanitizeInternalPath()`; **quota před AI**; **PRD v3.23** §12 monetizace (bankovní převod); manuální testy quota + H3 |
+| 2026-07-11 | **P26/P27 ✅** God Mode karanténa + inzeráty + lišta; nahlášení inline + `/nahlasit`; migrace **040–042**; opravy `block_failed` / `report_failed`; Metodika §10.3 |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*
