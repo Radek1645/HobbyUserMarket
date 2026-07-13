@@ -3,6 +3,7 @@
 import { completeOnboarding, type AuthFormState } from "@/app/actions/auth";
 import { CompanyIcoInput } from "@/components/auth/CompanyIcoInput";
 import { RegistrationConsentFields } from "@/components/auth/RegistrationConsentFields";
+import { LISTING_QUOTA_FREE_DEFAULT } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { useActionState, useState } from "react";
 
@@ -33,6 +34,16 @@ export function OnboardingForm({
     <form action={action} className="space-y-4">
       <input type="hidden" name="next" value={nextPath} />
       <input type="hidden" name="isCompany" value={isCompany ? "true" : "false"} />
+
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+        <p className="font-medium">
+          Na start máte {LISTING_QUOTA_FREE_DEFAULT} publikací zdarma.
+        </p>
+        <p className="mt-1 text-xs text-emerald-800">
+          Každá první publikace inzerátu spotřebuje 1 kredit. Smazání ani expirace ho
+          nevrací.
+        </p>
+      </div>
 
       <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm text-gray-600">
         Přihlášený účet:{" "}
