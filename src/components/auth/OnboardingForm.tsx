@@ -35,14 +35,8 @@ export function OnboardingForm({
       <input type="hidden" name="next" value={nextPath} />
       <input type="hidden" name="isCompany" value={isCompany ? "true" : "false"} />
 
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
-        <p className="font-medium">
-          Na start máte {LISTING_QUOTA_FREE_DEFAULT} publikací zdarma.
-        </p>
-        <p className="mt-1 text-xs text-emerald-800">
-          Každá první publikace inzerátu spotřebuje 1 kredit. Smazání ani expirace ho
-          nevrací.
-        </p>
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-900">
+        Startujete s {LISTING_QUOTA_FREE_DEFAULT} inzeráty zdarma!
       </div>
 
       <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm text-gray-600">

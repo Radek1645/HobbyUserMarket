@@ -46,6 +46,8 @@ Provozovatel je oprávněn limity **kdykoli upravit** s účinností od zveřejn
 
 > **Placené balíčky** zatím nenabízíme. O jejich zavedení budeme informovat na tomto webu a v [VOP](/vop).
 
+Pokud vám současný startovní balíček nestačí, napište nám na **info@zapikolou.cz** a domluvíme se na individuálním řešení.
+
 ---
 
 ## 4. Placené balíčky (zatím neaktivní)
