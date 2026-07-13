@@ -9,6 +9,7 @@ export const ACCOUNT_DELETION_REASONS: AccountDeletionReason[] = [
   { code: "harassment", label: "Obtěžování nebo urážky" },
   { code: "reported", label: "Opakované nahlášení uživatele" },
   { code: "gdpr_request", label: "GDPR žádost / právní požadavek" },
+  { code: "gdpr_retention", label: "GDPR retence (dlouhodobá neaktivita)" },
   { code: "other", label: "Jiný důvod" },
 ];
 
