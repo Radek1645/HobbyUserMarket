@@ -1,5 +1,7 @@
 import { BackHomeLink } from "@/components/navigation/BackHomeLink";
 import { LegalMarkdown } from "@/components/legal/LegalMarkdown";
+import { getCurrentUser } from "@/lib/auth/get-user";
+import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { readVopSnapshotByVersion } from "@/lib/legal/read-vop-snapshot";
 import { SITE_DISPLAY_NAME } from "@/config/site";
 import type { Metadata } from "next";
@@ -18,6 +20,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function VopSnapshotPage({ params }: PageProps) {
   const { version } = await params;
+  const user = await getCurrentUser();
+
+  // Historie VOP není veřejná — jen pro moderátory/adminy (interní dohledatelnost).
+  if (!user || !isStaffRole(user.role)) {
+    notFound();
+  }
+
   const doc = await readVopSnapshotByVersion(version);
 
   if (!doc) {

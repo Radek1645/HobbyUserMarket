@@ -9,6 +9,8 @@ import { CURRENT_VOP_VERSION } from "@/config/legal";
 import Link from "next/link";
 import { access } from "node:fs/promises";
 import path from "node:path";
+import { getCurrentUser } from "@/lib/auth/get-user";
+import { isStaffRole } from "@/lib/auth/is-staff-role";
 
 type LegalDocumentPageProps = {
   slug: LegalDocumentSlug;
@@ -34,6 +36,8 @@ export async function LegalDocumentPage({ slug }: LegalDocumentPageProps) {
     slug === "vop" ? resolveVopVersionInfo(CURRENT_VOP_VERSION) : null;
   const vopPdfExists =
     slug === "vop" && vopInfo?.ok ? await publicFileExists(vopInfo.pdfPath) : false;
+  const currentUser = slug === "vop" ? await getCurrentUser() : null;
+  const canSeeVopHistory = Boolean(currentUser && isStaffRole(currentUser.role));
 
   return (
     <div className="px-4 py-8 sm:px-6">
@@ -51,14 +55,14 @@ export async function LegalDocumentPage({ slug }: LegalDocumentPageProps) {
                 >
                   Stáhnout PDF ({vopInfo.version})
                 </Link>
-              ) : (
+              ) : canSeeVopHistory ? (
                 <Link
                   href={vopInfo.snapshotPagePath}
                   className="font-medium text-gray-900 underline-offset-2 hover:underline"
                 >
                   Zobrazit verzi ({vopInfo.version})
                 </Link>
-              )}
+              ) : null}
             </p>
           ) : null}
           {(doc.meta.version || doc.meta.effectiveDate || doc.meta.operator) && (
