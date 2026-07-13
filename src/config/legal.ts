@@ -8,7 +8,7 @@ export const MARKETING_CONSENT_PATH = "/marketingovy-souhlas";
 export const DSA_CONTACT_PATH = "/dsa";
 
 /** Verze VOP v okamžiku registrace — sync s docs/pravni/vop-*.md. */
-export const CURRENT_VOP_VERSION = "1.5-fo";
+export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.5-osvc" : "1.5-fo";
 
 export const SAFETY_UI = {
   meetingSafetyNotice:
