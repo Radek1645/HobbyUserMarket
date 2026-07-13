@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
-import { LISTING_IMAGE_MAX_UPLOAD_BYTES } from "./src/config/app";
+
+/** Sync s LISTING_IMAGE_MAX_UPLOAD_BYTES v src/config/app.ts — bez importu app (path alias @/ v next.config nefunguje). */
+const LISTING_IMAGE_MAX_UPLOAD_BYTES = 6 * 1024 * 1024 + 512 * 1024;
 
 function supabaseStorageHostname(): string {
   try {
