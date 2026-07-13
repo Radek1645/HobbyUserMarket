@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md)  
-> **Datum:** 2026-07-11
+> **Datum:** 2026-07-13
 
 ---
 
@@ -43,7 +43,7 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 ### 2.1 Zobrazení homepage (HP)
 
 1. Návštěvník otevře úvodní stránku `/`.
-2. V hero sekci vidí hlavní sdělení: rychlá lokální inzerce s pomocí AI.
+2. V hero sekci vidí hlavní sdělení: rychlá lokální inzerce s pomocí AI (značka **zaPikolou.cz** v hlavičce a metadatech).
 3. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou, názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo).
 
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
@@ -92,11 +92,25 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 
 ### 2.6 Navigace a patička
 
-Na všech stránkách je společná hlavička (logo, přihlášení, tlačítko „Založit inzerát“) a patička s odkazy na:
+Na všech stránkách je společná hlavička (wordmark **zaPikolou.cz**, vyhledávání, přihlášení, CTA **„Vytvořit inzerát s AI“**) a třísloupcová patička:
 
-- O projektu, FAQ, VOP, GDPR, Podmínky inzerce
-- Nahlásit inzerát (`/nahlasit`)
-- Nastavení cookies
+| Sloupec | Odkazy |
+|---------|--------|
+| **Dokumenty** | VOP, Podmínky inzerce, Marketingový souhlas, Limity/Balíčky inzerce, Nahlásit inzerát |
+| **Kontakt** | Provozovatel webu (`/kontakt`) |
+| **Co je zaPikolou?** | O platformě (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`) |
+
+V patičce je také krátký tagline a verze platformy (`0.1`).
+
+### 2.7 Informační stránky
+
+| URL | Účel |
+|-----|------|
+| `/co-je-zapikolou` | Co platforma je a není (inzertní nástěnka, ne e-shop) |
+| `/jak-vytvorit-inzerat` | Průvodce ve 4 krocích s ukázkou mobilního flow |
+| `/kontakt` | Provozovatel (jméno, e-mail, datová schránka) |
+
+Stránky jsou veřejné, indexovatelné a v `sitemap.xml`.
 
 ---
 
@@ -110,10 +124,18 @@ Na všech stránkách je společná hlavička (logo, přihlášení, tlačítko 
 **Povinné souhlasy při registraci (e-mail i Google):**
 
 - Prohlašuji, že mi je **alespoň 15 let** (včetně souhlasu zákonného zástupce 15–18 let, je-li vyžadován).
-- Souhlas s **VOP** (bez něj účet nezaložíme).
+- Souhlas s **VOP** (bez něj účet nezaložíme) — včetně verze VOP v okamžiku souhlasu.
 - Volitelný souhlas s **marketingem**.
 
-U Google OAuth se souhlasy vyplní na **onboardingu** (`/onboarding`), pokud účet nemá e-mailovou identitu.
+**Uložení do DB (`profiles`, migrace `044`):**
+
+| Sloupec | Kdy se vyplní |
+|---------|----------------|
+| `age_confirmed_at` | Při registraci / onboardingu |
+| `vop_accepted_at`, `vop_version` | Při souhlasu s VOP |
+| `marketing_consent_at` | Jen pokud uživatel zaškrtl marketing; jinak `NULL` |
+
+U **e-mail registrace** bez aktivní session se souhlasy dočasně uloží do auth metadata a po prvním přihlášení se přesunou do `profiles` (`flushPendingRegistrationConsents`). U **Google OAuth** se souhlasy vyplní na **onboardingu** (`/onboarding`), pokud ještě nejsou v DB. Při smazání účtu se audit souhlasů anonymizuje spolu s profilem (RPC `prepare_user_account_deletion`).
 
 **Kam jít po přihlášení (`next`):** Odkazy typu „Přihlásit se a založit inzerát“ mohou nést parametr `next=/inzerat/novy`. Systém povolí jen **interní cesty** na stejném webu — pokusy o `//cizí-doména` se ignorují a uživatel skončí na `/` (ochrana proti phishing redirectu).
 
@@ -328,8 +350,8 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 
 | Tlačítko | Co se stane |
 |----------|-------------|
-| **Doplnit, upravit a publikovat** (doporučeno) | Uloží se AI verze (včetně odpovědí z dotazníku). Původní text se uloží do `original_title` / `original_description` pro metriky využití AI. |
-| **Ignorovat AI a publikovat původní** | Uloží se text, který uživatel napsal do formuláře. Bezpečnostní filtr a odstranění kontaktů z popisu **platí vždy**. |
+| **Doplnit, upravit a publikovat** (doporučeno) | Uloží se AI verze (včetně odpovědí z dotazníku). Původní text se uloží do `original_title` / `original_description` pro metriky využití AI. Na detailu se zobrazí parametr **„Vytvořeno s pomocí AI: Ano“** (`description_ai_assisted = true`, migrace `043`). |
+| **Ignorovat AI a publikovat původní** | Uloží se text, který uživatel napsal do formuláře. `description_ai_assisted = false`. Bezpečnostní filtr a odstranění kontaktů z popisu **platí vždy**. |
 | **Zrušit** | Návrat do formuláře, inzerát se neuloží. |
 
 ### 6.8 Zamítnutí (REJECTED)
@@ -400,7 +422,7 @@ Inzerát přejde do stavu **Zablokováno**, pokud:
 
 **Rozdíl od pauzy (`hidden`):** u pauzy majitel klikne „Zveřejnit“ bez re-moderace. Zablokování vyžaduje opravu obsahu.
 
-Právní rámec: [Pravidla inzerce](../pravni/podminky-inzerce.md) §4, [VOP](../pravni/vop.md) §4.5, [DSA centrum](../pravni/dsa-kontaktni-centrum.md) §3.
+Právní rámec: [Pravidla inzerce](../pravni/podminky-inzerce.md) §4, [VOP](../pravni/vop-fo.md) §4.5, [DSA centrum](../pravni/dsa-kontaktni-centrum.md) §3.
 
 ---
 
@@ -411,6 +433,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 ### 8.1 Co detail zobrazuje
 
 - Název, galerie (až 6 fotek), strukturovaný popis (úvod + Parametry)
+- U inzerátů s AI textem: v sekci Parametry řádek **„Vytvořeno s pomocí AI: Ano“** s ikonou nápovědy (Podmínky inzerce §3, AI Act)
 - Cena (formát podle kategorie — u služeb např. `500 Kč/h` nebo `od 3 000 Kč za zakázku`), stav, lokalita, typ kategorie, datum **Vytvořeno** (`created_at`)
 - U událostí: datum konání
 - U nemovitostí: Prodej / Pronájem
@@ -422,6 +445,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 2. Přihlášený uživatel klikne **„Zobrazit kontakt“**.
 3. Server zavolá RPC **`reveal_listing_contact`** — ověří viditelnost inzerátu, opt-in vlajky, rate limit; zapíše `contact_reveals`; vrátí PII.
 4. Limit: **20 zobrazení za den** na uživatele (unikátní inzeráty; opětovné otevření téhož inzerátu limit nespotřebuje).
+5. Pod kontaktem se zobrazí **bezpečnostní upozornění** k osobnímu setkání (veřejné místo; doporučení doprovodu pro mladší 18 let).
 
 ### 8.3 Poptávkový formulář
 
@@ -429,6 +453,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - E-mail prodejce zůstává skrytý — doručení přes Resend.
 - U **událostí** je tlačítko **„Mám zájem o účast“** — stejný mechanismus, jiný text e-mailu.
 - Metadata o odeslání se loguje (bez obsahu zprávy — GDPR).
+- Stejné **bezpečnostní upozornění** k setkání jako u kontaktu.
 
 ### 8.4 Komentáře
 
@@ -460,7 +485,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 **`src/app/sitemap.ts`** → generuje `/sitemap.xml`
 
 - Next.js při požadavku na `/sitemap.xml` spustí tuto funkci a vrátí XML se seznamem URL.
-- Obsahuje **statické stránky**: `/`, `/vop`, `/podminky-inzerce`, `/marketingovy-souhlas`.
+- Obsahuje **statické stránky**: `/`, `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`, `/vop`, `/balicky-inzerce`, `/podminky-inzerce`, `/marketingovy-souhlas`.
 - Obsahuje **aktivní inzeráty** — načte je přes `get-sitemap-listings.ts`.
 - **`revalidate = 300`** (5 minut): cache se obnoví nejpozději za 5 minut, takže nový nebo expirovaný inzerát se v sitemap projeví bez ručního zásahu.
 - Expirované nebo smazané inzeráty v sitemap **nejsou** — vyhledávač je nemá indexovat.

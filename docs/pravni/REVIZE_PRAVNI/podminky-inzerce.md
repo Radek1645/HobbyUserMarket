@@ -1,7 +1,7 @@
 # Pravidla inzerce (kodex chování)
 
-**Platforma:** zaPikolou.cz  
-**Verze:** 1.2 · **Datum účinnosti:** 13.07.2026
+**Platforma:** HobbyUserMarket  
+**Verze:** Draft 1.2 · **Datum účinnosti:** [doplnit]
 
 ---
 
@@ -61,6 +61,8 @@ Provozovatel si vyhrazuje právo inzerát odmítnout nebo odstranit i v dalšíc
 Inzerce pracovních příležitostí, brigád a obdobných nabídek musí být v souladu se **zákonem o zaměstnanosti** a **anti-diskriminačními předpisy**. Inzerát nesmí obsahovat diskriminační požadavky (věk, pohlaví, rasa, etnický původ, náboženství, zdravotní stav apod.), pokud nejsou pro danou práci výslovně povoleny zákonem.
 
 Inzerent odpovídá za to, že nabízená práce existuje, že splňuje povinnosti zaměstnavatele vůči úřadům a že obsah inzerátu neporušuje práva uchazečů.
+
+> **Poznámka pro revizi právníkem:** Rozsah povinností u inzerce práce na P2P nástěnce.
 
 ### 2.2 Detailní kategorie (automatizovaná moderace)
 
@@ -130,3 +132,5 @@ Opakované nebo závažné porušení pravidel může vést k:
 - oznámení příslušným orgánům, pokud to vyžaduje zákon.
 
 ---
+
+*Draft — před publikací nechat zkontrolovat právníkem.*

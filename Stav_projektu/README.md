@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-13 | [2026-07-13.md](./2026-07-13.md) — branding zaPikolou, AI disclosure (043), registrační souhlasy (044), právní FO/OSVČ, info stránky, PRD v3.26 |
 | 2026-07-11 | [2026-07-11.md](./2026-07-11.md) — P26/P27 nahlášení + God Mode karanténa/inzeráty, migrace 040–042, PRD v3.24 |
 | 2026-07-11 | [2026-07-11-plan.md](./2026-07-11-plan.md) — plán session (archiv) |
 | 2026-07-10 | [2026-07-10.md](./2026-07-10.md) — stav `blocked` (036), právní drafty, inquiry_events, archive cron, PRD v3.21 |

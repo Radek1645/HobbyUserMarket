@@ -1,7 +1,7 @@
 # DSA kontaktní centrum (hlášení obsahu)
 
-**Platforma:** zaPikolou.cz  
-**Verze:** 1.1 · **Datum účinnosti:** 13.07.2026
+**Platforma:** HobbyUserMarket  
+**Verze:** Draft 1.1 · **Datum účinnosti:** [doplnit]
 
 ---
 
@@ -17,9 +17,9 @@ V souladu s **nařízením Evropského parlamentu a Rady (EU) 2022/2065 (DSA)** 
 
 | Kontakt | Údaj |
 |---------|------|
-| E-mail pro úřady | info@zapikolou.cz |
-| E-mail pro uživatele (hlášení obsahu) | info@zapikolou.cz |
-| Datová schránka | fxetq2k |
+| E-mail pro úřady | [dsa-organs@doplnit.cz] |
+| E-mail pro uživatele (hlášení obsahu) | [dsa@doplnit.cz] |
+| Datová schránka | [doplnit ID] |
 | Komunikační jazyky | Čeština, angličtina |
 
 ---
@@ -55,8 +55,9 @@ Provozovatel může zveřejňovat agregované přehledy o přijatých hlášení
 
 ## 5. Kontakt pro tisk a orgány
 
-**Provozovatel:** Radek Horák, fyzická osoba  
-**Datová schránka:** fxetq2k  
-**IČO:** neuvedeno
+**Provozovatel:** [název, sídlo]  
+**IČO:** [doplnit]
 
 ---
+
+*Draft — před publikací nechat zkontrolovat právníkem.*

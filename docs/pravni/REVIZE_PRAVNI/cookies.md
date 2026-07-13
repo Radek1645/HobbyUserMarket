@@ -1,7 +1,7 @@
 # Zásady používání souborů cookie
 
-**Platforma:** zaPikolou.cz  
-**Verze:** 1.1 · **Datum účinnosti:** 13.07.2026
+**Platforma:** HobbyUserMarket  
+**Verze:** Draft 1.1 · **Datum účinnosti:** [doplnit]
 
 ---
 
@@ -56,6 +56,8 @@ U analytických nástrojů nasazených po souhlasu (GA4 / GTM) může v určitý
 
 ## 5. Kontakt
 
-Dotazy k cookies: **info@zapikolou.cz**
+Dotazy k cookies: **[e-mail provozovatele]**
 
 ---
+
+*Draft — před publikací nechat zkontrolovat právníkem.*

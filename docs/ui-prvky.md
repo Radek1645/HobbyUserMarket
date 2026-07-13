@@ -1,4 +1,4 @@
-# UI prvky — HUM
+# UI prvky — zaPikolou
 
 Single source of truth pro vizuální primitivy na webu. **Kód:** [`src/config/ui-primitives.ts`](../src/config/ui-primitives.ts).
 
@@ -18,17 +18,21 @@ Hlavní akce (vytvořit inzerát, potvrdit formulář, modál).
 | `emeraldSurfaceClass` | Pouze povrch (barva + stín + hover) — skládá se do variant |
 | `emeraldPrimaryButtonClass` | Obecné zelené CTA, `rounded-xl` |
 | `emeraldPrimaryButtonCompactClass` | Modály, kompaktní akční řádek |
-| `headerCreateListingSurfaceClass` | Flat zelený povrch header CTA (`bg-emerald-600`, hover `bg-emerald-700`) — shodně s logem HUM |
+| `headerCreateListingSurfaceClass` | Flat zelený povrch header CTA (`bg-emerald-600`, hover `bg-emerald-700`) — shodně s logem zaPikolou |
 | `createListingCtaLabel` | Text hlavního CTA — „Vytvořit inzerát s AI“ (header + FAB) |
 | `headerCreateListingButtonClass` | Header CTA — jen desktop (`md+`), pill, ikona Sparkles |
 | `createListingFabClass` | Mobilní FAB pro tvorbu inzerátu (`md:hidden`), extended → ikona při scrollu |
-| `emeraldLogoMarkClass` | Zelený čtverec s domečkem v logu |
+| `headerInputHeightClass` | Sdílená výška vyhledávače a loga (`h-10`) |
+| `headerBrandControlHeightClass` | Výška header CTA (`h-11`) |
+| `headerBrandControlPaddingXClass` | Horizontální padding header CTA (`px-6`) |
+| `emeraldBrandAccentClass` | Brand zelená pro logo wordmark — `text-emerald-600`, shodná s header CTA |
+| `appLogoFrameClass` | Wordmark loga — `text-lg`, `h-10`, bez rámečku, viz `AppLogo` |
 
 ### Header CTA (hlavní akce)
 
 Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani tloušťkou písma. Na mobilu je nahrazeno FAB (`CreateListingFab`).
 
-- Povrch: `headerCreateListingSurfaceClass` — `bg-emerald-600`, hover `bg-emerald-700` (stejně jako logo)
+- Povrch: `headerCreateListingSurfaceClass` — `bg-emerald-600`, hover `bg-emerald-700` (stejná zelená jako wordmark loga)
 - Viditelnost: `hidden md:flex` — pouze desktop
 - Přechod: `transition-colors duration-200`
 - Typografie: `font-semibold`, bílý text

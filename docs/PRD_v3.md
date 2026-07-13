@@ -1,11 +1,12 @@
-# Product Requirement Document (PRD) – Projekt: Local Hobby Market
+# Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.24  
+> **Verze dokumentu:** v3.26  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`039_listing_quota_lifetime.sql`](../supabase/039_listing_quota_lifetime.sql) · [`040_reports_v05.sql`](../supabase/040_reports_v05.sql) · [`041_reports_report_no.sql`](../supabase/041_reports_report_no.sql) · [`042_reports_service_role_insert.sql`](../supabase/042_reports_service_role_insert.sql)  
+> **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`042_reports_service_role_insert.sql`](../supabase/042_reports_service_role_insert.sql) · [`043_posts_description_ai_assisted.sql`](../supabase/043_posts_description_ai_assisted.sql) · [`044_profile_registration_consents.sql`](../supabase/044_profile_registration_consents.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-11
+> **Datum:** 2026-07-13
 
 ---
 
@@ -121,6 +122,28 @@ Modul je hotový, když platí všechny body:
 3. **Potvrzení:** Po spárování e-mail uživateli („Platba dorazila, +20 publikací je aktivních“) + záznam v `audit_events` (`package_purchased`).
 4. **Ruční fallback:** Admin v God Mode (`/mod/platby`) vidí nespárované / expirované platby a může balíček připsat jedním kliknutím (s audit logem).
 5. **Bez platební brány:** Žádný Stripe/SDK; provozní náklady ≈ 0 Kč (Fio API zdarma, QR generovaný v aplikaci).
+
+### 1.8 Branding, domény a veřejný název
+
+**Pracovní název repozitáře** (`HobbyUserMarket`) se postupně nahrazuje produkční značkou **zaPikolou.cz**.
+
+| Kontext | Hodnota |
+|---------|---------|
+| Primární doména (produkce) | `zapikolou.cz` |
+| Redirect doména | `predpikolou.cz` → 301 na `https://zapikolou.cz` |
+| UI wordmark (header) | `zaPikolou.cz` — CamelCase, zelený rámeček (`AppLogo`, `appLogoFrameClass`) |
+| Krátký název (footer, copy) | `zaPikolou` |
+| Env canonical URL | `NEXT_PUBLIC_SITE_URL=https://zapikolou.cz` |
+
+**Zdroje pravdy v kódu:**
+
+- [`src/config/site.ts`](../src/config/site.ts) — `SITE_DISPLAY_NAME`, `SITE_DOMAIN`, meta popis
+- [`src/components/brand/AppLogo.tsx`](../src/components/brand/AppLogo.tsx) — logo v headeru
+- [`docs/branding-a-domeny.md`](./branding-a-domeny.md) — checklist nasazení (Vercel, Supabase Auth, SEO, e-mail)
+
+**Logo (schválený směr):** wordmark `za` + `Pikolou` + `.cz` v jednom bloku, `text-lg`, výška `h-10` (shodně s vyhledávačem), barva `emerald-600` (shodně s hlavním CTA).
+
+**Migrace copy:** Metadata stránek, e-mailové šablony a právní dokumenty se sjednocují na `zaPikolou` / `zaPikolou.cz` — stav viz checklist v `branding-a-domeny.md`.
 
 ---
 
@@ -408,17 +431,12 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * Filtry: Fulltextové výrazy (kategorie zboží/služby/události), lokalita (obec z našeptávače Mapy.cz), profil uživatele, typ ceny, stav/typ nabídky. *(Filtr `udalost` od v0.2.)*
   * Řazení: Kategorie, cena, datum přidání, vzdálenost (pokud je poloha aktivní). *(Události od v0.2: volitelně řazení podle `event_date` — nejbližší konání první.)*
 * **Header & Footer:**
-  * Header: Logotyp, indikace verze (v0.1 Prerelease), stav přihlášení, dominantní CTA tlačítko „Založit inzerát“.
-  * **Footer — globální dostupnost:** Patička je součástí `AppShell` a zobrazuje se na **všech veřejných i autentizovaných stránkách** (včetně `/mod/*`). V navigaci patičky:
-    * O projektu
-    * Nahlásit inzerát (`/nahlasit`) — od v0.5
-    * FAQ (`/faq`) — od v0.5; accordion stránka odvozená z VOP (viz §11.3)
-    * Všeobecné obchodní podmínky — VOP (`/vop`, PDF ke stažení)
-    * Marketingový souhlas (`/marketingovy-souhlas`)
-    * Podmínky inzerce (`/podminky-inzerce`)
-    * Zásady ochrany osobních údajů — GDPR (`/gdpr`, PDF ke stažení)
-    * Cookies / consent nastavení
-    * AI disclaimer (krátká poznámka u podmínek inzerce nebo samostatný odkaz)
+  * Header: Logo **zaPikolou.cz** (`AppLogo`), vyhledávání, stav přihlášení, dominantní CTA „Vytvořit inzerát s AI“.
+  * **Footer — globální dostupnost:** Patička je součástí `AppShell` a zobrazuje se na **všech veřejných i autentizovaných stránkách** (včetně `/mod/*`). Tři sloupce (`src/config/footer.ts`):
+    * **Dokumenty:** VOP, Podmínky inzerce, Marketingový souhlas, Limity/Balíčky inzerce, Nahlásit (`/nahlasit`)
+    * **Kontakt:** Provozovatel webu (`/kontakt`)
+    * **Co je zaPikolou?:** O platformě (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`)
+    * FAQ (`/faq`) — plánováno; accordion stránka odvozená z VOP (viz §11.3)
 
 ### 5.2 Autentizace a správa profilu
 
@@ -428,7 +446,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * **Souhlasy při registraci *(v0.5+)*:** Formulář registrace musí obsahovat **minimálně dva samostatné checkboxy** — odděleně od sebe, s odkazem na příslušný dokument v patičce / na stub stránce:
     1. **VOP (povinný)** — souhlas s všeobecnými obchodními podmínkami (`/vop`). Bez zaškrtnutí registraci neumožnit (klient + server).
     2. **Marketing (volitelný)** — souhlas se zasíláním marketingových sdělení (`/marketingovy-souhlas`). Nesmí být podmínkou založení účtu.
-  * **Stav implementace:** Právní texty VOP i marketingového souhlasu zatím **nejsou hotové** — v pracovní verzi stačí stub stránky a odkazy v patičce; checkboxy v registračním formuláři s odkazovanou textací. Uložení souhlasu do DB (`profiles` nebo audit) a stejný flow u Google OAuth — **až po finalizaci dokumentů**.
+  * **Stav implementace:** Checkboxy v registračním formuláři a onboardingu jsou **implementovány**; souhlasy se ukládají do `profiles` (`age_confirmed_at`, `vop_accepted_at`, `vop_version`, `marketing_consent_at`, migrace **044**). E-mail registrace bez session ukládá pending metadata do auth; po prvním přihlášení se flushne do profilu. Právní texty VOP/marketingu zatím **draft** — varianty FO/OSVČ v `docs/pravni/` (viz [`pravni/README.md`](./pravni/README.md)).
   * **Doporučená textace (§1.6):** *„Souhlasím s [všeobecnými obchodními podmínkami]. Bez tohoto souhlasu účet nezaložíme.“* · *„Souhlasím se [zasíláním marketingových sdělení]. Souhlas můžete kdykoli odvolat.“* — konfigurace v `src/config/legal.ts`, komponenta `RegistrationConsentFields`.
   * **Striktní zákaz změny e-mailu:** Pole e-mailu je v UI neměnné (statický text). Změna adresy je zablokována PostgreSQL triggerem `BEFORE UPDATE ON auth.users`. Pokud uživatel potřebuje jiný e-mail: **smazat účet a založit nový** — krátká poznámka u pole v UI.
 * **Onboarding:**
@@ -441,7 +459,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 
 ### 5.3 Detail inzerátu (Produktová stránka)
 
-* **Obsah prezentace:** Název inzerátu, titulní fotka + galerie (max 6 fotek), strukturovaný popis, typ ceny (včetně konkrétní částky, pokud je pevná), štítek stavu, lokalita.
+* **Obsah prezentace:** Název inzerátu, titulní fotka + galerie (max 6 fotek), strukturovaný popis, typ ceny (včetně konkrétní částky, pokud je pevná), štítek stavu, lokalita. Pokud uživatel publikoval AI verzi textu, v sekci Parametry se zobrazí **„Vytvořeno s pomocí AI: Ano“** (`posts.description_ai_assisted`, migrace **043**; copy v `LISTING_AI_DISCLOSURE`).
 * **Veřejné dotazy (Komentáře) – Ochrana proti spamu a černému trhu:**
   * **Zákaz anonymity:** Komentáře jsou veřejně čitelné, ale přidat komentář mohou **striktně pouze přihlášení a ověření uživatelé**.
   * **Databázové zabezpečení (Supabase RLS):** Tabulka `comments` má aktivní RLS. Zápis (`INSERT`) je povolen výhradně pro roli `authenticated` s `WITH CHECK (auth.uid() = user_id)` — uživatel nemůže zfalšovat ID autora. Při INSERTu se zároveň uloží `author_nickname` (snapshot z `profiles.nickname`).
@@ -459,7 +477,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * **Standalone *(v0.5)*:** Formulář na `/nahlasit` (odkaz v patičce) — pole URL inzerátu (validace domény a slug), důvod (select), volitelný popis (max 500 znaků), e-mail oznamovatele (povinné pro nepřihlášené). Po odeslání: INSERT do `reports`, záznam v `audit_events`, e-mail adminovi (Resend), UI potvrzení „Děkujeme. Prověříme to do 24 hodin a dáme vám vědět.“ (§1.6).
   * Stejná logika 3× threshold platí pro komentáře (existující trigger).
 * **Automatizované On-Page SEO, Rich Snippets & AI crawlery:**
-  * **Dynamická Metadata (Next.js Metadata API):** Formát: `[Název inzerátu] | [Lokalita] | Local Hobby Market`. Příklad: *„Prodám dětské kolo Velo | Brno-Líšeň | Local Hobby Market“*.
+  * **Dynamická Metadata (Next.js Metadata API):** Formát detailu: `[Název inzerátu] | [Lokalita]`; suffix stránky a `openGraph.siteName`: `zaPikolou.cz` (konstanta `SITE_DISPLAY_NAME`). Příklad title: *„Prodám dětské kolo Velo | Brno-Líšeň“*.
   * **Strukturovaná data (Schema.org JSON-LD):** Server-renderovaný `<script type="application/ld+json">` na detailu inzerátu — helper `buildListingJsonLd()` v `src/lib/seo/listing-json-ld.ts`, komponenta `ListingJsonLd`. *(✅ implementováno 2026-07-09)* Mapování podle `category_type`:
     * `zbozi` → `Schema.org/Product` (název, popis, `offers` s cenou v CZK, `itemCondition`)
     * `sluzby` → `Schema.org/Service` (lokalita, popis) — preferováno před `LocalBusiness` u jednotlivců
@@ -685,6 +703,8 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.22 | 2026-07-11 | **Smazání účtu (P23):** migrace `037`, RPC `prepare_user_account_deletion`, `/profil/nastaveni`, `/mod/uzivatele`; **checkbox věku 15+ (P31)**; **limity inzerátů:** migrace `038`/`039`, lifetime kredity, `/balicky-inzerce`; God Mode `/mod/uzivatele` částečně hotové |
 | v3.23 | 2026-07-11 | **§12 Monetizace v0.6:** schválený směr bankovní převod + SPAYD QR + Fio API (bez platební brány); §1.7 DoD; úprava §6 — odkaz místo Stripe |
 | v3.24 | 2026-07-11 | **P26/P27:** nahlášení (inline + `/nahlasit`), God Mode `/mod/karantena` + `/mod/inzeraty` + lišta na detailu; migrace **040–042** (`reports` standalone, `report_no`, service_role INSERT); §4 `reports.report_no` |
+| v3.25 | 2026-07-12 | **Branding zaPikolou.cz:** §1.8 domény (`zapikolou.cz`, redirect `predpikolou.cz`), logo spec, `src/config/site.ts`; §5.1 header; §5.3 metadata suffix; §12.4 SPAYD `MSG`; odkaz [`branding-a-domeny.md`](./branding-a-domeny.md) |
+| v3.26 | 2026-07-13 | **Compliance a UX:** migrace **043** (`description_ai_assisted`), **044** (audit registračních souhlasů); právní docs FO/OSVČ + `REVIZE_PRAVNI/`; stránky `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`; patička 3 sloupce; bezpečnostní upozornění u kontaktu/poptávky; `NEXT_PUBLIC_MONETIZATION_ENABLED` |
 
 ---
 
@@ -1302,6 +1322,7 @@ Implementace v server komponentě detailu inzerátu — viz §5.3.
 | `src/lib/supabase/public.ts` | — | Anonymní Supabase klient pro sitemap (bez cookies). |
 | `src/lib/seo/listing-json-ld.ts` | — | JSON-LD helper pro detail inzerátu. |
 | `src/components/seo/ListingJsonLd.tsx` | — | Server-render `<script type="application/ld+json">`. |
+| `src/config/site.ts` | — | Veřejný název, doména, meta popis — import do metadata a e-mailů. |
 | `public/llms.txt` | `/llms.txt` | Statický popis veřejných URL pro LLM crawlery. |
 
 **Helper:** `src/lib/seo/listing-json-ld.ts` — jeden zdroj pravdy pro JSON-LD. *(✅ implementováno)*
@@ -1431,7 +1452,7 @@ Po vytvoření pending platby Server Action vrátí `variableSymbol`, `amountCen
 Formát **SPAYD** (Short Payment Descriptor), příklad pro 50 Kč:
 
 ```text
-SPD*1.0*ACC:CZ6508000000192000145399*AM:50.00*CC:CZK*X-VS:1234567890*MSG:HobbyUserMarket
+SPD*1.0*ACC:CZ6508000000192000145399*AM:50.00*CC:CZK*X-VS:1234567890*MSG:zaPikolou
 ```
 
 | Klíč | Hodnota |
@@ -1440,7 +1461,7 @@ SPD*1.0*ACC:CZ6508000000192000145399*AM:50.00*CC:CZK*X-VS:1234567890*MSG:HobbyUs
 | `AM` | Částka s desetinnou tečkou (`amount_cents / 100`) |
 | `CC` | `CZK` |
 | `X-VS` | `variable_symbol` z `bank_payments` |
-| `MSG` | Krátký identifikátor (max ~35 znaků) |
+| `MSG` | Krátký identifikátor platformy (`zaPikolou`, max ~35 znaků) |
 
 QR vykreslit knihovnou `qrcode.react` (nebo ekvivalent) v klientské komponentě — **bez** volání externího API.
 
