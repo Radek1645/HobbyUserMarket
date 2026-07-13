@@ -1,6 +1,8 @@
 "use client";
 
 import { UserProvider } from "@/components/auth/UserContext";
+import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
+import { CookieConsentProvider } from "@/components/consent/CookieConsentProvider";
 import { CreateListingFab } from "@/components/layout/CreateListingFab";
 import { Header } from "@/components/layout/Header";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -16,13 +18,16 @@ type AppShellProps = {
 export function AppShell({ user, children }: AppShellProps) {
   return (
     <UserProvider user={user}>
-      <VisitorLocationProvider>
-        <SiteNoticeBar />
-        <Header user={user} />
-        <main className="mx-auto w-full max-w-5xl flex-1">{children}</main>
-        <CreateListingFab user={user} />
-        <SiteFooter />
-      </VisitorLocationProvider>
+      <CookieConsentProvider>
+        <VisitorLocationProvider>
+          <SiteNoticeBar />
+          <Header user={user} />
+          <main className="mx-auto w-full max-w-5xl flex-1">{children}</main>
+          <CreateListingFab user={user} />
+          <SiteFooter />
+          <CookieConsentBanner />
+        </VisitorLocationProvider>
+      </CookieConsentProvider>
     </UserProvider>
   );
 }

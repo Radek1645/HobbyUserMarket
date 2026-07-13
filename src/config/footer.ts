@@ -7,6 +7,7 @@ import {
   CREATE_LISTING_GUIDE_UI,
 } from "@/config/create-listing-guide";
 import {
+  COOKIES_PATH,
   LEGAL_UI,
   LISTING_PACKAGES_PATH,
   MARKETING_CONSENT_PATH,
@@ -38,6 +39,7 @@ export const FOOTER_UI = {
 export const FOOTER_DOCUMENT_LINKS = [
   { href: VOP_PATH, label: LEGAL_UI.vopLinkLabel },
   { href: LISTING_TERMS_PATH, label: MODERATION_REJECTION_UI.termsLinkLabel },
+  { href: COOKIES_PATH, label: LEGAL_UI.cookiesLinkLabel },
   { href: MARKETING_CONSENT_PATH, label: LEGAL_UI.marketingConsentLinkLabel },
   { href: LISTING_PACKAGES_PATH, label: LEGAL_UI.listingPackagesLinkLabel },
   { href: "/nahlasit", label: REPORT_UI.footerLinkLabel },

@@ -6,10 +6,12 @@ import path from "node:path";
 export type LegalDocumentSlug =
   | "vop"
   | "balicky-inzerce"
-  | "podminky-inzerce";
+  | "podminky-inzerce"
+  | "cookies";
 
 const STATIC_FILE_BY_SLUG: Partial<Record<LegalDocumentSlug, string>> = {
   "podminky-inzerce": "podminky-inzerce.md",
+  cookies: "cookies.md",
 };
 
 const VARIANT_FILE_BY_SLUG: Partial<

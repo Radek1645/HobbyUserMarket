@@ -5,6 +5,7 @@ import { MONETIZATION_ENABLED } from "@/config/monetization";
 export const VOP_PATH = "/vop";
 export const LISTING_PACKAGES_PATH = "/balicky-inzerce";
 export const MARKETING_CONSENT_PATH = "/marketingovy-souhlas";
+export const COOKIES_PATH = "/cookies";
 export const DSA_CONTACT_PATH = "/dsa";
 
 /** Verze VOP v okamžiku registrace — sync s docs/pravni/vop-*.md. */
@@ -23,6 +24,7 @@ export const LEGAL_UI = {
     ? "Balíčky inzerce"
     : "Limity inzerce",
   marketingConsentLinkLabel: "Marketingový souhlas",
+  cookiesLinkLabel: "Zásady cookies",
   registrationVopConsent:
     "Souhlasím s všeobecnými obchodními podmínkami. Bez tohoto souhlasu účet nezaložíme.",
   registrationMarketingConsent:

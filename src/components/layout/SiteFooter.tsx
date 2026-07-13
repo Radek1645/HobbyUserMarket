@@ -1,3 +1,4 @@
+import { CookieConsentSettingsLink } from "@/components/consent/CookieConsentSettingsLink";
 import {
   FOOTER_ABOUT_LINKS,
   FOOTER_CONTACT_LINKS,
@@ -57,12 +58,15 @@ export function SiteFooter() {
           />
         </div>
 
-        <p className="mt-8 border-t border-gray-200 pt-6 text-sm text-gray-600">
-          <span className="font-medium text-gray-900">{SITE_SHORT_NAME}</span>
-          <span className="text-gray-500"> v{SITE_VERSION}</span>
-          {" — "}
-          {FOOTER_UI.tagline}
-        </p>
+        <div className="mt-8 border-t border-gray-200 pt-6 text-sm text-gray-600">
+          <CookieConsentSettingsLink />
+          <p className="mt-2">
+            <span className="font-medium text-gray-900">{SITE_SHORT_NAME}</span>
+            <span className="text-gray-500"> v{SITE_VERSION}</span>
+            {" — "}
+            {FOOTER_UI.tagline}
+          </p>
+        </div>
       </div>
     </footer>
   );

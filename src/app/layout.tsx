@@ -1,3 +1,7 @@
+import {
+  GoogleTagManagerConsentScript,
+  GoogleTagManagerScript,
+} from "@/components/analytics/GoogleTagManager";
 import { AppShell } from "@/components/layout/AppShell";
 import { SITE_DISPLAY_NAME, SITE_DESCRIPTION, SITE_SEO_TITLE } from "@/config/site";
 import { getCurrentUser } from "@/lib/auth/get-user";
@@ -35,6 +39,8 @@ export default async function RootLayout({
       <body
         className={`${geistSans.className} flex min-h-screen flex-col bg-gray-50 text-gray-900 antialiased`}
       >
+        <GoogleTagManagerConsentScript />
+        <GoogleTagManagerScript />
         <AppShell user={user}>{children}</AppShell>
       </body>
     </html>
