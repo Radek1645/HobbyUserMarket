@@ -7,10 +7,14 @@ export type GtmConsentUpdate = {
 declare global {
   interface Window {
     dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
   }
 }
 
-const CONSENT_DENIED: Record<string, GtmConsentState | number> = {
+export const GTM_CONSENT_DENIED_DEFAULTS: Record<
+  string,
+  GtmConsentState | number
+> = {
   analytics_storage: "denied",
   ad_storage: "denied",
   ad_user_data: "denied",
@@ -21,29 +25,59 @@ const CONSENT_DENIED: Record<string, GtmConsentState | number> = {
   wait_for_update: 500,
 };
 
-function pushConsentCommand(
+const GTM_CONSENT_UPDATE_KEYS = [
+  "analytics_storage",
+  "ad_storage",
+  "ad_user_data",
+  "ad_personalization",
+  "functionality_storage",
+  "personalization_storage",
+] as const;
+
+/** GTM Consent Mode vyžaduje gtag() → dataLayer.push(arguments), ne array push. */
+export function ensureGtag(): void {
+  window.dataLayer = window.dataLayer ?? [];
+
+  if (typeof window.gtag === "function") {
+    return;
+  }
+
+  window.gtag = function gtag(): void {
+    window.dataLayer!.push(arguments as unknown as Record<string, unknown>);
+  };
+}
+
+export function pushGtmConsentCommand(
   action: "default" | "update",
   params: Record<string, GtmConsentState | number>,
 ): void {
-  window.dataLayer = window.dataLayer ?? [];
-  window.dataLayer.push(["consent", action, params]);
+  ensureGtag();
+  window.gtag!("consent", action, params);
 }
 
 /** Výchozí stav před načtením GTM — analytika vypnutá. */
 export function applyDefaultGtmConsent(): void {
-  pushConsentCommand("default", CONSENT_DENIED);
+  pushGtmConsentCommand("default", GTM_CONSENT_DENIED_DEFAULTS);
 }
 
-/** Aktualizace po volbě v cookie liště nebo načtení z localStorage. */
+/** Aktualizace po volbě v cookie liště. */
 export function applyGtmConsentUpdate({ analytics }: GtmConsentUpdate): void {
   const state: GtmConsentState = analytics ? "granted" : "denied";
+  const params = Object.fromEntries(
+    GTM_CONSENT_UPDATE_KEYS.map((key) => [key, state]),
+  ) as Record<string, GtmConsentState>;
 
-  pushConsentCommand("update", {
-    analytics_storage: state,
-    ad_storage: state,
-    ad_user_data: state,
-    ad_personalization: state,
-    functionality_storage: state,
-    personalization_storage: state,
-  });
+  pushGtmConsentCommand("update", params);
+}
+
+/** Inline script — musí běžet synchronně v `<head>` před gtm.js. */
+export function buildGtmConsentBootstrapScript(
+  storedConsentScript: string,
+): string {
+  return `
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('consent', 'default', ${JSON.stringify(GTM_CONSENT_DENIED_DEFAULTS)});
+${storedConsentScript}
+`.trim();
 }

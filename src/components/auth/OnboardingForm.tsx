@@ -35,7 +35,7 @@ export function OnboardingForm({
       <input type="hidden" name="next" value={nextPath} />
       <input type="hidden" name="isCompany" value={isCompany ? "true" : "false"} />
 
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-900">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-center text-sm font-medium text-emerald-900">
         Startujete s {LISTING_QUOTA_FREE_DEFAULT} inzeráty zdarma!
       </div>
 

@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.26  
+> **Verze dokumentu:** v3.27  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`042_reports_service_role_insert.sql`](../supabase/042_reports_service_role_insert.sql) · [`043_posts_description_ai_assisted.sql`](../supabase/043_posts_description_ai_assisted.sql) · [`044_profile_registration_consents.sql`](../supabase/044_profile_registration_consents.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-13
+> **Datum:** 2026-07-14
 
 ---
 
@@ -206,7 +206,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **AI Vrstva:** Supabase Edge Functions + **Gemini Flash** (výchozí model **`gemini-2.5-flash`**, override přes Supabase secret `GEMINI_MODEL` v `_shared/moderation/gemini.ts`) s fallbackem na **OpenAI GPT-4o-mini** pro real-time synchronní multimodální moderování a hydrataci obsahu. Timeout Edge Function: **30 s**. Implementační detail: [`docs/moderace-inzeratu.md`](./moderace-inzeratu.md).
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
-* **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **cookie consent bannerem** (GTM consent mode) před aktivací měření.
+* **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **vlastní cookie lištou** (GTM Consent Mode v2) před aktivací měření. *(✅ GTM `GTM-WGLNJRNK`, consent banner, `/cookies` — 2026-07-14)*
 * **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2 / `nemovitost` od v0.3) a `subcategory_slug`.
 * **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1, **max délka popisu**) v `src/config/app.ts` (`LISTING_DESCRIPTION_MAX_LENGTH = 2000`, `MODERATION_DESCRIPTION_QA_RESERVE = 400`). Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace v `src/config/moderation/index.ts` (`MODERATION_ENABLED`, `MODERATION_RATE_LIMIT_PER_HOUR = 20`, `MODERATION_MAX_QUESTIONS = 5`, `MODERATION_IMAGE_MAX_DIMENSION = 512`). Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max). Prompty kategorií sync: `npm run sync:moderation`.
 * **Data v EU / EHP *(compliance — k doplnění)*:** V repozitáři **není** automatická garance, že všechna data zůstávají v EU. Při zakládání Supabase projektu zvolit **EU region** (typ. `eu-central-1`). AI moderace posílá text a fotky inzerátu ke **Gemini/OpenAI** (typicky mimo EHP) — vyžaduje DPA/SCC a informaci v GDPR. Checklist: [`docs/pravni/ochrana-osobnich-udaju-fo.md`](./pravni/ochrana-osobnich-udaju-fo.md) §5.1, backlog **P33** v [`TO-DO_Fable.md`](./TO-DO_Fable.md).
@@ -627,9 +627,9 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
   * `posts.payment_status` (výchozí `free`) — rezervováno pro budoucí topování/prodloužení.
   * **v0.6:** tabulka `bank_payments`, Fio API sync, SPAYD QR — viz §12. Platební brána (Stripe) záměrně **ne** — nevyplatí se při rozpočtu 1 000 Kč/měsíc a objemu Vibecoding MVP.
 * **Cookie consent (EU):**
-  * Consent banner před aktivací GA4 (GTM consent mode).
-  * Stránky: Zásady ochrany osobních údajů, Podmínky použití.
-  * Bez souhlasu: pouze technicky nezbytné cookies.
+  * Vlastní cookie lišta (bez externího CMP) před aktivací GA4 (GTM Consent Mode v2). *(✅ `CookieConsentBanner`, `GoogleTagManager.tsx`, `src/config/gtm.ts`)*
+  * Stránka `/cookies` (právní text z `docs/pravni/cookies.md`).
+  * Bez souhlasu: pouze technicky nezbytné cookies; `analytics_storage: denied`.
 
 ### 5.5 GTM identifikátory CTA (Click tracking)
 
@@ -708,6 +708,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.24 | 2026-07-11 | **P26/P27:** nahlášení (inline + `/nahlasit`), God Mode `/mod/karantena` + `/mod/inzeraty` + lišta na detailu; migrace **040–042** (`reports` standalone, `report_no`, service_role INSERT); §4 `reports.report_no` |
 | v3.25 | 2026-07-12 | **Branding zaPikolou.cz:** §1.8 domény (`zapikolou.cz`, redirect `predpikolou.cz`), logo spec, `src/config/site.ts`; §5.1 header; §5.3 metadata suffix; §12.4 SPAYD `MSG`; odkaz [`branding-a-domeny.md`](./branding-a-domeny.md) |
 | v3.26 | 2026-07-13 | **Compliance a UX:** migrace **043** (`description_ai_assisted`), **044** (audit registračních souhlasů); právní docs FO/OSVČ + `REVIZE_PRAVNI/`; stránky `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`; patička 3 sloupce; bezpečnostní upozornění u kontaktu/poptávky; `NEXT_PUBLIC_MONETIZATION_ENABLED` |
+| v3.27 | 2026-07-14 | **GTM + cookie lišta:** container `GTM-WGLNJRNK`, Consent Mode v2 (`gtag`), vlastní banner bez CMP, `/cookies`, patička „Nastavení cookies“; Search Console ověření DNS; Metodika §14 |
 
 ---
 

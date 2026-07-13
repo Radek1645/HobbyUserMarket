@@ -153,9 +153,9 @@ Do té doby mohou maily chodit z provizorní domény poskytovatele — web fungu
 
 ### Fáze 7 — SEO po launchu (až běží produkce)
 
-- [ ] **7.1** [Google Search Console](https://search.google.com/search-console) — přidat property **`zapikolou.cz`**, ověřit vlastnictví
-- [ ] **7.2** Odeslat sitemap: `https://zapikolou.cz/sitemap.xml`
-- [ ] **7.3** V GA4 / GTM nastavit primární doménu `zapikolou.cz` (pokud používáš analytiku)
+- [x] **7.1** [Google Search Console](https://search.google.com/search-console) — property **`zapikolou.cz`**, ověření **DNS TXT**
+- [x] **7.2** Odeslat sitemap: `https://zapikolou.cz/sitemap.xml`
+- [x] **7.3** GTM container **`GTM-WGLNJRNK`** + Consent Mode v2 + vlastní cookie lišta (GA4 tag v GTM containeru)
 
 ---
 

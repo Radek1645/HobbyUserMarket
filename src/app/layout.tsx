@@ -35,9 +35,10 @@ export default async function RootLayout({
   const user = await getCurrentUser();
 
   return (
-    <html lang="cs">
+    <html lang="cs" suppressHydrationWarning>
       <body
         className={`${geistSans.className} flex min-h-screen flex-col bg-gray-50 text-gray-900 antialiased`}
+        suppressHydrationWarning
       >
         <GoogleTagManagerConsentScript />
         <GoogleTagManagerScript />

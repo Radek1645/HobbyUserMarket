@@ -1,5 +1,6 @@
 import { resolveGtmContainerId } from "@/config/gtm";
 import { buildStoredConsentScript } from "@/lib/analytics/cookie-consent-storage";
+import { buildGtmConsentBootstrapScript } from "@/lib/analytics/gtm-consent";
 import Script from "next/script";
 
 /** Consent Mode default + obnova volby z localStorage — musí běžet před GTM. */
@@ -9,29 +10,18 @@ export function GoogleTagManagerConsentScript() {
     return null;
   }
 
-  const storedConsentScript = buildStoredConsentScript();
+  const bootstrapScript = buildGtmConsentBootstrapScript(
+    buildStoredConsentScript(),
+  );
 
   return (
     <Script id="gtm-consent-defaults" strategy="beforeInteractive">
-      {`
-window.dataLayer = window.dataLayer || [];
-window.dataLayer.push(["consent", "default", {
-  analytics_storage: "denied",
-  ad_storage: "denied",
-  ad_user_data: "denied",
-  ad_personalization: "denied",
-  functionality_storage: "denied",
-  personalization_storage: "denied",
-  security_storage: "granted",
-  wait_for_update: 500
-}]);
-${storedConsentScript}
-`.trim()}
+      {bootstrapScript}
     </Script>
   );
 }
 
-/** GTM snippet — načte se až po nastavení consent defaultů. */
+/** GTM snippet — hned po consent defaultech, stále před interaktivitou stránky. */
 export function GoogleTagManagerScript() {
   const gtmId = resolveGtmContainerId();
   if (!gtmId) {
@@ -40,7 +30,7 @@ export function GoogleTagManagerScript() {
 
   return (
     <>
-      <Script id="gtm-loader" strategy="afterInteractive">
+      <Script id="gtm-loader" strategy="beforeInteractive">
         {`
 (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

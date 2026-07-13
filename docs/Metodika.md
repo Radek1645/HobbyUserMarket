@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md)  
-> **Datum:** 2026-07-13
+> **Datum:** 2026-07-14
 
 ---
 
@@ -21,7 +21,8 @@
 11. [Moderátoři a administrátoři (God Mode)](#11-moderátoři-a-administrátoři-god-mode)
 12. [Speciální typy inzerátů](#12-speciální-typy-inzerátů)
 13. [Globální informační lišta (Site Notice)](#13-globální-informační-lišta-site-notice)
-14. [Související dokumenty](#14-související-dokumenty)
+14. [Cookie lišta, GTM a analytika](#14-cookie-lišta-gtm-a-analytika)
+15. [Související dokumenty](#15-související-dokumenty)
 
 ---
 
@@ -96,11 +97,11 @@ Na všech stránkách je společná hlavička (wordmark **zaPikolou.cz**, vyhled
 
 | Sloupec | Odkazy |
 |---------|--------|
-| **Dokumenty** | VOP, Podmínky inzerce, Marketingový souhlas, Limity/Balíčky inzerce, Nahlásit inzerát |
+| **Dokumenty** | VOP, Podmínky inzerce, Zásady cookies, Marketingový souhlas, Limity/Balíčky inzerce, Nahlásit inzerát |
 | **Kontakt** | Provozovatel webu (`/kontakt`) |
 | **Co je zaPikolou?** | O platformě (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`) |
 
-V patičce je také krátký tagline a verze platformy (`0.1`).
+V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), krátký tagline a verze platformy (`0.1`).
 
 ### 2.7 Informační stránky
 
@@ -109,6 +110,7 @@ V patičce je také krátký tagline a verze platformy (`0.1`).
 | `/co-je-zapikolou` | Co platforma je a není (inzertní nástěnka, ne e-shop) |
 | `/jak-vytvorit-inzerat` | Průvodce ve 4 krocích s ukázkou mobilního flow |
 | `/kontakt` | Provozovatel (jméno, e-mail, datová schránka) |
+| `/cookies` | Zásady používání souborů cookie (právní text z `docs/pravni/cookies.md`) |
 
 Stránky jsou veřejné, indexovatelné a v `sitemap.xml`.
 
@@ -464,7 +466,9 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 
 ### 8.5 SEO a strojová čitelnost
 
-Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná technická příprava **nezaručuje** okamžitou viditelnost v organickém vyhledávání — Google musí stránky nejdřív objevit, zaindexovat a teprve pak je může zobrazovat ve výsledcích. K tomu pomáhá registrace v [Google Search Console](https://search.google.com/search-console) a odeslání sitemap.
+Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná technická příprava **nezaručuje** okamžitou viditelnost v organickém vyhledávání — Google musí stránky nejdřív objevit, zaindexovat a teprve pak je může zobrazovat ve výsledcích.
+
+**Google Search Console:** property `zapikolou.cz` ověřená **DNS TXT** záznamem; sitemap `https://zapikolou.cz/sitemap.xml` odeslaná v Search Console.
 
 #### Co uživatel / robot vidí na webu
 
@@ -485,7 +489,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 **`src/app/sitemap.ts`** → generuje `/sitemap.xml`
 
 - Next.js při požadavku na `/sitemap.xml` spustí tuto funkci a vrátí XML se seznamem URL.
-- Obsahuje **statické stránky**: `/`, `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`, `/vop`, `/balicky-inzerce`, `/podminky-inzerce`, `/marketingovy-souhlas`.
+- Obsahuje **statické stránky**: `/`, `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`, `/vop`, `/balicky-inzerce`, `/podminky-inzerce`, `/marketingovy-souhlas`, `/cookies`.
 - Obsahuje **aktivní inzeráty** — načte je přes `get-sitemap-listings.ts`.
 - **`revalidate = 300`** (5 minut): cache se obnoví nejpozději za 5 minut, takže nový nebo expirovaný inzerát se v sitemap projeví bez ručního zásahu.
 - Expirované nebo smazané inzeráty v sitemap **nejsou** — vyhledávač je nemá indexovat.
@@ -509,11 +513,10 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 - Lidsky čitelný přehled: co web dělá, které URL jsou veřejné, které vyžadují přihlášení, kde je sitemap.
 - Není povinný pro Google; doplňuje robots.txt a sitemap pro AI nástroje.
 
-#### Co ještě chybí pro plnou organiku
+#### Co ještě závisí na čase a obsahu
 
-- Registrace v **Google Search Console** a ruční odeslání sitemap
-- Vlastní doména (volitelně — `*.vercel.app` funguje, ale vlastní doména pomáhá důvěryhodnosti)
-- Čas a obsah — nový web se v organice neobjeví hned
+- První indexace v Google trvá dny až týdny — sitemap jen urychlí objevení URL
+- Propojení Search Console ↔ GA4 (volitelné, až běží GA4 tag v GTM)
 
 ---
 
@@ -924,7 +927,47 @@ Alternativně uprav `DEFAULT_CONFIG` v `src/config/site-notice.ts` (`enabled`, `
 
 ---
 
-## 14. Související dokumenty
+## 14. Cookie lišta, GTM a analytika
+
+Měření návštěvnosti běží přes **Google Tag Manager** (container `GTM-WGLNJRNK`). **GA4** se nenasazuje přímo do kódu — konfiguruje se jako tag uvnitř GTM containeru. Před načtením `gtm.js` web nastaví **Consent Mode v2** (analytika výchozí **vypnutá**).
+
+### 14.1 Co návštěvník vidí
+
+1. Při **první návštěvě** (bez uložené volby) se dole zobrazí cookie lišta.
+2. **Pouze nezbytné** — analytika zůstane vypnutá (`analytics_storage: denied`).
+3. **Přijmout analytiku** — GTM dostane `gtag('consent', 'update', …)` a GA4 tag smí spustit měření.
+4. Odkaz **Zásady cookies** vede na `/cookies`.
+5. V patičce **Nastavení cookies** lištu kdykoli znovu otevře (změna nebo odvolání souhlasu).
+
+Volba se ukládá do `localStorage` (`cookie-consent:v1`), ne do cookie třetí strany.
+
+### 14.2 Technický průběh (bez externího CMP)
+
+```
+gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
+    →  načtení gtm.js  →  cookie lišta (pokud chybí volba)
+    →  po kliknutí update consent  →  GA4 / click eventy v GTM
+```
+
+| Soubor | Účel |
+|--------|------|
+| `src/config/gtm.ts` | ID containeru `GTM-WGLNJRNK` (override env `NEXT_PUBLIC_GTM_ID`) |
+| `src/config/cookie-consent.ts` | Texty lišty, verze schématu souhlasu |
+| `src/components/analytics/GoogleTagManager.tsx` | Consent bootstrap + GTM snippet |
+| `src/components/consent/*` | Lišta, provider, odkaz v patičce |
+| `src/config/gtm-ids.ts` | `data-gtm-id` na CTA pro GTM click triggery |
+
+**Env (volitelné):** `NEXT_PUBLIC_GTM_ID` přepíše default; prázdný string GTM vypne (např. lokální dev).
+
+### 14.3 GTM container (mimo repozitář)
+
+V GTM adminu: zapnutý **Consent Overview**; GA4 tag s **Require consent** → `analytics_storage`; click trigger `[data-gtm-id^="cta_"]`.
+
+Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí stavy; po souhlasu **Příkaz Update pro souhlas**.
+
+---
+
+## 15. Související dokumenty
 
 | Dokument | Obsah |
 |----------|-------|
@@ -936,6 +979,8 @@ Alternativně uprav `DEFAULT_CONFIG` v `src/config/site-notice.ts` (`enabled`, `
 | [`terminal-prikazy.md`](./terminal-prikazy.md) | Příkazy pro vývoj a deploy |
 | [`ui-prvky.md`](./ui-prvky.md) | Sdílené UI prvky (CTA, modály, pilulky) — kód v `src/config/ui-primitives.ts` |
 | Site Notice | Konfigurace: `src/config/site-notice.ts`; komponenta: `src/components/layout/SiteNoticeBar.tsx` |
+| Cookie lišta / GTM | `src/config/cookie-consent.ts`, `src/config/gtm.ts`, `src/components/consent/`, `src/components/analytics/` |
+| [`docs/pravni/cookies.md`](./pravni/cookies.md) | Právní text zásad cookies |
 
 ---
 

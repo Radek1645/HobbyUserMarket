@@ -62,7 +62,7 @@ export function clearCookieConsent(): void {
   }
 }
 
-/** Serializovaný JSON pro inline script v `<head>` (sync před GTM). */
+/** Serializovaný script pro obnovu volby z localStorage (sync před GTM). */
 export function buildStoredConsentScript(): string {
   return `
 try {
@@ -71,15 +71,14 @@ try {
     var parsed = JSON.parse(raw);
     if (parsed && parsed.version === ${COOKIE_CONSENT_SCHEMA_VERSION} && typeof parsed.analytics === "boolean") {
       var state = parsed.analytics ? "granted" : "denied";
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push(["consent", "update", {
+      gtag("consent", "update", {
         analytics_storage: state,
         ad_storage: state,
         ad_user_data: state,
         ad_personalization: state,
         functionality_storage: state,
         personalization_storage: state
-      }]);
+      });
     }
   }
 } catch (e) {}
