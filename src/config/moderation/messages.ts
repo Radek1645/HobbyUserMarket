@@ -3,6 +3,17 @@
 /** Cesta stránky z patičky (zatím stub). */
 export const LISTING_TERMS_PATH = "/podminky-inzerce";
 
+/** Označení AI textu na detailu inzerátu — Podmínky inzerce §3, AI Act. */
+export const LISTING_AI_DISCLOSURE = {
+  paramLabel: "Vytvořeno s pomocí AI",
+  paramValueYes: "Ano",
+  paramHelp:
+    "Inzerát nenapsala AI od nuly. Text prošel kontrolou a AI doplnila chybějící údaje podle zadání inzerenta a fotografií.",
+} as const;
+
+/** @deprecated Prefer LISTING_AI_DISCLOSURE.paramLabel */
+export const LISTING_AI_DISCLOSURE_LABEL = LISTING_AI_DISCLOSURE.paramLabel;
+
 export const MODERATION_REJECTION_UI = {
   title: "Inzerát nesplňuje podmínky inzerce",
   intro:
@@ -22,10 +33,19 @@ export const MODERATION_APPROVED_UI = {
   continueLabelEdit: "Uložit změny",
 } as const;
 
+export const MODERATION_CHECKING_UI = {
+  title: "Probíhá AI kontrola inzerátu",
+  hint: "Může to trvat i 15 sekund.",
+  disclaimer:
+    "AI může udělat chybu — před publikací si text vždy zkontrolujte.",
+} as const;
+
 export const MODERATION_PREVIEW_UI = {
   title: "AI náhled a doplnění",
   intro:
     "AI navrhla upravený popis inzerátu. Návrh můžete dál upravit, nebo publikovat původní text.",
+  disclaimer:
+    "AI může udělat chybu — před publikací si text zkontrolujte. Pokud publikujete vylepšený popis, v sekci Parametry se zobrazí „Vytvořeno s pomocí AI: Ano“.",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
   questionsHeading: "Vylepšete svůj inzerát",

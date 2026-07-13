@@ -2,6 +2,7 @@
 
 import { SEARCH_QUERY_MIN_LENGTH } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { headerInputHeightClass } from "@/config/ui-primitives";
 import {
   isSearchQueryValid,
   normalizeSearchQuery,
@@ -92,7 +93,7 @@ export function HeaderSearch() {
         enterKeyHint="search"
         aria-invalid={hint ? true : undefined}
         aria-describedby={hint ? "header-search-hint" : undefined}
-        className="h-10 w-full rounded-full border border-gray-200 bg-gray-50 pr-9 pl-9 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:ring-2 focus:ring-gray-200"
+        className={`${headerInputHeightClass} w-full rounded-full border border-gray-200 bg-gray-50 pr-9 pl-9 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:ring-2 focus:ring-gray-200`}
       />
       {value ? (
         <button

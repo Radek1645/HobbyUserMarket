@@ -19,6 +19,7 @@ import {
   attachmentsToPayload,
   type AttachmentFile,
 } from "./AttachmentDropzone";
+import { MeetingSafetyNotice } from "@/components/legal/SafetyNotice";
 import { useState } from "react";
 
 type ListingInquiryFormProps = {
@@ -184,6 +185,8 @@ export function ListingInquiryForm({
           Inzerát: {postTitle}
         </p>
       </div>
+
+      <MeetingSafetyNotice />
 
       <div>
         <label htmlFor="inquiry-name" className={labelClass}>

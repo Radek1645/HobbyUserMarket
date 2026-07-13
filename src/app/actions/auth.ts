@@ -15,6 +15,12 @@ import {
   userRequiresRegistrationConsentsOnboarding,
   validateRegistrationConsents,
 } from "@/lib/auth/registration-consents";
+import {
+  flushPendingRegistrationConsents,
+  persistRegistrationConsents,
+  readRegistrationConsentPayload,
+  buildPendingConsentMetadata,
+} from "@/lib/auth/persist-registration-consents";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { redirect } from "next/navigation";
 
@@ -161,12 +167,15 @@ export async function signUpWithEmail(
     return consentError;
   }
 
+  const consentPayload = readRegistrationConsentPayload(formData);
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent("/onboarding")}`,
+      data: buildPendingConsentMetadata(consentPayload),
     },
   });
 
@@ -180,6 +189,10 @@ export async function signUpWithEmail(
 
   if (!data.user) {
     return { error: "Registraci se nepodařilo dokončit. Zkuste to prosím znovu." };
+  }
+
+  if (data.session) {
+    await persistRegistrationConsents(supabase, data.user.id, formData);
   }
 
   return {
@@ -297,6 +310,13 @@ export async function completeOnboarding(
     if (consentError) {
       return consentError;
     }
+    await persistRegistrationConsents(supabase, user.id, formData);
+  } else {
+    await flushPendingRegistrationConsents(
+      supabase,
+      user.id,
+      user.user_metadata ?? {},
+    );
   }
 
   const internalNickname = isCompany

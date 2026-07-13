@@ -11,6 +11,21 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
     priority: 1,
   },
   {
+    url: "/co-je-zapikolou",
+    changeFrequency: "monthly",
+    priority: 0.5,
+  },
+  {
+    url: "/jak-vytvorit-inzerat",
+    changeFrequency: "monthly",
+    priority: 0.5,
+  },
+  {
+    url: "/kontakt",
+    changeFrequency: "monthly",
+    priority: 0.3,
+  },
+  {
     url: "/vop",
     changeFrequency: "monthly",
     priority: 0.3,

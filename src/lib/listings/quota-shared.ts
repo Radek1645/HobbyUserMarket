@@ -2,8 +2,9 @@ import type { ListingQuotaSnapshot } from "@/types/listing-quota";
 
 /** Bez server importů — safe pro Client Components. */
 
-export const LISTING_QUOTA_EXCEEDED_MESSAGE =
-  "Dosáhli jste limitu publikovaných inzerátů. Smazání nebo archivace starého inzerátu kredit nevrátí — další publikaci získáte dokoupením balíčku v nastavení profilu.";
+export {
+  LISTING_QUOTA_EXCEEDED_MESSAGE,
+} from "@/config/monetization";
 
 export function isListingQuotaExceededError(message?: string | null): boolean {
   return Boolean(message?.includes("listing_quota_exceeded"));

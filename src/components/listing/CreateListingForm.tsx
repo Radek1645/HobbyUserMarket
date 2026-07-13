@@ -2,7 +2,7 @@
 
 import { createListing, updateListing, type CreateListingState, type UpdateListingState } from "@/app/actions/posts";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
-import { MODERATION_ENABLED, MODERATION_MAX_QUESTIONS } from "@/config/moderation";
+import { MODERATION_CHECKING_UI, MODERATION_ENABLED, MODERATION_MAX_QUESTIONS } from "@/config/moderation";
 import {
   LISTING_DURATION_DEFAULT_DAYS,
   LISTING_DURATION_MAX_DAYS,
@@ -48,6 +48,7 @@ import {
   type ListingImageUploadHandle,
 } from "@/components/listing/ListingImageUpload";
 import { LocationInput } from "@/components/listing/LocationInput";
+import { RealEstateMinorNotice } from "@/components/legal/SafetyNotice";
 import { PriceAmountInput } from "@/components/listing/PriceAmountInput";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
@@ -212,6 +213,8 @@ export function CreateListingForm({
     [categoryType, subcategorySlug],
   );
 
+  const isRealEstate = categoryType === "nemovitost";
+
   const listingCategoryNotice = useMemo(
     () =>
       subcategorySlug
@@ -297,6 +300,7 @@ export function CreateListingForm({
     titleValue: string,
     descriptionValue: string,
     originalSnapshot?: { title: string; description: string },
+    options?: { descriptionAiAssisted?: boolean },
   ) {
     const formData = new FormData(form);
     formData.set("title", titleValue);
@@ -304,6 +308,10 @@ export function CreateListingForm({
     if (originalSnapshot) {
       formData.set("originalTitle", originalSnapshot.title);
       formData.set("originalDescription", originalSnapshot.description);
+      formData.set(
+        "descriptionAiAssisted",
+        options?.descriptionAiAssisted ? "true" : "false",
+      );
     }
     if (pendingApprovalTokenRef.current) {
       formData.set("moderationToken", pendingApprovalTokenRef.current);
@@ -341,6 +349,7 @@ export function CreateListingForm({
         title: preview.originalTitle,
         description: preview.originalDescription,
       },
+      { descriptionAiAssisted: false },
     );
     setModerationPreview(null);
     pendingPublishFormRef.current = null;
@@ -364,7 +373,7 @@ export function CreateListingForm({
     publishListing(form, payload.title, finalDescription, {
       title: preview.originalTitle,
       description: preview.originalDescription,
-    });
+    }, { descriptionAiAssisted: true });
     setModerationPreview(null);
     pendingPublishFormRef.current = null;
   }
@@ -546,10 +555,13 @@ export function CreateListingForm({
               aria-hidden
             />
             <p className="mt-4 text-base font-semibold text-neutral-900">
-              Probíhá AI kontrola inzerátu
+              {MODERATION_CHECKING_UI.title}
             </p>
             <p className="mt-2 text-sm text-neutral-600">
-              Může to trvat i 15 sekund.
+              {MODERATION_CHECKING_UI.hint}
+            </p>
+            <p className="mt-3 text-xs text-neutral-500">
+              {MODERATION_CHECKING_UI.disclaimer}
             </p>
           </div>
         </div>
@@ -641,6 +653,8 @@ export function CreateListingForm({
             </select>
           </div>
 
+          {isRealEstate ? <RealEstateMinorNotice /> : null}
+
           {listingCategoryNotice ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
               {listingCategoryNotice}
@@ -677,6 +691,8 @@ export function CreateListingForm({
               Upravit
             </button>
           </div>
+
+          {isRealEstate ? <RealEstateMinorNotice /> : null}
 
           {listingCategoryNotice ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">

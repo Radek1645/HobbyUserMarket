@@ -1,3 +1,4 @@
+import { MONETIZATION_ENABLED } from "@/config/monetization";
 import { OPERATOR_CONTACT_EMAIL } from "@/config/app";
 import { formatPackagePrice } from "@/lib/listings/quota";
 import type { ListingPackageCatalogItem, ListingQuotaSnapshot } from "@/types/listing-quota";
@@ -22,13 +23,16 @@ export function ListingQuotaSection({
   const usageRatio =
     quota.totalLimit > 0 ? Math.min(quota.usedCount / quota.totalLimit, 1) : 0;
   const usagePercent = Math.round(usageRatio * 100);
+  const showUpsell = MONETIZATION_ENABLED && upsellPackage;
 
   return (
     <section className="mt-6 space-y-4 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Inzerce</h2>
         <p className="mt-1 text-sm text-gray-600">
-          Přehled vašeho balíčku a možnost navýšit limit publikací.
+          {MONETIZATION_ENABLED
+            ? "Přehled vašeho balíčku a možnost navýšit limit publikací."
+            : "Přehled vašeho bezplatného limitu publikací."}
         </p>
       </div>
 
@@ -60,10 +64,28 @@ export function ListingQuotaSection({
         </div>
       </div>
 
-      <div className="grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2">
+      <div
+        className={
+          showUpsell
+            ? "grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2"
+            : "border-t border-gray-100 pt-4"
+        }
+      >
         <CurrentPackageTile quota={quota} />
-        <UpsellPackageTile upsellPackage={upsellPackage} />
+        {showUpsell ? (
+          <UpsellPackageTile upsellPackage={upsellPackage} />
+        ) : null}
       </div>
+
+      {!MONETIZATION_ENABLED ? (
+        <p className="text-xs text-gray-500">
+          Podrobnosti k limitům viz{" "}
+          <Link href="/balicky-inzerce" className="font-medium underline-offset-2 hover:underline">
+            Limity inzerce
+          </Link>
+          .
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -97,14 +119,12 @@ function CurrentPackageTile({ quota }: { quota: ListingQuotaSnapshot }) {
 function UpsellPackageTile({
   upsellPackage,
 }: {
-  upsellPackage: ListingPackageCatalogItem | null;
+  upsellPackage: ListingPackageCatalogItem;
 }) {
-  const priceLabel = upsellPackage
-    ? formatPackagePrice(upsellPackage.priceCents)
-    : null;
+  const priceLabel = formatPackagePrice(upsellPackage.priceCents);
   const contactHref = operatorContactHref("Dokoupení balíčku +20 inzerátů");
-  const packageName = upsellPackage?.displayName ?? "Balíček +20 inzerátů";
-  const packageQuota = upsellPackage?.listingQuota ?? 20;
+  const packageName = upsellPackage.displayName;
+  const packageQuota = upsellPackage.listingQuota;
 
   return (
     <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-gray-50 p-4">

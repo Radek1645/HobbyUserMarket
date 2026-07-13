@@ -108,6 +108,10 @@ function buildListingPayload(data: CreateListingInput) {
     payload.original_description = stripContactInfo(data.originalDescription);
   }
 
+  if (data.descriptionAiAssisted !== undefined) {
+    payload.description_ai_assisted = data.descriptionAiAssisted;
+  }
+
   return payload;
 }
 

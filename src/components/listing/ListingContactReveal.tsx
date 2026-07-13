@@ -1,6 +1,7 @@
 "use client";
 
 import { revealListingContact } from "@/app/actions/contact";
+import { MeetingSafetyNotice } from "@/components/legal/SafetyNotice";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { listingFormPrimaryButtonClass, listingInquiryCtaButtonClass } from "@/config/listing-form-ui";
 import { Loader2, Lock, Mail, Phone } from "lucide-react";
@@ -146,6 +147,8 @@ export function ListingContactReveal({
       </p>
 
       <ContactTeaser showEmail={showEmail} showPhone={showPhone} />
+
+      <MeetingSafetyNotice className="mt-3" />
 
       {error ? (
         <p role="alert" className="mt-3 text-sm text-red-700">

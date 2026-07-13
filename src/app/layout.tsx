@@ -1,5 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { SITE_DISPLAY_NAME, SITE_DESCRIPTION, SITE_SEO_TITLE } from "@/config/site";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { getSiteUrl } from "@/lib/supabase/env";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
@@ -9,8 +11,16 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "HobbyUserMarket",
-  description: "Lokální tržiště pro hobby uživatele",
+  metadataBase: new URL(getSiteUrl()),
+  title: SITE_SEO_TITLE,
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: SITE_SEO_TITLE,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_DISPLAY_NAME,
+    locale: "cs_CZ",
+    type: "website",
+  },
 };
 
 export default async function RootLayout({

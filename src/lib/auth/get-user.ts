@@ -1,5 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { resolveAvatarUrl } from "@/lib/auth/avatar-url";
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
+import { createClient } from "@/lib/supabase/server";
 import type { AppUser, UserRole } from "@/types/auth";
 import { cache } from "react";
 
@@ -67,10 +68,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       nickname: metaName?.trim() ?? user.email.split("@")[0] ?? "uzivatel",
       name: metaName,
       surname: null,
-      avatarUrl:
-        (typeof metadata.avatar_url === "string" && metadata.avatar_url) ||
-        (typeof metadata.picture === "string" && metadata.picture) ||
-        null,
+      avatarUrl: resolveAvatarUrl(metadata, null),
       role: "user",
       displayName: metaName?.trim() ?? user.email,
       needsNicknameSetup: true,
@@ -79,10 +77,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     };
   }
 
-  const avatarUrl =
-    profile.avatar_url ??
-    (typeof metadata.avatar_url === "string" ? metadata.avatar_url : null) ??
-    (typeof metadata.picture === "string" ? metadata.picture : null);
+  const avatarUrl = resolveAvatarUrl(metadata, profile.avatar_url);
 
   const nickname = profile.nickname;
 

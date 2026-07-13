@@ -1,6 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { readAvatarUrlFromMetadata } from "@/lib/auth/avatar-url";
+import { flushPendingRegistrationConsents } from "@/lib/auth/persist-registration-consents";
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -28,6 +30,18 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (user) {
+    const metadata = user.user_metadata ?? {};
+    await flushPendingRegistrationConsents(supabase, user.id, metadata);
+
+    const freshAvatarUrl = readAvatarUrlFromMetadata(metadata);
+
+    if (freshAvatarUrl) {
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: freshAvatarUrl })
+        .eq("id", user.id);
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("nickname")

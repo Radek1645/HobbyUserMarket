@@ -1,6 +1,7 @@
 "use client";
 
 import { signOut } from "@/app/actions/auth";
+import { UserAvatar } from "@/components/account/UserAvatar";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { HeaderLocationPanel } from "@/components/location/HeaderLocationPanel";
@@ -8,6 +9,7 @@ import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   createListingCtaLabel,
   headerCreateListingButtonClass,
+  headerInputHeightClass,
   iconSmClass,
 } from "@/config/ui-primitives";
 import type { AppUser } from "@/types/auth";
@@ -20,7 +22,6 @@ import {
   Settings,
   Shield,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
@@ -78,7 +79,7 @@ export function Header({ user }: HeaderProps) {
           <Suspense
             fallback={
               <div
-                className="h-10 min-w-0 flex-1 rounded-full border border-gray-200 bg-gray-50"
+                className={`${headerInputHeightClass} min-w-0 flex-1 rounded-full border border-gray-200 bg-gray-50`}
                 aria-hidden="true"
               />
             }
@@ -159,21 +160,11 @@ export function Header({ user }: HeaderProps) {
               {user ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-3">
-                    {user.avatarUrl ? (
-                      <Image
-                        src={user.avatarUrl}
-                        alt=""
-                        width={40}
-                        height={40}
-                        className="h-10 w-10 rounded-full object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-600">
-                        {user.displayName[0]?.toUpperCase() ??
-                          user.email[0]?.toUpperCase()}
-                      </div>
-                    )}
+                    <UserAvatar
+                      avatarUrl={user.avatarUrl}
+                      displayName={user.displayName}
+                      email={user.email}
+                    />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-gray-900">
                         {user.displayName}

@@ -23,6 +23,8 @@ export type CreateListingInput = {
   /** Před-AI snapshot — jen když klient pošle obě pole (moderace / nový inzerát). */
   originalTitle?: string;
   originalDescription?: string;
+  /** True jen po volbě AI textu v náhledu moderace (vyžaduje original snapshot). */
+  descriptionAiAssisted?: boolean;
   locationText: string;
   latitude: number;
   longitude: number;
@@ -253,6 +255,8 @@ export function validateListingForm(
           ? {
               originalTitle: String(originalTitleField).trim(),
               originalDescription: String(originalDescriptionField).trim(),
+              descriptionAiAssisted:
+                form.get("descriptionAiAssisted") === "true",
             }
           : {}),
         locationText,

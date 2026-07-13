@@ -18,24 +18,34 @@ export const emeraldPrimaryButtonClass =
 export const emeraldPrimaryButtonCompactClass =
   `${emeraldPrimaryButtonClass} px-4 py-2 text-sm`;
 
-/** Header CTA povrch — flat zelená shodná s logem HUM, hover ztmaví jako logo. */
+/** Header CTA povrch — flat zelená shodná s logem zaPikolou, hover ztmaví jako logo. */
 export const headerCreateListingSurfaceClass =
   "bg-emerald-600 text-white transition-colors duration-200 hover:bg-emerald-700";
 
 /** Sdílený text hlavního CTA pro tvorbu inzerátu (header + FAB). */
 export const createListingCtaLabel = "Vytvořit inzerát s AI";
 
+/** Výška vyhledávače a loga v headeru (`HeaderSearch` input). */
+export const headerInputHeightClass = "h-10";
+
+/** Výška a horizontální padding header CTA (logo má vlastní rozměry). */
+export const headerBrandControlHeightClass = "h-11";
+export const headerBrandControlPaddingXClass = "px-6";
+
 /** Header „Vytvořit inzerát s AI“ — jen desktop (md+), pill s textem, ikona Sparkles. */
 export const headerCreateListingButtonClass =
-  `hidden h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-6 text-[0.9375rem] font-semibold md:flex ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+  `hidden ${headerBrandControlHeightClass} shrink-0 items-center justify-center whitespace-nowrap rounded-full ${headerBrandControlPaddingXClass} text-[0.9375rem] font-semibold md:flex ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
 
 /** Mobilní FAB pro tvorbu inzerátu — plovoucí, extended → ikona při scrollu. */
 export const createListingFabClass =
   `fixed right-4 z-40 flex h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 md:hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
 
-/** Logo mark (domeček vlevo v headeru). */
-export const emeraldLogoMarkClass =
-  `flex h-10 w-10 items-center justify-center rounded-xl ${emeraldSurfaceClass}`;
+/** Primární brand zelená — logo wordmark, shodná s `headerCreateListingSurfaceClass`. */
+export const emeraldBrandAccentClass = "text-emerald-600";
+
+/** Logo zaPikolou.cz — výška jako vyhledávač, wordmark bez rámečku. */
+export const appLogoFrameClass =
+  `inline-flex shrink-0 ${headerInputHeightClass} items-center whitespace-nowrap font-sans text-lg leading-none tracking-tight select-none ${emeraldBrandAccentClass}`;
 
 /** Modální overlay — centrovaný dialog nad stránkou. */
 export const modalOverlayClass =

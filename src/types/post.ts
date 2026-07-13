@@ -64,6 +64,7 @@ export type PostRow = {
   description: string;
   original_title?: string | null;
   original_description?: string | null;
+  description_ai_assisted?: boolean;
   category_type: CategoryType;
   subcategory_slug: string;
   price_type: PriceType;

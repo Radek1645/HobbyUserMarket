@@ -5,12 +5,12 @@ import {
   getSubcategoryLabel,
 } from "@/config/categories";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
-import { ReportListingButton } from "@/components/listing/ReportListingButton";
-import { ModeratorListingBar } from "@/components/mod/ModeratorListingBar";
-import { ListingJsonLd } from "@/components/seo/ListingJsonLd";
 import { ListingDescription } from "@/components/listing/ListingDescription";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
+import { ReportListingButton } from "@/components/listing/ReportListingButton";
+import { ModeratorListingBar } from "@/components/mod/ModeratorListingBar";
 import { BackLink } from "@/components/navigation/BackLink";
+import { ListingJsonLd } from "@/components/seo/ListingJsonLd";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   getAdvertiserIcoDisplay,
@@ -65,7 +65,7 @@ function resolveSlugParam(param: string): string {
 
 // contact_phone se zde záměrně nečte — odhaluje se jen přes reveal RPC (C2).
 const POST_DETAIL_COLUMNS =
-  "id, user_id, title, description, category_type, subcategory_slug, " +
+  "id, user_id, title, description, description_ai_assisted, category_type, subcategory_slug, " +
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
   "status, status_reason_code, expires_at, event_date, main_image_url, slug, " +
   "show_contact_email, show_contact_phone, created_at, updated_at";
@@ -300,7 +300,10 @@ export default async function ListingDetailPage({
         ) : null}
 
         {post.description ? (
-          <ListingDescription description={post.description} />
+          <ListingDescription
+            description={post.description}
+            descriptionAiAssisted={post.description_ai_assisted === true}
+          />
         ) : (
           <p className="text-gray-500 italic">Bez popisu.</p>
         )}

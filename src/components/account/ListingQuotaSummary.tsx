@@ -1,3 +1,4 @@
+import { MONETIZATION_ENABLED } from "@/config/monetization";
 import type { ListingQuotaSnapshot } from "@/types/listing-quota";
 import Link from "next/link";
 
@@ -19,7 +20,9 @@ export function ListingQuotaSummary({ quota }: ListingQuotaSummaryProps) {
           <p className="mt-0.5 text-xs text-gray-500">
             {quota.remaining > 0
               ? `Zbývá ${quota.remaining} z ${quota.totalLimit} publikací.`
-              : "Limit je vyčerpán — dokoupit kredit v nastavení účtu."}
+              : MONETIZATION_ENABLED
+                ? "Limit je vyčerpán — dokoupit kredit v nastavení účtu."
+                : "Limit je vyčerpán — další publikace zatím není k dispozici."}
           </p>
         </div>
         <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-gray-700">
@@ -57,7 +60,7 @@ export function ListingQuotaSummary({ quota }: ListingQuotaSummaryProps) {
         href="/balicky-inzerce"
         className="mt-3 inline-flex text-sm font-medium text-gray-900 underline-offset-2 hover:underline"
       >
-        Balíčky a ceník →
+        {MONETIZATION_ENABLED ? "Balíčky a ceník →" : "Limity inzerce →"}
       </Link>
       <Link
         href="/profil/nastaveni"

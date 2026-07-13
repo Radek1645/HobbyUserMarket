@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { LISTING_UPSELL_PACKAGE_SLUG } from "@/config/app";
+import { MONETIZATION_ENABLED } from "@/config/monetization";
 import type {
   ListingPackageCatalogItem,
   ListingQuotaSnapshot,
@@ -94,6 +95,8 @@ export async function getListingQuotasForUsers(
 }
 
 export async function getListingUpsellPackage(): Promise<ListingPackageCatalogItem | null> {
+  if (!MONETIZATION_ENABLED) return null;
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("listing_packages")

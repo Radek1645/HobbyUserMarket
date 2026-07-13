@@ -1,0 +1,64 @@
+---
+description: Čitelný kód pro lidského vývojáře — pojmenování, konstanty, vrstvy
+alwaysApply: true
+---
+
+# Čitelný kód
+
+Kód píš tak, aby mu rozuměl vývojář bez znalosti aktuální konverzace s AI.
+
+## Pojmenování
+
+- **Identifikátory v angličtině**, UI texty v češtině.
+- Názvy funkcí = sloveso + doména: `loadBlockedListings`, `parseListingReportUrl`, `requireModerator`.
+- Typy a konstanty popisují účel: `ReportReasonCode`, `ModListingSummary`.
+- Zkratky jen běžné (`id`, `url`, `db`); vyhni se `proc`, `tmp`, `data2`.
+
+## Konstanty místo magic values
+
+- Doménové kódy a limity do `src/config/` — viz `listing-status-reasons.ts`, `reports.ts`, `app.ts`.
+- Opakované stringy (`"blocked"`, `"reports_threshold"`) importuj z configu nebo typu, ne kopíruj napříč soubory.
+- Postgres chybové kódy pojmenuj: `PG_UNIQUE_VIOLATION = "23505"`.
+- Čísla bez kontextu (`500`, `100`) pojmenuj u zdroje: `REPORT_DETAIL_MAX_LENGTH`.
+
+## Vrstvy
+
+| Vrstva | Účel |
+|--------|------|
+| `src/config/` | konstanty, labely, enumy |
+| `src/lib/` | čistá logika, parsování, dotazy |
+| `src/app/actions/` | server actions, redirecty, revalidace |
+| `src/components/` | UI, stav formuláře, žádné těžké SQL |
+
+Novou business logiku nepiš přímo do komponenty, pokud ji už používá jinde.
+
+## Komentáře
+
+- Kód má být **samovysvětlující** — komentář u každého bloku ne.
+- Komentář přidej u: neobvyklého business pravidla, bezpečnostního omezení, side-effectu (email, auto-block), generovaných/sync souborů.
+- Jeden řádek JSDoc u exportované funkce, pokud není z názvu jasné *proč* existuje.
+
+## Struktura a DRY
+
+- Preferuj **lineární tok** (early return) před hlubokým vnořením.
+- Opakující se blok 3×+ extrahuj do pojmenované funkce — ne abstraktní „helper“ na jeden řádek.
+- Složitější modul rozděl podle domény (`lib/reports/`, `lib/mod/`), ne jeden obří soubor.
+
+## Co nedělat
+
+- `@ts-ignore` / `eslint-disable` bez komentáře proč.
+- Generované soubory (`_shared/moderation/constants.ts`) neupravovat ručně — viz `ai-moderation.mdc`.
+- Chytré one-linery, které šetří řádky, ale mažou intent.
+
+## Příklad
+
+```typescript
+// ❌ Špatně — magic string, nejasný účel
+if (insertError.code === "23505") redirect("?error=already_reported");
+
+// ✅ Správně
+const PG_UNIQUE_VIOLATION = "23505";
+if (insertError.code === PG_UNIQUE_VIOLATION) {
+  redirect(`${path}?error=already_reported`);
+}
+```

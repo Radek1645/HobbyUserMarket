@@ -1,14 +1,36 @@
+import { LISTING_AI_DISCLOSURE } from "@/config/moderation/messages";
+import { ListingAiDisclosureInfo } from "@/components/listing/ListingAiDisclosureInfo";
 import { parseListingDescription } from "@/lib/moderation/parse-listing-description";
 
 type ListingDescriptionProps = {
   description: string;
+  descriptionAiAssisted?: boolean;
 };
 
-export function ListingDescription({ description }: ListingDescriptionProps) {
+function ListingAiDisclosureParameterRow() {
+  return (
+    <li className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+      <span className="shrink-0 font-semibold text-gray-900 sm:min-w-[9rem]">
+        {LISTING_AI_DISCLOSURE.paramLabel}:
+      </span>
+      <span className="inline-flex items-center gap-1 whitespace-pre-wrap text-gray-700">
+        {LISTING_AI_DISCLOSURE.paramValueYes}
+        <ListingAiDisclosureInfo />
+      </span>
+    </li>
+  );
+}
+
+export function ListingDescription({
+  description,
+  descriptionAiAssisted = false,
+}: ListingDescriptionProps) {
   const { intro, parametersHeading, parameters } =
     parseListingDescription(description);
 
-  if (parameters.length === 0) {
+  const hasParameters = parameters.length > 0 || descriptionAiAssisted;
+
+  if (!hasParameters) {
     return (
       <p className="whitespace-pre-wrap text-gray-800">{intro || description}</p>
     );
@@ -26,7 +48,10 @@ export function ListingDescription({ description }: ListingDescriptionProps) {
         </h3>
         <ul className="mt-3 space-y-2 text-sm sm:text-base">
           {parameters.map((item, index) => (
-            <li key={`${item.label}-${index}`} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+            <li
+              key={`${item.label}-${index}`}
+              className="flex flex-col gap-0.5 sm:flex-row sm:gap-2"
+            >
               <span className="shrink-0 font-semibold text-gray-900 sm:min-w-[9rem]">
                 {item.label}:
               </span>
@@ -37,6 +62,7 @@ export function ListingDescription({ description }: ListingDescriptionProps) {
               ) : null}
             </li>
           ))}
+          {descriptionAiAssisted ? <ListingAiDisclosureParameterRow /> : null}
         </ul>
       </section>
     </div>

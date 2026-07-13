@@ -1,5 +1,7 @@
 /** Globální parametry aplikace — PRD §3, §9.3 */
 
+import { SITE_OPERATOR_CONTACT_EMAIL } from "@/config/site";
+
 /** Adaptivní kroky rádiusu pro homepage (km) — od nejmenšího po max. */
 export const SEARCH_RADIUS_STEPS_KM = [15, 30, 50, 60] as const;
 /** Výchozí (nejmenší) krok — zpětná kompatibilita v UI. */
@@ -58,9 +60,10 @@ export const LISTING_QUOTA_FREE_DEFAULT = 20;
 /** Slug balíčku zobrazeného v UI pro dokoupení kreditu. */
 export const LISTING_UPSELL_PACKAGE_SLUG = "standard_20";
 
-/** Kontakt provozovatele — dokoupení balíčků (zatím bez platební brány). */
+/** Kontakt provozovatele — dokoupení balíčků (jen při MONETIZATION_ENABLED). */
 export const OPERATOR_CONTACT_EMAIL =
-  process.env.NEXT_PUBLIC_OPERATOR_CONTACT_EMAIL?.trim() || "";
+  process.env.NEXT_PUBLIC_OPERATOR_CONTACT_EMAIL?.trim() ||
+  SITE_OPERATOR_CONTACT_EMAIL;
 
 /** Poptávkový formulář — PRD §5.3, docs/future_jobs.md */
 export const INQUIRY_MESSAGE_MIN_LENGTH = 10;

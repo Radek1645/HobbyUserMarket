@@ -141,6 +141,9 @@ export function ModerationPreviewDialog({
           <p className="mt-1 text-sm text-neutral-600">
             {MODERATION_PREVIEW_UI.intro}
           </p>
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-950">
+            {MODERATION_PREVIEW_UI.disclaimer}
+          </p>
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
