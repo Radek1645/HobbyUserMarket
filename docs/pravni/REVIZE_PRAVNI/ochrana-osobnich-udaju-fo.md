@@ -54,6 +54,33 @@ Pokud se u konkrétního analytického nástroje uplatní **společné správcov
 
 Údaje zpracováváme prostřednictvím smluvních zpracovatelů (hosting, e-mail, analytika). Seznam hlavních zpracovatelů je k dispozici na vyžádání na kontaktním e-mailu správce. Údaje nepředáváme třetím stranám za účelem prodeje.
 
+> **Stav:** Region uložení a přeshraniční přenosy **nejsou zatím plně zdokumentované** v tomto textu. Níže je checklist k doplnění před ostrým provozem a revizí právníkem.
+
+### 5.1 Checklist — data v EU / EHP (k doplnění)
+
+- [ ] **Supabase** — ověřit v Dashboard → Project Settings → **region projektu** (cíl: EU, typicky `eu-central-1` Frankfurt). Zapsat do tohoto dokumentu a do [`PRD_v3.md`](../PRD_v3.md) §3.
+- [ ] **Vercel** — ověřit region běhu (Functions / SSR) a zapsat do tabulky zpracovatelů; u Hobby tieru ověřit, zda neprobíhá zpracování mimo EHP.
+- [ ] **Resend** (e-maily) — ověřit region účtu / DPA; doplnit do tabulky zpracovatelů.
+- [ ] **Google Gemini** (AI moderace) — obsah inzerátu (text + fotky) odchází mimo naši DB: zvolit **EU endpoint** (pokud dostupný) nebo v GDPR uvést přenos mimo EHP + právní základ (SCC / DPA Google).
+- [ ] **OpenAI** (fallback moderace) — stejně jako Gemini; pokud fallback zůstane, uvést USA + SCC nebo fallback vypnout v produkci.
+- [ ] **Google OAuth / GA4** — doplnit do tabulky; GA4 jen po souhlasu v cookie liště; uvést případný přenos mimo EHP.
+- [ ] **Mapy.cz** — doplnit zpracovatele (lokalita inzerátu / našeptávač).
+- [ ] **Tabulka zpracovatelů** — doplnit sloupce: *Zpracovatel · Účel · Region · Kategorie údajů · Právní základ přenosu · DPA/SCC*.
+- [ ] **Informace pro uživatele** — v §5 nebo samostatné příloze uvést, že **celý flow není EU-only** (min. kvůli AI moderaci), dokud nebude architektura upravena nebo právně pokryta.
+
+**Referenční tabulka (draft — doplnit po ověření v dashboardech):**
+
+| Zpracovatel | Účel | Region (cíl / ověřit) | Poznámka |
+|-------------|------|------------------------|----------|
+| Supabase | DB, auth, storage fotek | EU (`eu-central-1`) | Region při zakládání projektu |
+| Vercel | hosting Next.js | ? | Ověřit v dashboardu |
+| Resend | transakční e-maily | ? | Poptávky, notifikace |
+| Google (Gemini) | AI moderace textu a fotek | mimo EHP (typicky) | Edge Function `moderate-listing` |
+| OpenAI | fallback AI moderace | USA (typicky) | Volitelný fallback |
+| Google | OAuth přihlášení | ? | Auth |
+| Google | GA4 / GTM | ? | Jen po souhlasu |
+| Mapy.cz | geokódování, našeptávač | CZ/EU | API klíč |
+
 ---
 
 ## 6. Vaše práva a retence účtu

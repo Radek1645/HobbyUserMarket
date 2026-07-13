@@ -126,7 +126,7 @@ export function ListingInquiryForm({
       setAttachments([]);
       setHoneypot("");
     } catch {
-      setError("Odeslání se nepodařilo. Zkontroluj připojení.");
+      setError("Odeslání se nepodařilo. Zkontrolujte připojení.");
     } finally {
       setPending(false);
     }

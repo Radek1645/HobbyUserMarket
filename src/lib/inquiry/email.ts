@@ -1,3 +1,4 @@
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import type { CategoryType } from "@/types/post";
 import type { InquiryPayload } from "./validation";
 
@@ -48,7 +49,7 @@ Zpráva:
 ${message}${attachmentNote}
 
 ---
-Odpověz přímo ze své e-mailové schránky. HobbyUserMarket uchovává kontakt uchazeče pouze v tomto e-mailu.
+Odpověz přímo ze své e-mailové schránky. ${SITE_DISPLAY_NAME} uchovává kontakt uchazeče pouze v tomto e-mailu.
 `;
 
   return { subject, text };

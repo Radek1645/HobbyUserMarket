@@ -1,4 +1,5 @@
 import { getReportReasonLabel } from "@/config/reports";
+import { SITE_DISPLAY_NAME, SITE_SHORT_NAME } from "@/config/site";
 
 export type AdminReportEmailParams = {
   listingTitle: string;
@@ -20,7 +21,7 @@ export function buildAdminReportEmail(params: AdminReportEmailParams): {
     params.source === "inline" ? "Detail inzerátu" : "Formulář /nahlasit";
 
   const lines = [
-    "Nové nahlášení inzerátu — HobbyUserMarket",
+    `Nové nahlášení inzerátu — ${SITE_DISPLAY_NAME}`,
     "",
     `Inzerát: ${params.listingTitle}`,
     `URL: ${params.listingUrl}`,
@@ -40,7 +41,7 @@ export function buildAdminReportEmail(params: AdminReportEmailParams): {
   lines.push("", `Karanténa: ${params.quarantineUrl}`);
 
   return {
-    subject: `[HUM] Nahlášení: ${params.listingTitle}`,
+    subject: `[${SITE_SHORT_NAME}] Nahlášení: ${params.listingTitle}`,
     text: lines.join("\n"),
   };
 }

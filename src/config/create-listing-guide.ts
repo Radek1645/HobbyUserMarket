@@ -14,7 +14,7 @@ export const CREATE_LISTING_GUIDE_UI = {
     {
       number: 1,
       title: "Vyfoťte nebo nahrajte fotku a napište krátký popisek",
-      body: "Z mobilu vyberete kategorii, vyfotíte věc nebo nahrajete fotku z galerie a napíšete pár slov. Nemusíte psát román — stačí „Prodám kolo“ a krátká věta.",
+      body: "Vyberete kategorii, vyfotíte věc nebo nahrajete fotku z galerie a napíšete pár slov. Nemusíte psát román — stačí „Prodám kolo“ a krátká věta.",
     },
     {
       number: 2,

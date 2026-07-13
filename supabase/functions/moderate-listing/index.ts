@@ -80,6 +80,16 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+function technicalErrorResponse(
+  message: string,
+  httpStatus = 503,
+  errorCode?: string,
+): Response {
+  // DŮLEŽITÉ: Nevracíme `status: REJECTED`, aby klient nezobrazil zamítnutí
+  // při technickém selhání AI (P8/U1).
+  return jsonResponse({ error: "TECHNICAL_ERROR", message, errorCode }, httpStatus);
+}
+
 async function respondWithLog(
   userId: string,
   logCtx: ModerationLogContext,
@@ -404,16 +414,24 @@ serve(async (req) => {
       }
 
       if (error.message === "AI_KEYS_MISSING") {
-        return jsonResponse({
-          status: "REJECTED",
-          reason:
-            "AI moderace není nakonfigurovaná na serveru. Kontaktuj správce platformy.",
-        });
+        if (userId) {
+          await logRejectedFromContext(
+            userId,
+            logCtx,
+            "AI kontrola teď není dostupná. Zkuste to prosím později.",
+            "AI_KEYS_MISSING",
+          );
+        }
+        return technicalErrorResponse(
+          "AI kontrola teď není dostupná. Zkuste to prosím později.",
+          503,
+          "AI_KEYS_MISSING",
+        );
       }
 
       if (error.message === "GEMINI_HTTP_429") {
         const reason =
-          "Limit AI dotazů u Google je dočasně vyčerpaný. Zkuste to prosím za minutu znovu.";
+          "AI kontrola je teď dočasně přetížená. Zkuste to prosím za chvíli znovu.";
         if (userId) {
           await logRejectedFromContext(
             userId,
@@ -422,7 +440,7 @@ serve(async (req) => {
             error.message,
           );
         }
-        return jsonResponse({ status: "REJECTED", reason });
+        return technicalErrorResponse(reason, 503, "GEMINI_HTTP_429");
       }
 
       if (
@@ -440,7 +458,7 @@ serve(async (req) => {
             error.message.slice(0, 120),
           );
         }
-        return jsonResponse({ status: "REJECTED", reason });
+        return technicalErrorResponse(reason, 503, "AI_TECHNICAL_FAILURE");
       }
     }
 

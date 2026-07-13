@@ -174,6 +174,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **P23** | ✅ `account.ts`, `delete-user.ts`, migrace `037` | ~~Chybí flow smazání účtu~~ | **Hotovo 2026-07-11.** Self-delete `/profil/nastaveni` (confirm e-mail + checkbox); admin `/mod/uzivatele` (důvod); RPC + Auth Admin delete; e-mail potvrzení. |
 | **P24** | `auth/callback/route.ts` | Chyby OAuth/e-mail redirect s **raw anglickou** hláškou v `?error=`. | Mapovat na CZ přes `mapAuthError`. |
 | **P25** | produkt vs kód | PRD zmiňuje OTP; implementace je heslo + verifikační link, ne OTP login. | Sladit dokumentaci nebo doplnit magic-link/OTP. |
+| **P33** | `docs/pravni/ochrana-osobnich-udaju-fo.md` §5, PRD §3, infra | **Data v EU nejsou zaručena ani zdokumentována.** GDPR §5 je obecné („zpracovatelé na vyžádání“); Supabase region není v repu; AI moderace posílá text+fotky ke Gemini/OpenAI (typicky mimo EHP); Vercel/Resend neověřeny. | 1) Ověřit Supabase region (`eu-central-1`). 2) Tabulka zpracovatelů (region, účel, DPA/SCC) v GDPR §5.1. 3) Gemini: EU endpoint nebo SCC + informace uživatelům. 4) Resend/Vercel ověřit v dashboardu. 5) PRD §3 checklist. Viz [`pravni/README.md`](./pravni/README.md). |
 
 ### P2B / Podnikatelé (EU 2019/1150)
 
@@ -277,7 +278,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **3. Anti-spam & náklady** | H2, P15, P16, M6/P10, M7 | Ochrana rozpočtu 1000 Kč/měs a majitelů před spamem. | 1 den |
 | **4. Redirect & DB integrita** | ~~H3~~ ✅, M3, M4 | Phishing + self-eskalace polí. | 0,5 dne |
 | **5. Robustnost procesů** | P2, P3, P4, P8/U1, P9, P11 | Orphan data, chybný cron, chybné hlášení výpadku AI. | 1–2 dny |
-| **6. GDPR compliance** | P20, P21, P22, P23, P24 | Souhlasy + smazání účtu (právní riziko). | 1–2 dny |
+| **6. GDPR compliance** | P20, P21, P22, P23, P24, **P33** | Souhlasy + smazání účtu + **data v EU / zpracovatelé** (právní riziko). | 1–2 dny |
 | **6b. P2B provoz (Podnikatelé)** | P32 | E-mailové lhůty 15/30 dní dle VOP — před prvním IČO uživatelem. | 0,5–1 dne |
 | **7. UX vylepšení** | U1, U2, U3, U16, U21, P7, U5 | Rychlé výhry v důvěře a konverzi. | 1 den |
 | **8. Admin/ops (post-MVP)** | P26, P27, P28, P30, L6 | God Mode, reporting, monitoring, audit log dle PRD §11. | dle PRD |
@@ -304,5 +305,6 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | 2026-07-11 | **God Mode částečně:** `/mod/uzivatele` (admin); bootstrap rolí v `supabase-prikazy.md` + Metodika §11.1; **P23 ✅** smazání účtu; **P31 ✅** checkbox věku 15+; migrace **037–039** (delete + listing quota) |
 | 2026-07-11 | **VOP Draft 1.5:** P2B pasáže (lhůty, ranking, data access, mikropodnik); **P32 ⏳** provozní implementace e-mailových notifikací 15/30 dní pro Podnikatele |
 | 2026-07-11 | **P26/P27 ✅** God Mode karanténa + inzeráty + lišta; nahlášení inline + `/nahlasit`; migrace **040–042**; opravy `block_failed` / `report_failed`; Metodika §10.3 |
+| 2026-07-13 | **P33 ⏳** Data v EU — checklist v GDPR §5.1, `pravni/README.md`; není garantováno v kódu (AI → Gemini/OpenAI) |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

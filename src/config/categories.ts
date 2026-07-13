@@ -112,6 +112,11 @@ export const CATEGORIES: CategoryConfig[] = [
         titlePlaceholder: "např. Prodám med z vlastní včelny",
         descriptionPlaceholder:
           "Druh výrobku, množství, způsob předání, alergeny…",
+        aiPrompt:
+          "Uživatel nabízí potraviny nebo domácí jedlé výrobky.\n\n" +
+          "Očekávej jedlé věci jako med, marmelády, sirupy, pečivo, ovoce, zeleninu, vejce, bylinky, koření, domácí zavařeniny nebo jiné potraviny a nápoje.\n" +
+          "Pokud text nebo fotografie zjevně ukazují nejedlý produkt (např. elektroniku, router, WiFi extender, nábytek, oblečení, autodíl, nářadí), vrať REJECTED s důvodem, že inzerát je zařazený do špatné kategorie a má se přesunout jinam.\n" +
+          "Pokud jde o potravinu, zeptej se jen na zásadní chybějící údaje jako druh, množství, forma balení, trvanlivost nebo alergeny, pokud jsou relevantní.",
       },
       {
         slug: "kola-sport",

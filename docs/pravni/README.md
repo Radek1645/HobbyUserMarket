@@ -52,6 +52,18 @@ NEXT_PUBLIC_MONETIZATION_ENABLED=true
 - PDF export do `public/docs/` (např. `vop-v1.0.pdf`, `gdpr-v1.0.pdf`)
 - Finální název platformy (find-and-replace „HobbyUserMarket“)
 
+## Data v EU / EHP — checklist (P33)
+
+> **Stav 2026-07-13:** V kódu ani PRD není garantováno, že všechna data zůstávají v EU. Hlavní DB může být v EU (volba regionu Supabase), ale AI moderace posílá text a fotky ke Google/OpenAI.
+
+- [ ] Ověřit **Supabase region** (cíl `eu-central-1`) a zapsat do GDPR §5 + PRD §3
+- [ ] Ověřit **Vercel** a **Resend** region / DPA
+- [ ] **Gemini / OpenAI** — EU endpoint nebo SCC + informace v GDPR §5.1
+- [ ] Doplnit **tabulku zpracovatelů** v [`ochrana-osobnich-udaju-fo.md`](./ochrana-osobnich-udaju-fo.md) §5.1
+- [ ] Revize právníkem před publikací finálního GDPR textu
+
+Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
+
 ## Revize draft 1.1 (2026-07-10) — sladění s PRD
 
 | Bod | Stav | Kde |

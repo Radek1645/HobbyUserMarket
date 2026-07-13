@@ -1,4 +1,5 @@
 import { OPERATOR_CONTACT_EMAIL } from "@/config/app";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import {
   BLOCKED_LISTING_RECOVERY_HINT,
   getPostStatusReasonMessage,
@@ -69,7 +70,7 @@ Související dokumentace: ${params.vopUrl} (VOP §4.6)${recoveryBlock}
 ${appealLines.join("\n")}
 
 ---
-HobbyUserMarket
+${SITE_DISPLAY_NAME}
 `;
 
   return {

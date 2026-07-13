@@ -51,6 +51,10 @@ function readNextPath(formData: FormData): string {
 function mapAuthError(message: string): string {
   const lower = message.toLowerCase();
 
+  if (lower.includes("password")) {
+    return mapPasswordError(message);
+  }
+
   if (lower.includes("invalid login credentials")) {
     return "Nesprávný e-mail nebo heslo.";
   }
@@ -68,11 +72,34 @@ function mapAuthError(message: string): string {
     return DUPLICATE_EMAIL_MESSAGE;
   }
 
-  if (lower.includes("password")) {
-    return "Heslo nesplňuje požadavky (minimálně 8 znaků).";
+  return message;
+}
+
+function mapPasswordError(message: string): string {
+  const lower = message.toLowerCase();
+
+  if (lower.includes("different from the old password")) {
+    return "Nové heslo se musí lišit od původního.";
   }
 
-  return message;
+  if (lower.includes("pwned") || lower.includes("have been compromised")) {
+    return "Zvolené heslo je příliš slabé nebo bylo dříve kompromitované. Zkuste jiné.";
+  }
+
+  const minMatch = message.match(/at least\s+(\d+)\s+characters?/i);
+  if (minMatch?.[1]) {
+    return `Heslo musí mít alespoň ${minMatch[1]} znaků.`;
+  }
+
+  if (lower.includes("should contain") || lower.includes("must contain")) {
+    return "Heslo nesplňuje požadavky na složitost. Zkuste delší heslo s kombinací písmen, číslic a speciálních znaků.";
+  }
+
+  if (lower.includes("weak password")) {
+    return "Heslo je příliš slabé. Zkuste delší heslo s kombinací písmen, číslic a speciálních znaků.";
+  }
+
+  return "Heslo nesplňuje bezpečnostní požadavky. Zkuste jiné.";
 }
 
 async function redirectAfterAuth(nextPath: string) {

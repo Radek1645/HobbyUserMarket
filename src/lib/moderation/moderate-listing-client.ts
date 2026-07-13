@@ -75,6 +75,10 @@ async function readModerationResponseFromError(
     if (body?.error === "AUTH_REQUIRED") {
       return null;
     }
+    // P8/U1: technické selhání Edge Function nemá být mapované jako REJECTED.
+    if (body?.error === "TECHNICAL_ERROR") {
+      return null;
+    }
     return body?.status ? body : null;
   } catch {
     return null;

@@ -15,7 +15,7 @@ Formulář (create / edit)
         → [zapnuto] Edge Function moderate-listing (Gemini / GPT)
             → APPROVED / NEEDS_QUESTIONS → approvalToken v odpovědi
             → REJECTED → popup ModerationRejectedDialog
-            → chyba sítě  → červený alert ve formuláři
+            → technická chyba (503) / chyba sítě → červený alert ve formuláři (retry)
     → Server Action createListing / updateListing
         → uložení jako draft + fotky
         → publish_approved_post(approvalToken) → active
@@ -24,6 +24,14 @@ Formulář (create / edit)
 - AI se **nevolá přes Next.js API** (riziko timeoutu na Vercel) — jen přes Supabase Edge Function z klienta.
 - **Publikaci na `active` nelze obejít** bez approval tokenu z Edge Function (migrace `027`, viz níže).
 - Seznam zakázaného obsahu je v **konfiguračních souborech**; AI prompt se z něj **generuje automaticky** (pro Gemini zkrácená varianta bez explicitních `criteria`).
+
+### Technické chyby (P8/U1)
+
+Pokud AI dočasně nefunguje (kvóta, výpadek poskytovatele, chybné klíče), **nesmí se to tvářit jako zamítnutí obsahu**.
+
+- Edge Function vrací **HTTP 503** a JSON `{ error: "TECHNICAL_ERROR", message, errorCode }` (bez `status`).
+- Klient to zobrazí jako běžnou chybu ve formuláři a uživatel má možnost **zkusit to znovu**.
+- `REJECTED` je vyhrazené jen pro obsahové důvody (zakázaný obsah, shoda text/foto, špatná kategorie, prompt injection…).
 
 ---
 
@@ -139,6 +147,48 @@ Plný text pravidel doplníš později na stránku `src/app/podminky-inzerce/pag
 | Editace — jen cena, lokalita, stav, platnost | Ne (přeskočí se) |
 
 Logika: `src/lib/moderation/needs-moderation.ts` + `ListingImageUpload.hasImageChanges()`.
+
+---
+
+## Kontrola shody obsahu s kategorií
+
+Moderace rozlišuje **dvě úrovně** — nesmí se zaměňovat:
+
+| Úroveň | Co kontroluje | Kde | Výsledek při chybě |
+|--------|----------------|-----|---------------------|
+| **Strukturální** | Zda `categoryType` + `subcategorySlug` existují v taxonomii | `assertValidCategoryPair()` v Edge Function + `isValidSubcategory()` ve formuláři | HTTP 400 / „Vyberte podkategorii“ |
+| **Sémantická (AI)** | Zda název, popis a fotografie **odpovídají zvolené kategorii** | System prompt + `aiPrompt` z `categories.ts` | `REJECTED` — uživatel má zvolit jinou podkategorii |
+
+**Před úpravou 2026-07-13** běžela jen strukturální kontrola. AI dostala kategorii hlavně pro hydrataci a doplňující otázky — evidentně špatné zařazení (např. WiFi extender v `Potraviny a domácí výrobky`) mohlo projít.
+
+### Pravidla (od 2026-07-13)
+
+1. **Obecné pravidlo** v `src/config/moderation/build-prompt.ts` (sync do `_shared/moderation/build-prompt.ts`):
+   - Zvolená kategorie a podkategorie jsou závazné.
+   - Zjevná neshoda textu nebo fotek → `REJECTED` s důvodem typu: *„Inzerát je zařazený do špatné kategorie. Vyberte prosím vhodnější podkategorii.“*
+
+2. **Podkategorie s vlastním `aiPrompt`** v `src/config/categories.ts` — AI dostane konkrétnější očekávání. Příklad `zbozi/potraviny-domaci`:
+   - Očekává jedlé výrobky (med, zavařeniny, pečivo…).
+   - Zjevně nejedlý produkt (elektronika, router, WiFi extender, nábytek…) → `REJECTED`.
+
+3. **Kde upravovat chování:**
+   - Obecné pravidlo → `build-prompt.ts`
+   - Pravidla pro konkrétní podkategorii → `aiPrompt` u příslušné položky v `categories.ts`
+   - Po změně: `npm run sync:moderation` → `supabase functions deploy moderate-listing`
+
+### Limity
+
+- Kontrola je **AI-based**, ne deterministický keyword filtr — u hraničních případů může model chybovat (projít i zamítnout).
+- `rejectedTopicId` u špatné kategorie **není** z `prohibited-topics.ts` — jde o běžné zamítnutí s vlastním `reason` v JSON odpovědi.
+- Server-side `prohibited-scan.ts` kategorii neřeší.
+
+### Příklad (regrese)
+
+| Inzerát | Kategorie | Očekávaný výsledek |
+|---------|-----------|-------------------|
+| TP-Link TL-WA850RE (WiFi extender) + fotka zařízení | `zbozi` / `potraviny-domaci` | `REJECTED` — špatná podkategorie |
+| Med z vlastní včelny | `zbozi` / `potraviny-domaci` | `APPROVED` nebo `NEEDS_QUESTIONS` (chybí množství, alergeny…) |
+| iPhone 13 | `zbozi` / `elektronika` | `APPROVED` / `NEEDS_QUESTIONS` |
 
 ---
 

@@ -36,6 +36,7 @@ Pravidla pro fotografie:
 - Bezpečnostní filtr musí projít VŠECHNY fotografie (max. 6). Zamítnutí jedné fotky = zamítnutí celého inzerátu.
 - U REJECTED kvůli fotce uveď rejectedImageIndex (0-based index fotky v pořadí).
 - Hlavní fotka (mainImageIndex) slouží výhradně pro cross-validaci text ↔ foto: název a popis musí odpovídat tomu, co je na hlavní fotce (náhled na homepage). Sémantická neshoda → REJECTED (konzistence).
+- Zvolená kategorie a podkategorie jsou závazné. Pokud text nebo fotografie zjevně patří do jiné kategorie/podkategorie než té z formuláře, vrať REJECTED s krátkým českým důvodem typu „Inzerát je zařazený do špatné kategorie. Vyberte prosím vhodnější podkategorii.“.
 - Pro hydrataci a doplňující otázky (NEEDS_QUESTIONS) procházej VŠECHNY přiložené fotografie — fakta z jakékoli fotky zapracuj do úvodu nebo Parametrů; ptej se jen pokud údaj není v textu, formuláři ani na žádné fotce.
 
 Kontakty (e-mail, telefon) v textu nejsou důvod k zamítnutí — pouze je v cleanedDescription nahraď [SKRYTO – použij chráněné pole].
