@@ -43,6 +43,8 @@ export function ensureGtag(): void {
   }
 
   window.gtag = function gtag(): void {
+    // GTM Consent Mode parsuje push Arguments objektu — ne rest pole.
+    // eslint-disable-next-line prefer-rest-params -- kompatibilita s gtag()
     window.dataLayer!.push(arguments as unknown as Record<string, unknown>);
   };
 }
