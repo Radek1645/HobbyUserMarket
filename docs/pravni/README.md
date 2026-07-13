@@ -52,6 +52,16 @@ NEXT_PUBLIC_MONETIZATION_ENABLED=true
 - PDF export do `public/docs/` (např. `vop-v1.0.pdf`, `gdpr-v1.0.pdf`)
 - Finální název platformy (find-and-replace „HobbyUserMarket“)
 
+## Verzování VOP (povinné)
+
+Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doložit přesné znění**, se kterým souhlasil.
+
+- V DB se ukládá `profiles.vop_accepted_at` a `profiles.vop_version` (migrace **044**).
+- `vop_version` musí odpovídat **verzovanému artefaktu**, který je dlouhodobě dostupný:
+  - PDF v `public/docs/` se verzí v názvu (např. `vop-v1.5-fo.pdf`, `vop-v1.5-osvc.pdf`)
+  - a/nebo HTML snapshot verze (nesmí se zpětně měnit)
+- Jakmile je verze jednou v produkci a někdo ji odsouhlasí, **nesmí se přepsat** „na místě“ bez navýšení verze (jen nový soubor + nová verze).
+
 ## Data v EU / EHP — checklist (P33)
 
 > **Stav 2026-07-13:** V kódu ani PRD není garantováno, že všechna data zůstávají v EU. Hlavní DB může být v EU (volba regionu Supabase), ale AI moderace posílá text a fotky ke Google/OpenAI.
