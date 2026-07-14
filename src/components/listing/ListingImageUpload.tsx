@@ -252,7 +252,7 @@ export const ListingImageUpload = forwardRef<
         <span className={listingFormLabelClass}>Fotky</span>
         <div className={`${listingFormHintClass} space-y-1`}>
           <p>
-            ⚡ <strong>Tip</strong>: Napište stručný popisek (např. „{tipExample}"), nahrajte fotku a nechte AI, ať váš text vylepší a dotáhne do konce.
+            ⚡ <strong>Tip</strong>: Napište stručný popisek (např. „{tipExample}“), nahrajte fotku a nechte AI, ať váš text vylepší a dotáhne do konce.
           </p>
           <p>
             📸 Max. {LISTING_IMAGE_MAX_FILES} fotek (automaticky zmenšíme pod{" "}

@@ -276,6 +276,7 @@ export function LocationInput({
                 <button
                   type="button"
                   role="option"
+                  aria-selected={false}
                   {...gtmCtaProps(GTM_CTA.LOCATION_SELECT_SUGGESTION)}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
                   onMouseDown={(e) => e.preventDefault()}
