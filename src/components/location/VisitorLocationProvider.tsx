@@ -8,7 +8,6 @@ import {
 import {
   clearLocationPromptDismissed,
   clearVisitorLocation,
-  loadLocationPromptDismissed,
   loadSearchByLocation,
   loadVisitorLocation,
   saveLocationPromptDismissed,
@@ -238,11 +237,6 @@ export function VisitorLocationProvider({
     }
 
     setReady(true);
-
-    if (!loadLocationPromptDismissed()) {
-      setEditingLocation(true);
-      setPanelOpen(true);
-    }
   }, []);
 
   const value = useMemo(

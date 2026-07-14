@@ -66,6 +66,7 @@ export function isInquiryHoneypotFilled(body: unknown): boolean {
 export function validateInquiryPayload(
   body: unknown,
   categoryType: CategoryType,
+  options?: { jobCvRequired?: boolean },
 ): { ok: true; data: InquiryPayload } | { ok: false; error: string } {
   if (!body || typeof body !== "object") {
     return { ok: false, error: "Neplatný požadavek." };
@@ -176,6 +177,17 @@ export function validateInquiryPayload(
 
       attachments.push({ filename, content, contentType });
     }
+  }
+
+  if (
+    options?.jobCvRequired &&
+    categoryType === "prace" &&
+    (!attachments || attachments.length === 0)
+  ) {
+    return {
+      ok: false,
+      error: "Zadavatel vyžaduje přiložení CV nebo portfolio.",
+    };
   }
 
   return {

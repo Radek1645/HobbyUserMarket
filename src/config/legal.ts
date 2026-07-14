@@ -14,8 +14,15 @@ export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.5-osvc" : "1.5-fo";
 export const SAFETY_UI = {
   meetingSafetyNotice:
     "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
-  realEstateMinorNotice:
-    "Inzerce pronájmu nebo prodeje nemovitosti může vyžadovat souhlas zákonného zástupce, pokud vám je méně než 18 let.",
+  realEstateListingNoticeLines: [
+    "Jsme jen internetová nástěnka — ne realitka. Z prodeje ani pronájmu nemáme provizi; smlouvu uzavíráte mezi sebou.",
+    "Realitní kancelář? V inzerátu uveďte, že jednáte jako firma, a jak je to s provizí.",
+    "Pod 18 lety může být k prodeji nebo pronájmu nutný souhlas zákonného zástupce.",
+  ],
+  jobListingNoticeLines: [
+    "Jsme jen internetová nástěnka — ne personální agentura ani zaměstnavatel. Smlouvu uzavíráte mezi sebou; z práce nic nebereme.",
+    "Inzerujete jako firma nebo OSVČ? V popisu uveďte, že jednáte jako podnikatel, typ úvazku a formu odměny.",
+  ],
 } as const;
 
 export const LEGAL_UI = {

@@ -48,7 +48,7 @@ import {
   type ListingImageUploadHandle,
 } from "@/components/listing/ListingImageUpload";
 import { LocationInput } from "@/components/listing/LocationInput";
-import { RealEstateMinorNotice } from "@/components/legal/SafetyNotice";
+import { JobListingNotice, RealEstateMinorNotice } from "@/components/legal/SafetyNotice";
 import { PriceAmountInput } from "@/components/listing/PriceAmountInput";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
@@ -72,7 +72,10 @@ import {
   listingFormInputClass,
   listingFormLabelClass,
   listingFormPrimaryButtonClass,
+  listingFormRequiredLegendClass,
+  listingFormRequiredMarkClass,
   listingFormSecondaryButtonClass,
+  LISTING_FORM_REQUIRED_LEGEND,
 } from "@/config/listing-form-ui";
 import type { CategoryType, ConditionLabel, ListingImagePreview, PriceType } from "@/types/post";
 
@@ -169,6 +172,9 @@ export function CreateListingForm({
   );
   const [contactPhone, setContactPhone] = useState(
     initialValues?.contactPhone ?? "",
+  );
+  const [jobCvRequired, setJobCvRequired] = useState(
+    initialValues?.jobCvRequired ?? false,
   );
   const submitErrorRef = useRef<HTMLDivElement>(null);
   const imageUploadRef = useRef<ListingImageUploadHandle>(null);
@@ -289,6 +295,9 @@ export function CreateListingForm({
     setSubcategorySlug(next.subcategories[0]?.slug ?? "");
     setConditionLabel(next.conditionLabels[0]?.value ?? "used");
     setPriceType(next.priceTypes[0]?.value ?? "negotiable");
+    if (type !== "prace") {
+      setJobCvRequired(false);
+    }
   }
 
   function canGoStep2(): boolean {
@@ -654,6 +663,7 @@ export function CreateListingForm({
           </div>
 
           {isRealEstate ? <RealEstateMinorNotice /> : null}
+          {isJob ? <JobListingNotice /> : null}
 
           {listingCategoryNotice ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
@@ -693,6 +703,7 @@ export function CreateListingForm({
           </div>
 
           {isRealEstate ? <RealEstateMinorNotice /> : null}
+          {isJob ? <JobListingNotice /> : null}
 
           {listingCategoryNotice ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
@@ -702,7 +713,10 @@ export function CreateListingForm({
 
           <div>
             <label htmlFor="title" className={labelClass}>
-              Název inzerátu <span className="text-red-600">*</span>
+              Název inzerátu
+              <span className={listingFormRequiredMarkClass} aria-hidden="true">
+                *
+              </span>
             </label>
             <input
               id="title"
@@ -725,7 +739,10 @@ export function CreateListingForm({
 
           <div>
             <label htmlFor="description" className={labelClass}>
-              Popis <span className="text-red-600">*</span>
+              Popis
+              <span className={listingFormRequiredMarkClass} aria-hidden="true">
+                *
+              </span>
             </label>
             <textarea
               id="description"
@@ -761,6 +778,8 @@ export function CreateListingForm({
           <ListingImageUpload
             ref={imageUploadRef}
             initialImages={initialImages}
+            categoryType={categoryType}
+            subcategorySlug={subcategorySlug}
           />
 
           <div>
@@ -793,8 +812,11 @@ export function CreateListingForm({
             <div>
               <label htmlFor="eventDate" className={labelClass}>
                 {isRecurringEvent
-                  ? "Datum a čas nejbližšího konání *"
-                  : "Datum a čas akce *"}
+                  ? "Datum a čas nejbližšího konání"
+                  : "Datum a čas akce"}
+                <span className={listingFormRequiredMarkClass} aria-hidden="true">
+                  *
+                </span>
               </label>
               <input
                 id="eventDate"
@@ -917,8 +939,10 @@ export function CreateListingForm({
                         ? "Vstupné (Kč)"
                         : isService
                           ? "Sazba (Kč/h)"
-                          : "Cena (Kč)"}{" "}
-                    <span className="text-red-600">*</span>
+                          : "Cena (Kč)"}
+                    <span className={listingFormRequiredMarkClass} aria-hidden="true">
+                      *
+                    </span>
                   </>
                 }
                 value={priceAmount}
@@ -937,8 +961,10 @@ export function CreateListingForm({
                       ? "Orientační odměna (Kč)"
                       : isService
                         ? "Orientační cena zakázky (Kč)"
-                        : "Orientační cena (Kč)"}{" "}
-                    <span className="text-red-600">*</span>
+                        : "Orientační cena (Kč)"}
+                    <span className={listingFormRequiredMarkClass} aria-hidden="true">
+                      *
+                    </span>
                   </>
                 }
                 value={priceAmount}
@@ -975,6 +1001,50 @@ export function CreateListingForm({
               </div>
             ) : null}
           </div>
+
+          {isJob ? (
+            <div className={listingFormContactSectionClass}>
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-900">
+                  Odpovědi uchazečů
+                </h3>
+                <p className={`${hintClass} mt-1`}>
+                  U brigád obvykle stačí krátká zpráva. U odborných pozic můžete
+                  vyžadovat CV nebo portfolio.
+                </p>
+              </div>
+
+              <input
+                type="hidden"
+                name="jobCvRequired"
+                value={jobCvRequired ? "true" : "false"}
+              />
+
+              <label
+                className={`${listingFormContactOptionBaseClass} ${
+                  jobCvRequired
+                    ? listingFormContactOptionActiveClass
+                    : listingFormContactOptionIdleClass
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={jobCvRequired}
+                  onChange={(event) => setJobCvRequired(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-400 text-blue-600 focus:ring-blue-600"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-neutral-900">
+                    Vyžadovat CV nebo portfolio při odpovědi
+                  </span>
+                  <span className="mt-0.5 block text-xs text-neutral-600">
+                    Uchazeč bez přílohy formulář neodešle. Vhodné např. pro IT,
+                    administrativu nebo odborné pozice.
+                  </span>
+                </span>
+              </label>
+            </div>
+          ) : null}
 
           <div className={listingFormContactSectionClass}>
             <div>
@@ -1053,7 +1123,10 @@ export function CreateListingForm({
             {showContactPhone ? (
               <div>
                 <label htmlFor="contactPhone" className={labelClass}>
-                  Zadejte telefonní číslo <span className="text-red-600">*</span>
+                  Zadejte telefonní číslo
+                  <span className={listingFormRequiredMarkClass} aria-hidden="true">
+                    *
+                  </span>
                 </label>
                 <input
                   id="contactPhone"
@@ -1099,6 +1172,10 @@ export function CreateListingForm({
               {state.error}
             </div>
           ) : null}
+
+          <p className={listingFormRequiredLegendClass}>
+            {LISTING_FORM_REQUIRED_LEGEND}
+          </p>
 
           <div className="flex gap-2">
             <button

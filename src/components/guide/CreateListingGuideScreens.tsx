@@ -133,17 +133,17 @@ export function CreateListingGuideStep2Screen() {
 
 export function CreateListingGuideStep3Screen() {
   return (
-    <MobileScreenFrame caption="AI náhled a doplnění">
+    <MobileScreenFrame caption="AI vám vylepšila inzerát!">
       <MockStatusBar />
       <div className="relative min-h-[420px] bg-gray-900/20 p-2">
         <div className="absolute inset-0 bg-gray-900/30" />
         <div className="relative rounded-xl border border-gray-200 bg-white p-3 shadow-lg">
           <div className="flex items-center gap-1.5 text-emerald-700">
             <Sparkles className="h-3.5 w-3.5" />
-            <p className="text-xs font-semibold text-gray-900">AI náhled a doplnění</p>
+            <p className="text-xs font-semibold text-gray-900">AI vám vylepšila inzerát!</p>
           </div>
           <p className="mt-1 text-[9px] leading-relaxed text-gray-600">
-            AI navrhla upravený popis. Můžete ho upravit nebo publikovat původní text.
+            AI může udělat chybu — před publikací si text zkontrolujte.
           </p>
 
           <div className="mt-2">
@@ -177,10 +177,10 @@ export function CreateListingGuideStep3Screen() {
 
           <div className="mt-2 space-y-1">
             <div className="rounded-lg bg-emerald-600 py-1.5 text-center text-[10px] font-semibold text-white">
-              Publikovat s vylepšeným popisem
+              Publikovat vylepšený inzerát
             </div>
             <div className="rounded-lg border border-gray-200 py-1 text-center text-[9px] text-gray-600">
-              Publikovat bez vylepšení
+              Ponechat můj původní text
             </div>
           </div>
         </div>

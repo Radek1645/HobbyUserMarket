@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.27  
+> **Verze dokumentu:** v3.28  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
@@ -709,6 +709,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.25 | 2026-07-12 | **Branding zaPikolou.cz:** §1.8 domény (`zapikolou.cz`, redirect `predpikolou.cz`), logo spec, `src/config/site.ts`; §5.1 header; §5.3 metadata suffix; §12.4 SPAYD `MSG`; odkaz [`branding-a-domeny.md`](./branding-a-domeny.md) |
 | v3.26 | 2026-07-13 | **Compliance a UX:** migrace **043** (`description_ai_assisted`), **044** (audit registračních souhlasů); právní docs FO/OSVČ + `REVIZE_PRAVNI/`; stránky `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`; patička 3 sloupce; bezpečnostní upozornění u kontaktu/poptávky; `NEXT_PUBLIC_MONETIZATION_ENABLED` |
 | v3.27 | 2026-07-14 | **GTM + cookie lišta:** container `GTM-WGLNJRNK`, Consent Mode v2 (`gtag`), vlastní banner bez CMP, `/cookies`, patička „Nastavení cookies“; Search Console ověření DNS; Metodika §14 |
+| v3.28 | 2026-07-14 | **UX session (večer):** formulář inzerátu (povinná pole, tipy k fotkám, amber boxy nemovitosti/práce); `job_cv_required` + migrace **046**; AI modal (volitelné otázky, kompaktní layout); lokace bez auto-popup + zelená nápověda; cookie/FAB mobil; Resend `@zapikolou.cz`; Metodika §6.6–6.7, §8.3, §12.4 |
 
 ---
 

@@ -13,6 +13,7 @@ type ListingContactSectionProps = {
   postSlug: string;
   postTitle: string;
   categoryType: CategoryType;
+  jobCvRequired?: boolean;
   showContactEmail: boolean;
   showContactPhone: boolean;
   isLoggedIn: boolean;
@@ -23,6 +24,7 @@ export function ListingContactSection({
   postSlug,
   postTitle,
   categoryType,
+  jobCvRequired = false,
   showContactEmail,
   showContactPhone,
   isLoggedIn,
@@ -75,6 +77,7 @@ export function ListingContactSection({
         postId={postId}
         postTitle={postTitle}
         categoryType={categoryType}
+        cvRequired={jobCvRequired}
         embedded={hasDirectContact}
         open={hasDirectContact ? inquiryOpen : undefined}
         onOpenChange={hasDirectContact ? setInquiryOpen : undefined}

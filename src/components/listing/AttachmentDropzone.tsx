@@ -16,6 +16,7 @@ export type AttachmentFile = {
 type AttachmentDropzoneProps = {
   maxFiles?: number;
   maxTotalSizeBytes?: number;
+  required?: boolean;
   onFilesChange: (files: AttachmentFile[]) => void;
 };
 
@@ -35,6 +36,7 @@ function isAllowedFile(file: File): boolean {
 export function AttachmentDropzone({
   maxFiles = INQUIRY_ATTACHMENT_MAX_FILES,
   maxTotalSizeBytes = INQUIRY_ATTACHMENT_MAX_TOTAL_BYTES,
+  required = false,
   onFilesChange,
 }: AttachmentDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -84,7 +86,15 @@ export function AttachmentDropzone({
   return (
     <div className="space-y-2">
       <span className="block text-sm font-medium text-gray-700">
-        CV / portfolio (volitelné)
+        CV / portfolio
+        {required ? (
+          <span className="text-red-600" aria-hidden="true">
+            {" "}
+            *
+          </span>
+        ) : (
+          " (volitelné)"
+        )}
       </span>
       <p className="text-xs text-gray-500">
         Max. {maxFiles} soubory, celkem 5 MB. PDF, DOCX, JPG nebo PNG. Soubory se

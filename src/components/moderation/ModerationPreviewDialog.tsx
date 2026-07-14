@@ -88,23 +88,9 @@ export function ModerationPreviewDialog({
   const descriptionOverLimit =
     projectedDescription.length > LISTING_DESCRIPTION_MAX_LENGTH;
 
-  const missingQuestionIds = useMemo(
-    () => getMissingModerationQuestionIds(visibleQuestions, questionAnswers),
-    [visibleQuestions, questionAnswers],
-  );
-
-  const questionsIncomplete = missingQuestionIds.length > 0;
-
   if (!preview) return null;
 
   function handlePublishAi() {
-    if (
-      getMissingModerationQuestionIds(visibleQuestions, questionAnswers).length >
-      0
-    ) {
-      return;
-    }
-
     onPublishAi({
       title: (aiTitle ?? "").trim(),
       description: (aiDescription ?? "").trim(),
@@ -131,18 +117,15 @@ export function ModerationPreviewDialog({
         aria-labelledby="moderation-preview-title"
         className="relative flex max-h-[min(92vh,820px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-neutral-300 bg-white shadow-xl"
       >
-        <div className="border-b border-neutral-200 px-5 py-4 sm:px-6">
+        <div className="border-b border-neutral-200 px-5 py-3 sm:px-6">
           <h2
             id="moderation-preview-title"
             className="text-lg font-semibold text-neutral-900"
           >
             {MODERATION_PREVIEW_UI.title}
           </h2>
-          <p className="mt-1 text-sm text-neutral-600">
-            {MODERATION_PREVIEW_UI.intro}
-          </p>
-          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-950">
-            {MODERATION_PREVIEW_UI.disclaimer}
+          <p className="mt-1.5 text-xs leading-relaxed text-neutral-600">
+            {MODERATION_PREVIEW_UI.subtitle}
           </p>
         </div>
 
@@ -187,9 +170,9 @@ export function ModerationPreviewDialog({
               value={aiDescription}
               disabled={publishing}
               onChange={(event) => setAiDescription(event.target.value)}
-              rows={8}
+              rows={6}
               maxLength={LISTING_DESCRIPTION_MAX_LENGTH}
-              className="mt-1 w-full resize-y rounded-xl border border-neutral-500 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-600/35 disabled:opacity-60"
+              className="mt-1 max-h-36 w-full resize-none overflow-y-auto rounded-xl border border-neutral-500 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-600/35 disabled:opacity-60"
             />
             <p
               className={[
@@ -216,53 +199,37 @@ export function ModerationPreviewDialog({
               <legend className="px-1 text-sm font-semibold text-neutral-900">
                 {MODERATION_PREVIEW_UI.questionsHeading}
               </legend>
-              <p className="mt-1 text-xs text-neutral-600">
+              <p className="mt-1 text-xs leading-relaxed text-neutral-600">
                 {MODERATION_PREVIEW_UI.questionsHint}
               </p>
+              <p className="mt-1.5 text-xs italic leading-relaxed text-neutral-500">
+                {MODERATION_PREVIEW_UI.questionsSkipHint}
+              </p>
               <ul className="mt-3 space-y-3">
-                {visibleQuestions.map((question) => {
-                  const isMissing = missingQuestionIds.includes(question.id);
-
-                  return (
+                {visibleQuestions.map((question) => (
                   <li key={question.id}>
                     <label
                       htmlFor={`moderation-q-${question.id}`}
                       className="block text-sm font-medium text-neutral-800"
                     >
                       {question.label}
-                      <span className="font-normal text-neutral-500">
-                        {MODERATION_PREVIEW_UI.questionRequiredMark}
-                      </span>
                     </label>
                     <input
                       id={`moderation-q-${question.id}`}
                       type="text"
-                      required
                       disabled={publishing}
                       value={questionAnswers[question.id] ?? ""}
-                      aria-invalid={isMissing}
                       onChange={(event) =>
                         setQuestionAnswers((current) => ({
                           ...current,
                           [question.id]: event.target.value,
                         }))
                       }
-                      className={[
-                        "mt-1 w-full rounded-xl border bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:ring-2 disabled:opacity-60",
-                        isMissing
-                          ? "border-red-600 focus:border-red-700 focus:ring-red-600/35"
-                          : "border-neutral-500 focus:border-blue-700 focus:ring-blue-600/35",
-                      ].join(" ")}
+                      className="mt-1 w-full rounded-xl border border-neutral-500 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-600/35 disabled:opacity-60"
                     />
                   </li>
-                  );
-                })}
+                ))}
               </ul>
-              {questionsIncomplete ? (
-                <p className="mt-3 text-xs font-medium text-red-700">
-                  {MODERATION_PREVIEW_UI.questionsIncompleteWarning}
-                </p>
-              ) : null}
             </fieldset>
           ) : null}
         </div>
@@ -275,8 +242,7 @@ export function ModerationPreviewDialog({
               publishing ||
               !(aiTitle ?? "").trim() ||
               !projectedDescription.trim() ||
-              descriptionOverLimit ||
-              questionsIncomplete
+              descriptionOverLimit
             }
             onClick={handlePublishAi}
             className={`flex w-full flex-col items-center ${listingFormPrimaryButtonClass}`}
@@ -320,14 +286,4 @@ export function ModerationPreviewDialog({
       </div>
     </div>
   );
-}
-
-/** ID otázek bez neprázdné odpovědi. */
-export function getMissingModerationQuestionIds(
-  questions: ModerationQuestion[],
-  answers: Record<string, string>,
-): string[] {
-  return questions
-    .filter((question) => !answers[question.id]?.trim())
-    .map((question) => question.id);
 }

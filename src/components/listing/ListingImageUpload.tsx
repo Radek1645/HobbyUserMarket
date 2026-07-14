@@ -5,6 +5,7 @@ import {
   LISTING_IMAGE_MAX_FILES,
   LISTING_IMAGE_MAX_FILE_BYTES,
 } from "@/config/app";
+import { getListingFormTipExample } from "@/config/listing-form-tips";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   listingFormDropzoneClass,
@@ -55,12 +56,17 @@ type ImageItem =
 
 type ListingImageUploadProps = {
   initialImages?: ListingImagePreview[];
+  categoryType: string;
+  subcategorySlug: string;
 };
 
 export const ListingImageUpload = forwardRef<
   ListingImageUploadHandle,
   ListingImageUploadProps
->(function ListingImageUpload({ initialImages = [] }, ref) {
+>(function ListingImageUpload(
+  { initialImages = [], categoryType, subcategorySlug },
+  ref,
+) {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<ImageItem[]>(() =>
@@ -237,17 +243,24 @@ export const ListingImageUpload = forwardRef<
     event.target.value = "";
   }
 
+  const tipExample = getListingFormTipExample(categoryType, subcategorySlug);
+  const maxPhotoSizeMb = Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024));
+
   return (
     <div className="space-y-3">
       <div>
         <span className={listingFormLabelClass}>Fotky</span>
-        <p className={listingFormHintClass}>
-          Volitelné, max. {LISTING_IMAGE_MAX_FILES} fotek. Snímky z foťáku nebo
-          galerie se automaticky zmenší (max.{" "}
-          {Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024))} MB každá).
-          Hvězdičkou zvolíte náhled na homepage. Všechny fotky procházejí
-          bezpečnostní AI kontrolou.
-        </p>
+        <div className={`${listingFormHintClass} space-y-1`}>
+          <p>
+            ⚡ <strong>Tip</strong>: Napište stručný popisek (např. „{tipExample}"), nahrajte fotku a nechte AI, ať váš text vylepší a dotáhne do konce.
+          </p>
+          <p>
+            📸 Max. {LISTING_IMAGE_MAX_FILES} fotek (automaticky zmenšíme pod{" "}
+            {maxPhotoSizeMb} MB).
+          </p>
+          <p>⭐ Hvězdičkou vyberte hlavní fotku na homepage.</p>
+          <p>🛡️ Bezpečnost fotek hlídá AI kontrola.</p>
+        </div>
       </div>
 
       {items.length > 0 ? (

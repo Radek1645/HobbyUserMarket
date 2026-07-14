@@ -8,6 +8,15 @@ export const listingFormInputClass =
 export const listingFormLabelClass =
   "block text-sm font-semibold text-neutral-900";
 
+/** Hvězdička u povinných polí — oddělená mezera, zarovnání, čitelná červená. */
+export const listingFormRequiredMarkClass =
+  "ml-[5px] inline-block select-none align-text-top text-[1.15em] font-bold leading-none text-[#e53e3e]";
+
+export const LISTING_FORM_REQUIRED_LEGEND = "* Označená pole jsou povinná.";
+
+export const listingFormRequiredLegendClass =
+  "mb-2 text-xs text-neutral-500";
+
 export const listingFormHintClass = "mt-1 text-xs text-neutral-600";
 
 export const listingFormCardClass =

@@ -43,6 +43,7 @@ export function HeaderLocationPanel() {
   } = useVisitorLocationContext();
 
   const hasActiveLocation = Boolean(location && locationEnabled);
+  const needsLocationSetup = !hasActiveLocation;
 
   const locationFullLabel = hasActiveLocation
     ? formatPublicAreaLocation(location!.locationText)
@@ -98,6 +99,14 @@ export function HeaderLocationPanel() {
 
   const showPicker = !hasActiveLocation || editingLocation;
 
+  const locationButtonClass =
+    hasActiveLocation || panelOpen
+      ? "border-emerald-600 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+      : "border-2 border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 animate-[pulse_2.5s_ease-in-out_infinite]";
+
+  const mapPinClass =
+    hasActiveLocation || panelOpen ? "text-emerald-700" : "text-emerald-600";
+
   return (
     <div ref={containerRef} className="relative shrink-0">
       <button
@@ -113,20 +122,19 @@ export function HeaderLocationPanel() {
         title={locationTitle}
         onClick={togglePanel}
         className={[
-          "flex h-10 shrink-0 items-center justify-center rounded-full border transition",
+          "relative z-10 flex h-10 shrink-0 items-center justify-center rounded-full border transition",
           "w-10 p-0 sm:w-auto sm:max-w-[7.5rem] sm:justify-start sm:gap-1 sm:px-2.5 md:max-w-[9rem]",
-          panelOpen || hasActiveLocation
-            ? "border-emerald-600 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-            : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100",
+          locationButtonClass,
         ].join(" ")}
       >
-        <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <MapPin className={`h-4 w-4 shrink-0 ${mapPinClass}`} aria-hidden="true" />
         <span className="hidden min-w-0 truncate text-xs font-medium sm:inline md:text-sm">
           {locationLabel}
         </span>
         <ChevronDown
           className={[
-            "hidden h-3.5 w-3.5 shrink-0 opacity-60 transition-transform sm:block",
+            "hidden h-3.5 w-3.5 shrink-0 opacity-70 transition-transform sm:block",
+            needsLocationSetup ? "text-emerald-600" : "",
             panelOpen ? "rotate-180" : "",
           ].join(" ")}
           aria-hidden="true"

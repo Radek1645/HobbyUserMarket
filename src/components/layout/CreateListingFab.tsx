@@ -1,5 +1,6 @@
 "use client";
 
+import { useCookieConsent } from "@/components/consent/CookieConsentProvider";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   createListingCtaLabel,
@@ -26,6 +27,7 @@ function shouldHideFab(pathname: string): boolean {
 
 export function CreateListingFab({ user }: CreateListingFabProps) {
   const pathname = usePathname();
+  const { bannerOpen, isReady: cookieConsentReady } = useCookieConsent();
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -46,6 +48,11 @@ export function CreateListingFab({ user }: CreateListingFabProps) {
     ? "/inzerat/novy"
     : "/login?next=/inzerat/novy&message=create_listing&tab=register";
 
+  const cookieBannerOffsetActive = cookieConsentReady && bannerOpen;
+  const fabBottomClass = cookieBannerOffsetActive
+    ? "bottom-[calc(max(1rem,env(safe-area-inset-bottom))+var(--cookie-consent-banner-height,7rem)+0.5rem)]"
+    : "bottom-[max(1rem,env(safe-area-inset-bottom))]";
+
   return (
     <Link
       href={href}
@@ -54,8 +61,8 @@ export function CreateListingFab({ user }: CreateListingFabProps) {
       className={[
         createListingFabClass,
         collapsed ? "w-14 gap-0" : "w-auto gap-2 px-6",
-        "bottom-[max(1rem,env(safe-area-inset-bottom))]",
-        "transition-[width,padding,gap] duration-300 ease-out",
+        fabBottomClass,
+        "transition-[width,padding,gap,bottom] duration-300 ease-out",
       ].join(" ")}
     >
       <Sparkles className={`${iconSmClass} shrink-0`} strokeWidth={2.5} />

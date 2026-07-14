@@ -68,7 +68,7 @@ const POST_DETAIL_COLUMNS =
   "id, user_id, title, description, description_ai_assisted, category_type, subcategory_slug, " +
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
   "status, status_reason_code, expires_at, event_date, main_image_url, slug, " +
-  "show_contact_email, show_contact_phone, created_at, updated_at";
+  "show_contact_email, show_contact_phone, created_at, updated_at, job_cv_required";
 
 async function getPostBySlug(slug: string): Promise<PostRow | null> {
   const supabase = await createClient();
@@ -398,6 +398,7 @@ export default async function ListingDetailPage({
               postSlug={post.slug}
               postTitle={post.title}
               categoryType={post.category_type}
+              jobCvRequired={post.job_cv_required === true}
               showContactEmail={post.show_contact_email === true}
               showContactPhone={post.show_contact_phone === true}
               isLoggedIn={Boolean(user)}

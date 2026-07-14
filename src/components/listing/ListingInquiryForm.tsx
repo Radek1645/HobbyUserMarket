@@ -26,6 +26,8 @@ type ListingInquiryFormProps = {
   postId: number;
   postTitle: string;
   categoryType: CategoryType;
+  /** Práce/brigády — zadavatel vyžaduje CV při odpovědi. */
+  cvRequired?: boolean;
   /** Uvnitř společné karty kontaktu na detailu — bez odděleného rámečku u CTA. */
   embedded?: boolean;
   /** Řízené otevření formuláře (tlačítko může být v nadřazeném stacku). */
@@ -44,6 +46,7 @@ export function ListingInquiryForm({
   postId,
   postTitle,
   categoryType,
+  cvRequired = false,
   embedded = false,
   open: openControlled,
   onOpenChange,
@@ -87,6 +90,11 @@ export function ListingInquiryForm({
 
     if (messageTrimmed.length < INQUIRY_MESSAGE_MIN_LENGTH) {
       setError(`Zpráva musí mít alespoň ${INQUIRY_MESSAGE_MIN_LENGTH} znaků.`);
+      return;
+    }
+
+    if (isJob && cvRequired && attachments.length === 0) {
+      setError("Zadavatel vyžaduje přiložení CV nebo portfolio.");
       return;
     }
 
@@ -261,7 +269,10 @@ export function ListingInquiryForm({
       </div>
 
       {isJob ? (
-        <AttachmentDropzone onFilesChange={setAttachments} />
+        <AttachmentDropzone
+          required={cvRequired}
+          onFilesChange={setAttachments}
+        />
       ) : null}
 
       {error ? (

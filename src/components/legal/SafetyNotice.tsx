@@ -22,10 +22,28 @@ export function RealEstateMinorNotice({
   className = "",
 }: RealEstateMinorNoticeProps) {
   return (
-    <p
-      className={`rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950 ${className}`}
+    <div
+      className={`space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950 ${className}`}
     >
-      {SAFETY_UI.realEstateMinorNotice}
-    </p>
+      {SAFETY_UI.realEstateListingNoticeLines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+    </div>
+  );
+}
+
+type JobListingNoticeProps = {
+  className?: string;
+};
+
+export function JobListingNotice({ className = "" }: JobListingNoticeProps) {
+  return (
+    <div
+      className={`space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950 ${className}`}
+    >
+      {SAFETY_UI.jobListingNoticeLines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+    </div>
   );
 }

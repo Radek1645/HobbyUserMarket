@@ -107,13 +107,14 @@ export function HomeBrowse({
             />
 
             {!user ? (
-              <div className="mt-3 w-fit max-w-md">
+              <div className="mt-3 max-w-xl">
                 <div
                   className="border-t border-gray-300/70"
                   aria-hidden="true"
                 />
                 <p className="pt-2 text-xs text-gray-600">
-                  Bez registrace – přihlášení přes Google jedním kliknutím.
+                  Žádné zdlouhavé registrace. Přihlas se na jeden klik přes Google
+                  nebo klasicky e-mailem.
                 </p>
               </div>
             ) : null}

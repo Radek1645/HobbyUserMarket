@@ -85,6 +85,8 @@ export type PostRow = {
   show_contact_email?: boolean;
   show_contact_phone?: boolean;
   contact_phone?: string | null;
+  /** Práce/brigády — uchazeč musí přiložit CV při poptávce. */
+  job_cv_required?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -134,5 +136,6 @@ export type PostInsert = Pick<
       | "show_contact_email"
       | "show_contact_phone"
       | "contact_phone"
+      | "job_cv_required"
     >
   >;

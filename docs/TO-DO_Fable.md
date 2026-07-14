@@ -1,7 +1,7 @@
 # TO-DO Fable — Audit projektu HobbyUserMarket
 
 > **Autor:** Fable (AI audit)
-> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-11 (P26/P27)
+> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-14 (P34 performance)
 > **Rozsah auditu:** Server Actions, API routes, Supabase schéma + RLS, Edge Functions (moderace), `src/lib`, auth/onboarding flow, browse/UX komponenty.
 > **Zdroj požadavků:** [`PRD_v3.md`](./PRD_v3.md) (v3.18)
 > **Metodika značení:** severity **Critical / High / Medium / Low**; ID `C#` (security), `P#` (proces), `U#` (UX). Stav: ✅ hotovo · 🔄 rozpracováno · ⏳ čeká.
@@ -111,6 +111,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **L5** | `lib/mapy/env.ts`, `client.ts` | `NEXT_PUBLIC_MAPY_CZ_API_KEY` v prohlížeči (očekávané). | Omezit klíč HTTP-referrerem v dashboardu Mapy.cz. |
 | **L6** | `src/app/mod/` | ✅ **`/mod/karantena`**, **`/mod/inzeraty`**, lišta na detailu; **`/mod/uzivatele`** (admin). Layout pro `moderator`+`admin`. | Zbývá: audit UI (P30). |
 | **L7** | `src/middleware.ts` | Middleware negatuje auth-only routes, spoléhá na per-page `getCurrentUser()`. | Volitelný matcher pro `/moje-inzeraty`, `/inzerat/novy`, `/inzerat/*/upravit`. |
+| **L8** | `public/`, `src/app/` | Chybí favicon → `/favicon.ico` 404 v konzoli; generic ikona v záložce. | `src/app/icon.png` nebo `public/favicon.ico`; default OG obrázek — viz [`branding-a-domeny.md`](./branding-a-domeny.md) §4. |
 
 ### ✅ Co je udělané dobře (kalibrace severity)
 
@@ -255,6 +256,15 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **U27** | galerie na detailu | Miniatury `alt=""` (OK dekorativní); hlavní obrázek by měl mít popisný `alt` z názvu. | Předat title do `alt` na detailu. |
 | **U28** | `CreateListingForm.tsx` | Kroky 1–2 bez `aria-current="step"`. | Označit aktuální krok pro čtečky. |
 
+### Performance / Core Web Vitals
+
+> **Stav (2026-07-14):** LCP ~1,3 s (green), CLS 0, INP ~17 ms — Core Web Vitals OK. Hlavní rezerva: **Resource load delay ~1,2 s** (prohlížeč pozdě začne načítat LCP prvek — pravděpodobně první fotka inzerátu nebo font u hero). Homepage je largely `"use client"` (`HomeBrowse`, `HomeListings`).
+
+| ID | Soubor | Slabina | Návrh |
+|----|--------|---------|-------|
+| **P34** | `page.tsx`, `HomeBrowse.tsx`, `HomeListings.tsx`, `ListingCard.tsx` | LCP bottleneck — prodleva před startem načtení LCP resource; `priority` na prvních 3 kartách nestačí bez dřívějšího objevení URL v `<head>`. | **1)** `<link rel="preload" as="image">` pro `initialListings[0].main_image_url` v server `page.tsx`. **2)** Hero (nadpis + gradient + kategorie?) vyčlenit do Server Component — méně JS před prvním paintem. **3)** Volitelně: grid inzerátů SSR, client jen filtry/poloha. Cíl: LCP **<1 s** na mobilu (teď ~1,3 s). |
+| **P34b** | Search Console / CrUX | Po nasazení P34 ověřit v GSC → Core Web Vitals a Lighthouse mobile. | Měřit po každé větší změně homepage; baseline uložit do `Stav_projektu/`. |
+
 ### ✅ Co je UX/procesně dobře
 
 - Čeština-first copy napříč formuláři a moderačními hláškami.
@@ -282,6 +292,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | **6b. P2B provoz (Podnikatelé)** | P32 | E-mailové lhůty 15/30 dní dle VOP — před prvním IČO uživatelem. | 0,5–1 dne |
 | **7. UX vylepšení** | U1, U2, U3, U16, U21, P7, U5 | Rychlé výhry v důvěře a konverzi. | 1 den |
 | **8. Admin/ops (post-MVP)** | P26, P27, P28, P30, L6 | God Mode, reporting, monitoring, audit log dle PRD §11. | dle PRD |
+| **9. Performance (volitelné)** | P34, L8 | LCP <1 s; favicon/OG — rychlé výhry po launchi. | 0,5–1 dne |
 
 ---
 
@@ -306,5 +317,6 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | 2026-07-11 | **VOP Draft 1.5:** P2B pasáže (lhůty, ranking, data access, mikropodnik); **P32 ⏳** provozní implementace e-mailových notifikací 15/30 dní pro Podnikatele |
 | 2026-07-11 | **P26/P27 ✅** God Mode karanténa + inzeráty + lišta; nahlášení inline + `/nahlasit`; migrace **040–042**; opravy `block_failed` / `report_failed`; Metodika §10.3 |
 | 2026-07-13 | **P33 ⏳** Data v EU — checklist v GDPR §5.1, `pravni/README.md`; není garantováno v kódu (AI → Gemini/OpenAI) |
+| 2026-07-14 | **P34 ⏳** Performance / LCP — preload první fotky, server hero, volitelně SSR grid; **L8 ⏳** favicon + OG; baseline LCP 1,3 s (green), delay ~1,2 s |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

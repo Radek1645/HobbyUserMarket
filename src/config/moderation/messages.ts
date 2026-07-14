@@ -8,7 +8,7 @@ export const LISTING_AI_DISCLOSURE = {
   paramLabel: "Vytvořeno s pomocí AI",
   paramValueYes: "Ano",
   paramHelp:
-    "Inzerát nenapsala AI od nuly. Text prošel kontrolou a AI doplnila chybějící údaje podle zadání inzerenta a fotografií.",
+    "Inzerát nenapsala AI od nuly. AI text zkontrolovala a doplnila chybějící údaje podle zadání inzerenta a fotografií.",
 } as const;
 
 /** @deprecated Prefer LISTING_AI_DISCLOSURE.paramLabel */
@@ -41,23 +41,21 @@ export const MODERATION_CHECKING_UI = {
 } as const;
 
 export const MODERATION_PREVIEW_UI = {
-  title: "AI náhled a doplnění",
-  intro:
-    "AI navrhla upravený popis inzerátu. Návrh můžete dál upravit, nebo publikovat původní text.",
-  disclaimer:
+  title: "AI vám vylepšila inzerát!",
+  subtitle:
     "AI může udělat chybu — před publikací si text zkontrolujte. Pokud publikujete vylepšený popis, v sekci Parametry se zobrazí „Vytvořeno s pomocí AI: Ano“.",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
   questionsHeading: "Vylepšete svůj inzerát",
   questionsHint:
-    "Vaše odpovědi doplníme do popisu. Otázky můžete přeskočit a publikovat beze změn.",
-  questionRequiredMark: " (povinné)",
-  questionsIncompleteWarning: "Vyplňte všechny otázky výše.",
-  publishAiLabel: "Publikovat s vylepšeným popisem",
+    "Odpovězte na to, co kupující nejvíc zajímá. Urychlíte prodej a vyhnete se zbytečným otázkám v chatu.",
+  questionsSkipHint:
+    "Nevíte odpověď? Nechte prázdné — publikaci to nezdrží.",
+  publishAiLabel: "Publikovat vylepšený inzerát",
   publishAiHint: "Doporučeno",
-  publishOriginalLabel: "Publikovat bez vylepšení",
+  publishOriginalLabel: "Ponechat můj původní text",
   publishOriginalHint:
-    "Kontaktní údaje v popisu se automaticky skryjí.",
+    "Zahodí AI návrh a publikuje váš původní text. Kontaktní údaje v popisu se automaticky skryjí.",
   descriptionLengthWarning: (current: number, max: number) =>
     `Popis včetně odpovědí má ${current} znaků — maximum je ${max}. Zkrácením textu nebo odpovědí to vejde.`,
   descriptionLengthCounter: (current: number, max: number) =>

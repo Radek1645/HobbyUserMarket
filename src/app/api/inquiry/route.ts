@@ -94,12 +94,18 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: post, error: postError } = await supabase
     .from("posts")
-    .select("id, title, slug, category_type, status, expires_at, user_id")
+    .select("id, title, slug, category_type, status, expires_at, user_id, job_cv_required")
     .eq("id", postId)
     .maybeSingle<
       Pick<
         PostRow,
-        "id" | "title" | "slug" | "category_type" | "status" | "user_id"
+        | "id"
+        | "title"
+        | "slug"
+        | "category_type"
+        | "status"
+        | "user_id"
+        | "job_cv_required"
       > & {
         expires_at: string | null;
       }
@@ -122,7 +128,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Platnost inzerátu vypršela." }, { status: 404 });
   }
 
-  const validated = validateInquiryPayload(body, post.category_type as CategoryType);
+  const validated = validateInquiryPayload(body, post.category_type as CategoryType, {
+    jobCvRequired: post.job_cv_required === true,
+  });
   if (!validated.ok) {
     return NextResponse.json({ error: validated.error }, { status: 400 });
   }

@@ -112,6 +112,9 @@ function buildListingPayload(data: CreateListingInput) {
     payload.description_ai_assisted = data.descriptionAiAssisted;
   }
 
+  payload.job_cv_required =
+    data.categoryType === "prace" ? data.jobCvRequired : false;
+
   return payload;
 }
 

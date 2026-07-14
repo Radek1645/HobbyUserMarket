@@ -36,6 +36,8 @@ export type CreateListingInput = {
   showContactEmail: boolean;
   showContactPhone: boolean;
   contactPhone: string | null;
+  /** Práce/brigády — vyžadovat CV při odpovědi uchazeče. */
+  jobCvRequired: boolean;
 };
 
 export type ValidationResult =
@@ -243,6 +245,9 @@ export function validateListingForm(
       }
     }
 
+    const jobCvRequired =
+      categoryType === "prace" && form.get("jobCvRequired") === "true";
+
     return {
       ok: true,
       data: {
@@ -270,6 +275,7 @@ export function validateListingForm(
         showContactEmail,
         showContactPhone,
         contactPhone,
+        jobCvRequired,
       },
     };
   } catch (e) {

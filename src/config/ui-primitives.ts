@@ -38,7 +38,7 @@ export const headerCreateListingButtonClass =
 
 /** Mobilní FAB pro tvorbu inzerátu — plovoucí, extended → ikona při scrollu. */
 export const createListingFabClass =
-  `fixed right-4 z-40 flex h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 md:hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+  `fixed right-4 z-[95] flex h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 md:hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
 
 /** Primární brand zelená — logo wordmark, shodná s `headerCreateListingSurfaceClass`. */
 export const emeraldBrandAccentClass = "text-emerald-600";

@@ -12,6 +12,7 @@ import {
   listingFormHintClass,
   listingFormInputClass,
   listingFormLabelClass,
+  listingFormRequiredMarkClass,
 } from "@/config/listing-form-ui";
 import type { MapyGeocodeEntity } from "@/lib/mapy/types";
 import { Loader2, MapPin } from "lucide-react";
@@ -198,7 +199,10 @@ export function LocationInput({
     <div ref={containerRef}>
       {!compact ? (
         <label htmlFor="locationText" className={labelClass}>
-          Lokalita inzerátu <span className="text-red-600">*</span>
+          Lokalita inzerátu
+          <span className={listingFormRequiredMarkClass} aria-hidden="true">
+            *
+          </span>
         </label>
       ) : label ? (
         <label htmlFor="locationText" className="mb-1 block text-sm font-medium text-gray-900">

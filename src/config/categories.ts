@@ -149,11 +149,8 @@ export const CATEGORIES: CategoryConfig[] = [
       {
         slug: "moda-obleceni",
         label: "Móda a oblečení",
-        titlePlaceholder: "např. Podprsenka Triumph 75B, nošená 2×",
-        descriptionPlaceholder:
-          "Značka, velikost, stav, materiál — u spodního prádla vždy velikost",
-        listingNotice:
-          "Prodáváte spodní nebo intimní prádlo? Na fotce ukažte samotnou věc (věšák, rozložený kus) — ne sebe v prádle. V popisu uveďte velikost a stav. Inzerát má působit jako běžný prodej oblečení; eroticky laděné fotky nebo vágní text neprojdou kontrolou.",
+        titlePlaceholder: "např. Dívčí bunda Nike, vel. 128",
+        descriptionPlaceholder: "Značka, velikost, stav, materiál…",
         aiPrompt:
           "Uživatel prodává módu a oblečení.\n\n" +
           "SPODNÍ A INTIMNÍ PRÁDLO — povinná pravidla:\n" +
@@ -236,7 +233,7 @@ export const CATEGORIES: CategoryConfig[] = [
       },
       {
         slug: "opekani",
-        label: "Opékání",
+        label: "Opékání/grilování",
         titlePlaceholder: "např. Opékání na zahradě",
         descriptionPlaceholder: "Kapacita, co s sebou, jak se přihlásit…",
       },

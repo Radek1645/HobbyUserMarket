@@ -49,11 +49,16 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
 
-**Krok 1 — poloha návštěvníka**
+**Krok 1 — poloha návštěvníka (volitelná, bez vynucení)**
 
-- Web nejdřív požádá o polohu přes prohlížeč (GPS).
-- Pokud uživatel polohu **povolí**, souřadnice se uloží do prohlížeče (`localStorage`) pro další návštěvy.
-- Pokud polohu **odmítne**, inzeráty se dočasně nenačtou. Zobrazí se vyhledávací pole s **adresním našeptávačem** (Mapy.cz). Uživatel musí vybrat obec nebo městskou část z nabídky — teprve pak se načtou inzeráty v okolí.
+- Při **prvním načtení** se **neotevírá** dialog ani dropdown s výběrem polohy — homepage rovnou ukáže obsah.
+- V hlavičce je tlačítko **Poloha** (ikona špendlíku). Dokud není poloha nastavená, tlačítko je **zelené** s jemným pulzujícím okrajem (nápověda bez blokování stránky).
+- Panel polohy se otevře **až po kliknutí** na tlačítko (nebo při explicitní akci typu „inzeráty v okolí“ bez uložené polohy).
+- V panelu uživatel může:
+  - zadat obec v našeptávači (Mapy.cz),
+  - použít **aktuální polohu** (GPS),
+  - zvolit **Zobrazit celou ČR** (vypne filtrování podle polohy).
+- Po nastavení polohy pulz zmizí; tlačítko zobrazí zkrácený název obce (např. „Vyškov“).
 
 **Krok 2 — lokální výpis**
 
@@ -66,23 +71,29 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 
 - Pokud ani v okruhu 60 km není dostatek inzerátů, zobrazí se **nejnovější inzeráty z celé republiky** a uživatel uvidí upozornění, že v okolí zatím nic není.
 
-**Krok 4 — bez polohy**
+**Krok 4 — bez uložené polohy**
 
-- Bez uložené polohy se zobrazí **nejnovější inzeráty celostátně** (bez výpočtu vzdálenosti).
+- Bez uložené polohy (nebo po volbě „celá ČR“) se zobrazí **nejnovější inzeráty celostátně** (bez výpočtu vzdálenosti). Uživatel uvidí upozornění, že výpis není filtrován podle polohy.
 
-### 2.3 Filtrování podle kategorie
+### 2.3 Mobilní CTA „Vytvořit inzerát s AI“
+
+- Na mobilu (`md` breakpoint) je vpravo dole plovoucí zelené tlačítko (FAB).
+- Když je otevřená **cookie lišta**, FAB se posune **nad lištu** (výška banneru se měří dynamicky), aby nebylo utopené a zůstalo klikatelné.
+- Po souhlasu / odmítnutí cookies se FAB vrátí na standardní pozici u spodního okraje.
+
+### 2.4 Filtrování podle kategorie
 
 - Na HP jsou záložky kategorií: **Vše**, **Zboží**, **Služby**, **Události**, **Nemovitosti** (podle implementace v `home-themes.ts`).
 - Výběr kategorie omezí výpis na daný typ inzerátu — lokální logika (okruh, fallback) zůstává stejná.
 - URL může obsahovat parametr `?kategorie=…` pro sdílení konkrétního pohledu.
 
-### 2.4 Vyhledávání na HP
+### 2.5 Vyhledávání na HP
 
 - Uživatel může zadat hledaný výraz (min. **3 znaky**).
 - Vyhledávání probíhá v názvu a popisu aktivních inzerátů.
 - Lze kombinovat s kategorií a dalšími filtry (cena, stav, vzdálenost — pokud je poloha k dispozici).
 
-### 2.5 Co návštěvník bez přihlášení vidí a co ne
+### 2.6 Co návštěvník bez přihlášení vidí a co ne
 
 | Může | Nemůže |
 |------|--------|
@@ -91,7 +102,7 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 | Odeslat anonymní poptávku e-mailem | Založit nebo upravit inzerát |
 | Nahlásit inzerát přes formulář `/nahlasit` | Nahlásit inline z detailu (vyžaduje přihlášení) |
 
-### 2.6 Navigace a patička
+### 2.7 Navigace a patička
 
 Na všech stránkách je společná hlavička (wordmark **zaPikolou.cz**, vyhledávání, přihlášení, CTA **„Vytvořit inzerát s AI“**) a třísloupcová patička:
 
@@ -103,7 +114,7 @@ Na všech stránkách je společná hlavička (wordmark **zaPikolou.cz**, vyhled
 
 V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), krátký tagline a verze platformy (`0.1`).
 
-### 2.7 Informační stránky
+### 2.8 Informační stránky
 
 | URL | Účel |
 |-----|------|
@@ -221,11 +232,21 @@ Uživatel vybere:
 |------|----------|
 | Název | Povinný, max. 80 znaků; slouží i pro SEO a URL |
 | Popis | Min. 10, max. 2000 znaků; hrubý text stačí — AI ho může upravit |
-| Lokalita | Povinná; našeptávač Mapy.cz nebo „Použít aktuální polohu“ |
+| Lokalita | Povinná; našeptávač Mapy.cz nebo „Použít aktuální polohu“ — obec musí být **potvrzena z našeptávače** (GPS doplní souřadnice) |
 | Typ ceny | Podle kategorie — detail v [§12](#12-speciální-typy-inzerátů). U **zboží**: Pevná, Za odvoz, Dohodou, Výměnou, Nabídni. U **služeb**: Hodinová sazba, Cena za zakázku, Dohodou. |
 | Platnost | U zboží, služeb a nemovitostí: 1–365 dní (výchozí 30); u událostí se nevybírá — platí datum akce |
 | Datum akce | U událostí povinné; musí být v budoucnosti (při novém založení) |
 | Kontaktní preference | Volitelné zobrazení e-mailu / telefonu po kliknutí na „Zobrazit kontakt“ |
+
+#### Povinná pole — hvězdička a legenda
+
+Povinná pole označuje **červená hvězdička** v labelu (Název, Popis, Lokalita, Cena u typů s částkou, Datum akce u událostí, telefon při zobrazení kontaktu).
+
+- Hvězdička je v samostatném `<span>` s třídou `listingFormRequiredMarkClass` — oddělená mezera (`margin-left`), barva `#e53e3e`, mírně větší než text labelu, aby se nelepila na závorky (např. u „Orientační cena (Kč)“).
+- Těsně **nad tlačítky Zpět / Publikovat** je šedá legenda: **„\* Označená pole jsou povinná.“**
+- Hvězdička má `aria-hidden="true"` — čtečky obrazovky spoléhají na legendu a na validaci formuláře.
+
+Konfigurace: `src/config/listing-form-ui.ts` (`listingFormRequiredMarkClass`, `LISTING_FORM_REQUIRED_LEGEND`).
 
 ### Krok 3 — Fotografie
 
@@ -233,6 +254,20 @@ Uživatel vybere:
 - Každá se před nahráním zkomprimuje na max. **1 MB**.
 - Uživatel označí **hlavní fotku** (hvězdička) — ta je náhled na HP a referenční snímek pro cross-validaci text ↔ foto. AI hydratace vychází ze **všech** nahraných fotek.
 - **Všechny** fotky procházejí bezpečnostní kontrolou, nejen hlavní.
+
+#### Nápověda u nahrávání fotek
+
+Pod nadpisem **Fotky** (pole je volitelné, ale doporučené) uživatel vidí:
+
+1. **Tip** — stručný popisek + fotka + AI doplnění textu. Příklad ve větě se mění podle **kategorie a podkategorie**, např.:
+   - Elektronika → „Prodám funkční mobil“
+   - Auta a moto → „Prodám použité auto“
+   - Služby → „Nabízím úklid bytu“
+2. Max. 6 fotek, automatická komprese pod 1 MB.
+3. Hvězdičkou hlavní fotka na homepage.
+4. Bezpečnost fotek hlídá AI kontrola.
+
+Mapa příkladů: `src/config/listing-form-tips.ts` (`getListingFormTipExample`). Komponenta: `ListingImageUpload`.
 
 ### Publikace
 
@@ -336,8 +371,8 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 
 **Průběh pro uživatele:**
 
-1. V modalu vidí náhled AI textu (zatím bez chybějících parametrů).
-2. Pod ním vyplní pole z dotazníku („Vylepšete svý inzerát“).
+1. Modal **„AI vám vylepšila inzerát!“** — náhled AI textu (textarea max. 6 řádků, scroll uvnitř).
+2. Sekce **„Vylepšete svůj inzerát“** — volitelné doplňující otázky (1–5). Nevyplněné otázky **publikaci neblokují**; vyplněné odpovědi se doplní do Parametrů.
 3. Po potvrzení se odpovědi **automaticky doplní** do sekce Parametry (s jednotkami — rozměry v **cm**, objem v **ml**, pokud uživatel jednotku nevyplní).
 4. Odpovědi se **neukládají zvlášť** v databázi — jsou součástí finálního popisu.
 
@@ -352,8 +387,8 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 
 | Tlačítko | Co se stane |
 |----------|-------------|
-| **Doplnit, upravit a publikovat** (doporučeno) | Uloží se AI verze (včetně odpovědí z dotazníku). Původní text se uloží do `original_title` / `original_description` pro metriky využití AI. Na detailu se zobrazí parametr **„Vytvořeno s pomocí AI: Ano“** (`description_ai_assisted = true`, migrace `043`). |
-| **Ignorovat AI a publikovat původní** | Uloží se text, který uživatel napsal do formuláře. `description_ai_assisted = false`. Bezpečnostní filtr a odstranění kontaktů z popisu **platí vždy**. |
+| **Publikovat vylepšený inzerát** (doporučeno) | Uloží AI verzi i bez vyplněných otázek; vyplněné odpovědi se sloučí do Parametrů. Původní text → `original_title` / `original_description`. Na detailu **„Vytvořeno s pomocí AI: Ano“** (`description_ai_assisted = true`, migrace `043`). |
+| **Ponechat můj původní text** | Zahodí AI návrh; uloží text z formuláře. `description_ai_assisted = false`. Strip kontaktů platí vždy. |
 | **Zrušit** | Návrat do formuláře, inzerát se neuloží. |
 
 ### 6.8 Zamítnutí (REJECTED)
@@ -454,6 +489,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - Nepřihlášený i přihlášený může odeslat zprávu inzerentovi e-mailem.
 - E-mail prodejce zůstává skrytý — doručení přes Resend.
 - U **událostí** je tlačítko **„Mám zájem o účast“** — stejný mechanismus, jiný text e-mailu.
+- U **Práce a brigád** může uchazeč přiložit CV/portfolio (PDF, DOCX, JPG, PNG). Zadavatel volí **„Vyžadovat CV nebo portfolio při odpovědi“** (`job_cv_required`, migrace `046`) — pak bez přílohy formulář neodešle.
 - Metadata o odeslání se loguje (bez obsahu zprávy — GDPR).
 - Stejné **bezpečnostní upozornění** k setkání jako u kontaktu.
 
@@ -837,7 +873,14 @@ Parametry
 • Materiál: dle domluvy
 ```
 
-### 12.4 Zboží ve stavu „Poškozené / na díly“
+### 12.4 Práce a brigády
+
+- Kategorie `prace` — inzerent hledá pracovníka nebo brigádníka.
+- Při založení: **žlutý box** s upozorněním (nástěnka, ne agentura; firma/OSVČ má uvést typ úvazku a odměnu v popisu).
+- Volba **Vyžadovat CV nebo portfolio při odpovědi** — default vypnuto (brigády); zapnuto u odborných pozic.
+- Sloupec `posts.job_cv_required` (migrace `046`).
+
+### 12.5 Zboží ve stavu „Poškozené / na díly“
 
 - Samostatná volba stavu pro inzeráty určené k opravě nebo na náhradní díly.
 
@@ -933,13 +976,16 @@ Měření návštěvnosti běží přes **Google Tag Manager** (container `GTM-W
 
 ### 14.1 Co návštěvník vidí
 
-1. Při **první návštěvě** (bez uložené volby) se dole zobrazí cookie lišta.
-2. **Pouze nezbytné** — analytika zůstane vypnutá (`analytics_storage: denied`).
-3. **Přijmout analytiku** — GTM dostane `gtag('consent', 'update', …)` a GA4 tag smí spustit měření.
-4. Odkaz **Zásady cookies** vede na `/cookies`.
-5. V patičce **Nastavení cookies** lištu kdykoli znovu otevře (změna nebo odvolání souhlasu).
+1. Při **první návštěvě** (bez uložené volby) se dole zobrazí **kompaktní** cookie lišta — nesmí překrývat hlavní obsah ani mobilní FAB (viz [§2.3](#23-mobilní-cta-vytvořit-inzerát-s-ai)).
+2. Text: *„Technické cookies pro provoz webu. Analytické cookies zapneme jen s vaším souhlasem.“* + odkaz **Zásady cookies**.
+3. Tlačítka **vedle sebe** i na mobilu: **Nezbytné** (outline) a **Přijmout** (zelené CTA). Kratší labely na úzkých displejích.
+4. **Pouze nezbytné** — analytika zůstane vypnutá (`analytics_storage: denied`).
+5. **Přijmout** — GTM dostane `gtag('consent', 'update', …)` a GA4 tag smí spustit měření.
+6. V patičce **Nastavení cookies** lištu kdykoli znovu otevře (změna nebo odvolání souhlasu).
 
 Volba se ukládá do `localStorage` (`cookie-consent:v1`), ne do cookie třetí strany.
+
+**Layout (mobil):** menší padding, text 13px, tlačítka v jednom řádku (`flex-row`). Výška banneru se zapisuje do CSS proměnné `--cookie-consent-banner-height` pro posun FAB.
 
 ### 14.2 Technický průběh (bez externího CMP)
 
@@ -952,10 +998,14 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 | Soubor | Účel |
 |--------|------|
 | `src/config/gtm.ts` | ID containeru `GTM-WGLNJRNK` (override env `NEXT_PUBLIC_GTM_ID`) |
-| `src/config/cookie-consent.ts` | Texty lišty, verze schématu souhlasu |
+| `src/config/cookie-consent.ts` | Texty lišty, verze schématu souhlasu, CSS proměnná výšky banneru |
 | `src/components/analytics/GoogleTagManager.tsx` | Consent bootstrap + GTM snippet |
 | `src/components/consent/*` | Lišta, provider, odkaz v patičce |
 | `src/config/gtm-ids.ts` | `data-gtm-id` na CTA pro GTM click triggery |
+| `src/config/listing-form-ui.ts` | Povinná pole — hvězdička, legenda |
+| `src/config/listing-form-tips.ts` | Příklady v tipu u fotek podle kategorie |
+| `src/components/location/HeaderLocationPanel.tsx` | Panel polohy v hlavičce, zelená nápověda |
+| `src/components/layout/CreateListingFab.tsx` | Mobilní FAB, posun nad cookie lištu |
 
 **Env (volitelné):** `NEXT_PUBLIC_GTM_ID` přepíše default; prázdný string GTM vypne (např. lokální dev).
 
@@ -978,6 +1028,8 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 | [`future_jobs.md`](./future_jobs.md) | Plánovaný modul práce |
 | [`terminal-prikazy.md`](./terminal-prikazy.md) | Příkazy pro vývoj a deploy |
 | [`ui-prvky.md`](./ui-prvky.md) | Sdílené UI prvky (CTA, modály, pilulky) — kód v `src/config/ui-primitives.ts` |
+| Formulář inzerátu (UI) | `src/config/listing-form-ui.ts`, `src/config/listing-form-tips.ts` |
+| Poloha návštěvníka | `src/components/location/VisitorLocationProvider.tsx`, `HeaderLocationPanel.tsx` |
 | Site Notice | Konfigurace: `src/config/site-notice.ts`; komponenta: `src/components/layout/SiteNoticeBar.tsx` |
 | Cookie lišta / GTM | `src/config/cookie-consent.ts`, `src/config/gtm.ts`, `src/components/consent/`, `src/components/analytics/` |
 | [`docs/pravni/cookies.md`](./pravni/cookies.md) | Právní text zásad cookies |
