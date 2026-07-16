@@ -45,6 +45,30 @@ const qaReserveMatch = appConfig.match(
   /export const MODERATION_DESCRIPTION_QA_RESERVE = (\d+)/,
 );
 const qaReserve = qaReserveMatch?.[1] ?? "400";
+const moderationImageMaxMatch = appConfig.match(
+  /export const MODERATION_IMAGE_MAX_BYTES = (.+);/,
+);
+const moderationImagesTotalMatch = appConfig.match(
+  /export const MODERATION_IMAGES_MAX_TOTAL_BYTES = (.+);/,
+);
+
+function evalBytesExpr(expr, fallback) {
+  if (!expr) return fallback;
+  try {
+    return Number(Function(`"use strict"; return (${expr})`)());
+  } catch {
+    return fallback;
+  }
+}
+
+const moderationImageMaxBytes = evalBytesExpr(
+  moderationImageMaxMatch?.[1],
+  500 * 1024,
+);
+const moderationImagesTotalBytes = evalBytesExpr(
+  moderationImagesTotalMatch?.[1],
+  2 * 1024 * 1024,
+);
 
 const constantsTarget = join(
   root,
@@ -59,6 +83,12 @@ export const LISTING_DESCRIPTION_MAX_LENGTH = ${descriptionMaxLength};
 
 /** Rezerva pro odpovědi z dotazníku (NEEDS_QUESTIONS) — drž v sync s app.ts */
 export const MODERATION_DESCRIPTION_QA_RESERVE = ${qaReserve};
+
+/** Max. velikost jedné fotky po dekódování base64 (M7). */
+export const MODERATION_IMAGE_MAX_BYTES = ${moderationImageMaxBytes};
+
+/** Max. součet velikostí fotek po dekódování (M7). */
+export const MODERATION_IMAGES_MAX_TOTAL_BYTES = ${moderationImagesTotalBytes};
 `,
 );
 console.log("Synced moderation constants:", constantsTarget);

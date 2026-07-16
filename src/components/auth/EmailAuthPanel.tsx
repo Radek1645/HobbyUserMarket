@@ -6,6 +6,7 @@ import {
   signUpWithEmail,
   type AuthFormState,
 } from "@/app/actions/auth";
+import { PASSWORD_MIN_LENGTH } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { Mail } from "lucide-react";
 import { useActionState, useState } from "react";
@@ -243,8 +244,8 @@ export function EmailAuthPanel({
             name="password"
             label="Heslo"
             autoComplete="new-password"
-            minLength={8}
-            hint="Minimálně 8 znaků."
+            minLength={PASSWORD_MIN_LENGTH}
+            hint={`Minimálně ${PASSWORD_MIN_LENGTH} znaků.`}
             prominent={prominent}
           />
           <p className={`text-gray-500 ${prominent ? "text-xs sm:text-sm" : "text-xs"}`}>

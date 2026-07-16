@@ -33,6 +33,7 @@ import {
 } from "../_shared/moderation/prompt-injection-guard.ts";
 import { findProhibitedKeyword } from "../_shared/moderation/prohibited-scan.ts";
 import { assertAiModerationRateLimit } from "../_shared/moderation/rate-limit.ts";
+import { assertModerationImagesWithinLimits } from "../_shared/moderation/assert-image-limits.ts";
 import { issueModerationApproval } from "../_shared/moderation/issue-approval.ts";
 import { logModerationCheck } from "../_shared/moderation/log-moderation-check.ts";
 import type { ModerationResult } from "../_shared/moderation/parse-response.ts";
@@ -263,6 +264,20 @@ serve(async (req) => {
         });
         return jsonResponse({ status: "REJECTED", reason }, 429);
       }
+      if (
+        rateError instanceof Error &&
+        rateError.message === "RATE_LIMIT_UNAVAILABLE"
+      ) {
+        const reason =
+          "AI kontrola teď není dostupná. Zkuste to prosím za chvíli znovu.";
+        await logModerationCheck({
+          userId,
+          status: "REJECTED",
+          rejectionReason: reason,
+          errorCode: "RATE_LIMIT_UNAVAILABLE",
+        });
+        return technicalErrorResponse(reason, 503, "RATE_LIMIT_UNAVAILABLE");
+      }
       throw rateError;
     }
 
@@ -280,6 +295,23 @@ serve(async (req) => {
     const mainImageIndex =
       typeof body?.mainImageIndex === "number" ? body.mainImageIndex : 0;
     logCtx.imageCount = imagesBase64.length;
+
+    try {
+      assertModerationImagesWithinLimits(imagesBase64);
+    } catch (imageError) {
+      const code =
+        imageError instanceof Error ? imageError.message : "IMAGE_INVALID";
+      const reason =
+        code === "IMAGE_TOO_LARGE" || code === "IMAGES_TOTAL_TOO_LARGE"
+          ? "Fotky pro AI kontrolu jsou příliš velké. Zmenšete je a zkuste to znovu."
+          : "Neplatný formát fotky pro AI kontrolu.";
+      return respondWithLog(
+        userId,
+        logCtx,
+        { status: "REJECTED", reason },
+        { errorCode: code, httpStatus: 400 },
+      );
+    }
 
     if (!title || !description) {
       const reason = "Chybí název nebo popis inzerátu.";

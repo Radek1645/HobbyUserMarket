@@ -7,6 +7,7 @@ import {
   INQUIRY_MESSAGE_MIN_LENGTH,
   INQUIRY_SENDER_NAME_MAX_LENGTH,
 } from "@/config/app";
+import { mimeMatchesMagicBytes } from "@/lib/files/magic-bytes";
 import type { CategoryType } from "@/types/post";
 
 export type InquiryAttachmentInput = {
@@ -156,18 +157,25 @@ export function validateInquiryPayload(
         return { ok: false, error: "Neplatná příloha." };
       }
 
-      let bytes: number;
+      let bytes: Buffer;
       try {
-        bytes = Buffer.from(content, "base64").byteLength;
+        bytes = Buffer.from(content, "base64");
       } catch {
         return { ok: false, error: "Neplatná příloha." };
       }
 
-      if (bytes < 1) {
+      if (bytes.length < 1) {
         return { ok: false, error: "Prázdná příloha." };
       }
 
-      totalBytes += bytes;
+      if (!mimeMatchesMagicBytes(contentType, bytes)) {
+        return {
+          ok: false,
+          error: `Obsah souboru neodpovídá typu: ${filename}`,
+        };
+      }
+
+      totalBytes += bytes.length;
       if (totalBytes > INQUIRY_ATTACHMENT_MAX_TOTAL_BYTES) {
         return {
           ok: false,

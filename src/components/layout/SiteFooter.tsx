@@ -23,7 +23,7 @@ function FooterLinkColumn({ heading, links }: FooterLinkColumnProps) {
       <ul className="mt-3 space-y-2 text-sm">
         {links.map((link) => (
           <li key={link.href}>
-            {link.href.startsWith("mailto:") ? (
+            {link.href.startsWith("mailto:") || link.href.endsWith(".txt") ? (
               <a href={link.href} className={footerLinkClass}>
                 {link.label}
               </a>

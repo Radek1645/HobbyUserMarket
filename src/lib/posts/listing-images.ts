@@ -5,6 +5,11 @@ import {
   LISTING_IMAGE_MAX_FILES,
   LISTING_IMAGE_MAX_SOURCE_BYTES,
 } from "@/config/app";
+import {
+  detectFileKindFromBytes,
+  mimeForDetectedKind,
+  type DetectedFileKind,
+} from "@/lib/files/magic-bytes";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -12,6 +17,8 @@ const MIME_TO_EXT: Record<string, string> = {
   "image/png": "png",
   "image/webp": "webp",
 };
+
+const IMAGE_KINDS = new Set<DetectedFileKind>(["jpeg", "png", "webp"]);
 
 export type ParsedListingImagesForm = {
   imageOrder: string[];
@@ -62,10 +69,6 @@ function getExtensionFromName(name: string): string {
   return name.slice(dot).toLowerCase();
 }
 
-function resolveFileExtension(file: File): string {
-  return MIME_TO_EXT[file.type] ?? getExtensionFromName(file.name).replace(".", "") ?? "jpg";
-}
-
 export function parseListingImagesFormData(
   formData: FormData,
 ): ParsedListingImagesForm {
@@ -103,14 +106,20 @@ async function uploadListingImageFile(
     throw new Error(validationError);
   }
 
-  const ext = resolveFileExtension(file);
-  const storagePath = `${userId}/${postId}/${crypto.randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
+  const kind = detectFileKindFromBytes(buffer);
+  if (!kind || !IMAGE_KINDS.has(kind)) {
+    throw new Error("Soubor není platný obrázek (JPG, PNG nebo WebP).");
+  }
+
+  const contentType = mimeForDetectedKind(kind);
+  const ext = MIME_TO_EXT[contentType] ?? "jpg";
+  const storagePath = `${userId}/${postId}/${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage
     .from(LISTING_IMAGE_BUCKET)
     .upload(storagePath, buffer, {
-      contentType: file.type,
+      contentType,
       upsert: false,
     });
 

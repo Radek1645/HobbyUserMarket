@@ -13,6 +13,7 @@ import {
   MARKETING_CONSENT_PATH,
   VOP_PATH,
 } from "@/config/legal";
+import { LLMS_TXT_PATH, LLMS_TXT_UI } from "@/config/llms-txt";
 import {
   LISTING_TERMS_PATH,
   MODERATION_REJECTION_UI,
@@ -57,6 +58,10 @@ export const FOOTER_ABOUT_LINKS = [
   {
     href: CREATE_LISTING_GUIDE_PATH,
     label: CREATE_LISTING_GUIDE_UI.footerLinkLabel,
+  },
+  {
+    href: LLMS_TXT_PATH,
+    label: LLMS_TXT_UI.footerLinkLabel,
   },
 ] as const;
 

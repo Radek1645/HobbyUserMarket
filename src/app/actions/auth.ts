@@ -22,6 +22,7 @@ import {
   buildPendingConsentMetadata,
 } from "@/lib/auth/persist-registration-consents";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
+import { PASSWORD_MIN_LENGTH } from "@/config/app";
 import { redirect } from "next/navigation";
 
 export type AuthFormState = {
@@ -185,8 +186,8 @@ export async function signUpWithEmail(
     return { error: "Vyplňte e-mail i heslo." };
   }
 
-  if (password.length < 8) {
-    return { error: "Heslo musí mít alespoň 8 znaků." };
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return { error: `Heslo musí mít alespoň ${PASSWORD_MIN_LENGTH} znaků.` };
   }
 
   const consentError = validateRegistrationConsents(formData);
@@ -260,8 +261,8 @@ export async function updatePassword(
   const password = readPassword(formData);
   const confirm = String(formData.get("confirmPassword") ?? "");
 
-  if (!password || password.length < 8) {
-    return { error: "Nové heslo musí mít alespoň 8 znaků." };
+  if (!password || password.length < PASSWORD_MIN_LENGTH) {
+    return { error: `Nové heslo musí mít alespoň ${PASSWORD_MIN_LENGTH} znaků.` };
   }
 
   if (password !== confirm) {

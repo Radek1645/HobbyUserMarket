@@ -6,6 +6,9 @@ export const SITE_SHORT_NAME = "zaPikolou";
 
 export const SITE_DOMAIN = "zapikolou.cz";
 
+/** Veřejná kanonická URL (sitemap/llms/SEO) — nezávislá na localhost fallbacku. */
+export const SITE_CANONICAL_URL = `https://${SITE_DOMAIN}`;
+
 /** Výchozí kontakt provozovatele — env v produkci přepíše stejnou hodnotou. */
 export const SITE_OPERATOR_CONTACT_EMAIL = `info@${SITE_DOMAIN}`;
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { updatePassword, type AuthFormState } from "@/app/actions/auth";
+import { PASSWORD_MIN_LENGTH } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { useActionState } from "react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
@@ -17,15 +18,15 @@ export function SetPasswordForm() {
         name="password"
         label="Nové heslo"
         autoComplete="new-password"
-        minLength={8}
-        hint="Minimálně 8 znaků."
+        minLength={PASSWORD_MIN_LENGTH}
+        hint={`Minimálně ${PASSWORD_MIN_LENGTH} znaků.`}
       />
       <PasswordInput
         id="confirmPassword"
         name="confirmPassword"
         label="Potvrzení hesla"
         autoComplete="new-password"
-        minLength={8}
+        minLength={PASSWORD_MIN_LENGTH}
       />
 
       {state.error ? (

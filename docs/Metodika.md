@@ -543,11 +543,13 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 - Vrátí slug a `updated_at` pro každý záznam — sitemap z toho sestaví URL `/inzerat/{slug}` a datum poslední změny.
 - Používá anonymní Supabase klient (`src/lib/supabase/public.ts`) — bez přihlášení, jen veřejná data povolená RLS.
 
-**`public/llms.txt`** → statický soubor na `/llms.txt`
+**`src/app/llms.txt/route.ts`** → dynamický `/llms.txt`
 
 - Konvence pro **LLM crawlery** (AI asistenti, kteří procházejí web).
-- Lidsky čitelný přehled: co web dělá, které URL jsou veřejné, které vyžadují přihlášení, kde je sitemap.
+- Generuje text: brand zaPikolou, produkt, limity inzerce (20 zdarma) a až 100 nejnovějších aktivních inzerátů (`build-llms-txt.ts`, `revalidate = 300`).
+- Kompletní seznam inzerátů zůstává v `/sitemap.xml`.
 - Není povinný pro Google; doplňuje robots.txt a sitemap pro AI nástroje.
+- Odkaz v patičce: „Pro AI (llms.txt)“.
 
 #### Co ještě závisí na čase a obsahu
 

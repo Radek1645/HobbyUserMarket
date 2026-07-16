@@ -8,6 +8,7 @@ function currentHourWindowStart(): string {
   return now.toISOString();
 }
 
+/** Fail closed: chybějící config nebo DB chyba = odmítnout request (M6). */
 export async function assertAiModerationRateLimit(
   userId: string,
 ): Promise<void> {
@@ -15,8 +16,8 @@ export async function assertAiModerationRateLimit(
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.warn("rate-limit: missing Supabase env, skipping check");
-    return;
+    console.error("rate-limit: missing Supabase env");
+    throw new Error("RATE_LIMIT_UNAVAILABLE");
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
@@ -32,12 +33,11 @@ export async function assertAiModerationRateLimit(
 
   if (selectError) {
     console.error("rate-limit select:", selectError);
-    return;
+    throw new Error("RATE_LIMIT_UNAVAILABLE");
   }
 
   if (existing && existing.count >= AI_RATE_LIMIT_PER_HOUR) {
-    const error = new Error("RATE_LIMIT");
-    throw error;
+    throw new Error("RATE_LIMIT");
   }
 
   if (existing) {
@@ -48,6 +48,7 @@ export async function assertAiModerationRateLimit(
 
     if (updateError) {
       console.error("rate-limit update:", updateError);
+      throw new Error("RATE_LIMIT_UNAVAILABLE");
     }
     return;
   }
@@ -61,5 +62,7 @@ export async function assertAiModerationRateLimit(
 
   if (insertError) {
     console.error("rate-limit insert:", insertError);
+    // Race: unikátní okno už existuje — fail closed (bezpečnější než přeskočit).
+    throw new Error("RATE_LIMIT_UNAVAILABLE");
   }
 }

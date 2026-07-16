@@ -40,8 +40,9 @@ Konfigurace v kódu: [`src/config/site.ts`](../src/config/site.ts) — logo hoto
 - Metadata stránek (`HobbyUserMarket` → `SITE_DISPLAY_NAME`)
 - E-mailové šablony
 - Právní docs (`docs/pravni/*.md`)
-- Favicon + default OG obrázek
-- `public/llms.txt`
+- ~~Favicon~~ — `public/favicon.ico`, `favicon-48.png`, `icon.png`, `apple-icon.png` (+ `scripts/generate-favicon.mjs`)
+- Default OG obrázek
+- `/llms.txt` (dynamický route `src/app/llms.txt/`)
 
 Interní prefixy `hum_*` v localStorage **neměnit** — uživatel je nevidí.
 
@@ -177,7 +178,8 @@ Do té doby mohou maily chodit z provizorní domény poskytovatele — web fungu
 
 - [ ] Právní název provozovatele (IČO, sídlo) v patičce a VOP
 - [ ] Revize právních textů u právníka (název zaPikolou)
-- [ ] Favicon a OG obrázek pro sdílení na sociálních sítích
+- [x] Favicon (zelené P) — po deployi ověřit v GSC URL Inspection
+- [ ] OG obrázek pro sdílení na sociálních sítích
 - [ ] Přejmenování GitHub repozitáře (volitelné)
 
 ---

@@ -5,3 +5,9 @@ export const LISTING_DESCRIPTION_MAX_LENGTH = 2000;
 
 /** Rezerva pro odpovědi z dotazníku (NEEDS_QUESTIONS) — drž v sync s app.ts */
 export const MODERATION_DESCRIPTION_QA_RESERVE = 400;
+
+/** Max. velikost jedné fotky po dekódování base64 (M7). */
+export const MODERATION_IMAGE_MAX_BYTES = 512000;
+
+/** Max. součet velikostí fotek po dekódování (M7). */
+export const MODERATION_IMAGES_MAX_TOTAL_BYTES = 2097152;
