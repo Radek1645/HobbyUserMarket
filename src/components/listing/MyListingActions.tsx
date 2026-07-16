@@ -6,7 +6,9 @@ import {
   pauseListing,
   publishListing,
 } from "@/app/actions/listing-management";
+import { LISTING_EXTEND_DAYS } from "@/config/listing-lifetime";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { canExtendListingLifetime } from "@/lib/posts/listing-lifetime";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { getOwnerDisplayStatus } from "@/lib/posts/listing-status";
 import type { PostStatus } from "@/types/post";
@@ -25,6 +27,7 @@ type MyListingActionsProps = {
   slug: string;
   status: PostStatus;
   expiresAt: string | null;
+  createdAt: string;
 };
 
 const iconButtonClass =
@@ -41,6 +44,7 @@ export function MyListingActions({
   slug,
   status,
   expiresAt,
+  createdAt,
 }: MyListingActionsProps) {
   const displayStatus = getOwnerDisplayStatus(status, expiresAt);
 
@@ -59,6 +63,7 @@ export function MyListingActions({
   const canDelete =
     canManage || status === "blocked" || status === "draft";
   const isArchived = displayStatus === "archived";
+  const canExtend = canExtendListingLifetime(createdAt, expiresAt);
 
   if (!canEdit && !canDelete) return null;
 
@@ -78,7 +83,7 @@ export function MyListingActions({
         </Link>
       ) : null}
 
-      {canManage ? (
+      {canManage && canExtend ? (
         <form action={extendListingBy30Days}>
           <input type="hidden" name="postId" value={postId} />
           <button
@@ -91,8 +96,16 @@ export function MyListingActions({
                 ? `${primaryButtonClass} bg-emerald-600 hover:bg-emerald-700`
                 : iconButtonClass
             }
-            title={isArchived ? "Obnovit inzerát" : "Prodloužit o 30 dnů"}
-            aria-label={isArchived ? "Obnovit inzerát" : "Prodloužit o 30 dnů"}
+            title={
+              isArchived
+                ? "Obnovit inzerát"
+                : `Prodloužit až o ${LISTING_EXTEND_DAYS} dnů`
+            }
+            aria-label={
+              isArchived
+                ? "Obnovit inzerát"
+                : `Prodloužit až o ${LISTING_EXTEND_DAYS} dnů`
+            }
           >
             {isArchived ? (
               <>

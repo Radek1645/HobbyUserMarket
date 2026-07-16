@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.28  
+> **Verze dokumentu:** v3.29  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`042_reports_service_role_insert.sql`](../supabase/042_reports_service_role_insert.sql) · [`043_posts_description_ai_assisted.sql`](../supabase/043_posts_description_ai_assisted.sql) · [`044_profile_registration_consents.sql`](../supabase/044_profile_registration_consents.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`047_security_column_guards.sql`](../supabase/047_security_column_guards.sql) · [`048_listing_expiry_warning.sql`](../supabase/048_listing_expiry_warning.sql) · [`049_listing_max_lifetime.sql`](../supabase/049_listing_max_lifetime.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-14
+> **Datum:** 2026-07-16
 
 ---
 
@@ -240,8 +240,9 @@ posts
     ))
   - location_text, location (GEOGRAPHY POINT)
   - status (ENUM: draft | active | archived | hidden | blocked | deleted)
-  - status_reason_code (TEXT, nullable — `reports_threshold` | `moderation`; migrace `036`)
+  - status_reason_code (TEXT, nullable — `reports_threshold` | `moderation` | `lifetime_max`; migrace `036` + `049`)
   - expires_at, renew_count, payment_status (VARCHAR(20), výchozí: 'free')
+  - expiry_warning_for_expires_at (TIMESTAMPTZ, nullable — idempotence e-mailu před expirací; migrace `048`)
   - listing_duration_days (INTEGER, NOT NULL, DEFAULT 30 — od v0.1.1; viz §9; u `udalost` se nevyužívá)
   - event_date (TIMESTAMPTZ, NULL — od v0.2; povinné pokud `category_type = 'udalost'`)
   - show_contact_email, show_contact_phone (BOOLEAN), contact_phone (TEXT, nullable — migrace [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql))
@@ -710,6 +711,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.26 | 2026-07-13 | **Compliance a UX:** migrace **043** (`description_ai_assisted`), **044** (audit registračních souhlasů); právní docs FO/OSVČ + `REVIZE_PRAVNI/`; stránky `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`; patička 3 sloupce; bezpečnostní upozornění u kontaktu/poptávky; `NEXT_PUBLIC_MONETIZATION_ENABLED` |
 | v3.27 | 2026-07-14 | **GTM + cookie lišta:** container `GTM-WGLNJRNK`, Consent Mode v2 (`gtag`), vlastní banner bez CMP, `/cookies`, patička „Nastavení cookies“; Search Console ověření DNS; Metodika §14 |
 | v3.28 | 2026-07-14 | **UX session (večer):** formulář inzerátu (povinná pole, tipy k fotkám, amber boxy nemovitosti/práce); `job_cv_required` + migrace **046**; AI modal (volitelné otázky, kompaktní layout); lokace bez auto-popup + zelená nápověda; cookie/FAB mobil; Resend `@zapikolou.cz`; Metodika §6.6–6.7, §8.3, §12.4 |
+| v3.29 | 2026-07-16 | **Životnost + expiry mail:** migrace **048**/**049** — absolutní strop 365 dní od `created_at` (`lifetime_max`), e-mail 3 dny před expirací (cron `listing-expiry-warning`); UI badge Nabízím/Hledám, odměna u práce; právní docs 365 dní; favicon zP; Metodika §9.1.1–9.1.2 |
 
 ---
 
@@ -933,9 +935,11 @@ expires_at = now() + listing_duration_days * interval '1 day'
 
 Při **obnovení:** trigger při UPDATE `listing_duration_days` přepočítá `expires_at`.
 
+**Absolutní strop životnosti (v3.29):** `expires_at` nesmí překročit `created_at + listing_max_lifetime_days()` (výchozí **365**). Po stropu cron smaže soft-delete (`status = deleted`, `status_reason_code = lifetime_max`). Migrace [`049_listing_max_lifetime.sql`](../supabase/049_listing_max_lifetime.sql); app zrcadlo `src/config/listing-lifetime.ts`.
+
 **Výjimka — události:** §8.4.1 — `expires_at = event_date + 1 den`.
 
-**Migrace:** [`supabase/003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) (sloupce `listing_duration_days`, `event_date`, constrainty, trigger).
+**Migrace:** [`supabase/003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) (sloupce `listing_duration_days`, `event_date`, constrainty, trigger); **048**/**049** (výstraha + hard cap).
 
 ### 9.3 Konfigurace (`src/config/app.ts`)
 
@@ -996,7 +1000,7 @@ Veřejná neviditelnost platí **okamžitě** přes `is_post_publicly_visible()`
 
 - Placené prodloužení / topování (až monetizace)
 - Různé max limity per kategorie (až v0.3+ podle dat)
-- Automatické e-mailové upozornění „inzerát brzy expiruje“ (volitelné v0.3+)
+- ~~Automatické e-mailové upozornění „inzerát brzy expiruje“~~ — **implementováno** (cron `listing-expiry-warning`, 3 dny předem; viz Metodika §9.1.1)
 
 ---
 

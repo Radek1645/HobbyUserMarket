@@ -12,7 +12,8 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
-| 2026-07-16 | [2026-07-16.md](./2026-07-16.md) — security 047 (M3–M9), magic bytes, llms.txt dynamicky, favicon; TODO: SQL 047 + EF redeploy |
+| 2026-07-16 (večer) | [2026-07-16-vecer.md](./2026-07-16-vecer.md) — lifetime 365d (049), expiry mail (048), intent badges, právní, PRD v3.29; infra ✅ |
+| 2026-07-16 | [2026-07-16.md](./2026-07-16.md) — security 047 (M3–M9), magic bytes, llms.txt dynamicky, favicon; 047 později nasazeno (viz večer) |
 | 2026-07-14 (večer) | [2026-07-14-vecer.md](./2026-07-14-vecer.md) — formulář UX, práce/CV (046), AI modal, lokace, Resend zapikolou.cz, PRD v3.28 |
 | 2026-07-14 | [2026-07-14.md](./2026-07-14.md) — GTM-WGLNJRNK, cookie lišta, Consent Mode, Search Console DNS, PRD v3.27 |
 | 2026-07-13 | [2026-07-13.md](./2026-07-13.md) — branding zaPikolou, AI disclosure (043), registrační souhlasy (044), právní FO/OSVČ, info stránky, PRD v3.26 |

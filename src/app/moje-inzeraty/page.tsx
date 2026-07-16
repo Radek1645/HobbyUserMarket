@@ -8,6 +8,7 @@ import {
   getUserListingQuota,
   LISTING_QUOTA_EXCEEDED_MESSAGE,
 } from "@/lib/listings/quota";
+import { LISTING_MAX_LIFETIME_DAYS } from "@/config/listing-lifetime";
 import { archiveExpiredPosts } from "@/lib/posts/archive-expired";
 import {
   getOwnerDisplayStatus,
@@ -81,10 +82,14 @@ async function getMyListings(userId: string): Promise<PostRow[]> {
 export default async function MyListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ deleteError?: string; quotaError?: string }>;
+  searchParams: Promise<{
+    deleteError?: string;
+    quotaError?: string;
+    lifetimeError?: string;
+  }>;
 }) {
   const user = await getCurrentUser();
-  const { deleteError, quotaError } = await searchParams;
+  const { deleteError, quotaError, lifetimeError } = await searchParams;
 
   if (!user) {
     redirect("/login?next=/moje-inzeraty");
@@ -122,6 +127,14 @@ export default async function MyListingsPage({
       {quotaError ? (
         <p role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {LISTING_QUOTA_EXCEEDED_MESSAGE}
+        </p>
+      ) : null}
+
+      {lifetimeError ? (
+        <p role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Inzerát nelze prodloužit — dosáhl maximální doby existence{" "}
+          {LISTING_MAX_LIFETIME_DAYS} dní od založení. Založte prosím nový
+          inzerát.
         </p>
       ) : null}
 
@@ -189,6 +202,7 @@ export default async function MyListingsPage({
                     slug={post.slug}
                     status={post.status}
                     expiresAt={post.expires_at}
+                    createdAt={post.created_at}
                   />
                 </div>
 

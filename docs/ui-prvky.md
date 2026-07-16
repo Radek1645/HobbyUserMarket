@@ -95,6 +95,20 @@ Hero gradient zůstává fixní (`from-orange-200 via-amber-50 to-emerald-200`) 
 
 ---
 
+## 3b. Štítky směru na kartě inzerátu
+
+Na image-first kartě (homepage) oddělují **Služby** (nabízím) od **Práce** (hledám člověka) — stejná podkategorie by jinak vypadala stejně.
+
+| Konstanta | Použití |
+|-----------|---------|
+| `listingIntentOfferBadgeClass` | „Nabízím službu“ — emerald |
+| `listingIntentDemandBadgeClass` | „Hledám člověka“ — slate |
+| `listingCardSubcategoryBadgeClass` | Podkategorie vedle štítku směru |
+
+Labely: `getListingIntentLabel` v `src/config/listing-intent.ts`. Cena u práce na kartě: prefix „odměna“ přes `formatListingPrice(..., { jobRewardPrefix: true })`.
+
+---
+
 ## 4. Postup při novém prvku
 
 1. Zkontroluj, zda už existuje konstanta v `ui-primitives.ts`.

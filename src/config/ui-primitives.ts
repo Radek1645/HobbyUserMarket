@@ -77,3 +77,15 @@ export const homeCategoryTabInactiveClass =
 
 /** Ikona v pilulce / tlačítku — 16px, barvu dědí z rodiče. */
 export const iconSmClass = "h-4 w-4";
+
+/** Štítek směru na kartě inzerátu — nabízím službu. */
+export const listingIntentOfferBadgeClass =
+  "inline-block max-w-full truncate rounded-full bg-emerald-700 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm";
+
+/** Štítek směru na kartě inzerátu — hledám člověka (práce/brigáda). */
+export const listingIntentDemandBadgeClass =
+  "inline-block max-w-full truncate rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm";
+
+/** Podkategorie na image-first kartě (vedle štítku směru). */
+export const listingCardSubcategoryBadgeClass =
+  "inline-block max-w-full truncate rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-medium text-gray-800 shadow-sm";

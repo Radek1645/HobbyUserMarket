@@ -24,7 +24,7 @@ Nabídka práce = `post` s `category_type = 'prace'`. Reakce uchazeče = sdílen
 | Sloupec | Hodnota pro `prace` | UI |
 |---------|---------------------|-----|
 | `condition_label` | `one_time` / `long_term` / `substitute` | Typ úvazku |
-| `price_type` | `fixed` / `negotiable` / `offer` | Odměna |
+| `price_type` | `fixed` / `negotiable` / `offer` | Hodinová mzda / fixní odměna / nabídněte odměnu |
 | `price_amount` | číslo | Mzda v Kč |
 | `listing_duration_days` | 1–365 | Platnost inzerátu |
 | `event_date` | **NULL** | Nepoužívá se |

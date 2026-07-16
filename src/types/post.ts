@@ -15,7 +15,10 @@ export type PostStatus =
   | "blocked"
   | "deleted";
 
-export type PostStatusReasonCode = "reports_threshold" | "moderation";
+export type PostStatusReasonCode =
+  | "reports_threshold"
+  | "moderation"
+  | "lifetime_max";
 
 export type PriceType =
   | "fixed"

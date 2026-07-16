@@ -3,6 +3,12 @@ import {
   getSubcategoryLabel,
 } from "@/config/categories";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { getListingIntentLabel } from "@/config/listing-intent";
+import {
+  listingCardSubcategoryBadgeClass,
+  listingIntentDemandBadgeClass,
+  listingIntentOfferBadgeClass,
+} from "@/config/ui-primitives";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingPath } from "@/lib/posts/listing-path";
@@ -18,12 +24,19 @@ type ListingCardProps = {
   priority?: boolean;
 };
 
+function intentBadgeClass(categoryType: PublicListingPreview["category_type"]) {
+  if (categoryType === "prace") return listingIntentDemandBadgeClass;
+  if (categoryType === "sluzby") return listingIntentOfferBadgeClass;
+  return listingCardSubcategoryBadgeClass;
+}
+
 export function ListingCard({
   listing,
   imageFirst = false,
   priority = false,
 }: ListingCardProps) {
   const categoryLabel = getCategoryLabel(listing.category_type);
+  const intentLabel = getListingIntentLabel(listing.category_type);
   const subcategory = getSubcategoryLabel(
     listing.category_type,
     listing.subcategory_slug,
@@ -32,6 +45,8 @@ export function ListingCard({
     listing.category_type,
     listing.price_type,
     listing.price_amount,
+    undefined,
+    { jobRewardPrefix: true },
   );
 
   const eventLabel = listing.event_date
@@ -71,9 +86,16 @@ export function ListingCard({
           )}
 
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-3 pb-3 pt-10">
-            <span className="inline-block max-w-full truncate rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-medium text-gray-800 shadow-sm">
-              {subcategory.label}
-            </span>
+            <div className="flex flex-wrap gap-1">
+              {intentLabel ? (
+                <span className={intentBadgeClass(listing.category_type)}>
+                  {intentLabel}
+                </span>
+              ) : null}
+              <span className={listingCardSubcategoryBadgeClass}>
+                {subcategory.label}
+              </span>
+            </div>
             <h2 className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-white">
               {listing.title}
             </h2>
@@ -105,6 +127,8 @@ export function ListingCard({
       ? `${listing.description.slice(0, 120).trim()}…`
       : listing.description;
 
+  const metaCategory = intentLabel ?? categoryLabel;
+
   return (
     <Link
       href={getListingPath(listing.slug)}
@@ -130,7 +154,7 @@ export function ListingCard({
 
       <div className="flex flex-1 flex-col p-4">
         <p className="text-xs text-gray-500">
-          {categoryLabel} · {subcategory.label}
+          {metaCategory} · {subcategory.label}
           {listing.distance_km != null ? ` · ${listing.distance_km} km` : ""}
         </p>
         <h2 className="mt-1 line-clamp-2 text-base font-semibold text-gray-900 group-hover:underline">

@@ -4,6 +4,7 @@ import type { PostStatusReasonCode } from "@/types/post";
 export const POST_STATUS_REASON = {
   reports_threshold: "reports_threshold",
   moderation: "moderation",
+  lifetime_max: "lifetime_max",
 } as const satisfies Record<PostStatusReasonCode, PostStatusReasonCode>;
 
 export const POST_STATUS_REASON_MESSAGES: Record<
@@ -14,6 +15,8 @@ export const POST_STATUS_REASON_MESSAGES: Record<
     "Inzerát byl nahlášen jako závadný třemi různými uživateli a byl skryt z veřejného zobrazení.",
   [POST_STATUS_REASON.moderation]:
     "Inzerát byl zablokován moderátorem, protože porušuje pravidla platformy nebo zákon.",
+  [POST_STATUS_REASON.lifetime_max]:
+    "Inzerát dosáhl maximální doby existence (365 dní od založení) a byl automaticky ukončen.",
 };
 
 export const BLOCKED_LISTING_RECOVERY_HINT =

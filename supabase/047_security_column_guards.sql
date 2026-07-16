@@ -2,6 +2,7 @@
 -- 047 — Security column guards (M3, M4)
 --   M3: uživatel nesmí sám nastavit company_ico_verified = true
 --   M4: payment_status / renew_count / expires_at mimo oprávněné toky
+--   (sloupec expiry_warning_for_expires_at chrání 048 — po nasazení 048 platí rozšířená verze)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------

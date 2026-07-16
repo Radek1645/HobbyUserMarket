@@ -1,7 +1,7 @@
 # Balíčky inzerce a ceník
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.0-fo · **Datum účinnosti:** 13.07.2026  
+**Verze:** 1.1-fo · **Datum účinnosti:** 16.07.2026  
 **Provozovatel:** Radek Horák, fyzická osoba · kontaktní e-mail: info@zapikolou.cz
 
 ---
@@ -27,8 +27,10 @@
 | Pravidlo | Vysvětlení |
 |----------|------------|
 | **1 publikace = 1 kredit** | Kredit se spotřebuje při **prvním** úspěšném zveřejnění daného inzerátu. |
+| **Kredit = jedna nabídka** | Kredit pokrývá **jednu konkrétní nabídku**. Úpravy téže nabídky kredit znovu neberou. Záměrná výměna za jinou nabídku v témže inzerátu je zakázána — viz [Pravidla inzerce](/podminky-inzerce). |
+| **Max. 365 dní od založení** | Technický strop: platnost včetně prodloužení nejvýše **365 dní od založení** — **není** garance, že platforma po celou dobu poběží (viz [VOP §8.3](/vop)). Po stropu inzerát zaniká; další nabídka = nová publikace. |
 | **Kredit se nevrací** | Smazání, archivace, skrytí majitelem nebo zablokování moderací **obnovu kreditu nezpůsobí**. |
-| **Opětovné zveřejnění** | U téhož inzerátu, který už kredit spotřeboval, další publikace kredit znovu nebere (např. pauza `hidden` → `active`). |
+| **Opětovné zveřejnění** | U téhož inzerátu, který už kredit spotřeboval, další publikace kredit znovu nebere (např. pauza `hidden` → `active`), dokud neuplyne max. životnost výše. |
 | **Sčítání balíčků** | Kredity z více balíčků nebo grantů se **sčítají**. |
 | **Drafty** | Koncept (`draft`) kredit nespotřebovává, dokud není inzerát zveřejněn. |
 

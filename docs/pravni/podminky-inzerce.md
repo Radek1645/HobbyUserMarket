@@ -1,13 +1,13 @@
 # Pravidla inzerce (kodex chování)
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.2 · **Datum účinnosti:** 13.07.2026
+**Verze:** 1.3 · **Datum účinnosti:** 16.07.2026
 
 ---
 
 ## TL;DR — v čem je pointa
 
-Inzerujte **slušně a pravdivě** — ať jde o zboží, službu, práci, nemovitost nebo událost. Zakázáno je nelegální obsah, duplicity a klamavé inzeráty. Po vyřízení nabídky inzerát smažte.
+Inzerujte **slušně a pravdivě** — ať jde o zboží, službu, práci, nemovitost nebo událost. Zakázáno je nelegální obsah, duplicity, klamavé inzeráty a **rotace různých nabídek** pod jedním kreditem. Po vyřízení nabídky inzerát smažte.
 
 ---
 
@@ -20,6 +20,20 @@ Jakmile nabídku vyřídíte nebo ji již nenabízíte, **inzerát neprodleně s
 ### Zákaz duplicit
 
 Jedna nabídka smí být na webu **pouze jednou**. Opakované vkládání stejné nabídky pod různými účty nebo v různých kategoriích je zakázáno.
+
+### Jedna publikace = jedna nabídka
+
+Kredit (publikace) se vztahuje na **jednu konkrétní nabídku** — jeden předmět, jednu službu, jednu pracovní pozici, jednu nemovitost nebo jednu událost.
+
+**Povoleno** je průběžně upravovat stejnou nabídku (cena, popis, fotografie, lokalita, drobné upřesnění), aniž by to samo o sobě spotřebovalo další kredit.
+
+**Zakázáno** je v již zveřejněném inzerátu záměrně nahradit původní nabídku **jinou** nabídkou (např. prodat kolo a do stejného inzerátu vložit stůl, nebo rotovat různé zboží pod jedním kreditem). Taková výměna se považuje za **zneužití lifetime modelu** a za porušení těchto Pravidel.
+
+Provozovatel může v takovém případě postupovat podle §4 a §5 těchto Pravidel a podle [VOP §4](/vop) — zejména inzerát zablokovat nebo odstranit, vyzvat uživatele k založení nové publikace (nový kredit) a při opakování omezit účet. Bližší pravidla spotřeby kreditů jsou v [Balíčcích inzerce](/balicky-inzerce).
+
+### Maximální doba existence inzerátu
+
+Inzerát smí být na platformě (včetně prodloužení platnosti) nejvýše **365 dní od data založení**. Po uplynutí této doby inzerát zaniká. Další nabídka vyžaduje novou publikaci dle [Balíčků inzerce](/balicky-inzerce).
 
 ### Zákaz přeprodeje prostoru
 
@@ -126,6 +140,7 @@ Provozovatel si vyhrazuje právo **zrušit automatické zablokování** i bez ú
 Opakované nebo závažné porušení pravidel může vést k:
 
 - zablokování nebo odstranění inzerátu,
+- povinnosti založit **novou publikaci** (spotřeba dalšího kreditu), pokud byla v jednom inzerátu vyměněna nabídka za jinou (viz §1 — Jedna publikace = jedna nabídka),
 - dočasnému nebo trvalému zablokování účtu,
 - oznámení příslušným orgánům, pokud to vyžaduje zákon.
 

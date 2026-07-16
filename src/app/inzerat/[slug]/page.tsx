@@ -12,6 +12,7 @@ import { ModeratorListingBar } from "@/components/mod/ModeratorListingBar";
 import { BackLink } from "@/components/navigation/BackLink";
 import { ListingJsonLd } from "@/components/seo/ListingJsonLd";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { getListingIntentLabel } from "@/config/listing-intent";
 import {
   getAdvertiserIcoDisplay,
   getAdvertiserPrimaryLabel,
@@ -151,6 +152,7 @@ export default async function ListingDetailPage({
   }));
 
   const categoryLabel = getCategoryLabel(post.category_type);
+  const intentLabel = getListingIntentLabel(post.category_type);
   const subcategory = getSubcategoryLabel(
     post.category_type,
     post.subcategory_slug,
@@ -186,8 +188,10 @@ export default async function ListingDetailPage({
   const priceAmountLabel =
     post.category_type === "prace"
       ? post.price_type === "negotiable"
-        ? "Orientační odměna"
-        : "Odměna"
+        ? "Fixní odměna"
+        : post.price_type === "fixed"
+          ? "Hodinová mzda"
+          : "Odměna"
       : isService
         ? post.price_type === "negotiable"
           ? "Orientační cena zakázky"
@@ -275,7 +279,9 @@ export default async function ListingDetailPage({
 
       <header className="mt-4">
         <p className="text-sm text-gray-500">
-          {categoryLabel} · {subcategory.label}
+          {intentLabel
+            ? `${intentLabel} · ${categoryLabel} · ${subcategory.label}`
+            : `${categoryLabel} · ${subcategory.label}`}
           {conditionText ? ` · ${conditionText}` : ""}
           {subcategory.isLegacy ? (
             <span className="text-gray-400"> (archivní kategorie)</span>

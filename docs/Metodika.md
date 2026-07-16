@@ -570,6 +570,19 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
   - **Upravit**,
   - **Smazat** (soft delete).
 
+### 9.1.1 Absolutní životnost (max. 365 dní od založení)
+
+- Kotva: `posts.created_at`. Inzerát včetně všech prodloužení nesmí mít `expires_at` za `created_at + N` dní (výchozí **N = 365**).
+- Konfigurace v DB: `public.listing_max_lifetime_days()` — změna jedním `CREATE OR REPLACE`. Zrcadlo v app: `src/config/listing-lifetime.ts`.
+- Po překročení stropu denní cron (`archive-expired` → `purge_listings_past_max_lifetime`) nastaví `status = deleted`, `status_reason_code = lifetime_max`.
+- UI: tlačítko Obnovit/Prodloužit zmizí, když už lifetime nezbývá. Migrace: `049_listing_max_lifetime.sql`.
+
+### 9.1.2 E-mail před expirací
+
+- Denní cron `/api/cron/listing-expiry-warning` (Vercel, 03:30) pošle majiteli e-mail, pokud aktivní inzerát expiruje do **3 dní**.
+- Idempotentní: sloupec `posts.expiry_warning_for_expires_at` = `expires_at`, pro které už výstraha odešla. Po prodloužení se `expires_at` změní → nová výstraha až blízko nového data.
+- Copy rozlišuje, zda ještě lze obnovit v rámci lifetime. Migrace: `048_listing_expiry_warning.sql` (+ úprava kandidátů v 049). Konfigurace: `src/config/listing-expiry.ts`.
+
 ### 9.2 Události
 
 - Platnost se **nevolí** — inzerát vyprší **den po datu konání** (`event_date + 1 den`).
@@ -881,6 +894,14 @@ Parametry
 - Při založení: **žlutý box** s upozorněním (nástěnka, ne agentura; firma/OSVČ má uvést typ úvazku a odměnu v popisu).
 - Volba **Vyžadovat CV nebo portfolio při odpovědi** — default vypnuto (brigády); zapnuto u odborných pozic.
 - Sloupec `posts.job_cv_required` (migrace `046`).
+
+**Typy odměny** (`PRACE_PRICE_TYPES` — stejné DB hodnoty jako u služeb):
+
+| Typ ve formuláři | DB | Zobrazení na kartě |
+|------------------|----|--------------------|
+| Hodinová mzda (Kč/h) | `fixed` | `odměna 250 Kč/h` |
+| Fixní odměna (Kč) | `negotiable` | `odměna 2 500 Kč` |
+| Nabídněte odměnu | `offer` | štítek bez částky |
 
 ### 12.5 Zboží ve stavu „Poškozené / na díly“
 

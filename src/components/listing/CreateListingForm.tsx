@@ -934,7 +934,7 @@ export function CreateListingForm({
                 label={
                   <>
                     {isJob
-                      ? "Mzda (Kč)"
+                      ? "Mzda (Kč/h)"
                       : isEvent
                         ? "Vstupné (Kč)"
                         : isService
@@ -958,7 +958,7 @@ export function CreateListingForm({
                 label={
                   <>
                     {isJob
-                      ? "Orientační odměna (Kč)"
+                      ? "Fixní odměna (Kč)"
                       : isService
                         ? "Orientační cena zakázky (Kč)"
                         : "Orientační cena (Kč)"}
@@ -974,9 +974,11 @@ export function CreateListingForm({
                 required
                 placeholder={isService ? "např. 3 000" : "např. 500"}
                 hint={
-                  isService
-                    ? "Orientační cena za celou zakázku — finální rozsah domluvíte se zákazníkem."
-                    : "Orientační částka — finální cenu domluvíte přímo se zájemcem."
+                  isJob
+                    ? "Celková odměna za úkol nebo brigádu — ne hodinová sazba."
+                    : isService
+                      ? "Orientační cena za celou zakázku — finální rozsah domluvíte se zákazníkem."
+                      : "Orientační částka — finální cenu domluvíte přímo se zájemcem."
                 }
               />
             ) : null}

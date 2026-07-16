@@ -34,6 +34,7 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
 
   const categoryType = body.categoryType?.trim();
   const isService = categoryType === "sluzby";
+  const isJob = categoryType === "prace";
   const label = body.priceTypeLabel?.trim() || priceType;
   const amount =
     typeof body.priceAmount === "number" && !Number.isNaN(body.priceAmount)
@@ -44,12 +45,18 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
     if (isService) {
       return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč/h. Do cleanedDescription vlož „${formatCzkAmount(amount)} Kč/h“ (nebo přirozeně zapracovanou hodinovou sazbu). Nepoužívej formulaci „Cena ${formatCzkAmount(amount)} Kč“ bez /h — jde o sazbu za hodinu, ne prodejní cenu věci. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
     }
+    if (isJob) {
+      return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč/h. Do cleanedDescription vlož „${formatCzkAmount(amount)} Kč/h“ nebo „odměna ${formatCzkAmount(amount)} Kč/h“. Nepoužívej formulaci bez /h — jde o hodinovou mzdu. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
+    }
     return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč. Do cleanedDescription vlož přímo „Cena ${formatCzkAmount(amount)} Kč.“ (nebo přirozeně zapracovanou do věty). Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
   }
 
   if (priceType === "negotiable" && amount != null) {
     if (isService) {
       return `Typ ceny z formuláře: ${label}, orientačně ${formatCzkAmount(amount)} Kč za celou zakázku. Uveď např. „od ${formatCzkAmount(amount)} Kč“ nebo „cena za zakázku od ${formatCzkAmount(amount)} Kč“. Nepoužívej formulaci jako prodejní cenu jedné věci. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
+    }
+    if (isJob) {
+      return `Typ ceny z formuláře: ${label}, fixní odměna ${formatCzkAmount(amount)} Kč za úkol/brigádu (ne za hodinu). Uveď např. „odměna ${formatCzkAmount(amount)} Kč“. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
     }
     return `Typ ceny z formuláře: ${label}, orientačně ${formatCzkAmount(amount)} Kč. Orientační cenu uveď v cleanedDescription přímo číslem. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
   }

@@ -85,6 +85,7 @@ Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
 | Nemovitosti — nejsme realitní zprostředkovatel | ✅ draft | [VOP §1.4](./vop-fo.md) |
 | GA4/GTM místo Facebook Pixel | ✅ | [GDPR §4](./ochrana-osobnich-udaju-fo.md), [cookies](./cookies.md) |
 | Pojistka proti zneužití hlášení (brigading) | ✅ | [VOP §4.5](./vop-fo.md), [Pravidla §4](./podminky-inzerce.md), [DSA §3](./dsa-kontaktni-centrum.md) |
+| Jedna publikace = jedna nabídka (zákaz rotace obsahu) | ✅ soft / bez kódu | [VOP §2.3](./vop-fo.md), [Pravidla §1](./podminky-inzerce.md), [Balíčky](./balicky-inzerce-fo.md) |
 | Pracovní inzeráty | ✅ draft | [Pravidla §2.1](./podminky-inzerce.md) |
 | AI disclaimer (kontrola před publikací) | ✅ draft | [Pravidla §3](./podminky-inzerce.md) |
 

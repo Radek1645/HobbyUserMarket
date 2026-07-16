@@ -18,64 +18,54 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 1. Ověření funkčnosti
 
-- [x] Prošel jsem **happy path** změněné oblasti v prohlížeči (přihlášený uživatel, reálná data)
-- [x] Ověřil jsem **regresi** u souvisejících flow (ne jen novou funkci)
-- [ ] U změn DB/RLS: ověřeno chování jako `authenticated`, ne jen v SQL editoru jako admin *(tato session — N/A)*
-- [ ] U AI moderace: test s fotkou + textem *(tato session — N/A)*
-- [x] V konzoli / terminálu **žádné nové chyby**, které session zavedla (hydration od Tag Assistant — ošetřeno `suppressHydrationWarning`)
-
-**Typické scénáře k rychlé kontrole** *(podle toho, co se měnilo)*:
-
-| Oblast | Minimální test |
-|--------|----------------|
-| GTM / cookie lišta | Lišta → Pouze nezbytné / Přijmout analytiku; GTM Preview consent stavy |
-| Search Console | DNS ověření; sitemap submitted |
+- [x] Happy path změněné oblasti (lifetime UI, intent badges, cena práce)
+- [x] Regrese souvisejících flow (obnovení / prodloužení skryté u stropu)
+- [x] DB migrace 048/049 nasazeny uživatelem
+- [x] AI moderace: redeploy `moderate-listing` (prompt `prace`)
+- [x] Terminál bez nových chyb ze session
 
 ---
 
-## 2. Nasazení infrastruktury *(pokud session měnila backend)*
+## 2. Nasazení infrastruktury *(backend session)*
 
-*(tato session — bez nových migrací SQL)*
-
-- [x] GTM container nasazen v produkci (`GTM-WGLNJRNK`)
-- [x] GA4 tag v GTM containeru (mimo repo)
-- [x] Env bez commitu secrets (GTM ID v kódu jako veřejný default)
+- [x] Migrace **047**, **048**, **049** — spuštěny v Supabase
+- [x] Edge `moderate-listing` — deploy
+- [x] Vercel cron + `CRON_SECRET` — beze změny (už nastaveno); nová cesta v `vercel.json`
 
 ---
 
-## 3. Dokumentace — co kam patří
+## 3. Dokumentace
 
-### Checklist dokumentace
-
-- [x] **Metodika** — §14 Cookie lišta / GTM; §8.5 Search Console; patička, `/cookies`
-- [x] **PRD** — v3.27, historie verzí, stav cookie consent + GTM
-- [x] **branding-a-domeny.md** — fáze 7 Search Console + GTM ✅
-- [x] **Stav_projektu/2026-07-14.md** — snapshot session
+- [x] **Metodika** — §9.1.1 lifetime, §9.1.2 expiry mail, §12.4 odměna práce
+- [x] **PRD** — v3.29, historie, datový model
+- [x] **Právní** — VOP / podmínky / balíčky (365 dní)
+- [x] **ui-prvky**, branding favicon
+- [x] **Stav_projektu/2026-07-16-vecer.md**
 
 ---
 
 ## 4. Snapshot session — `Stav_projektu/`
 
-- [x] Soubor `Stav_projektu/2026-07-14.md`
+- [x] Soubor `Stav_projektu/2026-07-16-vecer.md`
 - [x] Řádek v [`Stav_projektu/README.md`](../Stav_projektu/README.md)
 
 ---
 
 ## 5. Git — příprava a commity
 
-- [x] `git status` — bez `.env`, bez artefaktů
-- [x] Commit kódu (consent fix, sitemap `/cookies`, layout)
-- [x] Commit dokumentace (Metodika, PRD, Stav_projektu, branding checklist)
+- [ ] `git status` — bez `.env`, bez artefaktů
+- [ ] Commit kódu + docs
+- [ ] Push na `origin`
 
 ---
 
-## 6. Push do gitu *(poslední krok — uživatel)*
+## 6. Push do gitu *(poslední krok)*
 
 ```powershell
-git push origin main
+git push -u origin HEAD
 ```
 
-- [ ] Push proběhl bez chyby *(uživatel)*
+- [ ] Push proběhl bez chyby
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -85,11 +75,11 @@ git push origin main
 | Kritérium | Splněno |
 |-----------|:-------:|
 | Změna ověřená v UI / API | ✅ |
-| Migrace + EF nasazené (je-li třeba) | N/A |
+| Migrace + EF nasazené | ✅ |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit(y) na `main` | ✅ |
-| **Push na `origin`** | ☐ uživatel |
+| Commit(y) na `main` | ☐ |
+| **Push na `origin`** | ☐ |
 
 ---
 

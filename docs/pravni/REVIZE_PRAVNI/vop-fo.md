@@ -54,6 +54,8 @@ Za vadu se nepovažují:
 
 Konkrétní **balíčky, limity publikací a pravidla spotřeby kreditů** jsou vedeny mimo tento dokument na uvedeném odkazu. Provozovatel je oprávněn parametry balíčků aktualizovat se zveřejněním na webu. **Placené balíčky zatím nenabízíme** — po jejich zavedení budou platit pravidla ceníku a oznamování změn Podnikatelům dle tohoto článku (lhůta **15 dní** e-mailem před zhoršením podmínek, právo vypovědět smlouvu).
 
+Kredit se vztahuje na **jednu konkrétní nabídku**. Běžné úpravy téže nabídky kredit znovu nespotřebovávají. Platnost včetně prodloužení je nejvýše **365 dní od založení** inzerátu (technický strop životnosti na platformě, **nikoli** garance nepřetržitého provozu — viz čl. 8.3) — poté inzerát zaniká (viz [Balíčky inzerce](/balicky-inzerce)). Záměrná výměna obsahu inzerátu za **jinou** nabídku (zneužití lifetime modelu) je zakázána [Pravidly inzerce](/podminky-inzerce); Provozovatel může v takovém případě postupovat podle čl. 4 těchto VOP (zejména zablokování nebo odstranění inzerátu) a požadovat novou publikaci.
+
 ---
 
 ## 3. Práva k obsahu a ochrana značky
@@ -188,6 +190,14 @@ K používání platformy patří rovněž tyto dokumenty (v aktuálním znění
 ### 8.2 Aktualizace a souhlas
 
 Registrací nebo používáním platformy uživatel potvrzuje, že se seznámil s těmito VOP a souhlasí s nimi. Provozovatel může VOP aktualizovat. O **podstatných změnách** těchto VOP informuje Provozovatel uživatele e-mailem. Pro uživatele s profilem Podnikatele platí pevná lhůta **15 dní** od oznámení do nabytí účinnosti změn VOP. Lhůta se neuplatní pouze v případě, kdy Provozovatel mění podmínky na základě okamžité zákonné povinnosti nebo k odvrácení nepředvídaného kybernetického či podvodného rizika. Drobné technické úpravy, opravy překlepů a odkazy na externí ceníky či seznamy zakázaného obsahu (čl. 2.3, 4.2) podstatnou změnou nejsou, pokud nemění práva a povinnosti uživatele v zásadním rozsahu.
+
+### 8.3 Ukončení nebo omezení provozu platformy
+
+Provozovatel je oprávněn provoz platformy **kdykoli ukončit, pozastavit nebo podstatně omezit** (včetně trvalého vypnutí). Maximální platnost inzerátu dle čl. 2.3 (**nejvýše 365 dní**) je pouze technický strop — **nezakládá** právo na dostupnost inzerátu ani na provoz platformy po celou tuto dobu.
+
+Ukončením nebo podstatným omezením provozu zaniká možnost zveřejnění a prohlížení inzerátů. U **bezplatného** startovního rozsahu nevzniká uživateli nárok na náhradu, obnovu kreditů ani jiné peněžité plnění. Po zavedení **placených** balíčků se případné vypořádání řídí [Balíčky inzerce](/balicky-inzerce) a zákonnými právy spotřebitele.
+
+O plánovaném ukončení Provozovatel uživatele informuje přiměřeně předem (typicky e-mailem), pokud to okolnosti dovolí. U uživatelů s profilem Podnikatele se v rozsahu vyžadovaném nařízením (EU) 2019/1150 uplatní příslušné oznamovací lhůty.
 
 **Kontakt:** [e-mail provozovatele]
 

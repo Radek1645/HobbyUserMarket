@@ -1,14 +1,14 @@
 "use server";
 
+import { LISTING_EXTEND_DAYS } from "@/config/listing-lifetime";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { isListingQuotaExceededError } from "@/lib/listings/quota";
+import { clampExpiresAtToLifetime } from "@/lib/posts/listing-lifetime";
 import { getListingPath } from "@/lib/posts/listing-path";
 import { isListingExpired } from "@/lib/posts/listing-status";
-import { isListingQuotaExceededError } from "@/lib/listings/quota";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
-const EXTEND_DAYS = 30;
 
 type OwnedPost = {
   id: number;
@@ -17,6 +17,7 @@ type OwnedPost = {
   status: string;
   expires_at: string | null;
   renew_count: number;
+  created_at: string;
 };
 
 async function getOwnedPost(postId: number): Promise<OwnedPost | null> {
@@ -26,7 +27,7 @@ async function getOwnedPost(postId: number): Promise<OwnedPost | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("id, slug, user_id, status, expires_at, renew_count")
+    .select("id, slug, user_id, status, expires_at, renew_count, created_at")
     .eq("id", postId)
     .maybeSingle<OwnedPost>();
 
@@ -133,15 +134,25 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
     redirect("/moje-inzeraty");
   }
 
-  const now = Date.now();
+  const nowMs = Date.now();
   const currentExpiry = post.expires_at
     ? new Date(post.expires_at).getTime()
-    : now;
-  const base = new Date(Math.max(currentExpiry, now));
-  base.setDate(base.getDate() + EXTEND_DAYS);
+    : nowMs;
+  const proposed = new Date(Math.max(currentExpiry, nowMs));
+  proposed.setDate(proposed.getDate() + LISTING_EXTEND_DAYS);
+
+  const clamped = clampExpiresAtToLifetime(
+    post.created_at,
+    proposed,
+    new Date(nowMs),
+  );
+
+  if (!clamped || clamped.getTime() <= Math.max(currentExpiry, nowMs)) {
+    redirect("/moje-inzeraty?lifetimeError=1");
+  }
 
   const updates: Record<string, unknown> = {
-    expires_at: base.toISOString(),
+    expires_at: clamped.toISOString(),
     renew_count: post.renew_count + 1,
   };
 
@@ -160,6 +171,9 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
     console.error("extendListingBy30Days:", error);
     if (isListingQuotaExceededError(error.message)) {
       redirect("/moje-inzeraty?quotaError=1");
+    }
+    if (error.message?.includes("max lifetime")) {
+      redirect("/moje-inzeraty?lifetimeError=1");
     }
     redirect("/moje-inzeraty");
   }

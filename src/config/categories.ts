@@ -80,8 +80,8 @@ const PRACE_CONDITIONS: CategoryConfig["conditionLabels"] = [
 ];
 
 const PRACE_PRICE_TYPES: CategoryConfig["priceTypes"] = [
-  { value: "fixed", label: "Hodinová / fixní mzda (Kč)" },
-  { value: "negotiable", label: "Dohodou" },
+  { value: "fixed", label: "Hodinová mzda (Kč/h)" },
+  { value: "negotiable", label: "Fixní odměna (Kč)" },
   { value: "offer", label: "Nabídněte odměnu" },
 ];
 
