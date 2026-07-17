@@ -65,9 +65,9 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   },
   zbozi: {
     label: "Zboží",
-    headline: "Nakupujte a prodávejte u sousedů",
+    headline: "Nakupujte a prodávejte v okolí",
     subline:
-      "Od medu po kolo — věci z okolí, bez zbytečné omáčky a provizí.",
+      "Auta, oblečení, hobby i dětské věci — lokálně, bez zbytečné omáčky a provizí.",
     shellClass: "bg-emerald-50/40",
     heroClass: "bg-white/80 backdrop-blur-md",
     heroBorderClass: "border-emerald-200/60",
@@ -80,9 +80,9 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   },
   sluzby: {
     label: "Služby",
-    headline: "Pomocná ruka od lidí z okolí",
+    headline: "Nabízíte službu lidem v okolí",
     subline:
-      "Hledáte řemeslníka, doučování nebo sekání trávy? Sousedé jsou blíž než agentury.",
+      "Řemeslo, doučování, úklid nebo sekání trávy — inzerujte, co umíte, a najděte zákazníky blízko vás.",
     shellClass: "bg-sky-50/40",
     heroClass: "bg-white/80 backdrop-blur-md",
     heroBorderClass: "border-sky-200/60",
@@ -95,9 +95,9 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   },
   prace: {
     label: "Práce a brigády",
-    headline: "Lokální úkoly a přivýdělky",
+    headline: "Hledáte člověka na práci nebo brigádu",
     subline:
-      "Jednorázové projekty, záskoky i dlouhodobá výpomoc v docházkové vzdálenosti.",
+      "Inzerujte, koho potřebujete — jednorázový úkol, záskok i dlouhodobou výpomoc v okolí.",
     shellClass: "bg-indigo-50/40",
     heroClass: "bg-white/80 backdrop-blur-md",
     heroBorderClass: "border-indigo-200/60",
@@ -112,7 +112,7 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
     label: "Nemovitosti",
     headline: "Bydlení a prostory v okolí",
     subline:
-      "Prodej i pronájem garáží, pokojů nebo bytů přímo od lidí, bez provize realitkám.",
+      "Prodej i pronájem garáží, pokojů nebo bytů v okolí — od majitelů i realitek.",
     shellClass: "bg-cihla-50/70",
     heroClass: "bg-white/80 backdrop-blur-md",
     heroBorderClass: "border-cihla-900/20",
@@ -125,9 +125,9 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   },
   udalost: {
     label: "Události",
-    headline: "Sousedské akce a dění v okolí",
+    headline: "Akce a novinky blízko vás",
     subline:
-      "Garážové výprodeje, opékání špekáčků, sportovní zápasy nebo lokální trhy.",
+      "Sousedské akce, sport, trhy i promo kavárny, restaurace nebo pekárny — sdílejte, co se děje v okolí.",
     shellClass: "bg-rose-50/40",
     heroClass: "bg-white/80 backdrop-blur-md",
     heroBorderClass: "border-rose-200/60",

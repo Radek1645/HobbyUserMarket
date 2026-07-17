@@ -1,5 +1,6 @@
 "use client";
 
+import { VirtualPageviewTracker } from "@/components/analytics/VirtualPageviewTracker";
 import { UserProvider } from "@/components/auth/UserContext";
 import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
 import { CookieConsentProvider } from "@/components/consent/CookieConsentProvider";
@@ -20,6 +21,7 @@ export function AppShell({ user, children }: AppShellProps) {
     <UserProvider user={user}>
       <CookieConsentProvider>
         <VisitorLocationProvider>
+          <VirtualPageviewTracker />
           <SiteNoticeBar />
           <Header user={user} />
           <main className="mx-auto w-full max-w-5xl flex-1">{children}</main>

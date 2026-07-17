@@ -19,10 +19,10 @@ export const SITE_OPERATOR_NAME = "Radek Horák";
 export const SITE_OPERATOR_DATA_BOX_ID = "fxetq2k";
 
 export const SITE_DESCRIPTION =
-  "Inzeráty pro všechny. Lokální inzerce ve vašem okolí — zboží, služby, práce, nemovitosti i události. AI vytvoří inzerát do 2 minut.";
+  "Inzeráty a bazar pro všechny. Lokální inzerce ve vašem okolí — zboží, služby, práce, nemovitosti i události. AI vytvoří inzerát do 2 minut.";
 
 /** Krátký claim u loga v hlavičce. */
-export const SITE_TAGLINE = "Inzeráty pro všechny";
+export const SITE_TAGLINE = "Inzeráty a bazar pro všechny";
 
 /** SEO title homepage — klíčová slova + značka (vzor Bazoš/Sbazar). */
 export const SITE_SEO_TITLE = `${SITE_TAGLINE} | ${SITE_DISPLAY_NAME}`;

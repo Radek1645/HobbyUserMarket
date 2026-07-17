@@ -83,7 +83,14 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 
 ### 2.4 Filtrování podle kategorie
 
-- Na HP jsou záložky kategorií: **Vše**, **Zboží**, **Služby**, **Události**, **Nemovitosti** (podle implementace v `home-themes.ts`).
+- Na HP jsou záložky kategorií: **Vše**, **Zboží**, **Služby**, **Práce a brigády**, **Nemovitosti**, **Události** (copy a barvy v `home-themes.ts`).
+- Hero text u kategorie má jasný záměr nabídky:
+  - **Služby** — nabízím službu (řemeslo, doučování, úklid…).
+  - **Práce a brigády** — hledám člověka (úkol, záskok, výpomoc).
+  - **Události** — akce i novinky (sport, trhy, promo kavárny/restaurace/pekárny).
+  - **Nemovitosti** — prodej/pronájem od majitelů i realitek.
+  - **Zboží** — nákup/prodej v okolí (auta, oblečení, hobby, dětské…).
+- U záložky **Vše** je v subline odkaz **„doptá na detaily“** → `/jak-vytvorit-inzerat` (GTM `cta_home_create_listing_guide`).
 - Výběr kategorie omezí výpis na daný typ inzerátu — lokální logika (okruh, fallback) zůstává stejná.
 - URL může obsahovat parametr `?kategorie=…` pro sdílení konkrétního pohledu.
 
@@ -119,7 +126,7 @@ V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), 
 | URL | Účel |
 |-----|------|
 | `/co-je-zapikolou` | Co platforma je a není (inzertní nástěnka, ne e-shop) |
-| `/jak-vytvorit-inzerat` | Průvodce ve 4 krocích s ukázkou mobilního flow |
+| `/jak-vytvorit-inzerat` | Průvodce ve 4 krocích; přepínatelné demo scénáře (Elektronika / Kolo / Spotřebič) včetně fotek a OCR štítku |
 | `/kontakt` | Provozovatel (jméno, e-mail, datová schránka) |
 | `/cookies` | Zásady používání souborů cookie (právní text z `docs/pravni/cookies.md`) |
 
@@ -1025,6 +1032,8 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 | `src/components/analytics/GoogleTagManager.tsx` | Consent bootstrap + GTM snippet |
 | `src/components/consent/*` | Lišta, provider, odkaz v patičce |
 | `src/config/gtm-ids.ts` | `data-gtm-id` na CTA pro GTM click triggery |
+| `src/lib/analytics/virtual-pageview.ts` | SPA `virtual_pageview` do `dataLayer` (P35) |
+| `src/components/analytics/VirtualPageviewTracker.tsx` | Client navigace → page view po souhlasu |
 | `src/config/listing-form-ui.ts` | Povinná pole — hvězdička, legenda |
 | `src/config/listing-form-tips.ts` | Příklady v tipu u fotek podle kategorie |
 | `src/components/location/HeaderLocationPanel.tsx` | Panel polohy v hlavičce, zelená nápověda |
@@ -1036,7 +1045,13 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 
 V GTM adminu: zapnutý **Consent Overview**; GA4 tag s **Require consent** → `analytics_storage`; click trigger `[data-gtm-id^="cta_"]`.
 
-Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí stavy; po souhlasu **Příkaz Update pro souhlas**.
+**SPA page views (P35):** Custom Event trigger `virtual_pageview` → GA4 Event tag typu **page_view** (nebo Configuration s přepsanými poli). Mapovat Data Layer proměnné:
+- `page_path` → page_location / page_path
+- `page_title` → page_title
+
+Web pushuje event jen po client navigaci (např. HP → detail inzerátu) a jen když je analytický souhlas udělen. První načtení stránky měří standardní GA4 Configuration tag.
+
+Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí stavy; po souhlasu **Příkaz Update pro souhlas**; po kliknutí na kartu inzerátu event **`virtual_pageview`**.
 
 ---
 

@@ -321,7 +321,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **P35** | `ListingCard.tsx` / detail `/inzerat/[slug]`, `src/lib/analytics/`, GTM container | Klik na inzerát → detail se v GA4 **nezobrazí jako page view** (chybí sledování přechodu). | ⏳ **Priorita zítra (2026-07-15).** Po načtení detailu (nebo při navigaci) push do `dataLayer`: `dataLayer.push({ event: 'virtual_pageview', page_path: window.location.pathname, page_title: document.title });` — helper v kódu, volat jen po souhlasu s analytikou. V GTM: Custom Event trigger `virtual_pageview` → GA4 tag **page_view** (mapovat `page_path`, `page_title`). Ověřit v GTM Preview + GA4 DebugView. |
+| **P35** | `VirtualPageviewTracker`, `virtual-pageview.ts`, GTM container | Klik na inzerát → detail se v GA4 **nezobrazil** jako page view (SPA). | ✅ **2026-07-17.** Client navigace pushuje `virtual_pageview` + `page_path` / `page_title` (jen po souhlasu). V GTM: Custom Event `virtual_pageview` → GA4 **page_view**. Ověřit Preview + DebugView. |
 
 ### ✅ Co je UX/procesně dobře
 
@@ -377,6 +377,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | 2026-07-13 | **P33 ⏳** Data v EU — checklist v GDPR §5.1, `pravni/README.md`; není garantováno v kódu (AI → Gemini/OpenAI) |
 | 2026-07-14 | **P34 ⏳** Performance / LCP — preload první fotky, server hero, volitelně SSR grid; **L8 ⏳** favicon + OG; baseline LCP 1,3 s (green), delay ~1,2 s |
 | 2026-07-15 | **P35 ⏳** GA4 `virtual_pageview` při detailu inzerátu — dataLayer push + GTM trigger; priorita zítra |
+| 2026-07-17 | **P35 ✅** `VirtualPageviewTracker` + `virtual-pageview.ts`; Metodika §14.3; v GTM zbývá Custom Event → GA4 page_view |
 | 2026-07-16 | **Security hardening:** migrace **047** (M3/M4); M6 fail closed; M7 limity fotek EF; M8/M9 magic bytes; L1 zůstává 8 znaků (UX); L9 llms.txt escape; H2/P15/P10/P17 stavy; M10 částečně; **smoke test checklist** (A–D) v §0 |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

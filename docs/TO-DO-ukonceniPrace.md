@@ -18,44 +18,42 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 1. Ověření funkčnosti
 
-- [x] Happy path změněné oblasti (lifetime UI, intent badges, cena práce)
-- [x] Regrese souvisejících flow (obnovení / prodloužení skryté u stropu)
-- [x] DB migrace 048/049 nasazeny uživatelem
-- [x] AI moderace: redeploy `moderate-listing` (prompt `prace`)
+- [x] Happy path: HP copy + průvodce (session)
+- [x] P35: `virtual_pageview` v kódu (GTM Preview = uživatel po deployi)
 - [x] Terminál bez nových chyb ze session
 
 ---
 
-## 2. Nasazení infrastruktury *(backend session)*
+## 2. Nasazení infrastruktury *(frontend session)*
 
-- [x] Migrace **047**, **048**, **049** — spuštěny v Supabase
-- [x] Edge `moderate-listing` — deploy
-- [x] Vercel cron + `CRON_SECRET` — beze změny (už nastaveno); nová cesta v `vercel.json`
+- [x] Migrace — N/A
+- [x] Edge Functions — N/A
+- [x] Env / Resend / Vercel — N/A
+- [ ] GTM — Custom Event `virtual_pageview` → GA4 page_view *(uživatel v GTM adminu)*
 
 ---
 
 ## 3. Dokumentace
 
-- [x] **Metodika** — §9.1.1 lifetime, §9.1.2 expiry mail, §12.4 odměna práce
-- [x] **PRD** — v3.29, historie, datový model
-- [x] **Právní** — VOP / podmínky / balíčky (365 dní)
-- [x] **ui-prvky**, branding favicon
-- [x] **Stav_projektu/2026-07-16-vecer.md**
+- [x] **Metodika** — §2.4, §2.8, §14.3
+- [x] **PRD** — v3.30
+- [x] **TO-DO_Fable** — P35 ✅
+- [x] **Stav_projektu/2026-07-17.md**
 
 ---
 
 ## 4. Snapshot session — `Stav_projektu/`
 
-- [x] Soubor `Stav_projektu/2026-07-16-vecer.md`
+- [x] Soubor `Stav_projektu/2026-07-17.md`
 - [x] Řádek v [`Stav_projektu/README.md`](../Stav_projektu/README.md)
 
 ---
 
 ## 5. Git — příprava a commity
 
-- [x] `git status` — bez `.env`, bez artefaktů
-- [x] Commit kódu + docs (`17a31f7`)
-- [x] Push na `origin`
+- [ ] `git status` — bez `.env`, bez artefaktů
+- [ ] Commit kódu + docs
+- [ ] Push na `origin`
 
 ---
 
@@ -65,7 +63,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [x] Push proběhl bez chyby
+- [ ] Push proběhl bez chyby
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -74,20 +72,17 @@ git push -u origin HEAD
 
 | Kritérium | Splněno |
 |-----------|:-------:|
-| Změna ověřená v UI / API | ✅ |
-| Migrace + EF nasazené | ✅ |
+| Změna ověřená v UI / API | ✅ kód |
+| Migrace + EF nasazené | N/A |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit(y) na `main` | ✅ |
-| **Push na `origin`** | ✅ |
+| Commit na `main` | ☐ |
+| Push na `origin` | ☐ |
 
 ---
 
 ## Rychlé odkazy
 
-| Dokument | Role |
-|----------|------|
-| [`PRD_v3.md`](./PRD_v3.md) | Kanon — co a proč |
-| [`Metodika.md`](./Metodika.md) | Jak to prožije uživatel |
-| [`branding-a-domeny.md`](./branding-a-domeny.md) | Doména, GSC, GTM checklist |
-| [`Stav_projektu/`](../Stav_projektu/) | Deníček iterací |
+- Kanón: [`docs/PRD_v3.md`](./PRD_v3.md)
+- Metodika: [`docs/Metodika.md`](./Metodika.md)
+- Skill: [`.cursor/skills/ukonceni-prace/SKILL.md`](../.cursor/skills/ukonceni-prace/SKILL.md)

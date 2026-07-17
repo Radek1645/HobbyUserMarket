@@ -1,29 +1,43 @@
-import { CREATE_LISTING_GUIDE_DEMO, CREATE_LISTING_GUIDE_DEMO_IMAGE } from "@/config/create-listing-guide";
+import type { CreateListingGuideDemo } from "@/config/create-listing-guide";
 import { SITE_SHORT_NAME } from "@/config/site";
 import { MODERATION_APPROVED_UI } from "@/config/moderation";
 import { MobileScreenFrame } from "@/components/guide/MobileScreenFrame";
 import { CircleCheck, MapPin, Sparkles } from "lucide-react";
 import Image from "next/image";
 
-const demo = CREATE_LISTING_GUIDE_DEMO;
-
 function DemoListingPhoto({
+  demo,
   alt,
   className,
   sizes,
 }: {
+  demo: CreateListingGuideDemo;
   alt: string;
   className?: string;
   sizes: string;
 }) {
+  if (demo.imageSrc) {
+    return (
+      <Image
+        src={demo.imageSrc}
+        alt={alt}
+        fill
+        sizes={sizes}
+        className={className ?? "object-cover"}
+      />
+    );
+  }
+
   return (
-    <Image
-      src={CREATE_LISTING_GUIDE_DEMO_IMAGE}
-      alt={alt}
-      fill
-      sizes={sizes}
-      className={className ?? "object-cover"}
-    />
+    <div
+      className={`absolute inset-0 flex items-center justify-center ${demo.imagePlaceholderClass}`}
+      role="img"
+      aria-label={alt}
+    >
+      <span className="px-2 text-center text-[9px] font-medium text-gray-600">
+        {demo.tabLabel}
+      </span>
+    </div>
   );
 }
 
@@ -40,7 +54,11 @@ function MockStatusBar() {
   );
 }
 
-export function CreateListingGuideStep1Screen() {
+export function CreateListingGuideStep1Screen({
+  demo,
+}: {
+  demo: CreateListingGuideDemo;
+}) {
   return (
     <MobileScreenFrame caption="Ukázka formuláře v mobilu">
       <MockStatusBar />
@@ -67,16 +85,32 @@ export function CreateListingGuideStep1Screen() {
         <div className="grid grid-cols-2 gap-2">
           <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
             <DemoListingPhoto
-              alt="Ukázková fotka dětského kola v inzerátu"
+              demo={demo}
+              alt={demo.imageAlt}
               sizes="140px"
             />
             <span className="absolute left-1 top-1 rounded bg-gray-900/75 px-1 py-0.5 text-[8px] font-medium text-white">
               Hlavní
             </span>
           </div>
-          <div className="flex aspect-[4/3] items-center justify-center rounded-lg border-2 border-dashed border-neutral-400 bg-neutral-50 text-[9px] text-neutral-600">
-            + další fotka
-          </div>
+          {demo.labelImageSrc ? (
+            <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
+              <Image
+                src={demo.labelImageSrc}
+                alt={`Štítek s parametry — ${demo.tabLabel}`}
+                fill
+                sizes="140px"
+                className="object-cover"
+              />
+              <span className="absolute left-1 top-1 rounded bg-emerald-700/90 px-1 py-0.5 text-[8px] font-medium text-white">
+                Štítek
+              </span>
+            </div>
+          ) : (
+            <div className="flex aspect-[4/3] items-center justify-center rounded-lg border-2 border-dashed border-neutral-400 bg-neutral-50 text-[9px] text-neutral-600">
+              + další fotka
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between rounded-lg border border-gray-200 px-2 py-1.5 text-[10px]">
@@ -131,7 +165,11 @@ export function CreateListingGuideStep2Screen() {
   );
 }
 
-export function CreateListingGuideStep3Screen() {
+export function CreateListingGuideStep3Screen({
+  demo,
+}: {
+  demo: CreateListingGuideDemo;
+}) {
   return (
     <MobileScreenFrame caption="AI vám vylepšila inzerát!">
       <MockStatusBar />
@@ -140,7 +178,9 @@ export function CreateListingGuideStep3Screen() {
         <div className="relative rounded-xl border border-gray-200 bg-white p-3 shadow-lg">
           <div className="flex items-center gap-1.5 text-emerald-700">
             <Sparkles className="h-3.5 w-3.5" />
-            <p className="text-xs font-semibold text-gray-900">AI vám vylepšila inzerát!</p>
+            <p className="text-xs font-semibold text-gray-900">
+              AI vám vylepšila inzerát!
+            </p>
           </div>
           <p className="mt-1 text-[9px] leading-relaxed text-gray-600">
             AI může udělat chybu — před publikací si text zkontrolujte.
@@ -159,8 +199,11 @@ export function CreateListingGuideStep3Screen() {
               {demo.aiDescriptionIntro}
               <span className="mt-1 block border-t border-gray-200 pt-1 text-gray-600">
                 Parametry
-                <br />• Velikost kol: 20″
-                <br />• Stav: použité
+                {demo.parameters.map((parameter) => (
+                  <span key={parameter} className="block">
+                    • {parameter}
+                  </span>
+                ))}
               </span>
             </div>
           </div>
@@ -189,7 +232,11 @@ export function CreateListingGuideStep3Screen() {
   );
 }
 
-export function CreateListingGuideStep4Screen() {
+export function CreateListingGuideStep4Screen({
+  demo,
+}: {
+  demo: CreateListingGuideDemo;
+}) {
   return (
     <MobileScreenFrame caption="Hotový inzerát ve feedu">
       <MockStatusBar />
@@ -201,12 +248,13 @@ export function CreateListingGuideStep4Screen() {
         <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div className="relative aspect-[4/5] bg-gray-100">
             <DemoListingPhoto
-              alt="Ukázkový inzerát — dětské kolo ve feedu"
+              demo={demo}
+              alt={`${demo.imageAlt} ve feedu`}
               sizes="280px"
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-3 pb-3 pt-12">
               <span className="inline-block rounded-full bg-white/95 px-2 py-0.5 text-[9px] font-medium text-gray-800">
-                Sport a outdoor
+                {demo.feedBadge}
               </span>
               <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-white">
                 {demo.publishedTitle}

@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.29  
+> **Verze dokumentu:** v3.30  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`047_security_column_guards.sql`](../supabase/047_security_column_guards.sql) · [`048_listing_expiry_warning.sql`](../supabase/048_listing_expiry_warning.sql) · [`049_listing_max_lifetime.sql`](../supabase/049_listing_max_lifetime.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-16
+> **Datum:** 2026-07-17
 
 ---
 
@@ -661,6 +661,7 @@ Každé významné CTA v UI musí mít **stabilní identifikátor** pro Google T
 | `cta_header_sign_in` | Header menu — Přihlásit se |
 | `cta_header_sign_out` | Header menu — Odhlásit |
 | `cta_home_create_listing` | HP hero — Založit inzerát |
+| `cta_home_create_listing_guide` | HP hero (Vše) — odkaz „doptá na detaily“ → `/jak-vytvorit-inzerat` |
 | `cta_home_category_tab` | HP — záložka kategorie (+ `data-gtm-category`) |
 | `cta_listing_card_open` | Klik na kartu inzerátu (+ `data-gtm-listing-id`) |
 | `cta_inquiry_open` / `cta_inquiry_submit` | Poptávkový formulář |
@@ -712,6 +713,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.27 | 2026-07-14 | **GTM + cookie lišta:** container `GTM-WGLNJRNK`, Consent Mode v2 (`gtag`), vlastní banner bez CMP, `/cookies`, patička „Nastavení cookies“; Search Console ověření DNS; Metodika §14 |
 | v3.28 | 2026-07-14 | **UX session (večer):** formulář inzerátu (povinná pole, tipy k fotkám, amber boxy nemovitosti/práce); `job_cv_required` + migrace **046**; AI modal (volitelné otázky, kompaktní layout); lokace bez auto-popup + zelená nápověda; cookie/FAB mobil; Resend `@zapikolou.cz`; Metodika §6.6–6.7, §8.3, §12.4 |
 | v3.29 | 2026-07-16 | **Životnost + expiry mail:** migrace **048**/**049** — absolutní strop 365 dní od `created_at` (`lifetime_max`), e-mail 3 dny před expirací (cron `listing-expiry-warning`); UI badge Nabízím/Hledám, odměna u práce; právní docs 365 dní; favicon zP; Metodika §9.1.1–9.1.2 |
+| v3.30 | 2026-07-17 | **HP copy + průvodce + P35:** `SITE_TAGLINE` „Inzeráty a bazar pro všechny“; hero role u Služby/Práce/Události/Nemovitosti/Zboží; `/jak-vytvorit-inzerat` scénáře + demo fotky; GTM `cta_home_create_listing_guide`; SPA `virtual_pageview` (P35); Metodika §2.4 / §2.8 / §14.3 |
 
 ---
 

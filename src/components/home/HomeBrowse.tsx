@@ -2,6 +2,7 @@
 
 import { useCurrentUser } from "@/components/auth/UserContext";
 import { HomeListings } from "@/components/home/HomeListings";
+import { CREATE_LISTING_GUIDE_PATH } from "@/config/create-listing-guide";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   CATEGORIES_CONFIG,
@@ -16,11 +17,15 @@ import {
 } from "@/config/ui-primitives";
 import { normalizeSearchQuery } from "@/lib/posts/search-query";
 import type { PublicListingPreview } from "@/types/post";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
 const aiHighlightClass =
   "font-[850] text-[1.1em] tracking-[0.5px] text-[#00875a]";
+
+const guideLinkClass =
+  "font-medium text-zinc-900 underline decoration-emerald-600/50 underline-offset-2 transition hover:decoration-emerald-700";
 
 function HeroHeadline({ headline }: { headline: string }) {
   return (
@@ -41,6 +46,24 @@ function HeroSubline({
 
   if (!highlightAi) {
     return <p className={baseClass}>{subline}</p>;
+  }
+
+  const detailMatch = subline.match(/^(AI)( se )(doptá na detaily)(.*)$/);
+  if (detailMatch) {
+    return (
+      <p className={baseClass}>
+        <span className={aiHighlightClass}>{detailMatch[1]}</span>
+        {detailMatch[2]}
+        <Link
+          href={CREATE_LISTING_GUIDE_PATH}
+          className={guideLinkClass}
+          {...gtmCtaProps(GTM_CTA.HOME_CREATE_LISTING_GUIDE)}
+        >
+          {detailMatch[3]}
+        </Link>
+        {detailMatch[4]}
+      </p>
+    );
   }
 
   const aiMatch = subline.match(/^(AI)(\s.*)$/);
