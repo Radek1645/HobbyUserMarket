@@ -96,7 +96,8 @@ Následující kategorie jsou **zakázané nebo omezené** a kontroluje je autom
 | Léky na předpis | Prodej léčiv na předpis bez oprávnění |
 | Alkohol a tabák pro nezletilé | Nabídka explicitně cílená na nezletilé |
 | Fotografie dětí a adolescentů | Snímky s rozpoznatelným nezletilým (kromě věcí bez tváře) |
-| Nelegální hazard | Hazard bez licence |
+| Hazard a sázkové produkty | Sázení, loterie, stírací losy, tipování (např. Sazka, Tipsport), kasino — obecně, nejen bez licence |
+| Finanční produkty a služby | Pojištění, půjčky, úvěry, hypotéky, leasing a obdobné finanční nabídky |
 
 ### 2.3 Spodní a intimní prádlo (Móda a oblečení)
 

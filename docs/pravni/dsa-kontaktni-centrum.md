@@ -26,7 +26,7 @@ V souladu s **nařízením Evropského parlamentu a Rady (EU) 2022/2065 (DSA)** 
 
 ## 2. Mechanismus hlášení nelegálního obsahu (Notice and Action)
 
-Pokud se domníváte, že konkrétní inzerát porušuje zákon (např. prodej kradeného zboží, porušení autorských práv, zakázané zboží), využijte **elektronický formulář** na této stránce [formulář — doplnit odkaz / embed].
+Pokud se domníváte, že konkrétní inzerát porušuje zákon (např. prodej kradeného zboží, porušení autorských práv, zakázané zboží), využijte **elektronický formulář** [Nahlásit inzerát](/nahlasit).
 
 Hlášení musí obsahovat:
 

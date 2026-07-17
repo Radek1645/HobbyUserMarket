@@ -8,9 +8,11 @@ import {
 } from "@/config/create-listing-guide";
 import {
   COOKIES_PATH,
+  DSA_CONTACT_PATH,
   LEGAL_UI,
   LISTING_PACKAGES_PATH,
   MARKETING_CONSENT_PATH,
+  REPORT_LISTING_PATH,
   VOP_PATH,
 } from "@/config/legal";
 import { LLMS_TXT_PATH, LLMS_TXT_UI } from "@/config/llms-txt";
@@ -43,7 +45,8 @@ export const FOOTER_DOCUMENT_LINKS = [
   { href: COOKIES_PATH, label: LEGAL_UI.cookiesLinkLabel },
   { href: MARKETING_CONSENT_PATH, label: LEGAL_UI.marketingConsentLinkLabel },
   { href: LISTING_PACKAGES_PATH, label: LEGAL_UI.listingPackagesLinkLabel },
-  { href: "/nahlasit", label: REPORT_UI.footerLinkLabel },
+  { href: DSA_CONTACT_PATH, label: LEGAL_UI.dsaLinkLabel },
+  { href: REPORT_LISTING_PATH, label: REPORT_UI.footerLinkLabel },
 ] as const;
 
 export const FOOTER_CONTACT_LINKS = [

@@ -7,11 +7,13 @@ export type LegalDocumentSlug =
   | "vop"
   | "balicky-inzerce"
   | "podminky-inzerce"
-  | "cookies";
+  | "cookies"
+  | "dsa";
 
 const STATIC_FILE_BY_SLUG: Partial<Record<LegalDocumentSlug, string>> = {
   "podminky-inzerce": "podminky-inzerce.md",
   cookies: "cookies.md",
+  dsa: "dsa-kontaktni-centrum.md",
 };
 
 const VARIANT_FILE_BY_SLUG: Partial<

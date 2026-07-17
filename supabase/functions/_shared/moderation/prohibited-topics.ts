@@ -96,9 +96,39 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
   },
   {
     id: "gambling_illegal",
-    label: "Nelegální hazard",
+    label: "Hazard a sázkové produkty",
     criteria:
-      "Organizace hazardních her bez licence, sázení mimo legální rámec.",
+      "Nabídka nebo prodej hazardu a sázkových produktů — např. sázení, loterie, stírací losy, tipování (Sazka, Tipsport a podobně), kasino, automatové hry, online hazard. Platí i při prodeji fyzických losů či účasti ve hře. Nejde jen o provoz bez licence — zakázána je inzerce hazardu a sázkových produktů obecně.",
+    keywords: [
+      "sazka",
+      "tipsport",
+      "fortuna",
+      "chance",
+      "stírací los",
+      "losy",
+      "sázení",
+      "sazky",
+      "kasino",
+      "casino",
+    ],
+  },
+  {
+    id: "financial_products",
+    label: "Finanční produkty a služby",
+    criteria:
+      "Nabídka nebo zprostředkování finančních produktů a služeb — např. pojištění, půjčky, úvěry, hypotéky, leasing, spoření, investiční produkty, směnárenské služby nebo podobné finanční nabídky určené třetím osobám. Výjimka: běžný prodej hmotné věci (auto, elektronika) není finanční produkt.",
+    keywords: [
+      "půjčka",
+      "pujcka",
+      "úvěr",
+      "uver",
+      "hypotéka",
+      "hypoteka",
+      "pojištění",
+      "pojisteni",
+      "leasing",
+      "quick půjčka",
+    ],
   },
 ] as const;
 

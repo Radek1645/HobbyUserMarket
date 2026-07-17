@@ -7,6 +7,7 @@ export const LISTING_PACKAGES_PATH = "/balicky-inzerce";
 export const MARKETING_CONSENT_PATH = "/marketingovy-souhlas";
 export const COOKIES_PATH = "/cookies";
 export const DSA_CONTACT_PATH = "/dsa";
+export const REPORT_LISTING_PATH = "/nahlasit";
 
 /** Verze VOP v okamžiku registrace — sync s docs/pravni/vop-*.md. */
 export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.5-osvc" : "1.5-fo";
@@ -32,6 +33,7 @@ export const LEGAL_UI = {
     : "Limity inzerce",
   marketingConsentLinkLabel: "Marketingový souhlas",
   cookiesLinkLabel: "Zásady cookies",
+  dsaLinkLabel: "DSA kontaktní centrum",
   registrationVopConsent:
     "Souhlasím s všeobecnými obchodními podmínkami. Bez tohoto souhlasu účet nezaložíme.",
   registrationMarketingConsent:
