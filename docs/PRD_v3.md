@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.30  
+> **Verze dokumentu:** v3.31  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
@@ -111,6 +111,7 @@ Modul je hotový, když platí všechny body:
 
 - Moderace a AI modal: [`src/config/moderation/messages.ts`](../src/config/moderation/messages.ts)
 - Hero a kategorie na HP: [`src/config/home-themes.ts`](../src/config/home-themes.ts)
+- SEO blurb pod výpisem: [`src/config/home-seo.ts`](../src/config/home-seo.ts)
 - Ostatní texty v komponentách musí §1.6 dodržovat
 
 ### 1.7 Definition of Done (v0.6 — Monetizace bankovním převodem)
@@ -419,9 +420,10 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 ### 5.1 HomePage (HP)
 
 * **Hero sekce:** Jasný, úderný value proposition (Kup/Prodej/Nabídni v okolí).
-* **AI Marketingový Hook (USP):**
-  * V Hero sekci bude dominantně komunikována hlavní konkurenční výhoda oproti Bazošu/FB/sReality: *„Zadejte inzerát do dvou minut. Stačí hrubý nástřel — z něj AI připraví srozumitelný text. Bez románu, bez stresu.“*
-  * Tento claim bude optimalizován pro SEO jako H1/H2 podpora pro klíčová slova spojená s rychlou, bezbolestnou lokální inzercí. Copy dle §1.6; implementace v `src/config/home-themes.ts`.
+* **AI Marketingový Hook (USP) + SEO:**
+  * Záložka **Vše** — H1: *„Online bazar, kde stačí fotka a pár slov.“* (klíčové slovo **bazar** v hlavním nadpisu). Subline s AI USP a odkazem na průvodce. Copy v `src/config/home-themes.ts`.
+  * Pod výpisem inzerátů SEO body text (`src/config/home-seo.ts`, `HomeSeoBlurb`) — lokální bazar / inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
+  * Wordmark je textový; `SITE_HOME_ARIA_LABEL` zahrnuje tagline se slovem bazar.
 * **Geolokační logika:**
   1. Web primárně požádá o polohu přes HTML5 Geolocation API.
   2. **Success:** Souřadnice návštěvníka se uloží do `localStorage`. PostGIS RPC `get_nearby_posts` kaskádově zkouší okruhy **15 → 30 → 50 → 60 km** (konfigurovatelné v `src/config/app.ts`), dokud nenajde alespoň **6** aktivních inzerátů. V Hero sekci se zobrazí **6–9** nejbližších. Pokud ani v **60 km** není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** (`get_recent_posts`) s hláškou, že v okolí zatím nic není.
@@ -714,6 +716,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.28 | 2026-07-14 | **UX session (večer):** formulář inzerátu (povinná pole, tipy k fotkám, amber boxy nemovitosti/práce); `job_cv_required` + migrace **046**; AI modal (volitelné otázky, kompaktní layout); lokace bez auto-popup + zelená nápověda; cookie/FAB mobil; Resend `@zapikolou.cz`; Metodika §6.6–6.7, §8.3, §12.4 |
 | v3.29 | 2026-07-16 | **Životnost + expiry mail:** migrace **048**/**049** — absolutní strop 365 dní od `created_at` (`lifetime_max`), e-mail 3 dny před expirací (cron `listing-expiry-warning`); UI badge Nabízím/Hledám, odměna u práce; právní docs 365 dní; favicon zP; Metodika §9.1.1–9.1.2 |
 | v3.30 | 2026-07-17 | **HP copy + průvodce + P35:** `SITE_TAGLINE` „Inzeráty a bazar pro všechny“; hero role u Služby/Práce/Události/Nemovitosti/Zboží; `/jak-vytvorit-inzerat` scénáře + demo fotky; GTM `cta_home_create_listing_guide`; SPA `virtual_pageview` (P35); Metodika §2.4 / §2.8 / §14.3 |
+| v3.31 | 2026-07-17 | **HP SEO bazar:** H1 Vše „Online bazar, kde stačí fotka a pár slov.“; `HomeSeoBlurb` pod listingy (`home-seo.ts`); `SITE_HOME_ARIA_LABEL` s tagline; Metodika §2.1 / §2.4; §5.1 sync |
 
 ---
 

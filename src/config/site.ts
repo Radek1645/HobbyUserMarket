@@ -27,7 +27,7 @@ export const SITE_TAGLINE = "Inzeráty a bazar pro všechny";
 /** SEO title homepage — klíčová slova + značka (vzor Bazoš/Sbazar). */
 export const SITE_SEO_TITLE = `${SITE_TAGLINE} | ${SITE_DISPLAY_NAME}`;
 
-export const SITE_HOME_ARIA_LABEL = `${SITE_DISPLAY_NAME} — úvodní stránka`;
+export const SITE_HOME_ARIA_LABEL = `${SITE_DISPLAY_NAME} — ${SITE_TAGLINE}`;
 
 /** Veřejná verze platformy (zobrazená v patičce). */
 export const SITE_VERSION = "0.1";

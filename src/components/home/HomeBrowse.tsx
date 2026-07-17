@@ -2,6 +2,7 @@
 
 import { useCurrentUser } from "@/components/auth/UserContext";
 import { HomeListings } from "@/components/home/HomeListings";
+import { HomeSeoBlurb } from "@/components/home/HomeSeoBlurb";
 import { CREATE_LISTING_GUIDE_PATH } from "@/config/create-listing-guide";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
@@ -179,6 +180,8 @@ export function HomeBrowse({
           initialListings={initialListings}
           initialListingsCategory={initialListingsCategory}
         />
+
+        <HomeSeoBlurb />
       </div>
     </div>
   );

@@ -44,8 +44,9 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 ### 2.1 Zobrazení homepage (HP)
 
 1. Návštěvník otevře úvodní stránku `/`.
-2. V hero sekci vidí hlavní sdělení: rychlá lokální inzerce s pomocí AI (značka **zaPikolou.cz** v hlavičce a metadatech).
+2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); značka **zaPikolou.cz** a tagline v hlavičce.
 3. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou, názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo).
+4. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
 
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
 
@@ -85,12 +86,13 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 
 - Na HP jsou záložky kategorií: **Vše**, **Zboží**, **Služby**, **Práce a brigády**, **Nemovitosti**, **Události** (copy a barvy v `home-themes.ts`).
 - Hero text u kategorie má jasný záměr nabídky:
+  - **Vše** — H1 „Online bazar, kde stačí fotka a pár slov.“; v subline odkaz **„doptá na detaily“** → `/jak-vytvorit-inzerat` (GTM `cta_home_create_listing_guide`).
   - **Služby** — nabízím službu (řemeslo, doučování, úklid…).
   - **Práce a brigády** — hledám člověka (úkol, záskok, výpomoc).
   - **Události** — akce i novinky (sport, trhy, promo kavárny/restaurace/pekárny).
   - **Nemovitosti** — prodej/pronájem od majitelů i realitek.
   - **Zboží** — nákup/prodej v okolí (auta, oblečení, hobby, dětské…).
-- U záložky **Vše** je v subline odkaz **„doptá na detaily“** → `/jak-vytvorit-inzerat` (GTM `cta_home_create_listing_guide`).
+- Pod výpisem vždy SEO blok (`home-seo.ts`) s klíčovými slovy bazar / inzerce.
 - Výběr kategorie omezí výpis na daný typ inzerátu — lokální logika (okruh, fallback) zůstává stejná.
 - URL může obsahovat parametr `?kategorie=…` pro sdílení konkrétního pohledu.
 

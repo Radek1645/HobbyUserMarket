@@ -50,7 +50,7 @@ export const HOME_CATEGORY_ORDER: HomeBrowseCategory[] = CATEGORIES_CONFIG.map(
 export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   all: {
     label: "Vše",
-    headline: "Stačí fotka a pár slov.",
+    headline: "Online bazar, kde stačí fotka a pár slov.",
     subline:
       "AI se doptá na detaily a vytvoří inzerát do 2 minut. Rovnou pro lidi z tvého okolí.",
     shellClass: "bg-zinc-50",
