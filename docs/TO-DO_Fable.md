@@ -28,7 +28,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 **Top věci k řešení:**
 
-0. **Redeploy Edge `moderate-listing`** (P9 timeout + P8) + **smoke test** migrace 047.
+0. **Smoke test** migrace 047 (Edge `moderate-listing` s P8/P9 už nasazeno).
 1. **P33 ops** — podpis Resend DPA; revize GDPR právníkem (sending region EU ✅).
 2. **Site Notice (U13)** — otestovat Vercel env; zvýraznit `maintenance`.
 3. **Další UX** — U4, U6–U15, U17–U20, U22–U28 dle potřeby.
