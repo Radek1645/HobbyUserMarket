@@ -22,16 +22,19 @@ import {
   buildPendingConsentMetadata,
 } from "@/lib/auth/persist-registration-consents";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
+import {
+  DUPLICATE_EMAIL_MESSAGE,
+  mapAuthError,
+} from "@/lib/auth/map-auth-error";
 import { PASSWORD_MIN_LENGTH } from "@/config/app";
 import { redirect } from "next/navigation";
 
 export type AuthFormState = {
   error?: string;
   success?: string;
+  /** E-mail pro opětovné odeslání ověření (U21). */
+  email?: string;
 };
-
-const DUPLICATE_EMAIL_MESSAGE =
-  "Účet s tímto e-mailem už existuje. Přihlaste se nebo obnovte heslo.";
 
 function isDuplicateEmailSignup(user: { identities?: unknown[] | null } | null): boolean {
   return user != null && (user.identities?.length ?? 0) === 0;
@@ -47,60 +50,6 @@ function readPassword(formData: FormData): string {
 
 function readNextPath(formData: FormData): string {
   return sanitizeInternalPath(String(formData.get("next") ?? "/"));
-}
-
-function mapAuthError(message: string): string {
-  const lower = message.toLowerCase();
-
-  if (lower.includes("password")) {
-    return mapPasswordError(message);
-  }
-
-  if (lower.includes("invalid login credentials")) {
-    return "Nesprávný e-mail nebo heslo.";
-  }
-
-  if (lower.includes("email not confirmed")) {
-    return "E-mail ještě není ověřený. Zkontrolujte schránku a klikněte na odkaz v e-mailu.";
-  }
-
-  if (
-    lower.includes("user already registered") ||
-    lower.includes("already registered") ||
-    lower.includes("already exists") ||
-    lower.includes("email_exists")
-  ) {
-    return DUPLICATE_EMAIL_MESSAGE;
-  }
-
-  return message;
-}
-
-function mapPasswordError(message: string): string {
-  const lower = message.toLowerCase();
-
-  if (lower.includes("different from the old password")) {
-    return "Nové heslo se musí lišit od původního.";
-  }
-
-  if (lower.includes("pwned") || lower.includes("have been compromised")) {
-    return "Zvolené heslo je příliš slabé nebo bylo dříve kompromitované. Zkuste jiné.";
-  }
-
-  const minMatch = message.match(/at least\s+(\d+)\s+characters?/i);
-  if (minMatch?.[1]) {
-    return `Heslo musí mít alespoň ${minMatch[1]} znaků.`;
-  }
-
-  if (lower.includes("should contain") || lower.includes("must contain")) {
-    return "Heslo nesplňuje požadavky na složitost. Zkuste delší heslo s kombinací písmen, číslic a speciálních znaků.";
-  }
-
-  if (lower.includes("weak password")) {
-    return "Heslo je příliš slabé. Zkuste delší heslo s kombinací písmen, číslic a speciálních znaků.";
-  }
-
-  return "Heslo nesplňuje bezpečnostní požadavky. Zkuste jiné.";
 }
 
 async function redirectAfterAuth(nextPath: string) {
@@ -142,14 +91,20 @@ export async function signInWithGoogle(nextPath = "/") {
   });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    redirect(
+      `/login?error=${encodeURIComponent(mapAuthError(error.message))}`,
+    );
   }
 
   if (data.url) {
     redirect(data.url);
   }
 
-  redirect("/login?error=oauth");
+  redirect(
+    `/login?error=${encodeURIComponent(
+      mapAuthError("oauth"),
+    )}`,
+  );
 }
 
 export async function signInWithEmail(
@@ -226,6 +181,35 @@ export async function signUpWithEmail(
   return {
     success:
       "Účet je vytvořený. Ověřte e-mail kliknutím na odkaz v doručené poště — bez toho se nepřihlásíte.",
+    email,
+  };
+}
+
+/** Znovu odešle ověřovací e-mail po registraci (U21). */
+export async function resendSignupVerificationEmail(
+  email: string,
+): Promise<AuthFormState> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) {
+    return { error: "Chybí e-mail pro opětovné odeslání." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: normalized,
+    options: {
+      emailRedirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent("/onboarding")}`,
+    },
+  });
+
+  if (error) {
+    return { error: mapAuthError(error.message) };
+  }
+
+  return {
+    success: "Ověřovací e-mail jsme znovu odeslali. Zkontrolujte schránku.",
+    email: normalized,
   };
 }
 

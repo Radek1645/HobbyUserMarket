@@ -28,12 +28,12 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 **Top věci k řešení:**
 
-0. **Nasadit migraci 047** + redeploy Edge `moderate-listing` + **smoke test** (níže).
-1. **M10** — reziduální prompt injection (ohraničení + guard už běží).
-2. **H2 reziduum** — Turnstile/hCaptcha u `/api/inquiry` (volitelné).
-3. **Site Notice** — otestovat Vercel env; zvýraznit lištu `maintenance`.
-4. **P8 / U1** — Technické selhání AI ≠ obsahové zamítnutí.
-5. **P20–P22** — GDPR texty marketingu / OAuth VOP (souhlasy v DB z 044).
+0. **Redeploy Edge `moderate-listing`** (P9 timeout + P8) + **smoke test** migrace 047.
+1. **P33 ops** — podpis Resend DPA; revize GDPR právníkem (sending region EU ✅).
+2. **Site Notice (U13)** — otestovat Vercel env; zvýraznit `maintenance`.
+3. **Další UX** — U4, U6–U15, U17–U20, U22–U28 dle potřeby.
+4. **P32** — P2B e-maily 15/30 dní (před prvním IČO).
+5. **M10** — reziduální prompt injection.
 
 ### Smoke test — migrace 047 + `moderate-listing` (2026-07-16)
 
@@ -187,21 +187,21 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
 | ~~**P1**~~ | ~~`actions/posts.ts`~~ | ~~Chybí DB stavy moderace; inzerát jde rovnou na `active`.~~ | ✅ **Vyřešeno s H1** (migrace 027) — insert jde do `draft`, na `active` jen přes `publish_approved_post` po ověření approval tokenu; schválení perzistováno v `moderation_approvals`. |
-| **P2** | `actions/posts.ts` (89–109) | Částečné selhání: řádek postu se vloží první; když selže `syncListingImagesFromForm`, zůstane **orphan inzerát bez fotek**. | Transakce nebo smazání postu při chybě uploadu; nabídnout „opakovat upload“ v `moje-inzeraty`. |
-| **P3** | `actions/listing-management.ts` | `deleteListing` je jen soft-delete; **žádný úklid Storage** (`post_images` + bucket objekty). Migrace **031** opravila rollback soft-delete při chybě storage cleanup a publish-gate bypass pro `deleted`. | Při delete smazat soubory + řádky, nebo scheduled janitor pro `deleted`. |
-| **P4** | chybí migrace cronu + PRD §9 | Chybí denní cron `active`→`archived`. Majitel vidí expirovaný inzerát jako „Aktivní“, veřejně už skrytý. | pg_cron/Edge Function dle PRD; sladit UI stav s expirací. |
+| ~~**P2**~~ | `actions/posts.ts` | ~~Orphan draft při chybě uploadu fotek.~~ | ✅ Soft-delete draftu při `imageResult.error` (Storage přes `trg_posts_cleanup_storage`). |
+| ~~**P3**~~ | `listing-management.ts`, migrace **031** | ~~Soft-delete bez úklidu Storage.~~ | ✅ Trigger `cleanup_post_storage` při `status → deleted`. Reziduum: řádky `post_images` mohou zůstat. |
+| ~~**P4**~~ | `035`/`049`, `/api/cron/archive-expired`, `vercel.json` | ~~Chybí cron `active`→`archived`.~~ | ✅ Denní cron + lazy archive v `moje-inzeraty` + `getOwnerDisplayStatus` (badge Expirovaný). |
 | **P5** | `actions/listing-management.ts` | `extendListingBy30Days` hard-coduje +30 dní a ručně nastavuje `expires_at`, obchází `listing_duration_days` + trigger. | Renew přes update `listing_duration_days` / dedikované RPC; nechat uživatele vybrat délku. |
 | **P6** | `lib/moderation/needs-moderation.ts` | Re-moderace při editaci pokrývá jen title/description/kategorie/obrázky. Změna ceny/lokality/telefonu/data akce AI přeskočí. | Zdokumentovat jako záměr, nebo rozšířit triggery. |
-| **P7** | `CreateListingForm.tsx` (134–139, 819–828) | Při editaci se lat/long resetují na `null` i když lokalita nezměněná; uživatel musí znovu potvrdit z našeptávače. | Inicializovat souřadnice z `initialValues`, když text nezměněn. *(Částečně: `parse-location.ts` + EWKB z DB při editaci — ověřit regresi.)* |
+| ~~**P7**~~ | `listing-form.ts`, `CreateListingForm` | ~~lat/long reset při editaci.~~ | ✅ Init z `initialValues` / `parsePostLocation`; coords padají jen při přepisu lokality. |
 
 ### AI moderace
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **P8** | `moderate-listing/index.ts` (229–268) | **Technické selhání vrací `REJECTED`** (AI down, kvóta, chybějící klíče, nevalidní JSON). Klient to bere jako obsahové zamítnutí. | Vrátit odlišný status/kód (`ERROR`, HTTP 503) a mapovat na inline/alert UI, ne na rejection dialog. *(Souvisí U1.)* |
-| **P9** | `_shared/moderation/gemini.ts` | **Chybí fetch timeout.** UI slibuje ~15 s, zaseknuté volání může blokovat neomezeně. | `AbortSignal` timeout 20–30 s + fallback + retry. |
+| ~~**P8**~~ | `moderate-listing/index.ts` | ~~Technické selhání → `REJECTED`.~~ | ✅ `TECHNICAL_ERROR` + 503; rate limit 429 technical; outer catch technical. Klient: inline alert (U1). |
+| ~~**P9**~~ | `gemini.ts`, `openai.ts`, `fetch-with-timeout.ts` | ~~Chybí fetch timeout.~~ | ✅ `AbortSignal.timeout` 25 s → `GEMINI_TIMEOUT` / `OPENAI_TIMEOUT` → technical + OpenAI fallback. |
 | ~~**P10**~~ | `rate-limit.ts` | ~~Fails open (M6).~~ | ✅ **s M6** — fail closed. |
-| **P11** | `lib/moderation/moderate-listing-client.ts` | Žádný automatický retry pro tranzientní chyby; uživatel musí odeslat celý formulář znovu. | Exponenciální backoff (1–2 pokusy) jen pro `kind: "error"`. |
+| ~~**P11**~~ | `moderate-listing-client.ts` | ~~Bez auto-retry.~~ | ✅ Až 3 pokusy při `kind: "error"` (500/1500 ms); ne auth/rate-limit. |
 | **P12** | `ModerationRejectedDialog.tsx` | UI má `topicId` / `rejectedImageIndex`, ale **nikdy nezvýrazní problémovou fotku** ani téma. | Ukázat „problémová fotka #N“ a odscrollovat na obrázek. |
 | **P13** | `CreateListingForm.tsx` (445–452) | Po AI dva kroky: `ModerationApprovedDialog` → `ModerationPreviewDialog` — klik navíc i bez otázek. | Přeskočit approved dialog při otevření preview, nebo sloučit. |
 | ~~**P14**~~ | ~~`config/moderation/index.ts`~~ | ~~`MODERATION_ENABLED` je klientsky čitelný flag → obejitelné přes devtools.~~ | ✅ **Vyřešeno s H1** (migrace 027) — publikace vyžaduje approval token z Edge Function; vypnutí flagu na klientovi publikaci neumožní (inzerát zůstane `draft`). |
@@ -220,17 +220,17 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **P20** | `auth.ts` (`signUpWithEmail`) vs `RegistrationConsentFields.tsx` | **`consent_marketing` se nikdy nečte ani neukládá** — chybí sloupec v `profiles`. | Přidat `marketing_consent_at` (+ verze), ukládat při signupu, respektovat odvolání. |
-| **P21** | `auth.ts` (`signInWithGoogle`) | Google OAuth **nesbírá souhlas s VOP** (na rozdíl od e-mailové registrace). | Consent obrazovka po OAuth před prvním použitím; blokovat do přijetí VOP. |
+| ~~**P20**~~ | `persist-registration-consents.ts`, migrace **044** | ~~Marketing souhlas se neukládal.~~ | ✅ `marketing_consent_at` při e-mail signup i Google onboarding. Revoke v profilu ⏳ (zatím e-mail — P22). |
+| ~~**P21**~~ | `OnboardingForm`, `registration-consents.ts` | ~~Google OAuth bez VOP.~~ | ✅ VOP+věk na onboardingu po OAuth (`requiresRegistrationConsentsOnboarding`). |
 | **P31** | ✅ `RegistrationConsentFields.tsx`, `registration-consents.ts`, `auth.ts`, `legal.ts` | ~~Chybí checkbox věku 15+~~ | **Hotovo 2026-07-11.** Povinný checkbox `consent_age`; validace e-mail signup + Google onboarding (`requiresRegistrationConsentsOnboarding`). `age_consent_at` v DB zatím ne. |
-| **P22** | `marketingovy-souhlas/page.tsx` | Stránka je stub, přitom registrace už marketingový checkbox nabízí. | Dokončit právní text + mechanismus odvolání před sběrem souhlasu. |
+| ~~**P22**~~ | `marketingovy-souhlas/page.tsx` | ~~Stub stránka.~~ | ✅ Text o souhlasu, stavu „zatím nezasíláme“, odvolání e-mailem; checkbox copy „až spustíme“. |
 | **P23** | ✅ `account.ts`, `delete-user.ts`, migrace `037` | ~~Chybí flow smazání účtu~~ | **Hotovo 2026-07-11.** Self-delete `/profil/nastaveni` (confirm e-mail + checkbox); admin `/mod/uzivatele` (důvod); RPC + Auth Admin delete; e-mail potvrzení. |
-| **P24** | `auth/callback/route.ts` | Chyby OAuth/e-mail redirect s **raw anglickou** hláškou v `?error=`. | Mapovat na CZ přes `mapAuthError`. |
+| ~~**P24**~~ | `map-auth-error.ts`, `auth/callback`, `signInWithGoogle` | ~~Raw angličtina v `?error=`.~~ | ✅ `mapAuthError` + fallback bez propouštění EN. |
 | **P25** | produkt vs kód | PRD zmiňuje OTP; implementace je heslo + verifikační link, ne OTP login. | Sladit dokumentaci nebo doplnit magic-link/OTP. |
-| **P33** | `docs/pravni/ochrana-osobnich-udaju-fo.md` §5, PRD §3, infra | **Data v EU nejsou zaručena ani zdokumentována.** GDPR §5 je obecné („zpracovatelé na vyžádání“); Supabase region není v repu; AI moderace posílá text+fotky ke Gemini/OpenAI (typicky mimo EHP); Vercel/Resend neověřeny. | 1) Ověřit Supabase region (`eu-central-1`). 2) Tabulka zpracovatelů (region, účel, DPA/SCC) v GDPR §5.1. 3) Gemini: EU endpoint nebo SCC + informace uživatelům. 4) Resend/Vercel ověřit v dashboardu. 5) PRD §3 checklist. Viz [`pravni/README.md`](./pravni/README.md). *(Částečně 2026-07-19: Supabase `eu-west-1` + Vercel `dub1` zapsány v GDPR §5.1.)* |
-| **P37** | GDPR §3.2 vs `inquiry_events` | Text tvrdí anonymizaci IP v **logách serveru** do 7 dnů. Kód zkracuje jen `inquiry_events.ip_address` (cron `/api/cron/anonymize-inquiry-ips`, migrace **050**). Vercel/platformové logy neřešíme. | Upravit GDPR §3.2 + tabulku „provozní logy“ na realitu (`inquiry_events`), nebo doplnit proces pro platformové logy. |
-| **P38** | GDPR §2 vs `LISTING_MAX_LIFETIME_DAYS` | Text: inzeráty **2 měsíce po vypršení**. Kód: po expiraci → `archived`; soft-delete až po **365 dnech od založení** (`049`, cron `archive-expired`). | Sladit GDPR text s 365denní lifetime, nebo změnit retenci v kódu. |
-| **P39** | GDPR §2 „Newslettery“ vs kód | Text uvádí zpracování e-mailu pro obchodní sdělení. Souhlas se ukládá (`marketing_consent_at`), **odesílání newsletteru není implementované**. | Upravit GDPR (např. „připravujeme“) / nedokončit marketing, dokud není send path + odvolání (souvisí P20/P22). |
+| **P33** | GDPR §5.1, `pravni/README.md` | Data v EU. | 🔄 Supabase/Vercel/Resend sending `eu-west-1`; AI mimo EHP + DPA/SCC. Zbývá: podpis Resend DPA + revize právníkem. |
+| ~~**P37**~~ | GDPR §3.2 | ~~„logy serveru“ vs `inquiry_events`.~~ | ✅ Text sladěn s cronem 050 (IP u poptávek; hosting logy mimo). |
+| ~~**P38**~~ | GDPR §2 | ~~„2 měsíce“ vs 365 dní.~~ | ✅ Text: archivace + max. 365 dní od založení. |
+| ~~**P39**~~ | GDPR §2 newslettery | ~~Text vs žádný send.~~ | ✅ „připravujeme / zatím nezasíláme“ + odkaz na `/marketingovy-souhlas`. |
 
 ### P2B / Podnikatelé (EU 2019/1150)
 
@@ -256,11 +256,11 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **U1** | `ModerationRejectedDialog.tsx` (+ P8) | Uživatel vidí „Inzerát nesplňuje podmínky“, i **když je AI down** — zavádějící a stresující. | Samostatný panel „Technická chyba“ + retry; rejection dialog jen pro reálný obsahový zásah. |
-| **U2** | `CreateListingForm.tsx` (1044–1050) | Neplatný publish blokován jen disabled tlačítkem + `title` tooltipem — snadno přehlédnutelné (hlavně lokalita). | Inline shrnutí „Chybí: lokalita, cena…“ nad tlačítkem. |
-| **U3** | `ListingInquiryForm.tsx` (124) | Míchání ty/vy („Zkontroluj připojení“ vs. vykání jinde). | Sjednotit na vykání (PRD §1.6). |
+| ~~**U1**~~ | `CreateListingForm`, `MODERATION_TECHNICAL_UI` | ~~AI down = obsahové zamítnutí.~~ | ✅ Amber panel „Technická chyba“ + „Zkusit znovu“ (s P8/P11). |
+| ~~**U2**~~ | `CreateListingForm.tsx` | ~~Chybějící pole jen disabled+tooltip.~~ | ✅ Inline „Chybí: …“ nad tlačítkem. |
+| ~~**U3**~~ | `ListingInquiryForm.tsx` | ~~Tykání.~~ | ✅ „Zkontrolujte připojení“ (vykání). |
 | **U4** | `MyListingActions.tsx` | Pauza/smazání/prodloužení bez success/error toastu — jen redirect. | Optimistic UI nebo krátký potvrzovací banner. *(Částečně: chyba smazání v přehledu.)* |
-| **U5** | `HomeListings.tsx` | Chybí „načíst další“ — max 9 karet z 36 bez indikace, že je víc. | „Zobrazit další“ / stránkování. |
+| ~~**U5**~~ | `HomeListings.tsx` | ~~Max 9 bez indikace.~~ | ✅ „Zobrazit další“ + „Zobrazeno N z M“ (pool 36). |
 | **U13** | `SiteNoticeBar.tsx` | Odstávková lišta (`maintenance`) vizuálně zapadá — slabý kontrast, snadno přehlédnutelná. | Výraznější barva/pozadí, tučnější text, větší padding; ověřit na mobilu. ⏳ **Priorita zítra (2026-07-09)** |
 
 ### Formuláře a validace
@@ -288,7 +288,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **U16** | `HomeBrowse.tsx` (92–101) | Guest CTA říká „přihlaste se přes Google“, přitom existuje e-mail auth. | „Přihlaste se nebo zaregistrujte“. |
+| ~~**U16**~~ | `HomeBrowse.tsx` | ~~CTA jen Google.~~ | ✅ „Google nebo klasicky e-mailem“. |
 | **U17** | `VisitorLocationProvider.tsx` (242–245) | Auto-otevření panelu polohy při první návštěvě — na mobilu rušivé. | Jemnější banner CTA místo modalu. |
 | **U18** | `HeaderLocationPanel.tsx` | Label polohy oříznutý na malých obrazovkách (`max-w-[7.5rem]`). | Tooltip/celý název. |
 | **U19** | `HeaderSearch.tsx` | Submit tlačítko `sr-only` — mouse-only mobil bez klávesnicového „search“. | Viditelná ikona hledání na mobilu. |
@@ -298,7 +298,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **U21** | `EmailAuthPanel.tsx` | Po registraci nutné opustit stránku pro kontrolu e-mailu — bez „poslat znovu“. | „Poslat znovu“ s cooldownem. |
+| ~~**U21**~~ | `EmailAuthPanel`, `resendSignupVerificationEmail` | ~~Bez „poslat znovu“.~~ | ✅ Resend + cooldown 60 s. |
 | **U22** | `SetPasswordForm.tsx` / `nastavit-heslo/page.tsx` | Bez indikátoru síly hesla (jen min. 8). | Volitelný strength meter / kontrola běžných hesel. |
 | **U23** | `OnboardingForm.tsx` | Google uživatel bez vysvětlení, že VOP bylo přijato jinde (nebylo — P21). | OAuth consent + jasnější „jednorázové nastavení“. |
 | **U24** | `login/page.tsx` | `?error=` z OAuth může ukázat nepřeložené stringy. | CZ mapování chyb. |
@@ -349,10 +349,10 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | **2. Integrita publikace** | ~~H1~~ ✅, ~~P1~~ ✅, ~~P14~~ ✅, M10 | Server-side vynucení moderace. **Dokončeno** (migrace 027); zbývá M10 (ohraničení promptu). | hotovo (M10 ⏳) |
 | ~~**3. Anti-spam & náklady**~~ | ~~H2, P15, P16, M6/P10, M7~~ | ✅ **2026-07-16** (CAPTCHA ⏳). | hotovo |
 | ~~**4. Redirect & DB integrita**~~ | ~~H3, M3, M4~~ | ✅ H3 + migrace 047 (M3/M4). | hotovo |
-| **5. Robustnost procesů** | P2, P3, P4, P8/U1, P9, P11 | Orphan data, chybný cron, chybné hlášení výpadku AI. | 1–2 dny |
-| **6. GDPR compliance** | P20, P21, P22, P23, P24, **P33**, **P37**, **P38**, **P39** | Souhlasy + smazání účtu + data v EU + sladění GDPR textu s kódem (IP logy, retence inzerátů, newsletter). | 1–2 dny |
+| ~~**5. Robustnost procesů**~~ | ~~P2, P3, P4, P8/U1, P9, P11~~ | ✅ **2026-07-19** — orphan cleanup, cron archive, technical AI errors + timeout + client retry. | hotovo |
+| ~~**6. GDPR compliance**~~ | ~~P20–P24, P33, P37–P39~~ | ✅ **2026-07-19** texty + marketing page + OAuth CZ errors. Zbývá P33 Resend DPA (ops) + revize právníkem. | téměř hotovo |
 | **6b. P2B provoz (Podnikatelé)** | P32 | E-mailové lhůty 15/30 dní dle VOP — před prvním IČO uživatelem. | 0,5–1 dne |
-| **7. UX vylepšení** | U1, U2, U3, U16, U21, P7, U5 | Rychlé výhry v důvěře a konverzi. | 1 den |
+| ~~**7. UX vylepšení**~~ | ~~U1–U3, U5, U16, U21, P7~~ | ✅ **2026-07-19** technická AI panel, missing fields, load more, resend e-mail. Zbývají další U# dle priority. | částečně |
 | **8. Admin/ops (post-MVP)** | P26, P27, P28, P30, L6 | God Mode, reporting, monitoring, audit log dle PRD §11. | dle PRD |
 | **9. Performance (volitelné)** | P34, L8 | LCP <1 s; favicon/OG — rychlé výhry po launchi. | 0,5–1 dne |
 
@@ -385,5 +385,9 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | 2026-07-17 | **P36 ⏳** GTM ID na tlačítka cookie lišty (Přijmout / Nezbytné) |
 | 2026-07-16 | **Security hardening:** migrace **047** (M3/M4); M6 fail closed; M7 limity fotek EF; M8/M9 magic bytes; L1 zůstává 8 znaků (UX); L9 llms.txt escape; H2/P15/P10/P17 stavy; M10 částečně; **smoke test checklist** (A–D) v §0 |
 | 2026-07-19 | **GDPR audit vs kód:** §6.2 věk → prohlášení (ne hard ověření); **P37** IP logy vs `inquiry_events`; **P38** retence inzerátů 2 měsíce vs 365 dní; **P39** newsletter bez send path. Migrace **050** IP anonymizace; Supabase/Vercel EU v §5.1. |
+| 2026-07-19 | **Fáze 5:** P2 soft-delete orphan draft; P3/P4 ✅ (trigger + cron už byly); P8 rate-limit/outer catch → `TECHNICAL_ERROR`; P9 fetch timeout 25 s; P11 client retry 3×. |
+| 2026-07-19 | **Fáze 6:** P37–P39 GDPR text ↔ kód; P33 §5.1 FO+OSVC; P20/P21 ✅; P22 marketing page; P24 `mapAuthError`; checkbox „až spustíme“. |
+| 2026-07-19 | **Fáze 7 (část):** U1/U2/U5/U21 + P7/U3/U16 ✅; P32 odloženo (před IČO). |
+| 2026-07-19 | **P33:** Resend sending region Ireland `eu-west-1` (zapikolou.cz Verified) zapsán do GDPR §5.1; zbývá DPA + revize právníkem. |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

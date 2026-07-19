@@ -1,3 +1,8 @@
+import {
+  fetchWithTimeout,
+  isFetchTimeoutError,
+} from "./fetch-with-timeout.ts";
+
 type OpenAiContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
@@ -28,22 +33,33 @@ export async function callOpenAiModeration(params: {
     }
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: params.systemPrompt },
-        { role: "user", content: userContent },
-      ],
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: params.systemPrompt },
+            { role: "user", content: userContent },
+          ],
+        }),
+      },
+    );
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw new Error("OPENAI_TIMEOUT");
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const detail = await response.text();

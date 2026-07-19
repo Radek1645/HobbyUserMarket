@@ -64,6 +64,7 @@ export function HomeListings({
   const [nationwideFallback, setNationwideFallback] = useState(false);
   const [loading, setLoading] = useState(() => !hasInitialForCategory);
   const [error, setError] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(HOME_LISTINGS_LIMIT);
 
   const fetchListings = useCallback(
     async (
@@ -227,10 +228,20 @@ export function HomeListings({
     searchQuery,
   ]);
 
-  const filteredListings = useMemo(() => {
-    const filtered = applyListingFilters(listings, filter, category);
-    return filtered.slice(0, HOME_LISTINGS_LIMIT);
-  }, [category, filter, listings]);
+  const filteredListings = useMemo(
+    () => applyListingFilters(listings, filter, category),
+    [category, filter, listings],
+  );
+
+  useEffect(() => {
+    setVisibleCount(HOME_LISTINGS_LIMIT);
+  }, [category, filter, searchQuery]);
+
+  const visibleListings = useMemo(
+    () => filteredListings.slice(0, visibleCount),
+    [filteredListings, visibleCount],
+  );
+  const hasMoreListings = filteredListings.length > visibleCount;
 
   const searchActive = searchQuery.length > 0;
   const searchValid = isSearchQueryValid(searchQuery);
@@ -307,14 +318,37 @@ export function HomeListings({
       ) : null}
 
       {(searchActive || locationReady || hasInitialForCategory) &&
-      filteredListings.length > 0 ? (
-        <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-          {filteredListings.map((listing, index) => (
-            <li key={listing.id}>
-              <ListingCard listing={listing} imageFirst priority={index < 3} />
-            </li>
-          ))}
-        </ul>
+      visibleListings.length > 0 ? (
+        <>
+          <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+            {visibleListings.map((listing, index) => (
+              <li key={listing.id}>
+                <ListingCard listing={listing} imageFirst priority={index < 3} />
+              </li>
+            ))}
+          </ul>
+          {hasMoreListings ? (
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <p className="text-xs text-gray-500">
+                Zobrazeno {visibleListings.length} z {filteredListings.length}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setVisibleCount((count) =>
+                    Math.min(
+                      count + HOME_LISTINGS_LIMIT,
+                      filteredListings.length,
+                    ),
+                  )
+                }
+                className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50"
+              >
+                Zobrazit další
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       {loading && hasInitialForCategory && activeLocation ? (
@@ -335,7 +369,7 @@ export function HomeListings({
 
       {(searchActive || locationReady || hasInitialForCategory) &&
       !loading &&
-      filteredListings.length === 0 &&
+      visibleListings.length === 0 &&
       !error ? (
         <p className="mt-8 rounded-2xl border border-dashed border-gray-200/80 bg-white/70 px-4 py-10 text-center text-sm text-gray-500 backdrop-blur-sm">
           {searchActive && searchValid

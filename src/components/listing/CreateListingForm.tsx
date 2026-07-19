@@ -2,7 +2,12 @@
 
 import { createListing, updateListing, type CreateListingState, type UpdateListingState } from "@/app/actions/posts";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
-import { MODERATION_CHECKING_UI, MODERATION_ENABLED, MODERATION_MAX_QUESTIONS } from "@/config/moderation";
+import {
+  MODERATION_CHECKING_UI,
+  MODERATION_ENABLED,
+  MODERATION_MAX_QUESTIONS,
+  MODERATION_TECHNICAL_UI,
+} from "@/config/moderation";
 import {
   LISTING_DURATION_DEFAULT_DAYS,
   LISTING_DURATION_MAX_DAYS,
@@ -104,6 +109,9 @@ const hintClass = listingFormHintClass;
 const errorAlertClass =
   "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800";
 
+const technicalErrorAlertClass =
+  "rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950";
+
 const initialState: FormState = {};
 
 export function CreateListingForm({
@@ -130,6 +138,7 @@ export function CreateListingForm({
     useState<ModerationPreviewState | null>(null);
   const [moderationApprovedOpen, setModerationApprovedOpen] = useState(false);
   const pendingPublishFormRef = useRef<HTMLFormElement | null>(null);
+  const formElementRef = useRef<HTMLFormElement | null>(null);
   const pendingApprovalTokenRef = useRef<string | undefined>(undefined);
   const [isCheckingAi, setIsCheckingAi] = useState(false);
   const [step, setStep] = useState(isEdit ? 2 : 1);
@@ -288,6 +297,16 @@ export function CreateListingForm({
     isDescriptionValid &&
     isPriceValid &&
     isEventDateValid;
+
+  const missingPublishFields = (() => {
+    const missing: string[] = [];
+    if (!hasLocation) missing.push("lokalita (vyberte z našeptávače)");
+    if (!isTitleValid) missing.push("název");
+    if (!isDescriptionValid) missing.push("popis");
+    if (!isPriceValid) missing.push("cena");
+    if (!isEventDateValid) missing.push("datum události");
+    return missing;
+  })();
 
   function handleCategoryChange(type: CategoryType) {
     setCategoryType(type);
@@ -577,6 +596,7 @@ export function CreateListingForm({
       ) : null}
 
       <form
+        ref={formElementRef}
         onSubmit={handleFormSubmit}
         encType="multipart/form-data"
         className="space-y-6"
@@ -1160,8 +1180,21 @@ export function CreateListingForm({
           ) : null}
 
           {moderationError ? (
-            <div ref={submitErrorRef} role="alert" className={errorAlertClass}>
-              {moderationError}
+            <div
+              ref={submitErrorRef}
+              role="alert"
+              className={technicalErrorAlertClass}
+            >
+              <p className="font-semibold">{MODERATION_TECHNICAL_UI.title}</p>
+              <p className="mt-1">{moderationError}</p>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => formElementRef.current?.requestSubmit()}
+                className={`mt-3 ${listingFormSecondaryButtonClass}`}
+              >
+                {MODERATION_TECHNICAL_UI.retryLabel}
+              </button>
             </div>
           ) : null}
 
@@ -1178,6 +1211,12 @@ export function CreateListingForm({
           <p className={listingFormRequiredLegendClass}>
             {LISTING_FORM_REQUIRED_LEGEND}
           </p>
+
+          {!canPublish && !publishBlockedByQuota ? (
+            <p role="status" className="text-sm text-amber-800">
+              Chybí: {missingPublishFields.join(", ")}
+            </p>
+          ) : null}
 
           <div className="flex gap-2">
             <button
@@ -1202,7 +1241,7 @@ export function CreateListingForm({
                   : !canPublish
                   ? isEvent && eventDateError
                     ? eventDateError
-                    : "Vyplňte název, popis a potvrďte obec z našeptávače"
+                    : `Chybí: ${missingPublishFields.join(", ")}`
                   : undefined
               }
               className={`flex flex-1 items-center justify-center gap-2 ${listingFormPrimaryButtonClass}`}

@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  MODERATION_CLIENT_MAX_ATTEMPTS,
+  MODERATION_CLIENT_RETRY_DELAYS_MS,
   MODERATION_DEFAULT_REJECTION_REASON,
   MODERATION_FUNCTION_NAME,
   MODERATION_MAX_QUESTIONS,
@@ -55,9 +57,31 @@ function technicalFailure(message: string): ListingModerationFailure {
   return { ok: false, kind: "error", error: message };
 }
 
-async function readModerationResponseFromError(
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/** Auth / rate limit — další pokus nemá smysl. */
+function shouldRetryTechnicalError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("sezení") || normalized.includes("přihlaste")) {
+    return false;
+  }
+  if (normalized.includes("příliš mnoho")) {
+    return false;
+  }
+  return true;
+}
+
+type ParsedInvokeError =
+  | { type: "technical"; message: string }
+  | { type: "moderation"; body: ModerateListingResponse };
+
+async function parseInvokeError(
   error: unknown,
-): Promise<ModerateListingResponse | null> {
+): Promise<ParsedInvokeError | null> {
   if (!(error instanceof FunctionsHttpError)) {
     return null;
   }
@@ -77,16 +101,22 @@ async function readModerationResponseFromError(
     }
     // P8/U1: technické selhání Edge Function nemá být mapované jako REJECTED.
     if (body?.error === "TECHNICAL_ERROR") {
-      return null;
+      const message =
+        typeof body.message === "string" && body.message.trim()
+          ? body.message.trim()
+          : MODERATION_TECHNICAL_ERROR;
+      return { type: "technical", message };
     }
-    return body?.status ? body : null;
+    if (body?.status) {
+      return { type: "moderation", body };
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
-/** Volá Supabase Edge Function — až po `supabase functions deploy`. */
-export async function invokeModerateListing(
+async function invokeModerateListingOnce(
   input: ListingModerationInput,
 ): Promise<ListingModerationSuccess | ListingModerationFailure> {
   const supabase = createClient();
@@ -138,9 +168,12 @@ export async function invokeModerateListing(
       );
     }
 
-    const errorBody = await readModerationResponseFromError(error);
-    if (errorBody) {
-      return mapResponse(errorBody, input.title, input.description);
+    const parsed = await parseInvokeError(error);
+    if (parsed?.type === "technical") {
+      return technicalFailure(parsed.message);
+    }
+    if (parsed?.type === "moderation") {
+      return mapResponse(parsed.body, input.title, input.description);
     }
 
     console.error("invokeModerateListing:", error);
@@ -152,4 +185,35 @@ export async function invokeModerateListing(
   }
 
   return mapResponse(data, input.title, input.description);
+}
+
+/** Volá Supabase Edge Function — až po `supabase functions deploy`. */
+export async function invokeModerateListing(
+  input: ListingModerationInput,
+): Promise<ListingModerationSuccess | ListingModerationFailure> {
+  let lastResult: ListingModerationSuccess | ListingModerationFailure | null =
+    null;
+
+  for (let attempt = 0; attempt < MODERATION_CLIENT_MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      const delayMs =
+        MODERATION_CLIENT_RETRY_DELAYS_MS[attempt - 1] ??
+        MODERATION_CLIENT_RETRY_DELAYS_MS[
+          MODERATION_CLIENT_RETRY_DELAYS_MS.length - 1
+        ];
+      await delay(delayMs);
+    }
+
+    lastResult = await invokeModerateListingOnce(input);
+
+    if (lastResult.ok || lastResult.kind === "rejected") {
+      return lastResult;
+    }
+
+    if (!shouldRetryTechnicalError(lastResult.error)) {
+      return lastResult;
+    }
+  }
+
+  return lastResult ?? technicalFailure(MODERATION_TECHNICAL_ERROR);
 }

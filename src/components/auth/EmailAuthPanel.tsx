@@ -2,14 +2,18 @@
 
 import {
   requestPasswordReset,
+  resendSignupVerificationEmail,
   signInWithEmail,
   signUpWithEmail,
   type AuthFormState,
 } from "@/app/actions/auth";
-import { PASSWORD_MIN_LENGTH } from "@/config/app";
+import {
+  PASSWORD_MIN_LENGTH,
+  VERIFICATION_RESEND_COOLDOWN_MS,
+} from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { Mail } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { RegistrationConsentFields } from "@/components/auth/RegistrationConsentFields";
 import { BackButton } from "@/components/navigation/BackLink";
@@ -47,13 +51,24 @@ function AuthSuccessNotice({
   onContinue,
   continueLabel = "Přejít na přihlášení",
   prominent = false,
+  onResendVerification,
+  resendPending = false,
+  resendCooldownDownSec = 0,
+  resendFeedback,
 }: {
   title: string;
   message: string;
   onContinue?: () => void;
   continueLabel?: string;
   prominent?: boolean;
+  onResendVerification?: () => void;
+  resendPending?: boolean;
+  resendCooldownDownSec?: number;
+  resendFeedback?: string | null;
 }) {
+  const resendDisabled =
+    resendPending || resendCooldownDownSec > 0 || !onResendVerification;
+
   return (
     <div
       role="status"
@@ -81,13 +96,34 @@ function AuthSuccessNotice({
           >
             {message}
           </p>
+          {resendFeedback ? (
+            <p className="mt-2 text-sm text-emerald-800" role="status">
+              {resendFeedback}
+            </p>
+          ) : null}
         </div>
       </div>
+      {onResendVerification ? (
+        <button
+          type="button"
+          onClick={onResendVerification}
+          disabled={resendDisabled}
+          className={`mt-4 w-full rounded-xl border border-emerald-700 bg-white px-4 py-3 font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60 ${
+            prominent ? "text-sm sm:text-base" : "text-sm"
+          }`}
+        >
+          {resendPending
+            ? "Odesílám…"
+            : resendCooldownDownSec > 0
+              ? `Poslat znovu za ${resendCooldownDownSec} s`
+              : "Poslat ověřovací e-mail znovu"}
+        </button>
+      ) : null}
       {onContinue ? (
         <button
           type="button"
           onClick={onContinue}
-          className={`mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 font-medium text-white transition hover:bg-emerald-800 ${
+          className={`mt-3 w-full rounded-xl bg-emerald-700 px-4 py-3 font-medium text-white transition hover:bg-emerald-800 ${
             prominent ? "text-sm sm:text-base" : "text-sm"
           }`}
         >
@@ -116,6 +152,9 @@ export function EmailAuthPanel({
     requestPasswordReset,
     initialState,
   );
+  const [resendPending, startResendTransition] = useTransition();
+  const [resendCooldownDownSec, setResendCooldownDownSec] = useState(0);
+  const [resendFeedback, setResendFeedback] = useState<string | null>(null);
 
   const state =
     tab === "login" ? loginState : tab === "register" ? registerState : resetState;
@@ -126,6 +165,40 @@ export function EmailAuthPanel({
 
   const registerComplete = Boolean(registerState.success);
   const resetComplete = Boolean(resetState.success);
+
+  useEffect(() => {
+    if (resendCooldownDownSec <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldownDownSec((sec) => Math.max(0, sec - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldownDownSec]);
+
+  useEffect(() => {
+    if (registerState.success) {
+      setResendCooldownDownSec(
+        Math.ceil(VERIFICATION_RESEND_COOLDOWN_MS / 1000),
+      );
+      setResendFeedback(null);
+    }
+  }, [registerState.success]);
+
+  function handleResendVerification() {
+    const email = registerState.email;
+    if (!email || resendCooldownDownSec > 0) return;
+
+    startResendTransition(async () => {
+      const result = await resendSignupVerificationEmail(email);
+      if (result.error) {
+        setResendFeedback(result.error);
+        return;
+      }
+      setResendFeedback(result.success ?? "Ověřovací e-mail odeslán.");
+      setResendCooldownDownSec(
+        Math.ceil(VERIFICATION_RESEND_COOLDOWN_MS / 1000),
+      );
+    });
+  }
 
   return (
     <div className={`space-y-4 ${prominent ? "mt-8 sm:mt-10" : "mt-6"}`}>
@@ -170,6 +243,12 @@ export function EmailAuthPanel({
           title="Účet je vytvořený"
           message="Ověřte e-mail kliknutím na odkaz v doručené poště — bez toho se nepřihlásíte."
           onContinue={() => setTab("login")}
+          onResendVerification={
+            registerState.email ? handleResendVerification : undefined
+          }
+          resendPending={resendPending}
+          resendCooldownDownSec={resendCooldownDownSec}
+          resendFeedback={resendFeedback}
         />
       ) : null}
 

@@ -174,7 +174,17 @@ export async function createListing(
     formData,
   );
 
+  // P2: při chybě uploadu nesmí zůstat orphan draft (kvóta / „Koncept“ bez fotek).
+  // Soft-delete spustí trg_posts_cleanup_storage (Storage).
   if (imageResult.error) {
+    const { error: cleanupError } = await supabase
+      .from("posts")
+      .update({ status: "deleted" })
+      .eq("id", row.id)
+      .eq("user_id", user.id);
+    if (cleanupError) {
+      console.error("createListing orphan cleanup:", cleanupError);
+    }
     return { error: imageResult.error };
   }
 

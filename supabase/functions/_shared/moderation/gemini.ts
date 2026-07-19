@@ -1,3 +1,8 @@
+import {
+  fetchWithTimeout,
+  isFetchTimeoutError,
+} from "./fetch-with-timeout.ts";
+
 type GeminiPart =
   | { text: string }
   | { inline_data: { mime_type: string; data: string } };
@@ -32,35 +37,43 @@ export async function callGeminiModeration(params: {
     }
   }
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: params.systemPrompt }],
-      },
-      contents: [{ role: "user", parts }],
-      // Moderační workload: model MÁ posuzovat hraniční obsah, ne být jím
-      // blokován. Vypíná jen konfigurovatelné kategorie; nevypnutelný filtr
-      // Google (CSAM apod.) zůstává aktivní.
-      safetySettings: [
-        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-        {
-          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-          threshold: "BLOCK_NONE",
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: params.systemPrompt }],
         },
-        {
-          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_NONE",
+        contents: [{ role: "user", parts }],
+        // Moderační workload: model MÁ posuzovat hraniční obsah, ne být jím
+        // blokován. Vypíná jen konfigurovatelné kategorie; nevypnutelný filtr
+        // Google (CSAM apod.) zůstává aktivní.
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_NONE",
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_NONE",
+          },
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: "application/json",
         },
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-      },
-    }),
-  });
+      }),
+    });
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw new Error("GEMINI_TIMEOUT");
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const detail = await response.text();

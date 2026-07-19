@@ -57,6 +57,9 @@ export const MODERATION_IMAGES_MAX_TOTAL_BYTES = 2 * 1024 * 1024;
 /** Minimální délka hesla — registrace i nastavení hesla. */
 export const PASSWORD_MIN_LENGTH = 8;
 
+/** Cooldown před opětovným odesláním ověřovacího e-mailu (U21). */
+export const VERIFICATION_RESEND_COOLDOWN_MS = 60_000;
+
 /** Max. doba dopředu pro datum události */
 export const EVENT_DATE_MAX_DAYS_AHEAD = 365;
 

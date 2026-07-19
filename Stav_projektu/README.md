@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-19 (večer) | [2026-07-19-vecer.md](./2026-07-19-vecer.md) — fáze 5–7 (AI robustnost, GDPR, UX), Resend `eu-west-1`, PRD v3.33 |
 | 2026-07-19 | [2026-07-19.md](./2026-07-19.md) — `/gdpr`, IP cron 050, EU regiony, P37–P39, HP vykání, PRD v3.32 |
 | 2026-07-17 | [2026-07-17.md](./2026-07-17.md) — HP copy, tagline bazar, průvodce scénáře, P35 virtual_pageview, PRD v3.30 |
 | 2026-07-16 (večer) | [2026-07-16-vecer.md](./2026-07-16-vecer.md) — lifetime 365d (049), expiry mail (048), intent badges, právní, PRD v3.29; infra ✅ |

@@ -25,12 +25,13 @@ Formulář (create / edit)
 - **Publikaci na `active` nelze obejít** bez approval tokenu z Edge Function (migrace `027`, viz níže).
 - Seznam zakázaného obsahu je v **konfiguračních souborech**; AI prompt se z něj **generuje automaticky** (pro Gemini zkrácená varianta bez explicitních `criteria`).
 
-### Technické chyby (P8/U1)
+### Technické chyby (P8/U1, P9, P11)
 
-Pokud AI dočasně nefunguje (kvóta, výpadek poskytovatele, chybné klíče), **nesmí se to tvářit jako zamítnutí obsahu**.
+Pokud AI dočasně nefunguje (kvóta, výpadek poskytovatele, chybné klíče, timeout), **nesmí se to tvářit jako zamítnutí obsahu**.
 
-- Edge Function vrací **HTTP 503** a JSON `{ error: "TECHNICAL_ERROR", message, errorCode }` (bez `status`).
-- Klient to zobrazí jako běžnou chybu ve formuláři a uživatel má možnost **zkusit to znovu**.
+- Edge Function vrací **HTTP 503** (nebo 429 u rate limitu) a JSON `{ error: "TECHNICAL_ERROR", message, errorCode }` (bez `status`).
+- Gemini/OpenAI volání mají **timeout 25 s** (`fetch-with-timeout.ts`) — jinak by hung fetch neumožnil OpenAI fallback.
+- Klient zobrazí inline chybu ve formuláři a při technické chybě **automaticky zkusí až 3×** (backoff 500 ms / 1,5 s; ne při rate limitu ani vypršení sezení).
 - `REJECTED` je vyhrazené jen pro obsahové důvody (zakázaný obsah, shoda text/foto, špatná kategorie, prompt injection…).
 
 ---

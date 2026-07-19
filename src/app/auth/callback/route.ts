@@ -1,5 +1,6 @@
 import { readAvatarUrlFromMetadata } from "@/lib/auth/avatar-url";
 import { flushPendingRegistrationConsents } from "@/lib/auth/persist-registration-consents";
+import { mapAuthError } from "@/lib/auth/map-auth-error";
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { createClient } from "@/lib/supabase/server";
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
 
   if (error) {
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(error.message)}`,
+      `${origin}/login?error=${encodeURIComponent(mapAuthError(error.message))}`,
     );
   }
 

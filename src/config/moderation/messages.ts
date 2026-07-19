@@ -69,6 +69,12 @@ export const MODERATION_DEFAULT_REJECTION_REASON =
 export const MODERATION_TECHNICAL_ERROR =
   "AI kontrola teď nefunguje. Zkuste to prosím za chvíli znovu.";
 
+/** Panel technické chyby AI (U1) — ne obsahové zamítnutí. */
+export const MODERATION_TECHNICAL_UI = {
+  title: "Technická chyba",
+  retryLabel: "Zkusit znovu",
+} as const;
+
 export const MODERATION_GEMINI_QUOTA_ERROR =
   "Limit AI dotazů u Google je dočasně vyčerpaný. Zkuste to prosím za minutu znovu.";
 

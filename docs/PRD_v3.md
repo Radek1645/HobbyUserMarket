@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.32  
+> **Verze dokumentu:** v3.33  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`047_security_column_guards.sql`](../supabase/047_security_column_guards.sql) · [`048_listing_expiry_warning.sql`](../supabase/048_listing_expiry_warning.sql) · [`049_listing_max_lifetime.sql`](../supabase/049_listing_max_lifetime.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`047_security_column_guards.sql`](../supabase/047_security_column_guards.sql) · [`048_listing_expiry_warning.sql`](../supabase/048_listing_expiry_warning.sql) · [`049_listing_max_lifetime.sql`](../supabase/049_listing_max_lifetime.sql) · [`050_anonymize_inquiry_ips.sql`](../supabase/050_anonymize_inquiry_ips.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-17
+> **Datum:** 2026-07-19
 
 ---
 
@@ -210,7 +210,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **vlastní cookie lištou** (GTM Consent Mode v2) před aktivací měření. *(✅ GTM `GTM-WGLNJRNK`, consent banner, `/cookies` — 2026-07-14)*
 * **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2 / `nemovitost` od v0.3) a `subcategory_slug`.
 * **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1, **max délka popisu**) v `src/config/app.ts` (`LISTING_DESCRIPTION_MAX_LENGTH = 2000`, `MODERATION_DESCRIPTION_QA_RESERVE = 400`). Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace v `src/config/moderation/index.ts` (`MODERATION_ENABLED`, `MODERATION_RATE_LIMIT_PER_HOUR = 20`, `MODERATION_MAX_QUESTIONS = 5`, `MODERATION_IMAGE_MAX_DIMENSION = 512`). Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max). Prompty kategorií sync: `npm run sync:moderation`.
-* **Data v EU / EHP:** Primární DB **Supabase** = West EU Ireland (`eu-west-1`); **Vercel Functions** = Dublin (`dub1` / `eu-west-1`) — zapsáno v GDPR §5.1 (2026-07-19). AI moderace stále posílá text a fotky ke **Gemini/OpenAI** (typicky mimo EHP) — DPA/SCC + informace v GDPR; zbývá Resend region. Checklist / backlog **P33** v [`TO-DO_Fable.md`](./TO-DO_Fable.md), [`docs/pravni/README.md`](./pravni/README.md).
+* **Data v EU / EHP:** Primární DB **Supabase** = West EU Ireland (`eu-west-1`); **Vercel Functions** = Dublin (`dub1` / `eu-west-1`); **Resend** sending = Ireland (`eu-west-1`, doména `zapikolou.cz`) — zapsáno v GDPR §5.1 (2026-07-19). AI moderace stále posílá text a fotky ke **Gemini/OpenAI** (typicky mimo EHP) — DPA/SCC + informace v GDPR. Checklist / backlog **P33** v [`TO-DO_Fable.md`](./TO-DO_Fable.md), [`docs/pravni/README.md`](./pravni/README.md).
 
 ---
 
@@ -719,6 +719,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.30 | 2026-07-17 | **HP copy + průvodce + P35:** `SITE_TAGLINE` „Inzeráty a bazar pro všechny“; hero role u Služby/Práce/Události/Nemovitosti/Zboží; `/jak-vytvorit-inzerat` scénáře + demo fotky; GTM `cta_home_create_listing_guide`; SPA `virtual_pageview` (P35); Metodika §2.4 / §2.8 / §14.3 |
 | v3.31 | 2026-07-17 | **HP SEO bazar:** H1 Vše „Online bazar, kde stačí fotka a pár slov.“; `HomeSeoBlurb` pod listingy (`home-seo.ts`); `SITE_HOME_ARIA_LABEL` s tagline; Metodika §2.1 / §2.4; §5.1 sync |
 | v3.32 | 2026-07-19 | **GDPR stránka + IP cron:** `/gdpr` (LegalDocumentPage), patička; migrace **050** + cron `anonymize-inquiry-ips` (7 dní); Supabase `eu-west-1` + Vercel `dub1` v §5.1; GDPR §6.2 prohlášení věku; backlog P37–P39; HP vykání („Přihlaste se“, „vašeho okolí“); Metodika §2.1 / §2.7–2.8 / §9.1.3 |
+| v3.33 | 2026-07-19 | **Fáze 5–7 + Resend EU:** P8/P9/P11 (AI technical error, timeout 25 s, client retry); P2 orphan draft cleanup; GDPR P37–P39 + P22/P24; Resend sending `eu-west-1` (zapikolou.cz); UX U1/U2/U5/U21; Metodika §2.1 / §3.1 / §6.3 |
 
 ---
 

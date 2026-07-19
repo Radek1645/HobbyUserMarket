@@ -262,7 +262,8 @@ serve(async (req) => {
           rejectionReason: reason,
           errorCode: "RATE_LIMIT",
         });
-        return jsonResponse({ status: "REJECTED", reason }, 429);
+        // P8: rate limit ≠ obsahové zamítnutí — klient zobrazí technickou chybu.
+        return technicalErrorResponse(reason, 429, "RATE_LIMIT");
       }
       if (
         rateError instanceof Error &&
@@ -494,12 +495,11 @@ serve(async (req) => {
       }
     }
 
-    return jsonResponse(
-      {
-        status: "REJECTED",
-        reason: "Neplatný požadavek na moderaci.",
-      },
-      400,
+    // P8/U1: neočekávaná chyba nesmí vypadat jako zamítnutí obsahu.
+    return technicalErrorResponse(
+      "AI kontrola teď nefunguje. Zkuste to prosím za chvíli znovu.",
+      503,
+      "UNEXPECTED_ERROR",
     );
   }
 });

@@ -39,7 +39,7 @@ export const LEGAL_UI = {
   registrationVopConsent:
     "Souhlasím s všeobecnými obchodními podmínkami. Bez tohoto souhlasu účet nezaložíme.",
   registrationMarketingConsent:
-    "Souhlasím se zasíláním novinek a tipů e-mailem. Souhlas můžete kdykoli odvolat.",
+    "Souhlasím se zasíláním novinek a tipů e-mailem (až je spustíme). Souhlas můžete kdykoli odvolat.",
   registrationAgeConsent:
     "Prohlašuji, že mi je alespoň 15 let. V případě věku 15–18 let mám k této činnosti souhlas zákonného zástupce, je-li vyžadován.",
   registrationAgeConsentError:

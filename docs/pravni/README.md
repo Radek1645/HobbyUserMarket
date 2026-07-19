@@ -68,9 +68,10 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 
 - [x] Ověřit **Supabase region** — `eu-west-1` (West EU, Ireland); zapsáno v GDPR §5.1 (2026-07-19)
 - [x] Ověřit **Vercel** Function region — `dub1` (Dublin); zapsáno v GDPR §5.1 (2026-07-19)
-- [ ] Ověřit **Resend** region / DPA
-- [ ] **Gemini / OpenAI** — EU endpoint nebo SCC + informace v GDPR §5.1
-- [ ] Doplnit **tabulku zpracovatelů** v [`ochrana-osobnich-udaju-fo.md`](./ochrana-osobnich-udaju-fo.md) §5.1
+- [x] **Gemini / OpenAI** — popsány v GDPR §5.1 jako přenos mimo EHP + DPA/SCC (2026-07-19)
+- [x] **Tabulka zpracovatelů** v FO i OSVC §5.1 (2026-07-19)
+- [x] Ověřit **Resend** sending region — Ireland `eu-west-1`, doména `zapikolou.cz` Verified (2026-07-19); zapsáno v GDPR §5.1
+- [ ] Podpis **Resend DPA** (účetní/provozní údaje mohou být mimo EHP)
 - [ ] Revize právníkem před publikací finálního GDPR textu
 
 Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
