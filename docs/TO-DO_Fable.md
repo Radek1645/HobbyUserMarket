@@ -227,7 +227,10 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | **P23** | ✅ `account.ts`, `delete-user.ts`, migrace `037` | ~~Chybí flow smazání účtu~~ | **Hotovo 2026-07-11.** Self-delete `/profil/nastaveni` (confirm e-mail + checkbox); admin `/mod/uzivatele` (důvod); RPC + Auth Admin delete; e-mail potvrzení. |
 | **P24** | `auth/callback/route.ts` | Chyby OAuth/e-mail redirect s **raw anglickou** hláškou v `?error=`. | Mapovat na CZ přes `mapAuthError`. |
 | **P25** | produkt vs kód | PRD zmiňuje OTP; implementace je heslo + verifikační link, ne OTP login. | Sladit dokumentaci nebo doplnit magic-link/OTP. |
-| **P33** | `docs/pravni/ochrana-osobnich-udaju-fo.md` §5, PRD §3, infra | **Data v EU nejsou zaručena ani zdokumentována.** GDPR §5 je obecné („zpracovatelé na vyžádání“); Supabase region není v repu; AI moderace posílá text+fotky ke Gemini/OpenAI (typicky mimo EHP); Vercel/Resend neověřeny. | 1) Ověřit Supabase region (`eu-central-1`). 2) Tabulka zpracovatelů (region, účel, DPA/SCC) v GDPR §5.1. 3) Gemini: EU endpoint nebo SCC + informace uživatelům. 4) Resend/Vercel ověřit v dashboardu. 5) PRD §3 checklist. Viz [`pravni/README.md`](./pravni/README.md). |
+| **P33** | `docs/pravni/ochrana-osobnich-udaju-fo.md` §5, PRD §3, infra | **Data v EU nejsou zaručena ani zdokumentována.** GDPR §5 je obecné („zpracovatelé na vyžádání“); Supabase region není v repu; AI moderace posílá text+fotky ke Gemini/OpenAI (typicky mimo EHP); Vercel/Resend neověřeny. | 1) Ověřit Supabase region (`eu-central-1`). 2) Tabulka zpracovatelů (region, účel, DPA/SCC) v GDPR §5.1. 3) Gemini: EU endpoint nebo SCC + informace uživatelům. 4) Resend/Vercel ověřit v dashboardu. 5) PRD §3 checklist. Viz [`pravni/README.md`](./pravni/README.md). *(Částečně 2026-07-19: Supabase `eu-west-1` + Vercel `dub1` zapsány v GDPR §5.1.)* |
+| **P37** | GDPR §3.2 vs `inquiry_events` | Text tvrdí anonymizaci IP v **logách serveru** do 7 dnů. Kód zkracuje jen `inquiry_events.ip_address` (cron `/api/cron/anonymize-inquiry-ips`, migrace **050**). Vercel/platformové logy neřešíme. | Upravit GDPR §3.2 + tabulku „provozní logy“ na realitu (`inquiry_events`), nebo doplnit proces pro platformové logy. |
+| **P38** | GDPR §2 vs `LISTING_MAX_LIFETIME_DAYS` | Text: inzeráty **2 měsíce po vypršení**. Kód: po expiraci → `archived`; soft-delete až po **365 dnech od založení** (`049`, cron `archive-expired`). | Sladit GDPR text s 365denní lifetime, nebo změnit retenci v kódu. |
+| **P39** | GDPR §2 „Newslettery“ vs kód | Text uvádí zpracování e-mailu pro obchodní sdělení. Souhlas se ukládá (`marketing_consent_at`), **odesílání newsletteru není implementované**. | Upravit GDPR (např. „připravujeme“) / nedokončit marketing, dokud není send path + odvolání (souvisí P20/P22). |
 
 ### P2B / Podnikatelé (EU 2019/1150)
 
@@ -347,7 +350,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | ~~**3. Anti-spam & náklady**~~ | ~~H2, P15, P16, M6/P10, M7~~ | ✅ **2026-07-16** (CAPTCHA ⏳). | hotovo |
 | ~~**4. Redirect & DB integrita**~~ | ~~H3, M3, M4~~ | ✅ H3 + migrace 047 (M3/M4). | hotovo |
 | **5. Robustnost procesů** | P2, P3, P4, P8/U1, P9, P11 | Orphan data, chybný cron, chybné hlášení výpadku AI. | 1–2 dny |
-| **6. GDPR compliance** | P20, P21, P22, P23, P24, **P33** | Souhlasy + smazání účtu + **data v EU / zpracovatelé** (právní riziko). | 1–2 dny |
+| **6. GDPR compliance** | P20, P21, P22, P23, P24, **P33**, **P37**, **P38**, **P39** | Souhlasy + smazání účtu + data v EU + sladění GDPR textu s kódem (IP logy, retence inzerátů, newsletter). | 1–2 dny |
 | **6b. P2B provoz (Podnikatelé)** | P32 | E-mailové lhůty 15/30 dní dle VOP — před prvním IČO uživatelem. | 0,5–1 dne |
 | **7. UX vylepšení** | U1, U2, U3, U16, U21, P7, U5 | Rychlé výhry v důvěře a konverzi. | 1 den |
 | **8. Admin/ops (post-MVP)** | P26, P27, P28, P30, L6 | God Mode, reporting, monitoring, audit log dle PRD §11. | dle PRD |
@@ -381,5 +384,6 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | 2026-07-17 | **P35 ✅** `VirtualPageviewTracker` + `virtual-pageview.ts`; Metodika §14.3; v GTM zbývá Custom Event → GA4 page_view |
 | 2026-07-17 | **P36 ⏳** GTM ID na tlačítka cookie lišty (Přijmout / Nezbytné) |
 | 2026-07-16 | **Security hardening:** migrace **047** (M3/M4); M6 fail closed; M7 limity fotek EF; M8/M9 magic bytes; L1 zůstává 8 znaků (UX); L9 llms.txt escape; H2/P15/P10/P17 stavy; M10 částečně; **smoke test checklist** (A–D) v §0 |
+| 2026-07-19 | **GDPR audit vs kód:** §6.2 věk → prohlášení (ne hard ověření); **P37** IP logy vs `inquiry_events`; **P38** retence inzerátů 2 měsíce vs 365 dní; **P39** newsletter bez send path. Migrace **050** IP anonymizace; Supabase/Vercel EU v §5.1. |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

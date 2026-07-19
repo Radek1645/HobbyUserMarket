@@ -1,6 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { buildPostSlug } from "@/lib/posts/slug";
 import {
@@ -218,7 +219,9 @@ export async function updateListing(
     return { error: "Inzerát nebyl nalezen." };
   }
 
-  if (existing.user_id !== user.id) {
+  const isOwner = existing.user_id === user.id;
+  const asStaff = isStaffRole(user.role);
+  if (!isOwner && !asStaff) {
     return { error: "Tento inzerát může upravit jen jeho autor." };
   }
 
@@ -237,26 +240,37 @@ export async function updateListing(
     return { error: PROHIBITED_CONTENT_ERROR };
   }
 
-  const { error: updateError } = await supabase
-    .from("posts")
-    .update(buildListingPayload(validated.data))
-    .eq("id", postId)
-    .eq("user_id", user.id);
+  const payload = buildListingPayload(validated.data);
+  // Staff bez načteného telefonu nesmí přepsat contact_phone na null.
+  if (asStaff && !isOwner && !validated.data.contactPhone?.trim()) {
+    delete payload.contact_phone;
+  }
+
+  let updateQuery = supabase.from("posts").update(payload).eq("id", postId);
+  if (isOwner) {
+    updateQuery = updateQuery.eq("user_id", user.id);
+  }
+
+  const { error: updateError } = await updateQuery;
 
   if (updateError) {
     console.error("updateListing:", updateError);
     return { error: "Změny se nepodařilo uložit. Zkuste to prosím znovu." };
   }
 
-  const imageResult = await syncListingImagesFromForm(
-    supabase,
-    user.id,
-    postId,
-    formData,
-  );
+  // Fotky: insert/update post_images má RLS jen pro vlastníka. God Mode zatím
+  // mění text; sync fotek u cizího inzerátu by selhal.
+  if (isOwner) {
+    const imageResult = await syncListingImagesFromForm(
+      supabase,
+      user.id,
+      postId,
+      formData,
+    );
 
-  if (imageResult.error) {
-    return { error: imageResult.error };
+    if (imageResult.error) {
+      return { error: imageResult.error };
+    }
   }
 
   // H1: změna obsahu/fotek degradovala inzerát na 'draft' (DB trigger).
@@ -264,11 +278,13 @@ export async function updateListing(
   // publish RPC vrátí inzerát do původního stavu (aktivní zpět na 'active',
   // pauznutý zůstává 'hidden'). Edit bez změny obsahu token nemá a žádnou
   // obnovu nepotřebuje (status se neměnil).
+  // Staff je v publish gate privileged — status zůstává active; publish RPC
+  // vyžaduje ownership, proto se u God Mode přeskočí.
   const hasModerationToken = Boolean(
     String(formData.get("moderationToken") ?? "").trim(),
   );
 
-  if (hasModerationToken) {
+  if (hasModerationToken && isOwner) {
     const quota = await getUserListingQuota(user.id);
     if (isNewPublicationQuotaBlocked(quota, existing.listing_quota_consumed)) {
       return { error: LISTING_QUOTA_EXCEEDED_MESSAGE };

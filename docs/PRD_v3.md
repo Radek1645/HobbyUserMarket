@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.31  
+> **Verze dokumentu:** v3.32  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
@@ -210,7 +210,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **vlastní cookie lištou** (GTM Consent Mode v2) před aktivací měření. *(✅ GTM `GTM-WGLNJRNK`, consent banner, `/cookies` — 2026-07-14)*
 * **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2 / `nemovitost` od v0.3) a `subcategory_slug`.
 * **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1, **max délka popisu**) v `src/config/app.ts` (`LISTING_DESCRIPTION_MAX_LENGTH = 2000`, `MODERATION_DESCRIPTION_QA_RESERVE = 400`). Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace v `src/config/moderation/index.ts` (`MODERATION_ENABLED`, `MODERATION_RATE_LIMIT_PER_HOUR = 20`, `MODERATION_MAX_QUESTIONS = 5`, `MODERATION_IMAGE_MAX_DIMENSION = 512`). Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max). Prompty kategorií sync: `npm run sync:moderation`.
-* **Data v EU / EHP *(compliance — k doplnění)*:** V repozitáři **není** automatická garance, že všechna data zůstávají v EU. Při zakládání Supabase projektu zvolit **EU region** (typ. `eu-central-1`). AI moderace posílá text a fotky inzerátu ke **Gemini/OpenAI** (typicky mimo EHP) — vyžaduje DPA/SCC a informaci v GDPR. Checklist: [`docs/pravni/ochrana-osobnich-udaju-fo.md`](./pravni/ochrana-osobnich-udaju-fo.md) §5.1, backlog **P33** v [`TO-DO_Fable.md`](./TO-DO_Fable.md).
+* **Data v EU / EHP:** Primární DB **Supabase** = West EU Ireland (`eu-west-1`); **Vercel Functions** = Dublin (`dub1` / `eu-west-1`) — zapsáno v GDPR §5.1 (2026-07-19). AI moderace stále posílá text a fotky ke **Gemini/OpenAI** (typicky mimo EHP) — DPA/SCC + informace v GDPR; zbývá Resend region. Checklist / backlog **P33** v [`TO-DO_Fable.md`](./TO-DO_Fable.md), [`docs/pravni/README.md`](./pravni/README.md).
 
 ---
 
@@ -564,7 +564,8 @@ Z důvodu GDPR (minimalizace údajů) a ochrany infrastruktury je zaveden automa
 | Auth účet | Smazán přes Supabase Auth (až po krocích výše) |
 
 * **Automatická e-mailová urgence (Pre-trigger):** **7 dní před anonymizací** (83. den neaktivity) upozornění přes Resend. Přihlášení resetuje časovač.
-* **Technická realizace:** Cron jednou denně (pg_cron nebo Supabase Edge Function).
+* **Technická realizace (účty):** Denní Vercel cron `/api/cron/gdpr-retention` (`15 3 * * *`), migrace **045**, RPC kandidátů + `prepare_user_account_deletion`.
+* **Anonymizace IP u poptávek:** V `inquiry_events` se ukládá IP pro rate-limit (24 h). Denní cron `/api/cron/anonymize-inquiry-ips` (`45 3 * * *`) zkrátí IP starší než **7 dní** (IPv4 → poslední oktet `0`). Migrace **050**, `IP_ANONYMIZE_AFTER_DAYS`. Veřejné GDPR: `/gdpr` (`LegalDocumentPage` slug `gdpr`).
 
 ### 5.6 Role-Based Access Control (RBAC) & Inline Administrace (God Mode)
 
@@ -717,6 +718,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.29 | 2026-07-16 | **Životnost + expiry mail:** migrace **048**/**049** — absolutní strop 365 dní od `created_at` (`lifetime_max`), e-mail 3 dny před expirací (cron `listing-expiry-warning`); UI badge Nabízím/Hledám, odměna u práce; právní docs 365 dní; favicon zP; Metodika §9.1.1–9.1.2 |
 | v3.30 | 2026-07-17 | **HP copy + průvodce + P35:** `SITE_TAGLINE` „Inzeráty a bazar pro všechny“; hero role u Služby/Práce/Události/Nemovitosti/Zboží; `/jak-vytvorit-inzerat` scénáře + demo fotky; GTM `cta_home_create_listing_guide`; SPA `virtual_pageview` (P35); Metodika §2.4 / §2.8 / §14.3 |
 | v3.31 | 2026-07-17 | **HP SEO bazar:** H1 Vše „Online bazar, kde stačí fotka a pár slov.“; `HomeSeoBlurb` pod listingy (`home-seo.ts`); `SITE_HOME_ARIA_LABEL` s tagline; Metodika §2.1 / §2.4; §5.1 sync |
+| v3.32 | 2026-07-19 | **GDPR stránka + IP cron:** `/gdpr` (LegalDocumentPage), patička; migrace **050** + cron `anonymize-inquiry-ips` (7 dní); Supabase `eu-west-1` + Vercel `dub1` v §5.1; GDPR §6.2 prohlášení věku; backlog P37–P39; HP vykání („Přihlaste se“, „vašeho okolí“); Metodika §2.1 / §2.7–2.8 / §9.1.3 |
 
 ---
 
@@ -1197,7 +1199,7 @@ Patička je renderována v `AppShell` → `SiteFooter` na **všech stránkách**
 | **Všeobecné obchodní podmínky (VOP)** | PDF + HTML stub | `/vop` · `/docs/vop-v1.0.pdf` | Smluvní vztah s platformou; povinný souhlas při registraci (§5.2) |
 | **Marketingový souhlas** | HTML stub | `/marketingovy-souhlas` | Volitelný souhlas se zasíláním obchodních sdělení; souhlas při registraci (§5.2) |
 | **Podmínky inzerce** | HTML | `/podminky-inzerce` | Pravidla pro inzerenty, moderace (existující stub) |
-| **Zásady ochrany osobních údajů** | PDF + HTML stub | `/gdpr` · `/docs/gdpr-v1.0.pdf` | GDPR, zpracování dat |
+| **Zásady ochrany osobních údajů** | HTML (markdown z `docs/pravni/`) · PDF volitelně | `/gdpr` · `/docs/gdpr-v*.pdf` | GDPR, zpracování dat; FO/OSVČ dle `NEXT_PUBLIC_MONETIZATION_ENABLED` |
 | **Cookies** | HTML / modal | `/cookies` nebo consent banner | GTM consent mode |
 | **FAQ** | HTML (accordion) | `/faq` | Viz níže |
 

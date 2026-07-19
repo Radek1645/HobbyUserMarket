@@ -137,8 +137,8 @@ export function HomeBrowse({
                   aria-hidden="true"
                 />
                 <p className="pt-2 text-xs text-gray-600">
-                  Žádné zdlouhavé registrace. Přihlas se na jeden klik přes Google
-                  nebo klasicky e-mailem.
+                  Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes
+                  Google nebo klasicky e-mailem.
                 </p>
               </div>
             ) : null}

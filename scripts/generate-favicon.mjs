@@ -61,6 +61,10 @@ const publicDir = join(root, "public");
 
 await writePng(join(publicDir, "icon.png"), 512, { rounded: true });
 await writePng(join(publicDir, "apple-icon.png"), 180, { rounded: false });
+// Google OAuth consent screen — square 120×120, opaque (no transparent corners).
+await writePng(join(publicDir, "google-auth-logo-120.png"), 120, {
+  rounded: false,
+});
 await writePng(join(publicDir, "favicon-96.png"), 96, { rounded: true });
 
 const png48 = await writePng(join(publicDir, "favicon-48.png"), 48, {

@@ -8,6 +8,7 @@ import {
 } from "@/lib/posts/listing-path";
 import { postToListingFormInitialValues } from "@/lib/posts/listing-form";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { isNewPublicationQuotaBlocked } from "@/lib/listings/quota-shared";
 import {
   getUserListingQuota,
@@ -55,11 +56,13 @@ export default async function EditListingPage({ params }: PageProps) {
     redirect(`/onboarding?next=${encodeURIComponent(editPath)}`);
   }
 
-  const post = await getListingForEdit(slug, user.id);
+  const asStaff = isStaffRole(user.role);
+  const post = await getListingForEdit(slug, user.id, { asStaff });
   if (!post) notFound();
 
   const initialValues = postToListingFormInitialValues(post, post.location);
-  const quota = await getUserListingQuota(user.id);
+  // Kvóta vlastníka inzerátu (God Mode edituje cizí účet).
+  const quota = await getUserListingQuota(post.user_id);
   const publishBlockedByQuota = isNewPublicationQuotaBlocked(
     quota,
     post.listing_quota_consumed,

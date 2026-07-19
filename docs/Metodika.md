@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md)  
-> **Datum:** 2026-07-14
+> **Datum:** 2026-07-19
 
 ---
 
@@ -44,9 +44,10 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 ### 2.1 Zobrazení homepage (HP)
 
 1. Návštěvník otevře úvodní stránku `/`.
-2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); značka **zaPikolou.cz** a tagline v hlavičce.
-3. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou, názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo).
-4. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
+2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); subline s **vykáním** („z vašeho okolí“); značka **zaPikolou.cz** a tagline v hlavičce.
+3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání).
+4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou, názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo).
+5. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
 
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
 
@@ -117,9 +118,9 @@ Na všech stránkách je společná hlavička (wordmark **zaPikolou.cz**, vyhled
 
 | Sloupec | Odkazy |
 |---------|--------|
-| **Dokumenty** | VOP, Podmínky inzerce, Zásady cookies, Marketingový souhlas, Limity/Balíčky inzerce, Nahlásit inzerát |
+| **Dokumenty** | VOP, **Zásady ochrany osobních údajů** (`/gdpr`), Podmínky inzerce, Zásady cookies, Marketingový souhlas, Limity/Balíčky inzerce, DSA kontaktní centrum, Nahlásit inzerát |
 | **Kontakt** | Provozovatel webu (`/kontakt`) |
-| **Co je zaPikolou?** | O platformě (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`) |
+| **Co je zaPikolou?** | O platformě (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`), Pro AI (`/llms.txt`) |
 
 V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), krátký tagline a verze platformy (`0.1`).
 
@@ -131,8 +132,11 @@ V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), 
 | `/jak-vytvorit-inzerat` | Průvodce ve 4 krocích; přepínatelné demo scénáře (Elektronika / Kolo / Spotřebič) včetně fotek a OCR štítku |
 | `/kontakt` | Provozovatel (jméno, e-mail, datová schránka) |
 | `/cookies` | Zásady používání souborů cookie (právní text z `docs/pravni/cookies.md`) |
+| `/gdpr` | Zásady ochrany osobních údajů (`docs/pravni/ochrana-osobnich-udaju-fo.md` / `-osvc.md` dle monetizace) |
+| `/dsa` | DSA kontaktní centrum |
+| `/vop` | Všeobecné obchodní podmínky |
 
-Stránky jsou veřejné, indexovatelné a v `sitemap.xml`.
+Stránky jsou veřejné, indexovatelné a v `sitemap.xml` (včetně `/gdpr`).
 
 ---
 
@@ -534,7 +538,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 **`src/app/sitemap.ts`** → generuje `/sitemap.xml`
 
 - Next.js při požadavku na `/sitemap.xml` spustí tuto funkci a vrátí XML se seznamem URL.
-- Obsahuje **statické stránky**: `/`, `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`, `/vop`, `/balicky-inzerce`, `/podminky-inzerce`, `/marketingovy-souhlas`, `/cookies`.
+- Obsahuje **statické stránky**: `/`, `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`, `/vop`, `/gdpr`, `/balicky-inzerce`, `/podminky-inzerce`, `/marketingovy-souhlas`, `/cookies`.
 - Obsahuje **aktivní inzeráty** — načte je přes `get-sitemap-listings.ts`.
 - **`revalidate = 300`** (5 minut): cache se obnoví nejpozději za 5 minut, takže nový nebo expirovaný inzerát se v sitemap projeví bez ručního zásahu.
 - Expirované nebo smazané inzeráty v sitemap **nejsou** — vyhledávač je nemá indexovat.
@@ -591,6 +595,15 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 - Denní cron `/api/cron/listing-expiry-warning` (Vercel, 03:30) pošle majiteli e-mail, pokud aktivní inzerát expiruje do **3 dní**.
 - Idempotentní: sloupec `posts.expiry_warning_for_expires_at` = `expires_at`, pro které už výstraha odešla. Po prodloužení se `expires_at` změní → nová výstraha až blízko nového data.
 - Copy rozlišuje, zda ještě lze obnovit v rámci lifetime. Migrace: `048_listing_expiry_warning.sql` (+ úprava kandidátů v 049). Konfigurace: `src/config/listing-expiry.ts`.
+
+### 9.1.3 GDPR crony (účty a IP)
+
+| Cron (Vercel) | Schedule | Účel |
+|---------------|----------|------|
+| `/api/cron/gdpr-retention` | `15 3 * * *` | Neaktivní účty: varování 7 dní předem, po **90 dnech** bez přihlášení a bez aktivního inzerátu anonymizace profilu + smazání auth (`045`, `src/config/gdpr-retention.ts`) |
+| `/api/cron/anonymize-inquiry-ips` | `45 3 * * *` | Zkrácení IP v `inquiry_events` starších než **7 dní** (IPv4 → `x.x.x.0`, jinak `anonymized`). RPC `anonymize_old_inquiry_ips`, migrace **050**, config `src/config/ip-anonymization.ts` |
+
+Auth: `Authorization: Bearer CRON_SECRET` (stejně jako ostatní crony). Rate-limit poptávek používá IP jen v okně 24 h — anonymizace po 7 dnech ho neovlivní.
 
 ### 9.2 Události
 
@@ -1073,6 +1086,8 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 | Site Notice | Konfigurace: `src/config/site-notice.ts`; komponenta: `src/components/layout/SiteNoticeBar.tsx` |
 | Cookie lišta / GTM | `src/config/cookie-consent.ts`, `src/config/gtm.ts`, `src/components/consent/`, `src/components/analytics/` |
 | [`docs/pravni/cookies.md`](./pravni/cookies.md) | Právní text zásad cookies |
+| [`docs/pravni/ochrana-osobnich-udaju-fo.md`](./pravni/ochrana-osobnich-udaju-fo.md) | GDPR — zásady ochrany osobních údajů (veřejně `/gdpr`) |
+| [`docs/pravni/README.md`](./pravni/README.md) | Přehled právních docs + checklist data v EU (P33) |
 
 ---
 

@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-19 | [2026-07-19.md](./2026-07-19.md) — `/gdpr`, IP cron 050, EU regiony, P37–P39, HP vykání, PRD v3.32 |
 | 2026-07-17 | [2026-07-17.md](./2026-07-17.md) — HP copy, tagline bazar, průvodce scénáře, P35 virtual_pageview, PRD v3.30 |
 | 2026-07-16 (večer) | [2026-07-16-vecer.md](./2026-07-16-vecer.md) — lifetime 365d (049), expiry mail (048), intent badges, právní, PRD v3.29; infra ✅ |
 | 2026-07-16 | [2026-07-16.md](./2026-07-16.md) — security 047 (M3–M9), magic bytes, llms.txt dynamicky, favicon; 047 později nasazeno (viz večer) |

@@ -91,6 +91,17 @@ Parametry
 | **Parametry** | Nadpis `Parametry` (případně legacy `Technické údaje`), odrážky `• Popisek: hodnota` |
 | **Zdroje faktů** | Text uživatele, **všechny fotografie**, metadata formuláře — vše zapracovat do úvodu nebo Parametrů, pokud je známo |
 
+### Synonyma a hledané výrazy (SEO)
+
+Google ignoruje hashtagy (`#baterka`). Místo nich má AI do **úvodu** přirozeně zakomponovat 2–4 synonyma / lidové názvy / související výrazy, které lidé hledají (např. akumulátor → baterie, baterka; gravel → gravel kolo).
+
+| Smí | Nesmí |
+|-----|--------|
+| Střídat názvy téže věci v běžných větách | Hashtagy, seznamy klíčových slov, keyword stuffing |
+| Čeština + běžné anglicismy, pokud dávají smysl | Vymýšlet výbavu / příslušenství jen kvůli klíčovým slovům |
+
+Pravidlo a příklad jsou v system promptu (`src/config/moderation/build-prompt.ts` a stejná kopie v `supabase/functions/_shared/moderation/build-prompt.ts`). Po úpravě promptu: ručně sjednotit obě kopie a `npx supabase functions deploy moderate-listing` — bez redeploy se změna v cloudu neprojeví.
+
 ### Příklad po hydrataci (auto, APPROVED)
 
 ```

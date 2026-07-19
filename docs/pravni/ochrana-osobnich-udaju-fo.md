@@ -52,34 +52,22 @@ Pokud se u konkrétního analytického nástroje uplatní **společné správcov
 
 ## 5. Příjemci a předávání údajů
 
-Údaje zpracováváme prostřednictvím smluvních zpracovatelů (hosting, e-mail, analytika). Seznam hlavních zpracovatelů je k dispozici na vyžádání na kontaktním e-mailu správce. Údaje nepředáváme třetím stranám za účelem prodeje.
+Údaje zpracováváme prostřednictvím smluvních zpracovatelů. Údaje nepředáváme třetím stranám za účelem prodeje. Aktuální seznam hlavních zpracovatelů je k dispozici na vyžádání na kontaktním e-mailu správce.
 
-> **Stav:** Region uložení a přeshraniční přenosy **nejsou zatím plně zdokumentované** v tomto textu. Níže je checklist k doplnění před ostrým provozem a revizí právníkem.
+### 5.1 Hlavní zpracovatelé
 
-### 5.1 Checklist — data v EU / EHP (k doplnění)
+| Zpracovatel | Účel | Region |
+|-------------|------|--------|
+| Supabase | databáze, autentizace, úložiště fotografií | EU — West EU (Ireland), `eu-west-1` |
+| Vercel | hosting webové aplikace (Serverless Functions) | EU — Dublin (`dub1` / `eu-west-1`) |
+| Resend | transakční e-maily (notifikace, poptávky) | dle nastavení poskytovatele |
+| Google | přihlášení přes Google (OAuth) | dle služby Google |
+| Google (Gemini) | automatická moderace textu a fotografií inzerátů | může zahrnovat přenos mimo EHP |
+| OpenAI | záložní AI moderace (pokud je aktivní) | může zahrnovat přenos mimo EHP (typicky USA) |
+| Google | analytika webu (GA4 / GTM) — jen po souhlasu v cookie liště | dle služby Google |
+| Mapy.cz | geokódování a našeptávač lokality | CZ / EU |
 
-- [ ] **Supabase** — ověřit v Dashboard → Project Settings → **region projektu** (cíl: EU, typicky `eu-central-1` Frankfurt). Zapsat do tohoto dokumentu a do [`PRD_v3.md`](../PRD_v3.md) §3.
-- [ ] **Vercel** — ověřit region běhu (Functions / SSR) a zapsat do tabulky zpracovatelů; u Hobby tieru ověřit, zda neprobíhá zpracování mimo EHP.
-- [ ] **Resend** (e-maily) — ověřit region účtu / DPA; doplnit do tabulky zpracovatelů.
-- [ ] **Google Gemini** (AI moderace) — obsah inzerátu (text + fotky) odchází mimo naši DB: zvolit **EU endpoint** (pokud dostupný) nebo v GDPR uvést přenos mimo EHP + právní základ (SCC / DPA Google).
-- [ ] **OpenAI** (fallback moderace) — stejně jako Gemini; pokud fallback zůstane, uvést USA + SCC nebo fallback vypnout v produkci.
-- [ ] **Google OAuth / GA4** — doplnit do tabulky; GA4 jen po souhlasu v cookie liště; uvést případný přenos mimo EHP.
-- [ ] **Mapy.cz** — doplnit zpracovatele (lokalita inzerátu / našeptávač).
-- [ ] **Tabulka zpracovatelů** — doplnit sloupce: *Zpracovatel · Účel · Region · Kategorie údajů · Právní základ přenosu · DPA/SCC*.
-- [ ] **Informace pro uživatele** — v §5 nebo samostatné příloze uvést, že **celý flow není EU-only** (min. kvůli AI moderaci), dokud nebude architektura upravena nebo právně pokryta.
-
-**Referenční tabulka (draft — doplnit po ověření v dashboardech):**
-
-| Zpracovatel | Účel | Region (cíl / ověřit) | Poznámka |
-|-------------|------|------------------------|----------|
-| Supabase | DB, auth, storage fotek | EU (`eu-central-1`) | Region při zakládání projektu |
-| Vercel | hosting Next.js | ? | Ověřit v dashboardu |
-| Resend | transakční e-maily | ? | Poptávky, notifikace |
-| Google (Gemini) | AI moderace textu a fotek | mimo EHP (typicky) | Edge Function `moderate-listing` |
-| OpenAI | fallback AI moderace | USA (typicky) | Volitelný fallback |
-| Google | OAuth přihlášení | ? | Auth |
-| Google | GA4 / GTM | ? | Jen po souhlasu |
-| Mapy.cz | geokódování, našeptávač | CZ/EU | API klíč |
+U služeb Google a OpenAI může docházet k přenosu údajů mimo EHP; v takovém případě se uplatní odpovídající záruky (např. standardní smluvní doložky) dle smluv s daným poskytovatelem.
 
 ---
 
@@ -98,7 +86,7 @@ Abychom minimalizovali zpracování osobních údajů, účet **automaticky anon
 
 ### 6.2 Věk a souhlas dětí
 
-Platforma je určena uživatelům od **15 let**. U osob **mladších 15 let** nelze účet založit. V České republice platí pro souhlas se zpracováním osobních údajů v souvislosti s informační společností věk **15 let** (čl. 8 GDPR ve spojení s národní úpravou). U osob mladších 15 let může souhlas udělit výhradně zákonný zástupce.
+Platforma je určena uživatelům od **15 let**. Při registraci vyžadujeme **prohlášení**, že uživateli je alespoň 15 let; bez tohoto prohlášení účet nezaložíme. Věk technicky neověřujeme (např. dokladem totožnosti). V České republice platí pro souhlas se zpracováním osobních údajů v souvislosti s informační společností věk **15 let** (čl. 8 GDPR ve spojení s národní úpravou). U osob mladších 15 let může souhlas udělit výhradně zákonný zástupce.
 
 ---
 

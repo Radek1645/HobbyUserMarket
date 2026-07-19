@@ -2,6 +2,7 @@ import { ABOUT_PLATFORM_PATH } from "@/config/about-platform";
 import { CREATE_LISTING_GUIDE_PATH } from "@/config/create-listing-guide";
 import {
   COOKIES_PATH,
+  GDPR_PATH,
   LISTING_PACKAGES_PATH,
   MARKETING_CONSENT_PATH,
   VOP_PATH,
@@ -106,6 +107,7 @@ export async function buildLlmsTxt(): Promise<string> {
     `- Jak vytvořit inzerát: ${absoluteUrl(CREATE_LISTING_GUIDE_PATH)}`,
     `- Limity inzerce: ${absoluteUrl(LISTING_PACKAGES_PATH)}`,
     `- VOP: ${absoluteUrl(VOP_PATH)}`,
+    `- Zásady ochrany osobních údajů: ${absoluteUrl(GDPR_PATH)}`,
     `- Podmínky inzerce: ${absoluteUrl(LISTING_TERMS_PATH)}`,
     `- Zásady cookies: ${absoluteUrl(COOKIES_PATH)}`,
     `- Marketingový souhlas: ${absoluteUrl(MARKETING_CONSENT_PATH)}`,

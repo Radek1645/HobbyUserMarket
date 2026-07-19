@@ -5,6 +5,7 @@ import path from "node:path";
 
 export type LegalDocumentSlug =
   | "vop"
+  | "gdpr"
   | "balicky-inzerce"
   | "podminky-inzerce"
   | "cookies"
@@ -20,6 +21,10 @@ const VARIANT_FILE_BY_SLUG: Partial<
   Record<LegalDocumentSlug, { fo: string; osvc: string }>
 > = {
   vop: { fo: "vop-fo.md", osvc: "vop-osvc.md" },
+  gdpr: {
+    fo: "ochrana-osobnich-udaju-fo.md",
+    osvc: "ochrana-osobnich-udaju-osvc.md",
+  },
   "balicky-inzerce": {
     fo: "balicky-inzerce-fo.md",
     osvc: "balicky-inzerce-osvc.md",
@@ -116,7 +121,5 @@ export async function readLegalDocument(
 
 /** Cesta k souboru GDPR zásad — stejná logika jako u VOP (FO / OSVČ). */
 export function resolveGdprDocumentFilename(): string {
-  return MONETIZATION_ENABLED
-    ? "ochrana-osobnich-udaju-osvc.md"
-    : "ochrana-osobnich-udaju-fo.md";
+  return resolveFilename("gdpr");
 }

@@ -9,6 +9,7 @@ import {
 import {
   COOKIES_PATH,
   DSA_CONTACT_PATH,
+  GDPR_PATH,
   LEGAL_UI,
   LISTING_PACKAGES_PATH,
   MARKETING_CONSENT_PATH,
@@ -41,6 +42,7 @@ export const FOOTER_UI = {
 
 export const FOOTER_DOCUMENT_LINKS = [
   { href: VOP_PATH, label: LEGAL_UI.vopLinkLabel },
+  { href: GDPR_PATH, label: LEGAL_UI.gdprLinkLabel },
   { href: LISTING_TERMS_PATH, label: MODERATION_REJECTION_UI.termsLinkLabel },
   { href: COOKIES_PATH, label: LEGAL_UI.cookiesLinkLabel },
   { href: MARKETING_CONSENT_PATH, label: LEGAL_UI.marketingConsentLinkLabel },

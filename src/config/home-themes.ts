@@ -52,7 +52,7 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
     label: "Vše",
     headline: "Online bazar, kde stačí fotka a pár slov.",
     subline:
-      "AI se doptá na detaily a vytvoří inzerát do 2 minut. Rovnou pro lidi z tvého okolí.",
+      "AI se doptá na detaily a vytvoří inzerát do 2 minut. Rovnou pro lidi z vašeho okolí.",
     shellClass: "bg-zinc-50",
     heroClass:
       "bg-gradient-to-r from-orange-200 via-amber-50 to-emerald-200",

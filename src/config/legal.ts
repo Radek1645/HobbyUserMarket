@@ -3,6 +3,7 @@ import { MONETIZATION_ENABLED } from "@/config/monetization";
 /** Právní dokumenty — cesty a popisky (PRD §5.2, §11.3). */
 
 export const VOP_PATH = "/vop";
+export const GDPR_PATH = "/gdpr";
 export const LISTING_PACKAGES_PATH = "/balicky-inzerce";
 export const MARKETING_CONSENT_PATH = "/marketingovy-souhlas";
 export const COOKIES_PATH = "/cookies";
@@ -28,6 +29,7 @@ export const SAFETY_UI = {
 
 export const LEGAL_UI = {
   vopLinkLabel: "Všeobecné obchodní podmínky",
+  gdprLinkLabel: "Zásady ochrany osobních údajů",
   listingPackagesLinkLabel: MONETIZATION_ENABLED
     ? "Balíčky inzerce"
     : "Limity inzerce",
