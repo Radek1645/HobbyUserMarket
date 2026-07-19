@@ -45,11 +45,11 @@ Po nasazení [`047_security_column_guards.sql`](../supabase/047_security_column_
 
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
-| A1 | Registrace / login — heslo **8** znaků | Projde; kratší ne | ☐ |
-| A2 | Nový inzerát s fotkou → AI → publikace | `active` na HP | ☐ |
-| A3 | Editace názvu/popisu → re-moderace → uložení | OK | ☐ |
-| A4 | Prodloužení v Moje inzeráty (+30 dní) | `expires_at` se posune, inzerát viditelný | ☐ |
-| A5 | Pauza / obnovení | Jako dřív | ☐ |
+| A1 | Registrace / login — heslo **8** znaků | Projde; kratší ne | ✅ 2026-07-19 |
+| A2 | Nový inzerát s fotkou → AI → publikace | `active` na HP | ✅ 2026-07-19 |
+| A3 | Editace názvu/popisu → re-moderace → uložení | OK | ✅ 2026-07-19 |
+| A4 | Prodloužení v Moje inzeráty (+30 dní) | `expires_at` se posune, inzerát viditelný | ✅ 2026-07-19 |
+| A5 | Pauza / obnovení | Jako dřív | ✅ 2026-07-19 |
 | A6 | Poptávka s PDF/JPG (Práce); falešná přípona (`.pdf` + text) | Platná příloha OK; falešná → chyba | ☐ |
 
 #### B) Security regress (triggery 047)
