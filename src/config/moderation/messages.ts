@@ -47,7 +47,10 @@ export const MODERATION_PREVIEW_UI = {
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
   metaDescriptionLabel: "Meta popis (vyhledávače)",
+  metaDescriptionHelp:
+    "Zobrazí se ve výsledcích Googlu a Seznamu a zvyšuje viditelnost.",
   imageAltLabel: "Alt text hlavní fotky",
+  imageAltHelp: "Popis fotky pro vyhledávače obrázků.",
   questionsHeading: "Vylepšete svůj inzerát",
   questionsHint:
     "Odpovězte na to, co kupující nejvíc zajímá. Urychlíte prodej a vyhnete se zbytečným otázkám v chatu.",

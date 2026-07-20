@@ -7,6 +7,8 @@ type ListingImageLightboxProps = {
   images: Array<{ id: string; url: string }>;
   activeIndex: number;
   title: string;
+  /** Alt hlavní / produktové fotky; fallback = title. */
+  imageAlt?: string | null;
   onClose: () => void;
   onActiveIndexChange: (index: number) => void;
 };
@@ -15,9 +17,11 @@ export function ListingImageLightbox({
   images,
   activeIndex,
   title,
+  imageAlt,
   onClose,
   onActiveIndexChange,
 }: ListingImageLightboxProps) {
+  const photoAlt = imageAlt?.trim() || title;
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const touchStartX = useRef<number | null>(null);
 
@@ -118,7 +122,11 @@ export function ListingImageLightbox({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={active.url}
-            alt={`${title} — fotka ${activeIndex + 1}`}
+            alt={
+              images.length > 1
+                ? `${photoAlt} — fotka ${activeIndex + 1}`
+                : photoAlt
+            }
             className="max-h-[calc(100vh-5rem)] max-w-full object-contain"
           />
 

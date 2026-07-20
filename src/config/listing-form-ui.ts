@@ -18,7 +18,7 @@ export const LISTING_FORM_REQUIRED_LEGEND = "* Označená pole jsou povinná.";
 export const LISTING_FORM_SAVING_UI = {
   title: "Ukládám inzerát…",
   titleEdit: "Ukládám změny…",
-  hint: "Chvilku strpení — formulář nechte otevřený. Opakované klikání nic neurychlí.",
+  hint: "Chvilku strpení — formulář nechte otevřený.",
 } as const;
 
 export const listingFormRequiredLegendClass =

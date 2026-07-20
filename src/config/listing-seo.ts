@@ -3,10 +3,13 @@
 import { SITE_DISPLAY_NAME } from "@/config/site";
 
 /** Musí odpovídat hlavičce Verze v docs/seo/SEO_BIBLE.md. */
-export const LISTING_SEO_BIBLE_VERSION = "1.2";
+export const LISTING_SEO_BIBLE_VERSION = "1.3";
 
-/** Cílová max. délka H1 / cleanedTitle (AI). Formulář může přijmout víc před hydratací. */
-export const LISTING_H1_SEO_MAX_LENGTH = 60;
+/**
+ * Cílová max. délka H1 / cleanedTitle (AI).
+ * Má být kratší než meta title — v `<title>` musí zůstat prostor pro lokalitu a brand.
+ */
+export const LISTING_H1_SEO_MAX_LENGTH = 45;
 
 /** Max. délka document title / OG title po buildListingMetaTitle. */
 export const LISTING_META_TITLE_MAX_LENGTH = 60;

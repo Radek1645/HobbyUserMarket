@@ -2,6 +2,13 @@
 
 Formát: `## vX.Y — YYYY-MM-DD` + krátké body.
 
+## v1.3 — 2026-07-20
+
+- Meta title: při limitu 60 **nejdřív zkrátit H1**, držet lokalitu + brand.
+- H1 max ~45, bez synonym v závorkách / use-case (synonyma jen v popisu).
+- Meta description: povinně 150–160 + pad v kódu; galerie sdílí produktový alt.
+- Snapshot: [`snapshots/seo-bible-v1.3.md`](./snapshots/seo-bible-v1.3.md).
+
 ## v1.2 — 2026-07-20
 
 - Meta description: cena jen jako `za X Kč` — zákaz `cca` / `orientační` / `dohodou` v SERP snippetu.

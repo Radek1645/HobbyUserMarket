@@ -531,10 +531,10 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 
 #### Meta a AI hydratace (shrnutí)
 
-- **H1** = `posts.title` (AI `cleanedTitle`) — obecný název první, bez vaty, bez lokality.
-- **`<title>`** skládá kód z H1 + lokality + značky (`buildListingMetaTitle`), max ~60 znaků.
-- **Meta description** = `posts.meta_description` (AI); cena jen `za X Kč` (bez cca / dohodou). Fallback: úvod popisu před `---`.
-- **Alt hlavní fotky** = `posts.image_alt` (AI).
+- **H1** = `posts.title` (AI `cleanedTitle`) — obecný název první, max ~45, bez synonym v závorkách / use-case.
+- **`<title>`** skládá kód z H1 + lokality + značky (`buildListingMetaTitle`); při limitu nejdřív zkrátí H1.
+- **Meta description** = `posts.meta_description` (AI); cena jen `za X Kč`; cíl 150–160 znaků (+ pad v kódu). Fallback: úvod popisu před `---`.
+- **Alt** = `posts.image_alt` na hlavní i náhledy galerie; avatar v chrome `alt=""`.
 - **JSON-LD Offer.price** jen u pevné ceny / zdarma — ne u „dohodou“.
 - **Lokální SEO:** spádové město jen jako blízkost / dojezdová vzdálenost — bez slibu dovozu (SEO bible §3.4).
 - Dohoda o ceně patří do **těla** inzerátu (`Cena X Kč, dohodou.`), ne do meta.

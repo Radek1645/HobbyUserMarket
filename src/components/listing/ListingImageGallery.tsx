@@ -81,7 +81,7 @@ export function ListingImageGallery({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={image.url}
-                      alt=""
+                      alt={mainAlt}
                       className="h-16 w-20 object-cover sm:h-20 sm:w-24"
                     />
                   </button>
@@ -97,6 +97,7 @@ export function ListingImageGallery({
           images={sorted.map((image) => ({ id: image.id, url: image.url }))}
           activeIndex={activeIndex}
           title={title}
+          imageAlt={mainAlt}
           onClose={() => setLightboxOpen(false)}
           onActiveIndexChange={(index) => {
             const image = sorted[index];

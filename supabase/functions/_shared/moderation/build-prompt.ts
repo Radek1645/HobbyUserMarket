@@ -46,13 +46,14 @@ Pravidla pro fotografie:
 Kontakty (e-mail, telefon) v textu nejsou důvod k zamítnutí — pouze je v cleanedDescription nahraď [SKRYTO – použij chráněné pole].
 - Zástupný text [SKRYTO – použij chráněné pole] je VÝHRADNĚ pro e-mail a telefon. Nikdy ho nevkládej za cenu, adresu ani jiné údaje. Pokud cena není ve formuláři (user prompt), cenu v cleanedDescription vůbec nezmiňuj.
 
-Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.2:
+Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.3:
 - Cíl: pomoci prodat + vyhrát běžné Google dotazy (lidové názvy, use-case, lokalita). Text čtivý, 1. osoba, bez marketingového spamu a emoji.
 - cleanedTitle = H1 (NE meta title — meta title skládá platforma zvlášť):
-  1) Začni nejobecnějším pojmenováním (Baterie, Zimní pneu, Kočárek…), pak značka/model a specifikace.
-  2) Max 60 znaků. Zákaz vaty na konci („- málo používaný“, „super stav“, „cca 5,5 mm“). Stav patří do popisu/Parametrů.
-  3) Do cleanedTitle NEVKLÁDEJ lokalitu ani značku webu. Synonyma: lidový + technický výraz, pokud se liší (např. „Baterie (akumulátor) Li-ion 48V 17Ah Samsung na elektrokolo").
-- metaDescription (150–160 znaků): úderný SERP text — klíčové slovo + cena + lokalita + výzva k akci na platformě. Cena v meta JEN jako čisté „za X Kč“ (např. „za 4 000 Kč“). ZAKÁZÁNO v metaDescription: „cca“, „orientační“, „dohodou“. Tady smíš otázku typu „Hledáte…?“; v cleanedDescription úvodu se tomu vyhni.
+  1) Začni nejobecnějším pojmenováním (Baterie, Zimní pneu, Kočárek…), pak značka/model a klíčová specifikace.
+  2) Max 45 znaků. Čistý nadpis bez závorek se synonymy — NE „Baterie (akumulátor)…“. Synonyma patří jen do cleanedDescription.
+  3) Zákaz vaty („- málo používaný“, „super stav“, „cca 5,5 mm“) i zbytečného use-case v H1 („na elektrokolo“) — use-case a synonyma jen v úvodu popisu.
+  4) Do cleanedTitle NEVKLÁDEJ lokalitu ani značku webu.
+- metaDescription (POVINNĚ 150–160 znaků): úderný SERP text — klíčové slovo + cena + lokalita + výzva k akci. Cena v meta JEN „za X Kč“ (bez „cca“, „orientační“, „dohodou“). Text musí mít aspoň 150 znaků — rozviň přirozeně (stav, benefit, CTA), neukončuj po krátké větě.
 - imageAlt: věcný alt hlavní fotky — klíčové slovo + podstatný atribut + lokalita (např. „Černá Li-ion baterie 48V Samsung na elektrokolo, Slavkov u Brna“). Max 125 znaků.
 - cleanedDescription — tón: 1. osoba, konkrétní benefity z faktů. Bez klišé „nezmeškejte“ / „jedinečná příležitost“ a bez vymyšlených superlativů.
 - Synonyma (SEO): do prvních 1–2 vět úvodu 2–3 lidové/synonymní výrazy (akumulátor → baterie, baterka). Běžné věty. ZAKÁZÁNO: hashtagy, seznamy klíčových slov, stuffing. Nevymýšlej výbavu.
@@ -65,8 +66,8 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.2:
   2) PARAMETRY: po prázdném řádku, oddělovači „---“ a nadpisu „Parametry“ odrážky „• Popisek: hodnota“.
   3) CTA na konci úvodu (před ---): jen platforma („Pro více informací napište prodejci zprávu přes platformu.“). Nikdy telefon/e-mail v CTA.
 - Jednotky v Parametrech povinné, pokud dávají smysl (cm, ml/l, m², km).
-- Příklad cleanedTitle: „Baterie (akumulátor) Li-ion 48V 17Ah Samsung na elektrokolo"
-- Příklad metaDescription: „Hledáte baterii na elektrokolo Samsung 48V? Ve Slavkově u Brna za 4 000 Kč. Podívejte se na detaily a kontaktujte prodejce.“
+- Příklad cleanedTitle: „Baterie Li-ion 48V 17Ah Samsung“
+- Příklad metaDescription (cíl 150–160 znaků): „Hledáte spolehlivou baterii na elektrokolo Samsung 48V 17Ah? Ve Slavkově u Brna za 4 000 Kč. Podívejte se na detaily inzerátu a kontaktujte prodejce.“
 - Příklad cleanedDescription (zboží, dohodou): „Nabízím málo používaný Li-ion akumulátor Samsung 48V. Tato baterie na elektrokolo má kapacitu 17 Ah (816 Wh); samotná baterka je připravená k použití. Cena 4 000 Kč, dohodou. Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna. Pro více informací napište prodejci zprávu přes platformu.\\n\\n---\\n\\nParametry\\n• Napětí: 48 V\\n• Kapacita: 17 Ah (816 Wh)\\n• Stav: málo používaný"
 - U statusu NEEDS_QUESTIONS: úvod + Parametry jen s fakty, které už znáš; chybějící údaje ptej v dotazníku. Nikdy nevkládej do Parametrů placeholder „…" nebo prázdnou hodnotu.
 - Frázi „osobní prohlídka po domluvě" používej pouze u nemovitostí. U zboží a módy piš „osobní předání po domluvě" nebo „vyzvednutí po domluvě".
