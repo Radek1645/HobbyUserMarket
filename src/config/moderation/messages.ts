@@ -46,6 +46,8 @@ export const MODERATION_PREVIEW_UI = {
     "AI může udělat chybu — před publikací si text zkontrolujte. Pokud publikujete vylepšený popis, v sekci Parametry se zobrazí „Vytvořeno s pomocí AI: Ano“.",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
+  metaDescriptionLabel: "Meta popis (vyhledávače)",
+  imageAltLabel: "Alt text hlavní fotky",
   questionsHeading: "Vylepšete svůj inzerát",
   questionsHint:
     "Odpovězte na to, co kupující nejvíc zajímá. Urychlíte prodej a vyhnete se zbytečným otázkám v chatu.",

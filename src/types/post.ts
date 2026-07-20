@@ -68,6 +68,10 @@ export type PostRow = {
   original_title?: string | null;
   original_description?: string | null;
   description_ai_assisted?: boolean;
+  /** AI SEO meta description (SERP). */
+  meta_description?: string | null;
+  /** AI alt text hlavní fotky. */
+  image_alt?: string | null;
   category_type: CategoryType;
   subcategory_slug: string;
   price_type: PriceType;

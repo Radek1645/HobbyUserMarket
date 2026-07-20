@@ -6,6 +6,10 @@ import {
   LISTING_DESCRIPTION_MIN_LENGTH,
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
+import {
+  LISTING_IMAGE_ALT_MAX_LENGTH,
+  LISTING_META_DESCRIPTION_MAX_LENGTH,
+} from "@/config/listing-seo";
 import { getCategoryConfig, getConditionFieldLabel, isValidSubcategory } from "@/config/categories";
 import {
   formatContactPhoneForStorage,
@@ -25,6 +29,12 @@ export type CreateListingInput = {
   originalDescription?: string;
   /** True jen po volbě AI textu v náhledu moderace (vyžaduje original snapshot). */
   descriptionAiAssisted?: boolean;
+  /**
+   * SEO pole z AI — `undefined` = při update neměnit;
+   * `null` = vymazat; string = uložit.
+   */
+  metaDescription?: string | null;
+  imageAlt?: string | null;
   locationText: string;
   latitude: number;
   longitude: number;
@@ -248,6 +258,31 @@ export function validateListingForm(
     const jobCvRequired =
       categoryType === "prace" && form.get("jobCvRequired") === "true";
 
+    const seoFieldsProvided = form.get("seoFieldsProvided") === "true";
+    let metaDescription: string | null | undefined;
+    let imageAlt: string | null | undefined;
+
+    if (seoFieldsProvided) {
+      const rawMeta = String(form.get("metaDescription") ?? "").trim();
+      const rawAlt = String(form.get("imageAlt") ?? "").trim();
+
+      if (rawMeta.length > LISTING_META_DESCRIPTION_MAX_LENGTH) {
+        return {
+          ok: false,
+          error: `Meta popis může mít maximálně ${LISTING_META_DESCRIPTION_MAX_LENGTH} znaků.`,
+        };
+      }
+      if (rawAlt.length > LISTING_IMAGE_ALT_MAX_LENGTH) {
+        return {
+          ok: false,
+          error: `Alt text fotky může mít maximálně ${LISTING_IMAGE_ALT_MAX_LENGTH} znaků.`,
+        };
+      }
+
+      metaDescription = rawMeta.length > 0 ? rawMeta : null;
+      imageAlt = rawAlt.length > 0 ? rawAlt : null;
+    }
+
     return {
       ok: true,
       data: {
@@ -263,6 +298,9 @@ export function validateListingForm(
               descriptionAiAssisted:
                 form.get("descriptionAiAssisted") === "true",
             }
+          : {}),
+        ...(seoFieldsProvided
+          ? { metaDescription, imageAlt }
           : {}),
         locationText,
         latitude,

@@ -8,12 +8,16 @@ import { useMemo, useState } from "react";
 type ListingImageGalleryProps = {
   images: ListingImagePreview[];
   title: string;
+  /** AI alt hlavní fotky; fallback = title. */
+  imageAlt?: string | null;
 };
 
 export function ListingImageGallery({
   images,
   title,
+  imageAlt,
 }: ListingImageGalleryProps) {
+  const mainAlt = imageAlt?.trim() || title;
   const sorted = useMemo(
     () => [...images].sort((a, b) => a.sortOrder - b.sortOrder),
     [images],
@@ -48,7 +52,7 @@ export function ListingImageGallery({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={active.url}
-            alt={title}
+            alt={mainAlt}
             className="max-h-[min(70vh,520px)] w-full object-contain"
           />
           <span className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/55 px-2.5 py-1.5 text-xs font-medium text-white opacity-80 sm:opacity-0 sm:transition sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">

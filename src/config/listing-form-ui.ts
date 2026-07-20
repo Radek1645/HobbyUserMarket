@@ -14,6 +14,13 @@ export const listingFormRequiredMarkClass =
 
 export const LISTING_FORM_REQUIRED_LEGEND = "* Označená pole jsou povinná.";
 
+/** Full-screen overlay při publikaci / uložení změn (CreateListingForm). */
+export const LISTING_FORM_SAVING_UI = {
+  title: "Ukládám inzerát…",
+  titleEdit: "Ukládám změny…",
+  hint: "Chvilku strpení — formulář nechte otevřený. Opakované klikání nic neurychlí.",
+} as const;
+
 export const listingFormRequiredLegendClass =
   "mb-2 text-xs text-neutral-500";
 

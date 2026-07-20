@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.33  
+> **Verze dokumentu:** v3.34  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
@@ -720,6 +720,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.31 | 2026-07-17 | **HP SEO bazar:** H1 Vše „Online bazar, kde stačí fotka a pár slov.“; `HomeSeoBlurb` pod listingy (`home-seo.ts`); `SITE_HOME_ARIA_LABEL` s tagline; Metodika §2.1 / §2.4; §5.1 sync |
 | v3.32 | 2026-07-19 | **GDPR stránka + IP cron:** `/gdpr` (LegalDocumentPage), patička; migrace **050** + cron `anonymize-inquiry-ips` (7 dní); Supabase `eu-west-1` + Vercel `dub1` v §5.1; GDPR §6.2 prohlášení věku; backlog P37–P39; HP vykání („Přihlaste se“, „vašeho okolí“); Metodika §2.1 / §2.7–2.8 / §9.1.3 |
 | v3.33 | 2026-07-19 | **Fáze 5–7 + Resend EU:** P8/P9/P11 (AI technical error, timeout 25 s, client retry); P2 orphan draft cleanup; GDPR P37–P39 + P22/P24; Resend sending `eu-west-1` (zapikolou.cz); UX U1/U2/U5/U21; Metodika §2.1 / §3.1 / §6.3 |
+| v3.34 | 2026-07-20 | **SEO bible v1.2 + hydratace:** oddělené H1 / meta description / image alt; `buildListingMetaTitle`; migrace **051** (`meta_description`, `image_alt`); JSON-LD Offer.price jen u fixed; lokální SEO dojezdová vzdálenost; cena v meta jen `za X Kč`; Metodika §6.5 / §6.7 / §8.5; docs/seo/ |
 
 ---
 

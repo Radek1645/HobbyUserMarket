@@ -146,6 +146,8 @@ CREATE TABLE IF NOT EXISTS public.posts (
   original_title    TEXT,
   original_description TEXT,
   description_ai_assisted BOOLEAN NOT NULL DEFAULT false,
+  meta_description  TEXT,
+  image_alt         TEXT,
   category_type     VARCHAR(10) NOT NULL,
   subcategory_slug  VARCHAR(50) NOT NULL,
   price_type        VARCHAR(20) NOT NULL,

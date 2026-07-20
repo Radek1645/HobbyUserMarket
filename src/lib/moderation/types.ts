@@ -24,6 +24,8 @@ export type ModerateListingRequest = {
   priceTypeLabel?: string;
   /** Částka v Kč z formuláře (u fixed / negotiable). */
   priceAmount?: number;
+  /** Lokalita z formuláře — lokální SEO. */
+  locationText?: string;
   /** Všechny nahrané fotky (max. 6) — bezpečnostní filtr. */
   imagesBase64?: string[];
   /** Index hlavní fotky v `imagesBase64` — cross-validace textu s náhledem; hydratace z všech fotek. */
@@ -49,6 +51,10 @@ export type ModerateListingResponse = {
   rejectedImageIndex?: number;
   cleanedTitle?: string;
   cleanedDescription?: string;
+  /** SEO meta description (150–160 znaků). */
+  metaDescription?: string;
+  /** Alt text hlavní fotky. */
+  imageAlt?: string;
   questions?: ModerationQuestion[];
   /** H1: token pro server-side publikaci (vydán po průchodu bezpečnostním filtrem). */
   approvalToken?: string | null;
@@ -67,6 +73,7 @@ export type ListingModerationInput = {
   priceType?: PriceType;
   priceTypeLabel?: string;
   priceAmount?: number;
+  locationText?: string;
   images?: {
     imagesBase64: string[];
     mainImageIndex: number;
@@ -79,6 +86,8 @@ export type ListingModerationSuccess = {
   skipped: boolean;
   cleanedTitle: string;
   cleanedDescription: string;
+  metaDescription?: string;
+  imageAlt?: string;
   questions?: ModerationQuestion[];
   /** H1: token pro server-side publikaci; undefined u skipped (beze změny obsahu). */
   approvalToken?: string;

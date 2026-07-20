@@ -81,6 +81,7 @@ import {
   listingFormRequiredMarkClass,
   listingFormSecondaryButtonClass,
   LISTING_FORM_REQUIRED_LEGEND,
+  LISTING_FORM_SAVING_UI,
 } from "@/config/listing-form-ui";
 import type { CategoryType, ConditionLabel, ListingImagePreview, PriceType } from "@/types/post";
 
@@ -328,7 +329,13 @@ export function CreateListingForm({
     titleValue: string,
     descriptionValue: string,
     originalSnapshot?: { title: string; description: string },
-    options?: { descriptionAiAssisted?: boolean },
+    options?: {
+      descriptionAiAssisted?: boolean;
+      seoFields?: {
+        metaDescription: string | null;
+        imageAlt: string | null;
+      };
+    },
   ) {
     const formData = new FormData(form);
     formData.set("title", titleValue);
@@ -340,6 +347,14 @@ export function CreateListingForm({
         "descriptionAiAssisted",
         options?.descriptionAiAssisted ? "true" : "false",
       );
+    }
+    if (options?.seoFields) {
+      formData.set("seoFieldsProvided", "true");
+      formData.set(
+        "metaDescription",
+        options.seoFields.metaDescription ?? "",
+      );
+      formData.set("imageAlt", options.seoFields.imageAlt ?? "");
     }
     if (pendingApprovalTokenRef.current) {
       formData.set("moderationToken", pendingApprovalTokenRef.current);
@@ -377,7 +392,10 @@ export function CreateListingForm({
         title: preview.originalTitle,
         description: preview.originalDescription,
       },
-      { descriptionAiAssisted: false },
+      {
+        descriptionAiAssisted: false,
+        seoFields: { metaDescription: null, imageAlt: null },
+      },
     );
     setModerationPreview(null);
     pendingPublishFormRef.current = null;
@@ -386,6 +404,8 @@ export function CreateListingForm({
   function handlePublishAiFromPreview(payload: {
     title: string;
     description: string;
+    metaDescription?: string;
+    imageAlt?: string;
     questionAnswers: Record<string, string>;
   }) {
     const form = pendingPublishFormRef.current;
@@ -398,10 +418,22 @@ export function CreateListingForm({
       payload.questionAnswers,
     );
 
-    publishListing(form, payload.title, finalDescription, {
-      title: preview.originalTitle,
-      description: preview.originalDescription,
-    }, { descriptionAiAssisted: true });
+    publishListing(
+      form,
+      payload.title,
+      finalDescription,
+      {
+        title: preview.originalTitle,
+        description: preview.originalDescription,
+      },
+      {
+        descriptionAiAssisted: true,
+        seoFields: {
+          metaDescription: payload.metaDescription?.trim() || null,
+          imageAlt: payload.imageAlt?.trim() || null,
+        },
+      },
+    );
     setModerationPreview(null);
     pendingPublishFormRef.current = null;
   }
@@ -467,6 +499,7 @@ export function CreateListingForm({
           (priceType === "fixed" || priceType === "negotiable")
             ? parsedPriceAmount
             : undefined,
+        locationText: locationText.trim() || undefined,
         // Bez initialValues se u draftu nevyhodnotí „beze změny → přeskočit AI“
         // a moderace (→ approval token) proběhne vždy.
         initialValues: isEdit && !forceModeration ? initialValues : undefined,
@@ -535,6 +568,8 @@ export function CreateListingForm({
       originalDescription: descriptionTrimmed,
       aiTitle: moderation.cleanedTitle ?? titleTrimmed,
       aiDescription: moderation.cleanedDescription ?? descriptionTrimmed,
+      metaDescription: moderation.metaDescription,
+      imageAlt: moderation.imageAlt,
       questions: moderation.questions ?? [],
     });
     setModerationApprovedOpen(true);
@@ -563,7 +598,7 @@ export function CreateListingForm({
         onPublishOriginal={handlePublishOriginalFromPreview}
       />
 
-      {isCheckingAi ? (
+      {isSaving ? (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4"
           role="presentation"
@@ -582,15 +617,30 @@ export function CreateListingForm({
               className="mx-auto h-10 w-10 animate-spin text-blue-700"
               aria-hidden
             />
-            <p className="mt-4 text-base font-semibold text-neutral-900">
-              {MODERATION_CHECKING_UI.title}
-            </p>
-            <p className="mt-2 text-sm text-neutral-600">
-              {MODERATION_CHECKING_UI.hint}
-            </p>
-            <p className="mt-3 text-xs text-neutral-500">
-              {MODERATION_CHECKING_UI.disclaimer}
-            </p>
+            {isCheckingAi ? (
+              <>
+                <p className="mt-4 text-base font-semibold text-neutral-900">
+                  {MODERATION_CHECKING_UI.title}
+                </p>
+                <p className="mt-2 text-sm text-neutral-600">
+                  {MODERATION_CHECKING_UI.hint}
+                </p>
+                <p className="mt-3 text-xs text-neutral-500">
+                  {MODERATION_CHECKING_UI.disclaimer}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-4 text-base font-semibold text-neutral-900">
+                  {isEdit
+                    ? LISTING_FORM_SAVING_UI.titleEdit
+                    : LISTING_FORM_SAVING_UI.title}
+                </p>
+                <p className="mt-2 text-sm text-neutral-600">
+                  {LISTING_FORM_SAVING_UI.hint}
+                </p>
+              </>
+            )}
           </div>
         </div>
       ) : null}

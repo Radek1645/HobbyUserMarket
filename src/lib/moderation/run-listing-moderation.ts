@@ -80,6 +80,7 @@ export async function runListingModeration(
     priceType: params.priceType,
     priceTypeLabel: params.priceTypeLabel,
     priceAmount: params.priceAmount,
+    locationText: params.locationText,
     images: params.images,
   });
 }

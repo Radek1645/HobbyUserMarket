@@ -4,6 +4,7 @@ import {
   getPriceTypeLabel,
   getSubcategoryLabel,
 } from "@/config/categories";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
 import { ListingDescription } from "@/components/listing/ListingDescription";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
@@ -25,6 +26,8 @@ import { formatListingPrice } from "@/lib/posts/format-listing-price";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingImages } from "@/lib/posts/listing-images";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
+import { buildListingMetaTitle } from "@/lib/seo/build-listing-meta-title";
+import { resolveListingMetaDescription } from "@/lib/seo/listing-meta-description";
 import { getSiteUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingImagePreview, PostRow, PostStatusReasonCode } from "@/types/post";
@@ -66,7 +69,8 @@ function resolveSlugParam(param: string): string {
 
 // contact_phone se zde záměrně nečte — odhaluje se jen přes reveal RPC (C2).
 const POST_DETAIL_COLUMNS =
-  "id, user_id, title, description, description_ai_assisted, category_type, subcategory_slug, " +
+  "id, user_id, title, description, description_ai_assisted, meta_description, image_alt, " +
+  "category_type, subcategory_slug, " +
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
   "status, status_reason_code, expires_at, event_date, main_image_url, slug, " +
   "show_contact_email, show_contact_phone, created_at, updated_at, job_cv_required";
@@ -90,27 +94,32 @@ export async function generateMetadata({
   const slug = resolveSlugParam(param);
 
   const post = await getPostBySlug(slug);
-  if (!post) return { title: "Inzerát | HobbyUserMarket" };
+  if (!post) return { title: `Inzerát | ${SITE_DISPLAY_NAME}` };
 
   const location = formatPublicListingLocation(post.location_text);
   const pageUrl = `${getSiteUrl()}${getListingPath(post.slug)}`;
-  const description =
-    post.description?.trim().slice(0, 160) ||
-    `${post.title} — ${location}`;
+  const description = resolveListingMetaDescription({
+    metaDescription: post.meta_description,
+    description: post.description,
+    title: post.title,
+    locality: location,
+  });
+  const documentTitle = buildListingMetaTitle(post.title, location);
+  const imageAlt = post.image_alt?.trim() || post.title;
 
   return {
-    title: `${post.title} | ${location}`,
+    title: documentTitle,
     description,
     alternates: { canonical: pageUrl },
     openGraph: {
-      title: post.title,
+      title: documentTitle,
       description,
       url: pageUrl,
-      siteName: "HobbyUserMarket",
+      siteName: SITE_DISPLAY_NAME,
       locale: "cs_CZ",
       type: "website",
       ...(post.main_image_url
-        ? { images: [{ url: post.main_image_url, alt: post.title }] }
+        ? { images: [{ url: post.main_image_url, alt: imageAlt }] }
         : {}),
     },
   };
@@ -294,7 +303,11 @@ export default async function ListingDetailPage({
 
       {galleryImages.length > 0 ? (
         <div className="mt-6">
-          <ListingImageGallery images={galleryImages} title={post.title} />
+          <ListingImageGallery
+            images={galleryImages}
+            title={post.title}
+            imageAlt={post.image_alt}
+          />
         </div>
       ) : null}
 

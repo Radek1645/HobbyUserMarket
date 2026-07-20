@@ -4,6 +4,7 @@ export const LISTING_PROMPT_TAGS = {
   description: "listing_description",
   condition: "listing_condition",
   eventDate: "listing_event_date",
+  location: "listing_location",
 } as const;
 
 /** Odstraní pokusy o předčasné ukončení tagu v textu od uživatele. */

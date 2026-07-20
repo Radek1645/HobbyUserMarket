@@ -2,7 +2,13 @@ import type { ModerateListingResponse } from "@/lib/moderation/types";
 
 type ModerationResult = Pick<
   ModerateListingResponse,
-  "status" | "reason" | "cleanedTitle" | "cleanedDescription" | "questions"
+  | "status"
+  | "reason"
+  | "cleanedTitle"
+  | "cleanedDescription"
+  | "metaDescription"
+  | "imageAlt"
+  | "questions"
 >;
 
 const INJECTION_PATTERNS: readonly RegExp[] = [
@@ -54,6 +60,11 @@ export function applyPostModerationSafetyChecks(
 
   const cleanedTitle = (result.cleanedTitle ?? source.title).trim();
   const cleanedDescription = (result.cleanedDescription ?? source.description).trim();
+  const metaDescription = (result.metaDescription ?? "").trim();
+  const imageAlt = (result.imageAlt ?? "").trim();
+  const outputBlob = [cleanedTitle, cleanedDescription, metaDescription, imageAlt]
+    .filter(Boolean)
+    .join("\n");
 
   if (findProhibitedKeyword(cleanedTitle, cleanedDescription)) {
     return {
@@ -62,7 +73,7 @@ export function applyPostModerationSafetyChecks(
     };
   }
 
-  if (containsPromptInjection(`${cleanedTitle}\n${cleanedDescription}`)) {
+  if (containsPromptInjection(outputBlob)) {
     return {
       status: "REJECTED",
       reason: PROMPT_INJECTION_REJECTION_REASON,

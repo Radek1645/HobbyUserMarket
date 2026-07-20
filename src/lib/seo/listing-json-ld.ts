@@ -1,4 +1,5 @@
 import type { CategoryType, ConditionLabel, PostRow } from "@/types/post";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 
 export type ListingJsonLdInput = {
   post: Pick<
@@ -62,7 +63,8 @@ function buildOffer(
 
   if (post.price_type === "free_pickup") {
     offer.price = 0;
-  } else if (post.price_amount != null) {
+  } else if (post.price_type === "fixed" && post.price_amount != null) {
+    // SEO Bible §3.6 — negotiable/orientační cenu do Offer.price neposílat
     offer.price = post.price_amount;
   }
 
@@ -161,7 +163,7 @@ function buildJobPostingJsonLd(input: ListingJsonLdInput): JsonLd {
     ...(post.expires_at ? { validThrough: post.expires_at } : {}),
     hiringOrganization: {
       "@type": "Organization",
-      name: "HobbyUserMarket",
+      name: SITE_DISPLAY_NAME,
     },
     jobLocation: buildPlace(post.location_text),
     ...(employmentType ? { employmentType } : {}),

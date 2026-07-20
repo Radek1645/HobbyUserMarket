@@ -39,6 +39,8 @@ function mapResponse(
       skipped: false,
       cleanedTitle: response.cleanedTitle ?? title,
       cleanedDescription: response.cleanedDescription ?? description,
+      metaDescription: response.metaDescription?.trim() || undefined,
+      imageAlt: response.imageAlt?.trim() || undefined,
       questions: response.questions?.slice(0, MODERATION_MAX_QUESTIONS),
       approvalToken: response.approvalToken ?? undefined,
     };
@@ -49,6 +51,8 @@ function mapResponse(
     skipped: false,
     cleanedTitle: response.cleanedTitle ?? title,
     cleanedDescription: response.cleanedDescription ?? description,
+    metaDescription: response.metaDescription?.trim() || undefined,
+    imageAlt: response.imageAlt?.trim() || undefined,
     approvalToken: response.approvalToken ?? undefined,
   };
 }
@@ -145,6 +149,9 @@ async function invokeModerateListingOnce(
           ? { priceTypeLabel: input.priceTypeLabel }
           : {}),
         ...(input.priceAmount != null ? { priceAmount: input.priceAmount } : {}),
+        ...(input.locationText?.trim()
+          ? { locationText: input.locationText.trim() }
+          : {}),
         ...(input.images
           ? {
               imagesBase64: input.images.imagesBase64,

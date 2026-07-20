@@ -15,6 +15,8 @@ export type ModerationResult = {
   rejectedTopicId?: string;
   rejectedImageIndex?: number;
   cleanedTitle?: string;
+  metaDescription?: string;
+  imageAlt?: string;
   cleanedDescription?: string;
   questions?: ModerationQuestion[];
 };
@@ -224,6 +226,8 @@ export function parseModerationResponse(raw: string): ModerationResult {
     rejectedTopicId: asOptionalString(parsed.rejectedTopicId),
     rejectedImageIndex,
     cleanedTitle: asOptionalString(parsed.cleanedTitle),
+    metaDescription: asOptionalString(parsed.metaDescription),
+    imageAlt: asOptionalString(parsed.imageAlt),
     cleanedDescription: asOptionalString(parsed.cleanedDescription),
     questions: parseQuestions(parsed.questions),
   };
@@ -303,7 +307,7 @@ export function applyFormPriceToCleanedDescription(
     const priceSentence =
       priceType === "fixed"
         ? `${needsPeriod ? "." : ""} Cena ${formatted} Kč.`
-        : `${needsPeriod ? "." : ""} Orientační cena ${formatted} Kč.`;
+        : `${needsPeriod ? "." : ""} Cena ${formatted} Kč, dohodou.`;
     result = `${trimmedIntro}${priceSentence}${suffix}`;
   }
 
@@ -362,12 +366,16 @@ export function normalizeModerationResult(
     priceType,
     priceAmount,
   );
+  const metaDescription = result.metaDescription?.trim() || undefined;
+  const imageAlt = result.imageAlt?.trim() || undefined;
 
   if (result.status === "NEEDS_QUESTIONS") {
     return {
       status: "NEEDS_QUESTIONS",
       cleanedTitle,
       cleanedDescription,
+      metaDescription,
+      imageAlt,
       questions: result.questions,
     };
   }
@@ -376,5 +384,7 @@ export function normalizeModerationResult(
     status: "APPROVED",
     cleanedTitle,
     cleanedDescription,
+    metaDescription,
+    imageAlt,
   };
 }

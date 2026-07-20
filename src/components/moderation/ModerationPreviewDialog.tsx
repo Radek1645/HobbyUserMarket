@@ -16,6 +16,8 @@ export type ModerationPreviewState = {
   originalDescription: string;
   aiTitle: string;
   aiDescription: string;
+  metaDescription?: string;
+  imageAlt?: string;
   questions: ModerationQuestion[];
 };
 
@@ -26,6 +28,8 @@ type ModerationPreviewDialogProps = {
   onPublishAi: (payload: {
     title: string;
     description: string;
+    metaDescription?: string;
+    imageAlt?: string;
     questionAnswers: Record<string, string>;
   }) => void;
   onPublishOriginal: () => void;
@@ -90,10 +94,14 @@ export function ModerationPreviewDialog({
 
   if (!preview) return null;
 
+  const currentPreview = preview;
+
   function handlePublishAi() {
     onPublishAi({
       title: (aiTitle ?? "").trim(),
       description: (aiDescription ?? "").trim(),
+      metaDescription: currentPreview.metaDescription?.trim() || undefined,
+      imageAlt: currentPreview.imageAlt?.trim() || undefined,
       questionAnswers,
     });
   }
@@ -193,6 +201,28 @@ export function ModerationPreviewDialog({
                   )}
             </p>
           </div>
+
+          {preview.metaDescription?.trim() ? (
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+              <p className="text-xs font-semibold text-neutral-700">
+                {MODERATION_PREVIEW_UI.metaDescriptionLabel}
+              </p>
+              <p className="mt-1 text-sm text-neutral-800">
+                {preview.metaDescription.trim()}
+              </p>
+            </div>
+          ) : null}
+
+          {preview.imageAlt?.trim() ? (
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+              <p className="text-xs font-semibold text-neutral-700">
+                {MODERATION_PREVIEW_UI.imageAltLabel}
+              </p>
+              <p className="mt-1 text-sm text-neutral-800">
+                {preview.imageAlt.trim()}
+              </p>
+            </div>
+          ) : null}
 
           {visibleQuestions.length > 0 ? (
             <fieldset className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">

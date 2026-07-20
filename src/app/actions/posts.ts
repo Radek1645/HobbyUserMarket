@@ -113,6 +113,14 @@ function buildListingPayload(data: CreateListingInput) {
     payload.description_ai_assisted = data.descriptionAiAssisted;
   }
 
+  if (data.metaDescription !== undefined) {
+    payload.meta_description = data.metaDescription;
+  }
+
+  if (data.imageAlt !== undefined) {
+    payload.image_alt = data.imageAlt;
+  }
+
   payload.job_cv_required =
     data.categoryType === "prace" ? data.jobCvRequired : false;
 

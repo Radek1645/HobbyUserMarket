@@ -1,8 +1,8 @@
 # Metodika — Local Hobby Market
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
-> **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md)  
-> **Datum:** 2026-07-19
+> **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
+> **Datum:** 2026-07-20
 
 ---
 
@@ -244,7 +244,7 @@ Uživatel vybere:
 
 | Pole | Pravidla |
 |------|----------|
-| Název | Povinný, max. 80 znaků; slouží i pro SEO a URL |
+| Název | Povinný, max. 80 znaků (AI H1 cílí na ~60); slouží i pro SEO a URL |
 | Popis | Min. 10, max. 2000 znaků; hrubý text stačí — AI ho může upravit |
 | Lokalita | Povinná; našeptávač Mapy.cz nebo „Použít aktuální polohu“ — obec musí být **potvrzena z našeptávače** (GPS doplní souřadnice) |
 | Typ ceny | Podle kategorie — detail v [§12](#12-speciální-typy-inzerátů). U **zboží**: Pevná, Za odvoz, Dohodou, Výměnou, Nabídni. U **služeb**: Hodinová sazba, Cena za zakázku, Dohodou. |
@@ -348,16 +348,21 @@ Pokud **jedna** fotka porušuje pravidla, celý inzerát je zamítnut — výbě
 
 ### 6.5 Co je hydratace textu
 
-**Hydratace** = AI vezme hrubý nástřel od uživatele a připraví strukturovaný inzerát:
+**Hydratace** = AI vezme hrubý nástřel od uživatele a připraví strukturovaný inzerát (pravidla: [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)):
 
-1. **Úvod** — až 6 vět (o čem inzerát je, cena, předání).
-2. Oddělovač `---`
-3. Sekce **Parametry** — odrážky ve tvaru `• Popisek: hodnota`
+1. **H1 / název** (`cleanedTitle`) — obecný název věci první, max ~60 znaků, bez vaty a bez lokality.
+2. **Úvod** — až 6 vět (synonyma, cena, předání / dojezdová vzdálenost, CTA přes platformu).
+3. Oddělovač `---`
+4. Sekce **Parametry** — odrážky ve tvaru `• Popisek: hodnota`
+5. **Meta description** + **alt hlavní fotky** — ukládají se do `meta_description` / `image_alt` (jen při volbě AI textu).
+
+Document `<title>` skládá kód (`buildListingMetaTitle`), ne AI.
 
 Příklad po hydrataci:
 
 ```
 Prodám dětské kolo Velo v dobrém stavu. Cena 800 Kč, osobní předání v Brně-Líšni.
+Pro více informací napište prodejci zprávu přes platformu.
 ---
 Parametry
 • Značka: Velo
@@ -369,7 +374,7 @@ Hydratace vychází z:
 
 - textu, který uživatel napsal,
 - kategorie a podkategorie (každá má vlastní AI pokyny v `categories.ts`),
-- metadat z formuláře (cena, stav, datum akce — na tato pole se AI znovu neptá, pokud už jsou vyplněná),
+- metadat z formuláře (cena, stav, datum akce, **lokalita** — na cenu/stav/datum se AI znovu neptá, pokud už jsou vyplněná),
 - **všech** nahraných fotografií (vizuální kontext; hlavní fotka navíc pro shodu text ↔ náhled).
 
 ### 6.6 Stav NEEDS_QUESTIONS — doplňující dotazník
@@ -403,8 +408,8 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 
 | Tlačítko | Co se stane |
 |----------|-------------|
-| **Publikovat vylepšený inzerát** (doporučeno) | Uloží AI verzi i bez vyplněných otázek; vyplněné odpovědi se sloučí do Parametrů. Původní text → `original_title` / `original_description`. Na detailu **„Vytvořeno s pomocí AI: Ano“** (`description_ai_assisted = true`, migrace `043`). |
-| **Ponechat můj původní text** | Zahodí AI návrh; uloží text z formuláře. `description_ai_assisted = false`. Strip kontaktů platí vždy. |
+| **Publikovat vylepšený inzerát** (doporučeno) | Uloží AI verzi (název, popis, `meta_description`, `image_alt`) i bez vyplněných otázek; vyplněné odpovědi se sloučí do Parametrů. Původní text → `original_title` / `original_description`. Na detailu **„Vytvořeno s pomocí AI: Ano“** (`description_ai_assisted = true`, migrace `043`). V náhledu jsou meta popis a alt jen ke kontrole (readonly). |
+| **Ponechat můj původní text** | Zahodí AI návrh; uloží text z formuláře; SEO pole `meta_description` / `image_alt` vymaže (fallback z popisu / title). `description_ai_assisted = false`. Strip kontaktů platí vždy. |
 | **Zrušit** | Návrat do formuláře, inzerát se neuloží. |
 
 ### 6.8 Zamítnutí (REJECTED)
@@ -520,7 +525,19 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 
 Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná technická příprava **nezaručuje** okamžitou viditelnost v organickém vyhledávání — Google musí stránky nejdřív objevit, zaindexovat a teprve pak je může zobrazovat ve výsledcích.
 
+**Kanonická pravidla obsahu inzerátů (H1, meta, alt, cena ve schématu, lokální SEO):** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) (verzováno — viz [`seo/README.md`](./seo/README.md)).
+
 **Google Search Console:** property `zapikolou.cz` ověřená **DNS TXT** záznamem; sitemap `https://zapikolou.cz/sitemap.xml` odeslaná v Search Console.
+
+#### Meta a AI hydratace (shrnutí)
+
+- **H1** = `posts.title` (AI `cleanedTitle`) — obecný název první, bez vaty, bez lokality.
+- **`<title>`** skládá kód z H1 + lokality + značky (`buildListingMetaTitle`), max ~60 znaků.
+- **Meta description** = `posts.meta_description` (AI); cena jen `za X Kč` (bez cca / dohodou). Fallback: úvod popisu před `---`.
+- **Alt hlavní fotky** = `posts.image_alt` (AI).
+- **JSON-LD Offer.price** jen u pevné ceny / zdarma — ne u „dohodou“.
+- **Lokální SEO:** spádové město jen jako blízkost / dojezdová vzdálenost — bez slibu dovozu (SEO bible §3.4).
+- Dohoda o ceně patří do **těla** inzerátu (`Cena X Kč, dohodou.`), ne do meta.
 
 #### Co uživatel / robot vidí na webu
 
@@ -1078,6 +1095,7 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 | Dokument | Obsah |
 |----------|-------|
 | [`PRD_v3.md`](./PRD_v3.md) | Produktová a technická specifikace |
+| [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) | SEO bible inzerátů (H1, meta, alt, schema) — verzovaná |
 | [`moderace-inzeratu.md`](./moderace-inzeratu.md) | Konfigurace AI pravidel, deploy, sync |
 | [`supabase-prikazy.md`](./supabase-prikazy.md#nastavení-admina-a-moderátora) | SQL, migrace, bootstrap admina, **zvýšení limitu inzerátů** |
 | [`future_events.md`](./future_events.md) | Rozšíření modulu událostí |

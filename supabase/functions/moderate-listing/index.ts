@@ -386,6 +386,7 @@ serve(async (req) => {
         priceType,
         priceTypeLabel,
         priceAmount,
+        locationText: String(body?.locationText ?? "").trim() || undefined,
         mainImageIndex,
         imagesBase64,
       },

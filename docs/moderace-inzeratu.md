@@ -175,7 +175,8 @@ Moderace rozlišuje **dvě úrovně** — nesmí se zaměňovat:
 3. **Kde upravovat chování:**
    - Obecné pravidlo → `build-prompt.ts`
    - Pravidla pro konkrétní podkategorii → `aiPrompt` u příslušné položky v `categories.ts`
-   - Po změně: `npm run sync:moderation` → `supabase functions deploy moderate-listing`
+   - Po změně: `npm run sync:moderation` → u změny `build-prompt.ts` ještě `node scripts/sync-build-prompt.mjs` → `supabase functions deploy moderate-listing`
+   - SEO / hydratace textu: kanon [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)
 
 ### Limity
 

@@ -17,6 +17,8 @@ export type ModerationRequestBody = {
   conditionLabelText?: string;
   conditionFieldLabel?: string;
   eventDate?: string;
+  /** Lokalita z formuláře — lokální SEO / spádové město. */
+  locationText?: string;
   priceType?: string;
   priceTypeLabel?: string;
   priceAmount?: number;
@@ -48,7 +50,7 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
     if (isJob) {
       return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč/h. Do cleanedDescription vlož „${formatCzkAmount(amount)} Kč/h“ nebo „odměna ${formatCzkAmount(amount)} Kč/h“. Nepoužívej formulaci bez /h — jde o hodinovou mzdu. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
     }
-    return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč. Do cleanedDescription vlož přímo „Cena ${formatCzkAmount(amount)} Kč.“ (nebo přirozeně zapracovanou do věty). Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
+    return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč. Do cleanedDescription vlož přímo „Cena ${formatCzkAmount(amount)} Kč.“ (nebo přirozeně zapracovanou do věty). Do metaDescription „za ${formatCzkAmount(amount)} Kč“. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.`;
   }
 
   if (priceType === "negotiable" && amount != null) {
@@ -58,7 +60,7 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
     if (isJob) {
       return `Typ ceny z formuláře: ${label}, fixní odměna ${formatCzkAmount(amount)} Kč za úkol/brigádu (ne za hodinu). Uveď např. „odměna ${formatCzkAmount(amount)} Kč“. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
     }
-    return `Typ ceny z formuláře: ${label}, orientačně ${formatCzkAmount(amount)} Kč. Orientační cenu uveď v cleanedDescription přímo číslem. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
+    return `Typ ceny z formuláře: ${label}, ${formatCzkAmount(amount)} Kč (dohodou). V cleanedDescription uveď „Cena ${formatCzkAmount(amount)} Kč, dohodou.“ Do metaDescription dej jen „za ${formatCzkAmount(amount)} Kč“ — bez „cca“, „orientační“, „dohodou“. Do cleanedTitle nedávej „cca“ ani „dohodou“. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole]. Na cenu se znovu neptej.`;
   }
 
   if (priceType === "negotiable" || priceType === "fixed") {
@@ -127,6 +129,9 @@ export function buildModerationUserPrompt(
       ? `Datum a čas konání z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.eventDate, formatEventDateForPrompt(body.eventDate))}`
       : null,
     formatPriceFromForm(body),
+    body.locationText?.trim()
+      ? `Lokalita z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.location, body.locationText.trim())}`
+      : null,
     `mainImageIndex (hlavní fotka — jen cross-validace textu s náhledem): ${mainIndex}`,
     imageCount > 0
       ? `Přiloženo ${imageCount} fotografií v pořadí indexů 0–${imageCount - 1}. Pro hydrataci a dotazník posuzuj všechny fotografie; fakta z jakékoli fotky zapracuj do textu.`

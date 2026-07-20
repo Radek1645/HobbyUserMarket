@@ -49,6 +49,11 @@ export function applyPostModerationSafetyChecks(
 
   const cleanedTitle = (result.cleanedTitle ?? source.title).trim();
   const cleanedDescription = (result.cleanedDescription ?? source.description).trim();
+  const metaDescription = (result.metaDescription ?? "").trim();
+  const imageAlt = (result.imageAlt ?? "").trim();
+  const outputBlob = [cleanedTitle, cleanedDescription, metaDescription, imageAlt]
+    .filter(Boolean)
+    .join("\n");
 
   if (findProhibitedKeyword(cleanedTitle, cleanedDescription)) {
     return {
@@ -57,7 +62,7 @@ export function applyPostModerationSafetyChecks(
     };
   }
 
-  if (containsPromptInjection(`${cleanedTitle}\n${cleanedDescription}`)) {
+  if (containsPromptInjection(outputBlob)) {
     return {
       status: "REJECTED",
       reason: PROMPT_INJECTION_REJECTION_REASON,
