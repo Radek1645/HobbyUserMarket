@@ -109,6 +109,19 @@ Labely: `getListingIntentLabel` v `src/config/listing-intent.ts`. Cena u práce 
 
 ---
 
+## 3c. Odznaky zadavatele
+
+Na detailu inzerátu a stránce `/uzivatel/[nickname]` — odděleně od štítků směru na kartě.
+
+| Konstanta | Použití |
+|-----------|---------|
+| `advertiserPodnikatelBadgeClass` | „Podnikatel“ (VOP §7.2) — slate |
+| `advertiserMilestoneBadgeClass` | „Aktivní inzerent · N+“ — emerald ring |
+
+Logika prahů a labelů: `src/config/advertiser-badges.ts`. Komponenta: `AdvertiserBadges`.
+
+---
+
 ## 4. Postup při novém prvku
 
 1. Zkontroluj, zda už existuje konstanta v `ui-primitives.ts`.

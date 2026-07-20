@@ -93,12 +93,12 @@ Parametry
 
 ### Synonyma a hledané výrazy (SEO)
 
-Kanonická pravidla: [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) (v1.2).
+Kanonická pravidla: [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) (v1.6).
 
 Google ignoruje hashtagy (`#baterka`). AI:
 
-- upraví **`cleanedTitle` (H1)** — obecný název první, max ~60 znaků, bez vaty;
-- vyplní **`metaDescription`** (cena jen `za X Kč`, bez cca/dohodou) a **`imageAlt`**;
+- upraví **`cleanedTitle` (H1)** — obecný název první, max ~45 znaků, bez vaty; krátký use-case jen pokud se vejde;
+- vyplní **`metaDescription`** (produkt + lokalita + cena + benefit; **bez CTA**; cena jen `za X Kč`) a **`imageAlt`** (bez lokality);
 - do **úvodu** popisu zakomponuje 2–3 synonyma + případně spádové město jako **dojezdovou vzdálenost** (bez slibu dovozu; vstup `locationText`).
 
 | Smí | Nesmí |
@@ -106,7 +106,7 @@ Google ignoruje hashtagy (`#baterka`). AI:
 | Střídat názvy téže věci v běžných větách | Hashtagy, seznamy klíčových slov, keyword stuffing |
 | Čeština + běžné anglicismy, pokud dávají smysl | Vymýšlet výbavu / příslušenství jen kvůli klíčovým slovům |
 
-Pravidla jsou v system promptu (`src/config/moderation/build-prompt.ts` a stejná kopie v `supabase/functions/_shared/moderation/build-prompt.ts`). Po úpravě promptu: ručně sjednotit obě kopie, `npm run sync:moderation`, `npx supabase functions deploy moderate-listing`.
+Pravidla jsou v system promptu (`src/config/moderation/build-prompt.ts`); do Edge: `node scripts/sync-build-prompt.mjs`, pak `npx supabase functions deploy moderate-listing`.
 
 ### Příklad po hydrataci (auto, APPROVED)
 
@@ -133,9 +133,9 @@ Edge Function dostane z klienta payload (viz `moderate-listing-client.ts`):
 
 | Vstup | Pole | Jak AI používá |
 |-------|------|----------------|
-| Název | `title` | `cleanedTitle` — H1 dle SEO bible (obecný název první, max 60) |
+| Název | `title` | `cleanedTitle` — H1 dle SEO bible (obecný název první, max 45) |
 | Popis | `description` | Surový text k přepsání / doplnění |
-| Lokalita | `locationText` | Lokální SEO / spádové město v úvodu; alt + meta |
+| Lokalita | `locationText` | Lokální SEO / spádové město v úvodu + meta (ne v alt) |
 | Kategorie | `categoryType`, `subcategorySlug` | Výběr `aiPrompt` z `category-prompts.ts` |
 | Stav / typ | `conditionLabel`, `conditionLabelText`, `conditionFieldLabel` | Např. „Použité“, „Prodej“, „Jednorázová akce“ — **neptat se znovu** |
 | Cena | `priceType`, `priceTypeLabel`, `priceAmount` | Pevná/orientační cena → do úvodu; na cenu se **neptat** |

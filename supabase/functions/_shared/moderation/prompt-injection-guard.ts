@@ -3,11 +3,23 @@ import type { ModerationResult } from "./parse-response.ts";
 const INJECTION_PATTERNS: readonly RegExp[] = [
   /ignoruj\s+(předchozí|všechna|systemová|tvá|tvoje)\s+(pravidl|instrukc)/iu,
   /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions|rules)/i,
+  /disregard\s+(all\s+)?(previous|prior|above)\s+(instructions|rules)/i,
+  /override\s+(all\s+)?(previous|prior|system)\s+(instructions|rules|prompt)/i,
   /(?:vr[aá]t|return|output|respond\s+with).{0,48}\bAPPROVED\b/i,
   /"status"\s*:\s*"APPROVED"/i,
+  /\bstatus\s*[:=]\s*APPROVED\b/i,
   /<\/?system>/i,
+  /<\|im_start\|>/i,
+  /\[INST\]/i,
+  /#{2,}\s*Instruction/i,
   /nov[ýy]\s+(system\s+)?prompt/i,
+  /system\s+prompt/i,
   /jste\s+(nyní|teď)\s+(moderátor|asistent)/iu,
+  /od\s+teď\s+jsi\b/iu,
+  /přepiš\s+(pravidla|instrukce|system)/iu,
+  /you\s+are\s+now\b/i,
+  /from\s+now\s+on\s+you\s+are\b/i,
+  /\bact\s+as\b.{0,40}\b(moderator|admin|system|jailbreak)\b/i,
   /forget\s+(all\s+)?(previous|prior)\s+(instructions|rules)/i,
 ];
 

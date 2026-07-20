@@ -4,6 +4,7 @@ import {
   LISTING_IMAGE_ACCEPT,
   LISTING_IMAGE_MAX_FILES,
   LISTING_IMAGE_MAX_FILE_BYTES,
+  LISTING_IMAGE_MAX_SOURCE_BYTES,
 } from "@/config/app";
 import { getListingFormTipExample } from "@/config/listing-form-tips";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
@@ -38,6 +39,8 @@ export type ListingImageUploadHandle = {
   appendToFormData: (formData: FormData) => void;
   hasImageChanges: () => boolean;
   getModerationImages: () => Promise<ModerationImagePayload | null>;
+  /** P12 — zvýrazní fotku podle 0-based indexu z AI zamítnutí. */
+  highlightRejectedImage: (index: number) => void;
 };
 
 type ImageItem =
@@ -86,6 +89,16 @@ export const ListingImageUpload = forwardRef<
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
+  const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+
+  const highlightRejectedImage = useCallback((index: number) => {
+    const target = items[index];
+    if (!target) return;
+    setHighlightedKey(target.key);
+    const node = itemRefs.current.get(target.key);
+    node?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [items]);
 
   useEffect(() => {
     if (!mainKey && items.length > 0) {
@@ -156,8 +169,13 @@ export const ListingImageUpload = forwardRef<
 
   useImperativeHandle(
     ref,
-    () => ({ appendToFormData, hasImageChanges, getModerationImages }),
-    [appendToFormData, getModerationImages, hasImageChanges],
+    () => ({
+      appendToFormData,
+      hasImageChanges,
+      getModerationImages,
+      highlightRejectedImage,
+    }),
+    [appendToFormData, getModerationImages, hasImageChanges, highlightRejectedImage],
   );
 
   async function processFiles(incoming: FileList | File[]) {
@@ -167,35 +185,38 @@ export const ListingImageUpload = forwardRef<
     try {
       const list = Array.from(incoming);
       const nextItems = [...items];
+      const skipped: string[] = [];
 
       for (const file of list) {
-        const sourceError = validateListingImageSourceFile(file);
-        if (sourceError) {
-          setError(sourceError);
-          return;
+        if (nextItems.length >= LISTING_IMAGE_MAX_FILES) {
+          skipped.push(`${file.name} (limit fotek)`);
+          continue;
         }
 
-        if (nextItems.length >= LISTING_IMAGE_MAX_FILES) {
-          setError(`Maximálně ${LISTING_IMAGE_MAX_FILES} fotek.`);
-          return;
+        const sourceError = validateListingImageSourceFile(file);
+        if (sourceError) {
+          skipped.push(`${file.name}: ${sourceError}`);
+          continue;
         }
 
         let compressed: File;
         try {
           compressed = await compressListingImage(file);
         } catch (compressError) {
-          setError(
-            compressError instanceof Error
-              ? compressError.message
-              : "Fotku se nepodařilo zpracovat. Zkuste jiný soubor.",
+          skipped.push(
+            `${file.name}: ${
+              compressError instanceof Error
+                ? compressError.message
+                : "zpracování selhalo"
+            }`,
           );
-          return;
+          continue;
         }
 
         const storedError = validateListingImageFile(compressed);
         if (storedError) {
-          setError(storedError);
-          return;
+          skipped.push(`${file.name}: ${storedError}`);
+          continue;
         }
 
         nextItems.push({
@@ -209,6 +230,13 @@ export const ListingImageUpload = forwardRef<
       setItems(nextItems);
       if (!mainKey && nextItems.length > 0) {
         setMainKey(nextItems[0]!.key);
+      }
+      if (skipped.length > 0) {
+        setError(
+          skipped.length === 1
+            ? skipped[0]!
+            : `Některé fotky jsme přeskočili: ${skipped.join("; ")}`,
+        );
       }
     } finally {
       setIsCompressing(false);
@@ -245,6 +273,9 @@ export const ListingImageUpload = forwardRef<
 
   const tipExample = getListingFormTipExample(categoryType, subcategorySlug);
   const maxPhotoSizeMb = Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024));
+  const maxSourceSizeMb = Math.round(
+    LISTING_IMAGE_MAX_SOURCE_BYTES / (1024 * 1024),
+  );
 
   return (
     <div className="space-y-3">
@@ -255,8 +286,8 @@ export const ListingImageUpload = forwardRef<
             ⚡ <strong>Tip</strong>: Napište stručný popisek (např. „{tipExample}“), nahrajte fotku a nechte AI, ať váš text vylepší a dotáhne do konce.
           </p>
           <p>
-            📸 Max. {LISTING_IMAGE_MAX_FILES} fotek (automaticky zmenšíme pod{" "}
-            {maxPhotoSizeMb} MB).
+            📸 Max. {LISTING_IMAGE_MAX_FILES} fotek — vstup max. {maxSourceSizeMb}{" "}
+            MB před zmenšením, výsledek do {maxPhotoSizeMb} MB.
           </p>
           <p>⭐ Hvězdičkou vyberte hlavní fotku na homepage.</p>
           <p>🛡️ Bezpečnost fotek hlídá AI kontrola.</p>
@@ -272,7 +303,15 @@ export const ListingImageUpload = forwardRef<
             return (
               <li
                 key={item.key}
-                className="relative overflow-hidden rounded-xl border border-neutral-400 bg-neutral-50"
+                ref={(node) => {
+                  if (node) itemRefs.current.set(item.key, node);
+                  else itemRefs.current.delete(item.key);
+                }}
+                className={`relative overflow-hidden rounded-xl border bg-neutral-50 ${
+                  highlightedKey === item.key
+                    ? "border-red-500 ring-2 ring-red-400"
+                    : "border-neutral-400"
+                }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

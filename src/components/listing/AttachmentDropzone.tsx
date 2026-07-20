@@ -170,19 +170,23 @@ export function AttachmentDropzone({
 
 export async function attachmentsToPayload(
   files: AttachmentFile[],
+  onProgress?: (done: number, total: number) => void,
 ): Promise<
   Array<{ filename: string; content: string; contentType: string }>
 > {
   const results: Array<{ filename: string; content: string; contentType: string }> =
     [];
+  const total = files.length;
 
-  for (const { file } of files) {
+  for (let index = 0; index < files.length; index += 1) {
+    const { file } = files[index]!;
     const content = await readFileAsBase64(file);
     results.push({
       filename: file.name,
       content,
       contentType: file.type,
     });
+    onProgress?.(index + 1, total);
   }
 
   return results;

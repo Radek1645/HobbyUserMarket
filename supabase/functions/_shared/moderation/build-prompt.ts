@@ -46,15 +46,16 @@ Pravidla pro fotografie:
 Kontakty (e-mail, telefon) v textu nejsou důvod k zamítnutí — pouze je v cleanedDescription nahraď [SKRYTO – použij chráněné pole].
 - Zástupný text [SKRYTO – použij chráněné pole] je VÝHRADNĚ pro e-mail a telefon. Nikdy ho nevkládej za cenu, adresu ani jiné údaje. Pokud cena není ve formuláři (user prompt), cenu v cleanedDescription vůbec nezmiňuj.
 
-Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.3:
+Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.6:
 - Cíl: pomoci prodat + vyhrát běžné Google dotazy (lidové názvy, use-case, lokalita). Text čtivý, 1. osoba, bez marketingového spamu a emoji.
 - cleanedTitle = H1 (NE meta title — meta title skládá platforma zvlášť):
   1) Začni nejobecnějším pojmenováním (Baterie, Zimní pneu, Kočárek…), pak značka/model a klíčová specifikace.
   2) Max 45 znaků. Čistý nadpis bez závorek se synonymy — NE „Baterie (akumulátor)…“. Synonyma patří jen do cleanedDescription.
-  3) Zákaz vaty („- málo používaný“, „super stav“, „cca 5,5 mm“) i zbytečného use-case v H1 („na elektrokolo“) — use-case a synonyma jen v úvodu popisu.
-  4) Do cleanedTitle NEVKLÁDEJ lokalitu ani značku webu.
-- metaDescription (POVINNĚ 150–160 znaků): úderný SERP text — klíčové slovo + cena + lokalita + výzva k akci. Cena v meta JEN „za X Kč“ (bez „cca“, „orientační“, „dohodou“). Text musí mít aspoň 150 znaků — rozviň přirozeně (stav, benefit, CTA), neukončuj po krátké větě.
-- imageAlt: věcný alt hlavní fotky — klíčové slovo + podstatný atribut + lokalita (např. „Černá Li-ion baterie 48V Samsung na elektrokolo, Slavkov u Brna“). Max 125 znaků.
+  3) Krátký use-case (např. „na elektrokolo“) POVOLEN, pokud se vejde do 45 znaků včetně. Jinak use-case jen do cleanedDescription — neobětuj značku/model kvůli use-case.
+  4) Zákaz vaty („- málo používaný“, „super stav“, „cca 5,5 mm“).
+  5) Do cleanedTitle NEVKLÁDEJ lokalitu ani značku webu.
+- metaDescription: SERP snippet — očekávání „klik → detail inzerátu“. Pořadí: produkt + lokalita + cena → benefit/use-case. Preferuj oznamovací věty (NE „Hledáte…?“). Ideálně 150–160 znaků (měkký cíl; klidně až ~200 — platforma zkrátí). Cena v meta JEN „za X Kč“ (bez „cca“, „orientační“, „dohodou“). ZAKÁZÁNO ve meta: CTA („napište prodejci“, „kontaktujte“, „detaily a kontakt“), brand webu — CTA jen v cleanedDescription. Když je text krátký, doplň fakt (stav, use-case), ne výzvu k akci. Nesnaž se trefit přesný počet znaků; piš přirozeně.
+- imageAlt: věcný alt hlavní fotky — klíčové slovo + podstatný atribut + případně use-case. BEZ lokality (např. „Černá Li-ion baterie 48V Samsung na elektrokolo“). Max 125 znaků.
 - cleanedDescription — tón: 1. osoba, konkrétní benefity z faktů. Bez klišé „nezmeškejte“ / „jedinečná příležitost“ a bez vymyšlených superlativů.
 - Synonyma (SEO): do prvních 1–2 vět úvodu 2–3 lidové/synonymní výrazy (akumulátor → baterie, baterka). Běžné věty. ZAKÁZÁNO: hashtagy, seznamy klíčových slov, stuffing. Nevymýšlej výbavu.
 - Variabilita: NIKDY stejná šablona vět napříč inzeráty — měň pořadí informací, aktiv/pasiv a typy úvodů.
@@ -66,8 +67,8 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.3:
   2) PARAMETRY: po prázdném řádku, oddělovači „---“ a nadpisu „Parametry“ odrážky „• Popisek: hodnota“.
   3) CTA na konci úvodu (před ---): jen platforma („Pro více informací napište prodejci zprávu přes platformu.“). Nikdy telefon/e-mail v CTA.
 - Jednotky v Parametrech povinné, pokud dávají smysl (cm, ml/l, m², km).
-- Příklad cleanedTitle: „Baterie Li-ion 48V 17Ah Samsung“
-- Příklad metaDescription (cíl 150–160 znaků): „Hledáte spolehlivou baterii na elektrokolo Samsung 48V 17Ah? Ve Slavkově u Brna za 4 000 Kč. Podívejte se na detaily inzerátu a kontaktujte prodejce.“
+- Příklad cleanedTitle: „Baterie Li-ion 48V 17Ah Samsung“ (nebo s use-case, pokud se vejde: „Baterie Samsung 48V na elektrokolo“)
+- Příklad metaDescription (měkký cíl): „Baterie Li-ion Samsung 48V 17Ah ve Slavkově u Brna za 4 000 Kč. Spolehlivý akumulátor na elektrokolo.“
 - Příklad cleanedDescription (zboží, dohodou): „Nabízím málo používaný Li-ion akumulátor Samsung 48V. Tato baterie na elektrokolo má kapacitu 17 Ah (816 Wh); samotná baterka je připravená k použití. Cena 4 000 Kč, dohodou. Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna. Pro více informací napište prodejci zprávu přes platformu.\\n\\n---\\n\\nParametry\\n• Napětí: 48 V\\n• Kapacita: 17 Ah (816 Wh)\\n• Stav: málo používaný"
 - U statusu NEEDS_QUESTIONS: úvod + Parametry jen s fakty, které už znáš; chybějící údaje ptej v dotazníku. Nikdy nevkládej do Parametrů placeholder „…" nebo prázdnou hodnotu.
 - Frázi „osobní prohlídka po domluvě" používej pouze u nemovitostí. U zboží a módy piš „osobní předání po domluvě" nebo „vyzvednutí po domluvě".

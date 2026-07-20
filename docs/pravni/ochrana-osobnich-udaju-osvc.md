@@ -82,7 +82,7 @@ Abychom minimalizovali zpracování osobních údajů, účet **automaticky anon
 1. Uživatel se **nepřihlásil déle než 90 dní** (poslední přihlášení dle účtu v autentizační službě).
 2. Uživatel **nemá žádný aktivní inzerát**.
 
-**7 dní před anonymizací** zašleme upozornění na e-mail uvedený u účtu. Přihlášení během této lhůty proces anonymizace zastaví. Po anonymizaci jsou identifikační údaje v profilu nahrazeny; komentáře pod inzeráty zůstávají anonymizované; autentizační účet je odstraněn — viz [VOP](/vop) §6.
+**7 dní před anonymizací** zašleme upozornění na e-mail uvedený u účtu. Přihlášení během této lhůty proces anonymizace zastaví. Po anonymizaci jsou identifikační údaje v profilu nahrazeny a autentizační účet je odstraněn — viz [VOP](/vop) §6.
 
 ### 6.2 Věk a souhlas dětí
 

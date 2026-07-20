@@ -5,6 +5,11 @@ export type AdvertiserProfile = {
   is_company: boolean;
   company_name: string | null;
   company_ico: string | null;
+  lifetime_published_count: number;
+};
+
+export type AdvertiserPublicProfile = AdvertiserProfile & {
+  active_listing_count: number;
 };
 
 export function getAdvertiserPrimaryLabel(profile: AdvertiserProfile): string {

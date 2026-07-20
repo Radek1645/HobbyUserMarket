@@ -89,3 +89,11 @@ export const listingIntentDemandBadgeClass =
 /** Podkategorie na image-first kartě (vedle štítku směru). */
 export const listingCardSubcategoryBadgeClass =
   "inline-block max-w-full truncate rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-medium text-gray-800 shadow-sm";
+
+/** Štítek Podnikatel (VOP §7.2) u zadavatele. */
+export const advertiserPodnikatelBadgeClass =
+  "inline-flex items-center rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-white";
+
+/** Milník lifetime publikací u zadavatele. */
+export const advertiserMilestoneBadgeClass =
+  "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-900 ring-1 ring-inset ring-emerald-200";

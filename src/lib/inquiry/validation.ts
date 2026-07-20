@@ -7,6 +7,10 @@ import {
   INQUIRY_MESSAGE_MIN_LENGTH,
   INQUIRY_SENDER_NAME_MAX_LENGTH,
 } from "@/config/app";
+import {
+  INQUIRY_CONTACT_INVALID_MESSAGE,
+  isValidInquiryContact,
+} from "@/lib/inquiry/contact";
 import { mimeMatchesMagicBytes } from "@/lib/files/magic-bytes";
 import type { CategoryType } from "@/types/post";
 
@@ -87,8 +91,8 @@ export function validateInquiryPayload(
     return { ok: false, error: "Jméno musí mít 1–80 znaků." };
   }
 
-  if (senderContact.length < 5) {
-    return { ok: false, error: "Zadejte e-mail nebo telefon pro zpětnou vazbu." };
+  if (!isValidInquiryContact(senderContact)) {
+    return { ok: false, error: INQUIRY_CONTACT_INVALID_MESSAGE };
   }
 
   if (message.length < INQUIRY_MESSAGE_MIN_LENGTH) {

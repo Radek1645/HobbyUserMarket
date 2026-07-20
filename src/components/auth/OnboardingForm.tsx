@@ -39,6 +39,11 @@ export function OnboardingForm({
         Startujete s {LISTING_QUOTA_FREE_DEFAULT} inzeráty zdarma!
       </div>
 
+      <p className="text-sm text-gray-600">
+        Jednorázové nastavení profilu — přezdívku uvidí sousedé u vašich
+        inzerátů. Po uložení můžete hned inzerovat.
+      </p>
+
       <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm text-gray-600">
         Přihlášený účet:{" "}
         <span className="font-medium text-gray-900">{email}</span>

@@ -89,6 +89,14 @@ export const INQUIRY_RATE_LIMIT_PER_POST_PER_DAY = 3;
 /** Honeypot pole — musí zůstat prázdné (P16). */
 export const INQUIRY_HONEYPOT_FIELD = "website";
 
+/**
+ * Zobrazení detailu inzerátu (klientské statistiky, mimo GA4).
+ * Dedup okno je vynuceno v RPC `record_listing_view` (24 h).
+ */
+export const LISTING_VIEW_DEDUP_HOURS = 24;
+/** Max. zápisů zobrazení z jedné IP za 24 h (anti-spam). */
+export const LISTING_VIEW_RATE_LIMIT_PER_IP_PER_DAY = 200;
+
 export const INQUIRY_ATTACHMENT_MAX_FILES = 3;
 export const INQUIRY_ATTACHMENT_MAX_TOTAL_BYTES = 5 * 1024 * 1024;
 export const INQUIRY_ATTACHMENT_ALLOWED_EXTENSIONS = [

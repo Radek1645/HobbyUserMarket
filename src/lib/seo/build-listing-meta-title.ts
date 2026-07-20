@@ -19,7 +19,7 @@ function joinMetaTitle(
 /**
  * Sestaví `<title>` inzerátu dle SEO bible §3.2.
  * Preferuje lokalitu (+ brand): při přetečení nejdřív zkrátí H1 zprava,
- * teprve pak vynechá brand, pak lokalitu.
+ * teprve pak vynechá brand, pak lokalitu (lokalita > brand > specifikace H1).
  */
 export function buildListingMetaTitle(
   h1: string,

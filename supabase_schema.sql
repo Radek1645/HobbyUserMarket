@@ -238,6 +238,11 @@ CREATE TABLE IF NOT EXISTS public.posts (
   CONSTRAINT posts_renew_count_non_negative
     CHECK (renew_count >= 0),
 
+  view_count        INTEGER NOT NULL DEFAULT 0,
+
+  CONSTRAINT posts_view_count_non_negative
+    CHECK (view_count >= 0),
+
   CONSTRAINT posts_status_reason_code_check
     CHECK (
       status_reason_code IS NULL
@@ -320,6 +325,22 @@ CREATE TABLE IF NOT EXISTS public.inquiry_events (
   CONSTRAINT inquiry_events_ip_not_empty CHECK (char_length(trim(ip_address)) > 0)
 );
 
+-- listing_views (zobrazení detailu — klientské statistiky mimo GA4)
+CREATE TABLE IF NOT EXISTS public.listing_views (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  view_no         BIGINT GENERATED ALWAYS AS IDENTITY,
+  post_id         BIGINT NOT NULL REFERENCES public.posts (id) ON DELETE CASCADE,
+  viewer_user_id  UUID REFERENCES auth.users (id) ON DELETE SET NULL,
+  viewer_key      TEXT NOT NULL,
+  ip_hash         TEXT NOT NULL,
+  viewed_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT listing_views_viewer_key_not_empty
+    CHECK (char_length(trim(viewer_key)) > 0),
+  CONSTRAINT listing_views_ip_hash_not_empty
+    CHECK (char_length(trim(ip_hash)) > 0)
+);
+
 -- rate_limits
 CREATE TABLE IF NOT EXISTS public.rate_limits (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -371,6 +392,15 @@ CREATE INDEX IF NOT EXISTS inquiry_events_ip_post_created_idx
 CREATE INDEX IF NOT EXISTS inquiry_events_post_created_idx
   ON public.inquiry_events (post_id, created_at DESC)
   WHERE delivered = true;
+
+CREATE UNIQUE INDEX IF NOT EXISTS listing_views_view_no_idx
+  ON public.listing_views (view_no);
+CREATE INDEX IF NOT EXISTS listing_views_post_viewed_idx
+  ON public.listing_views (post_id, viewed_at DESC);
+CREATE INDEX IF NOT EXISTS listing_views_dedup_idx
+  ON public.listing_views (post_id, viewer_key, viewed_at DESC);
+CREATE INDEX IF NOT EXISTS listing_views_ip_hash_viewed_idx
+  ON public.listing_views (ip_hash, viewed_at DESC);
 
 CREATE INDEX IF NOT EXISTS rate_limits_user_action_idx ON public.rate_limits (user_id, action_type, window_start);
 
@@ -737,6 +767,7 @@ ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_reveals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inquiry_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.listing_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rate_limits ENABLE ROW LEVEL SECURITY;
 
 -- profiles
@@ -1002,6 +1033,12 @@ CREATE POLICY inquiry_events_select_post_owner ON public.inquiry_events
     )
   );
 
+-- listing_views — jen moderátor (majitel má posts.view_count)
+DROP POLICY IF EXISTS listing_views_select_moderator ON public.listing_views;
+CREATE POLICY listing_views_select_moderator ON public.listing_views
+  FOR SELECT TO authenticated
+  USING (public.is_moderator_or_admin());
+
 -- rate_limits
 DROP POLICY IF EXISTS rate_limits_select_own ON public.rate_limits;
 CREATE POLICY rate_limits_select_own ON public.rate_limits
@@ -1081,6 +1118,9 @@ GRANT INSERT ON public.reports TO service_role;
 GRANT SELECT, INSERT ON public.contact_reveals TO authenticated;
 GRANT SELECT ON public.inquiry_events TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.inquiry_events TO service_role;
+GRANT SELECT ON public.listing_views TO authenticated;
+GRANT SELECT, INSERT ON public.listing_views TO service_role;
+GRANT UPDATE (view_count) ON public.posts TO service_role;
 GRANT SELECT, INSERT, UPDATE ON public.rate_limits TO authenticated;
 
 -- =============================================================================
@@ -1511,4 +1551,230 @@ GRANT EXECUTE ON FUNCTION public.anonymize_old_inquiry_ips(INTEGER) TO service_r
 
 COMMENT ON FUNCTION public.anonymize_old_inquiry_ips(INTEGER) IS
   'Zkrátí IP v inquiry_events starších než p_after_days (IPv4 → x.x.x.0, jinak anonymized).';
+
+-- =============================================================================
+-- Listing views — klientské statistiky zobrazení detailu (mimo GA4)
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.record_listing_view(
+  p_post_id BIGINT,
+  p_viewer_key TEXT,
+  p_ip_hash TEXT,
+  p_viewer_user_id UUID DEFAULT NULL
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_post       RECORD;
+  v_key        TEXT := NULLIF(trim(p_viewer_key), '');
+  v_ip_hash    TEXT := NULLIF(trim(p_ip_hash), '');
+  v_dedup_hrs  INTEGER := 24;
+BEGIN
+  IF p_post_id IS NULL OR p_post_id < 1 OR v_key IS NULL OR v_ip_hash IS NULL THEN
+    RETURN false;
+  END IF;
+
+  IF char_length(v_key) > 128 OR char_length(v_ip_hash) > 128 THEN
+    RETURN false;
+  END IF;
+
+  SELECT p.user_id, p.status, p.expires_at
+    INTO v_post
+  FROM public.posts p
+  WHERE p.id = p_post_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN false;
+  END IF;
+
+  IF NOT public.is_post_publicly_visible(v_post.status, v_post.expires_at) THEN
+    RETURN false;
+  END IF;
+
+  IF p_viewer_user_id IS NOT NULL AND p_viewer_user_id = v_post.user_id THEN
+    RETURN false;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.listing_views lv
+    WHERE lv.post_id = p_post_id
+      AND lv.viewer_key = v_key
+      AND lv.viewed_at > now() - make_interval(hours => v_dedup_hrs)
+  ) THEN
+    RETURN false;
+  END IF;
+
+  INSERT INTO public.listing_views (post_id, viewer_user_id, viewer_key, ip_hash)
+  VALUES (p_post_id, p_viewer_user_id, v_key, v_ip_hash);
+
+  UPDATE public.posts
+  SET view_count = view_count + 1
+  WHERE id = p_post_id;
+
+  RETURN true;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.record_listing_view(BIGINT, TEXT, TEXT, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.record_listing_view(BIGINT, TEXT, TEXT, UUID) TO service_role;
+
+COMMENT ON FUNCTION public.record_listing_view(BIGINT, TEXT, TEXT, UUID) IS
+  'Zapíše zobrazení detailu inzerátu (dedup 24 h). Volá jen service_role z API.';
+
+-- =============================================================================
+-- Advertiser public — odznaky + /uzivatel/[nickname] (053)
+-- =============================================================================
+
+DROP FUNCTION IF EXISTS public.get_advertiser_display(UUID);
+
+CREATE OR REPLACE FUNCTION public.get_advertiser_display(p_user_id UUID)
+RETURNS TABLE (
+  nickname VARCHAR(50),
+  is_company BOOLEAN,
+  company_name VARCHAR(150),
+  company_ico VARCHAR(8),
+  lifetime_published_count INTEGER
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    p.nickname,
+    p.is_company,
+    p.company_name,
+    p.company_ico,
+    public.user_listing_lifetime_count(p.id)
+  FROM public.profiles p
+  WHERE p.id = p_user_id;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_advertiser_display(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_advertiser_display(UUID) TO anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_advertiser_public_by_nickname(
+  p_nickname TEXT
+)
+RETURNS TABLE (
+  nickname VARCHAR(50),
+  is_company BOOLEAN,
+  company_name VARCHAR(150),
+  company_ico VARCHAR(8),
+  lifetime_published_count INTEGER,
+  active_listing_count INTEGER
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_nick TEXT := NULLIF(trim(p_nickname), '');
+BEGIN
+  IF v_nick IS NULL OR char_length(v_nick) > 50 THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    p.nickname,
+    p.is_company,
+    p.company_name,
+    p.company_ico,
+    public.user_listing_lifetime_count(p.id),
+    (
+      SELECT count(*)::INTEGER
+      FROM public.posts post
+      WHERE post.user_id = p.id
+        AND public.is_post_publicly_visible(post.status, post.expires_at)
+    )
+  FROM public.profiles p
+  WHERE p.nickname = v_nick;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_advertiser_public_by_nickname(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_advertiser_public_by_nickname(TEXT)
+  TO anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_advertiser_listings(
+  p_nickname TEXT,
+  p_limit INTEGER DEFAULT 9,
+  p_offset INTEGER DEFAULT 0
+)
+RETURNS TABLE (
+  id BIGINT,
+  title TEXT,
+  description TEXT,
+  category_type VARCHAR(10),
+  subcategory_slug VARCHAR(50),
+  price_type VARCHAR(20),
+  price_amount INTEGER,
+  location_text TEXT,
+  slug VARCHAR(200),
+  main_image_url TEXT,
+  event_date TIMESTAMPTZ,
+  created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_nick TEXT := NULLIF(trim(p_nickname), '');
+  v_user_id UUID;
+  v_limit INTEGER := LEAST(GREATEST(COALESCE(p_limit, 9), 1), 50);
+  v_offset INTEGER := GREATEST(COALESCE(p_offset, 0), 0);
+BEGIN
+  IF v_nick IS NULL OR char_length(v_nick) > 50 THEN
+    RETURN;
+  END IF;
+
+  SELECT p.id INTO v_user_id
+  FROM public.profiles p
+  WHERE p.nickname = v_nick;
+
+  IF v_user_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    post.id,
+    post.title,
+    post.description,
+    post.category_type,
+    post.subcategory_slug,
+    post.price_type,
+    post.price_amount,
+    post.location_text,
+    post.slug,
+    post.main_image_url,
+    post.event_date,
+    post.created_at
+  FROM public.posts post
+  WHERE post.user_id = v_user_id
+    AND public.is_post_publicly_visible(post.status, post.expires_at)
+  ORDER BY
+    CASE
+      WHEN post.category_type = 'udalost' AND post.event_date IS NOT NULL THEN 0
+      ELSE 1
+    END,
+    post.event_date ASC NULLS LAST,
+    post.created_at DESC
+  LIMIT v_limit
+  OFFSET v_offset;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_advertiser_listings(TEXT, INTEGER, INTEGER) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_advertiser_listings(TEXT, INTEGER, INTEGER)
+  TO anon, authenticated;
 

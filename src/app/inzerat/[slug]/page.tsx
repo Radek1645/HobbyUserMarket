@@ -5,9 +5,11 @@ import {
   getSubcategoryLabel,
 } from "@/config/categories";
 import { SITE_DISPLAY_NAME } from "@/config/site";
+import { AdvertiserBadges } from "@/components/listing/AdvertiserBadges";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
 import { ListingDescription } from "@/components/listing/ListingDescription";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
+import { ListingViewBeacon } from "@/components/listing/ListingViewBeacon";
 import { ReportListingButton } from "@/components/listing/ReportListingButton";
 import { ModeratorListingBar } from "@/components/mod/ModeratorListingBar";
 import { BackLink } from "@/components/navigation/BackLink";
@@ -25,7 +27,11 @@ import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingImages } from "@/lib/posts/listing-images";
-import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
+import {
+  getAdvertiserListingsPath,
+  getListingEditPath,
+  getListingPath,
+} from "@/lib/posts/listing-path";
 import { buildListingMetaTitle } from "@/lib/seo/build-listing-meta-title";
 import { resolveListingMetaDescription } from "@/lib/seo/listing-meta-description";
 import { getSiteUrl } from "@/lib/supabase/env";
@@ -73,7 +79,8 @@ const POST_DETAIL_COLUMNS =
   "category_type, subcategory_slug, " +
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
   "status, status_reason_code, expires_at, event_date, main_image_url, slug, " +
-  "show_contact_email, show_contact_phone, created_at, updated_at, job_cv_required";
+  "show_contact_email, show_contact_phone, created_at, updated_at, job_cv_required, " +
+  "view_count";
 
 async function getPostBySlug(slug: string): Promise<PostRow | null> {
   const supabase = await createClient();
@@ -233,6 +240,9 @@ export default async function ListingDetailPage({
 
   return (
     <article className="px-4 py-8 sm:px-6">
+      {post.status === "active" ? (
+        <ListingViewBeacon postId={post.id} />
+      ) : null}
       <ListingJsonLd
         input={{
           post,
@@ -335,7 +345,18 @@ export default async function ListingDetailPage({
                   {getAdvertiserPrimaryLabelTitle(advertiser)}
                 </dt>
                 <dd className="font-medium text-gray-900">
-                  {getAdvertiserPrimaryLabel(advertiser)}
+                  <Link
+                    href={getAdvertiserListingsPath(advertiser.nickname)}
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {getAdvertiserPrimaryLabel(advertiser)}
+                  </Link>
+                  <AdvertiserBadges
+                    isCompany={advertiser.is_company}
+                    lifetimePublishedCount={
+                      advertiser.lifetime_published_count
+                    }
+                  />
                 </dd>
               </div>
               {getAdvertiserIcoDisplay(advertiser) ? (
@@ -394,7 +415,19 @@ export default async function ListingDetailPage({
         {isOwner ? (
           <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-700">
             <p className="font-medium text-gray-900">Toto je váš inzerát.</p>
+            {advertiser ? (
+              <AdvertiserBadges
+                isCompany={advertiser.is_company}
+                lifetimePublishedCount={advertiser.lifetime_published_count}
+                showOwnerHint
+              />
+            ) : null}
             <p className="mt-1">
+              Zobrazení:{" "}
+              <span className="font-medium text-gray-900">
+                {post.view_count ?? 0}
+              </span>
+              {" · "}
               Poptávky od zájemců vám přijdou na e-mail účtu, kterým jste se
               přihlásili. Pro test otevřete odkaz na inzerát v{" "}
               <strong>anonymním okně</strong> (nebo se odhlaste) a formulář

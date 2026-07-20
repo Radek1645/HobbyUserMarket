@@ -43,14 +43,19 @@ export const MODERATION_CHECKING_UI = {
 export const MODERATION_PREVIEW_UI = {
   title: "AI vám vylepšila inzerát!",
   subtitle:
-    "AI může udělat chybu — před publikací si text zkontrolujte. Pokud publikujete vylepšený popis, v sekci Parametry se zobrazí „Vytvořeno s pomocí AI: Ano“.",
+    "AI může udělat chybu — před publikací si text zkontrolujte. Můžete publikovat vylepšený text, nebo ponechat svůj původní — obojí je v pořádku. U AI textu se v Parametrech zobrazí „Vytvořeno s pomocí AI: Ano“.",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
+  seoSectionLabel: "Texty pro vyhledávače",
+  seoSectionHint: "Meta popis a alt fotky — volitelné, ale pomáhají ve výsledcích hledání.",
+  seoEditAriaLabel: "Odemknout úpravy textů pro vyhledávače",
+  seoLockAriaLabel: "Zamknout úpravy textů pro vyhledávače",
+  seoLockedHint: "Pro úpravu klikněte na tužku.",
   metaDescriptionLabel: "Meta popis (vyhledávače)",
   metaDescriptionHelp:
     "Zobrazí se ve výsledcích Googlu a Seznamu a zvyšuje viditelnost.",
   imageAltLabel: "Alt text hlavní fotky",
-  imageAltHelp: "Popis fotky pro vyhledávače obrázků.",
+  imageAltHelp: "Popis fotky pro vyhledávače obrázků (bez lokality).",
   questionsHeading: "Vylepšete svůj inzerát",
   questionsHint:
     "Odpovězte na to, co kupující nejvíc zajímá. Urychlíte prodej a vyhnete se zbytečným otázkám v chatu.",
@@ -60,7 +65,7 @@ export const MODERATION_PREVIEW_UI = {
   publishAiHint: "Doporučeno",
   publishOriginalLabel: "Ponechat můj původní text",
   publishOriginalHint:
-    "Zahodí AI návrh a publikuje váš původní text. Kontaktní údaje v popisu se automaticky skryjí.",
+    "Obě cesty jsou v pořádku. Tato volba zahodí AI návrh a publikuje váš původní text. Kontaktní údaje v popisu se automaticky skryjí.",
   descriptionLengthWarning: (current: number, max: number) =>
     `Popis včetně odpovědí má ${current} znaků — maximum je ${max}. Zkrácením textu nebo odpovědí to vejde.`,
   descriptionLengthCounter: (current: number, max: number) =>

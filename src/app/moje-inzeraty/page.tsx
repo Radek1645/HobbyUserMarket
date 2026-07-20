@@ -62,7 +62,7 @@ const MY_LISTING_COLUMNS =
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
   "status, status_reason_code, expires_at, listing_duration_days, event_date, renew_count, " +
   "payment_status, main_image_url, slug, show_contact_email, " +
-  "show_contact_phone, created_at, updated_at";
+  "show_contact_phone, created_at, updated_at, view_count";
 
 async function getMyListings(userId: string): Promise<PostRow[]> {
   noStore();
@@ -86,10 +86,11 @@ export default async function MyListingsPage({
     deleteError?: string;
     quotaError?: string;
     lifetimeError?: string;
+    ok?: string;
   }>;
 }) {
   const user = await getCurrentUser();
-  const { deleteError, quotaError, lifetimeError } = await searchParams;
+  const { deleteError, quotaError, lifetimeError, ok } = await searchParams;
 
   if (!user) {
     redirect("/login?next=/moje-inzeraty");
@@ -117,6 +118,33 @@ export default async function MyListingsPage({
       </p>
 
       {quota ? <ListingQuotaSummary quota={quota} /> : null}
+
+      {ok === "paused" ? (
+        <p
+          role="status"
+          className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+        >
+          Inzerát je pozastavený. Veřejně se nezobrazuje — obnovíte ho kdykoli.
+        </p>
+      ) : null}
+
+      {ok === "restored" ? (
+        <p
+          role="status"
+          className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+        >
+          Inzerát je znovu aktivní a viditelný na webu.
+        </p>
+      ) : null}
+
+      {ok === "extended" ? (
+        <p
+          role="status"
+          className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+        >
+          Platnost inzerátu je prodloužená.
+        </p>
+      ) : null}
 
       {deleteError ? (
         <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -194,6 +222,7 @@ export default async function MyListingsPage({
                           ? ` · platnost vypršela ${expiresLabel}`
                           : ` · platí do ${expiresLabel}`
                         : ""}
+                      {` · ${post.view_count ?? 0} zobrazení`}
                     </p>
                   </div>
 

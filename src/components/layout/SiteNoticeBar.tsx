@@ -10,22 +10,26 @@ import { useEffect, useState } from "react";
 
 const VARIANT_STYLES: Record<
   SiteNoticeVariant,
-  { bar: string; link: string; icon: typeof Info }
+  { bar: string; link: string; icon: typeof Info; content: string }
 > = {
   info: {
     bar: "bg-blue-50 text-blue-900 border-blue-200",
     link: "text-blue-900 decoration-blue-400 hover:decoration-blue-700",
     icon: Info,
+    content: "px-9 py-2 text-sm",
   },
   marketing: {
     bar: "bg-emerald-50 text-emerald-900 border-emerald-200",
     link: "text-emerald-900 decoration-emerald-400 hover:decoration-emerald-700",
     icon: Megaphone,
+    content: "px-9 py-2 text-sm",
   },
+  // U13: odstávka musí být nepřehlédnutelná (silný amber, větší padding, tučný text).
   maintenance: {
-    bar: "bg-red-100 text-red-950 border-red-400",
-    link: "text-red-950 decoration-red-600 hover:decoration-red-800",
+    bar: "bg-amber-400 text-amber-950 border-amber-700 shadow-sm",
+    link: "text-amber-950 decoration-amber-800 hover:decoration-amber-950",
     icon: Wrench,
+    content: "px-9 py-3 text-base sm:text-[0.95rem]",
   },
 };
 
@@ -84,10 +88,15 @@ export function SiteNoticeBar() {
       role={config.variant === "maintenance" ? "alert" : "status"}
       className={`relative border-b ${styles.bar}`}
     >
-      <div className="mx-auto flex max-w-5xl items-center justify-center gap-2 px-9 py-2 text-center text-sm">
-        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <div
+        className={`mx-auto flex max-w-5xl items-center justify-center gap-2.5 text-center ${styles.content}`}
+      >
+        <Icon
+          className={`shrink-0 ${config.variant === "maintenance" ? "h-5 w-5" : "h-4 w-4"}`}
+          aria-hidden="true"
+        />
         <p
-          className={`leading-snug ${config.variant === "maintenance" ? "font-semibold" : ""}`}
+          className={`leading-snug ${config.variant === "maintenance" ? "font-bold" : ""}`}
         >
           {config.message}
           {config.link ? (
@@ -118,7 +127,7 @@ export function SiteNoticeBar() {
             type="button"
             onClick={handleDismiss}
             aria-label="Zavřít oznámení"
-            className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current sm:right-3"
+            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition hover:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current sm:right-3"
           >
             <X className="h-4 w-4" />
           </button>

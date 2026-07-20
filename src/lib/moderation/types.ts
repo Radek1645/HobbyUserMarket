@@ -99,6 +99,7 @@ export type ListingModerationFailure =
       kind: "rejected";
       reason: string;
       topicId?: string;
+      rejectedImageIndex?: number;
     }
   | {
       ok: false;

@@ -11,6 +11,7 @@ import { useEffect, useRef } from "react";
 export type ModerationRejectionState = {
   reason: string;
   topicId?: string;
+  rejectedImageIndex?: number;
 };
 
 type ModerationRejectedDialogProps = {
@@ -30,6 +31,11 @@ export function ModerationRejectedDialog({
   useEffect(() => {
     if (!rejection) return;
 
+    const previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
     closeButtonRef.current?.focus();
 
     function onKeyDown(event: KeyboardEvent) {
@@ -43,6 +49,7 @@ export function ModerationRejectedDialog({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
     };
   }, [rejection, onClose]);
 
@@ -84,6 +91,15 @@ export function ModerationRejectedDialog({
             <>
               {" "}
               <span className="font-semibold">({violatedTopic.label})</span>
+            </>
+          ) : null}
+          {typeof rejection.rejectedImageIndex === "number" &&
+          rejection.rejectedImageIndex >= 0 ? (
+            <>
+              {" "}
+              <span className="font-semibold">
+                Problémová fotka č. {rejection.rejectedImageIndex + 1}.
+              </span>
             </>
           ) : null}
         </p>
@@ -148,5 +164,6 @@ export function moderationFailureToRejection(
   return {
     reason: failure.reason,
     topicId: failure.topicId,
+    rejectedImageIndex: failure.rejectedImageIndex,
   };
 }

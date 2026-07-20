@@ -317,6 +317,16 @@ export function HomeListings({
         </div>
       ) : null}
 
+      {searchActive && !searchValid ? (
+        <p
+          role="status"
+          className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950"
+        >
+          Pro hledání zadejte alespoň 3 znaky — teď ukazujeme výpis podle
+          kategorie a filtrů.
+        </p>
+      ) : null}
+
       {(searchActive || locationReady || hasInitialForCategory) &&
       visibleListings.length > 0 ? (
         <>

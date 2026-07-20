@@ -19,6 +19,11 @@ export function ModerationApprovedDialog({
   useEffect(() => {
     if (!open) return;
 
+    const previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
     continueButtonRef.current?.focus();
 
     function onKeyDown(event: KeyboardEvent) {
@@ -32,6 +37,7 @@ export function ModerationApprovedDialog({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
     };
   }, [open, onContinue]);
 

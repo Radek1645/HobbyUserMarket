@@ -94,6 +94,8 @@ export type PostRow = {
   contact_phone?: string | null;
   /** Práce/brigády — uchazeč musí přiložit CV při poptávce. */
   job_cv_required?: boolean;
+  /** Počet započítaných zobrazení detailu (dedup 24 h). */
+  view_count?: number;
   created_at: string;
   updated_at: string;
 };

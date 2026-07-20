@@ -18,43 +18,42 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 1. Ověření funkčnosti
 
-- [x] RPC anonymizace IP (výsledek `3`)
-- [x] Migrace 050 Success
-- [x] HP vykání (Přihlaste se / vašeho okolí)
-- [ ] `/gdpr` na produkci po deployi *(uživatel)*
+- [x] Migrace **053** Success (uživatel)
+- [x] Migrace **052** Success (uživatel)
+- [ ] Smoke UI odznaky + `/uzivatel` na produkci po deployi *(uživatel)*
 
 ---
 
 ## 2. Nasazení infrastruktury
 
-- [x] Migrace **050** — uživatel potvrdil
-- [x] Vercel region Dublin (`dub1`)
-- [x] Cron v `vercel.json` (deploy s pushem)
-- [x] Edge Functions — uživatel: infra ok
+- [x] Migrace **052**, **053** — uživatel potvrdil
+- [x] Edge Functions — uživatel: aktualizace spuštěna
+- [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
 
 ## 3. Dokumentace
 
-- [x] **Metodika** — §2.1, §2.7–2.8, §9.1.3
-- [x] **PRD** — v3.32
-- [x] **TO-DO_Fable** — P37–P39
-- [x] **Stav_projektu/2026-07-19.md**
+- [x] **Metodika** — §8.1 (zadavatel, odznaky, view_count)
+- [x] **PRD** — v3.39
+- [x] **pravni/README** — VOP §7 badge ✅
+- [x] **ui-prvky** — odznaky zadavatele
+- [x] **Stav_projektu/2026-07-21.md**
 
 ---
 
 ## 4. Snapshot session — `Stav_projektu/`
 
-- [x] Soubor `Stav_projektu/2026-07-19.md`
+- [x] Soubor `Stav_projektu/2026-07-21.md`
 - [x] Řádek v [`Stav_projektu/README.md`](../Stav_projektu/README.md)
 
 ---
 
 ## 5. Git — příprava a commity
 
-- [x] `git status` — bez `.env`
-- [x] Commit `1e1ebb0`
-- [x] Push na `origin`
+- [ ] `git status` — bez `.env`
+- [ ] Commit
+- [ ] Push na `origin`
 
 ---
 
@@ -64,7 +63,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [x] Push proběhl bez chyby
+- [ ] Push proběhl bez chyby
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -73,17 +72,9 @@ git push -u origin HEAD
 
 | Kritérium | Splněno |
 |-----------|:-------:|
-| Změna ověřená v UI / API | ✅ RPC |
+| Změna ověřená v UI / API | ⏳ produkce |
 | Migrace + EF nasazené | ✅ dle uživatele |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit na `main` | ✅ |
-| Push na `origin` | ✅ |
-
----
-
-## Rychlé odkazy
-
-- [`docs/PRD_v3.md`](./PRD_v3.md)
-- [`docs/Metodika.md`](./Metodika.md)
-- Skill: `.cursor/skills/ukonceni-prace/SKILL.md`
+| Commit na `main` | ⏳ |
+| Push na `origin` | ⏳ |

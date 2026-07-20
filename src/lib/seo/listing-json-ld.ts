@@ -61,10 +61,14 @@ function buildOffer(
     availability: "https://schema.org/InStock",
   };
 
+  // Google Product rich results vyžadují price — posílej vždy, když máme částku
+  // (fixed / negotiable). U offer („Nabídni“) a exchange částka není.
   if (post.price_type === "free_pickup") {
     offer.price = 0;
-  } else if (post.price_type === "fixed" && post.price_amount != null) {
-    // SEO Bible §3.6 — negotiable/orientační cenu do Offer.price neposílat
+  } else if (
+    (post.price_type === "fixed" || post.price_type === "negotiable") &&
+    post.price_amount != null
+  ) {
     offer.price = post.price_amount;
   }
 

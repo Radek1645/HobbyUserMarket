@@ -71,7 +71,7 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 - [x] **Gemini / OpenAI** — popsány v GDPR §5.1 jako přenos mimo EHP + DPA/SCC (2026-07-19)
 - [x] **Tabulka zpracovatelů** v FO i OSVC §5.1 (2026-07-19)
 - [x] Ověřit **Resend** sending region — Ireland `eu-west-1`, doména `zapikolou.cz` Verified (2026-07-19); zapsáno v GDPR §5.1
-- [ ] Podpis **Resend DPA** (účetní/provozní údaje mohou být mimo EHP)
+- [x] **Resend DPA** — staženo 2026-07-20 do [`resend-dpa-signed.pdf`](./resend-dpa-signed.pdf) (DocuSign `CC958417-…`, Updated 12/31/2025). Předpodepsaná Resendem; závazná od registrace účtu — bez countersign. Zahrnuje SCC / GDPR.
 - [ ] Revize právníkem před publikací finálního GDPR textu
 
 Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
@@ -97,7 +97,7 @@ Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
 |-----|-------------|-------------------|
 | [VOP §4](./vop-fo.md) — AI moderace, God Mode, DSA | ✅ draft 1.3 | AI ✅ · God Mode inzerátů ⚠️ · SoR e-mail ❌ |
 | [VOP §3](./vop-fo.md) — licence, vodoznak (volitelně), recyklace fotek | ✅ draft | vodoznak volitelný (není v plánu) · detekce recyklace ❌ |
-| [VOP §7](./vop-fo.md) — Podnikatel, IČO, štítek | ✅ draft | profil firma ✅ · badge ❌ · IČO volitelné ⚠️ |
+| [VOP §7](./vop-fo.md) — Podnikatel, IČO, štítek | ✅ draft | profil firma ✅ · badge ✅ · IČO volitelné ⚠️ |
 | [Pravidla §2.2](./podminky-inzerce.md) — seznam zakázaného obsahu | ✅ draft 1.2 | `prohibited-topics.ts` ✅ · web `/podminky-inzerce` stub ❌ |
 | Checkbox věku 15+ | ✅ | `RegistrationConsentFields` ✅ |
 

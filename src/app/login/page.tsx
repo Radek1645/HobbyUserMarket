@@ -2,6 +2,7 @@ import { signInWithGoogle } from "@/app/actions/auth";
 import { EmailAuthPanel } from "@/components/auth/EmailAuthPanel";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { mapAuthError } from "@/lib/auth/map-auth-error";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { redirect } from "next/navigation";
 
@@ -36,10 +37,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect("/");
   }
 
-  const { error, message, next, tab } = await searchParams;
+  const { error: errorParam, message, next, tab } = await searchParams;
   const nextPath = sanitizeInternalPath(next);
   const infoMessage = message ? messageMap[message] : undefined;
   const isCreateListingFlow = message === "create_listing";
+  const error = errorParam ? mapAuthError(errorParam) : undefined;
 
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4 py-10 sm:py-12">

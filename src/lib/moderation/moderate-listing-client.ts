@@ -12,6 +12,10 @@ import {
 } from "@/config/moderation";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import {
+  clampListingImageAlt,
+  clampListingMetaDescription,
+} from "@/lib/seo/clamp-listing-seo-text";
 import type {
   ListingModerationFailure,
   ListingModerationInput,
@@ -30,8 +34,18 @@ function mapResponse(
       kind: "rejected",
       reason: response.reason ?? MODERATION_DEFAULT_REJECTION_REASON,
       topicId: response.rejectedTopicId,
+      rejectedImageIndex: response.rejectedImageIndex,
     };
   }
+
+  const metaRaw = response.metaDescription?.trim();
+  const altRaw = response.imageAlt?.trim();
+  const metaDescription = metaRaw
+    ? clampListingMetaDescription(metaRaw) || undefined
+    : undefined;
+  const imageAlt = altRaw
+    ? clampListingImageAlt(altRaw) || undefined
+    : undefined;
 
   if (response.status === "NEEDS_QUESTIONS") {
     return {
@@ -39,8 +53,8 @@ function mapResponse(
       skipped: false,
       cleanedTitle: response.cleanedTitle ?? title,
       cleanedDescription: response.cleanedDescription ?? description,
-      metaDescription: response.metaDescription?.trim() || undefined,
-      imageAlt: response.imageAlt?.trim() || undefined,
+      metaDescription,
+      imageAlt,
       questions: response.questions?.slice(0, MODERATION_MAX_QUESTIONS),
       approvalToken: response.approvalToken ?? undefined,
     };
@@ -51,8 +65,8 @@ function mapResponse(
     skipped: false,
     cleanedTitle: response.cleanedTitle ?? title,
     cleanedDescription: response.cleanedDescription ?? description,
-    metaDescription: response.metaDescription?.trim() || undefined,
-    imageAlt: response.imageAlt?.trim() || undefined,
+    metaDescription,
+    imageAlt,
     approvalToken: response.approvalToken ?? undefined,
   };
 }

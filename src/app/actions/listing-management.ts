@@ -92,7 +92,7 @@ export async function pauseListing(formData: FormData): Promise<void> {
   }
 
   revalidateListingPaths(post.slug);
-  redirect("/moje-inzeraty");
+  redirect("/moje-inzeraty?ok=paused");
 }
 
 export async function publishListing(formData: FormData): Promise<void> {
@@ -118,7 +118,7 @@ export async function publishListing(formData: FormData): Promise<void> {
   }
 
   revalidateListingPaths(post.slug);
-  redirect("/moje-inzeraty");
+  redirect("/moje-inzeraty?ok=restored");
 }
 
 export async function extendListingBy30Days(formData: FormData): Promise<void> {
@@ -179,5 +179,5 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
   }
 
   revalidateListingPaths(post.slug);
-  redirect("/moje-inzeraty");
+  redirect("/moje-inzeraty?ok=extended");
 }

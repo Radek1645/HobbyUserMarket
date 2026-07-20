@@ -6,16 +6,16 @@ import {
   LISTING_DESCRIPTION_MIN_LENGTH,
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
-import {
-  LISTING_IMAGE_ALT_MAX_LENGTH,
-  LISTING_META_DESCRIPTION_MAX_LENGTH,
-} from "@/config/listing-seo";
 import { getCategoryConfig, getConditionFieldLabel, isValidSubcategory } from "@/config/categories";
 import {
   formatContactPhoneForStorage,
   isValidContactPhone,
 } from "@/lib/posts/contact-phone";
 import { parsePriceInput } from "@/lib/posts/price-input";
+import {
+  clampListingImageAlt,
+  clampListingMetaDescription,
+} from "@/lib/seo/clamp-listing-seo-text";
 import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
 
 export type CreateListingInput = {
@@ -266,21 +266,11 @@ export function validateListingForm(
       const rawMeta = String(form.get("metaDescription") ?? "").trim();
       const rawAlt = String(form.get("imageAlt") ?? "").trim();
 
-      if (rawMeta.length > LISTING_META_DESCRIPTION_MAX_LENGTH) {
-        return {
-          ok: false,
-          error: `Meta popis může mít maximálně ${LISTING_META_DESCRIPTION_MAX_LENGTH} znaků.`,
-        };
-      }
-      if (rawAlt.length > LISTING_IMAGE_ALT_MAX_LENGTH) {
-        return {
-          ok: false,
-          error: `Alt text fotky může mít maximálně ${LISTING_IMAGE_ALT_MAX_LENGTH} znaků.`,
-        };
-      }
+      const clampedMeta = clampListingMetaDescription(rawMeta);
+      const clampedAlt = clampListingImageAlt(rawAlt);
 
-      metaDescription = rawMeta.length > 0 ? rawMeta : null;
-      imageAlt = rawAlt.length > 0 ? rawAlt : null;
+      metaDescription = clampedMeta.length > 0 ? clampedMeta : null;
+      imageAlt = clampedAlt.length > 0 ? clampedAlt : null;
     }
 
     return {

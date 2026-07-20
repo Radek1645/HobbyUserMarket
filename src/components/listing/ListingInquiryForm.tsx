@@ -9,6 +9,10 @@ import {
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { listingInquiryCtaButtonClass } from "@/config/listing-form-ui";
 import {
+  INQUIRY_CONTACT_INVALID_MESSAGE,
+  isValidInquiryContact,
+} from "@/lib/inquiry/contact";
+import {
   getInquiryCtaLabel,
   getInquiryHeading,
   getInquirySubmitLabel,
@@ -68,6 +72,9 @@ export function ListingInquiryForm({
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [honeypot, setHoneypot] = useState("");
   const [pending, setPending] = useState(false);
+  const [attachmentProgress, setAttachmentProgress] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -83,8 +90,8 @@ export function ListingInquiryForm({
       return;
     }
 
-    if (senderContact.trim().length < 5) {
-      setError("Zadejte e-mail nebo telefon.");
+    if (!isValidInquiryContact(senderContact)) {
+      setError(INQUIRY_CONTACT_INVALID_MESSAGE);
       return;
     }
 
@@ -99,12 +106,17 @@ export function ListingInquiryForm({
     }
 
     setPending(true);
+    setAttachmentProgress(null);
 
     try {
       const attachmentPayload =
         isJob && attachments.length > 0
-          ? await attachmentsToPayload(attachments)
+          ? await attachmentsToPayload(attachments, (done, total) => {
+              setAttachmentProgress(`Připravuji přílohy ${done}/${total}…`);
+            })
           : undefined;
+
+      setAttachmentProgress(null);
 
       const res = await fetch("/api/inquiry", {
         method: "POST",
@@ -136,6 +148,7 @@ export function ListingInquiryForm({
     } catch {
       setError("Odeslání se nepodařilo. Zkontrolujte připojení.");
     } finally {
+      setAttachmentProgress(null);
       setPending(false);
     }
   }
@@ -248,7 +261,8 @@ export function ListingInquiryForm({
           }
         />
         <p className="mt-1 text-xs text-gray-500">
-          {message.length}/{INQUIRY_MESSAGE_MAX_LENGTH}
+          {message.length}/{INQUIRY_MESSAGE_MAX_LENGTH} znaků (min.{" "}
+          {INQUIRY_MESSAGE_MIN_LENGTH})
         </p>
       </div>
 
@@ -297,7 +311,9 @@ export function ListingInquiryForm({
           disabled={pending}
           className="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
         >
-          {pending ? "Odesílám…" : getInquirySubmitLabel(categoryType)}
+          {pending
+            ? attachmentProgress ?? "Odesílám…"
+            : getInquirySubmitLabel(categoryType)}
         </button>
       </div>
     </form>

@@ -16,7 +16,14 @@ import {
 } from "@/config/listing-form-ui";
 import type { MapyGeocodeEntity } from "@/lib/mapy/types";
 import { Loader2, MapPin } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 
 export type LocationInputValue = {
   locationText: string;
@@ -58,6 +65,7 @@ export function LocationInput({
   const [isSuggestLoading, setIsSuggestLoading] = useState(false);
   const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
 
   const isResolved =
     value.latitude != null &&
@@ -115,6 +123,7 @@ export function LocationInput({
       try {
         const items = await suggestPlaces(text, controller.signal);
         setSuggestions(items);
+        setActiveIndex(items.length > 0 ? 0 : -1);
         setIsOpen(items.length > 0);
         setError(null);
       } catch (err) {
@@ -143,8 +152,56 @@ export function LocationInput({
       longitude: selection.longitude,
     });
     setSuggestions([]);
+    setActiveIndex(-1);
     setIsOpen(false);
     setError(null);
+  }
+
+  function handleComboboxKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!isOpen || suggestions.length === 0) {
+      if (event.key === "ArrowDown" && suggestions.length > 0) {
+        setIsOpen(true);
+        setActiveIndex(0);
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((current) =>
+        current < suggestions.length - 1 ? current + 1 : 0,
+      );
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((current) =>
+        current > 0 ? current - 1 : suggestions.length - 1,
+      );
+      return;
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      setActiveIndex(suggestions.length - 1);
+      return;
+    }
+    if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault();
+      const item = suggestions[activeIndex];
+      if (item) selectSuggestion(item);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setIsOpen(false);
+      setActiveIndex(-1);
+    }
   }
 
   function useCurrentLocation() {
@@ -219,9 +276,15 @@ export function LocationInput({
           aria-expanded={isOpen}
           aria-controls={listId}
           aria-autocomplete="list"
+          aria-activedescendant={
+            isOpen && activeIndex >= 0
+              ? `${listId}-option-${activeIndex}`
+              : undefined
+          }
           aria-label={compact && !label ? "Obec nebo město" : undefined}
           value={value.locationText}
           onChange={(e) => handleInputChange(e.target.value)}
+          onKeyDown={handleComboboxKeyDown}
           onFocus={() => {
             if (suggestions.length > 0) setIsOpen(true);
           }}
@@ -271,15 +334,19 @@ export function LocationInput({
               compact ? "max-h-40" : "max-h-56",
             ].join(" ")}
           >
-            {suggestions.map((item) => (
+            {suggestions.map((item, index) => (
               <li key={`${item.type}-${item.name}-${item.position.lon}`}>
                 <button
                   type="button"
+                  id={`${listId}-option-${index}`}
                   role="option"
-                  aria-selected={false}
+                  aria-selected={index === activeIndex}
                   {...gtmCtaProps(GTM_CTA.LOCATION_SELECT_SUGGESTION)}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                  className={`w-full px-3 py-2 text-left text-sm ${
+                    index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                  }`}
                   onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => selectSuggestion(item)}
                 >
                   <span className="flex items-center gap-2">

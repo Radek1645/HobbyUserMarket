@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.34  
+> **Verze dokumentu:** v3.39  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`047_security_column_guards.sql`](../supabase/047_security_column_guards.sql) · [`048_listing_expiry_warning.sql`](../supabase/048_listing_expiry_warning.sql) · [`049_listing_max_lifetime.sql`](../supabase/049_listing_max_lifetime.sql) · [`050_anonymize_inquiry_ips.sql`](../supabase/050_anonymize_inquiry_ips.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`050_anonymize_inquiry_ips.sql`](../supabase/050_anonymize_inquiry_ips.sql) · [`051_posts_seo_fields.sql`](../supabase/051_posts_seo_fields.sql) · [`052_listing_views.sql`](../supabase/052_listing_views.sql) · [`053_advertiser_public.sql`](../supabase/053_advertiser_public.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-19
+> **Datum:** 2026-07-21
 
 ---
 
@@ -153,6 +153,7 @@ Modul je hotový, když platí všechny body:
 V této verzi se **neimplementuje:**
 
 - Chat / messaging mezi uživateli
+- **Veřejné komentáře / diskuse pod inzerátem** — nepodporuje konverzi (spam, veřejné handrkování o ceně); kanál = poptávka + „Zobrazit kontakt“. Legacy tabulka `comments` v DB může zůstat, produktová feature se neimplementuje.
 - Platby, topování, placené prodloužení (jen DB sloupce `payment_status`, `expires_at`)
 - Mobilní nativní aplikace
 - Push notifikace
@@ -253,7 +254,7 @@ posts
 post_images
   - id, post_id, url, sort_order, is_main
 
-comments
+comments — **legacy / nepoužívat v produktu** (veřejná diskuse pod inzerátem je Out of Scope — §2). Tabulka může zůstat v DB; UI na detailu inzerátu se neimplementuje.
   - id, post_id (FK posts ON DELETE CASCADE)
   - user_id (UUID, nullable, FK auth.users ON DELETE SET NULL)
   - author_nickname (VARCHAR(50), NOT NULL) — snapshot přezdívky v okamžiku INSERTu
@@ -263,7 +264,7 @@ comments
 
 reports
   - id (UUID, PK), report_no (BIGINT IDENTITY — migrace 041)
-  - target_type (post | comment), target_post_id / target_comment_id
+  - target_type (post | comment), target_post_id / target_comment_id — `comment` je legacy (produktově se nahlásí jen inzerát)
   - reporter_user_id (nullable u anonymního standalone), reason, created_at
   - source (inline | standalone) — migrace 040
   - detail_text (TEXT, nullable), reporter_email (TEXT, nullable) — migrace 040
@@ -386,7 +387,7 @@ Sloupec `status_reason_code` (`reports_threshold` | `moderation`) určuje text v
 | Vrstva | Chování |
 |--------|---------|
 | **Veřejný web** | Inzerát **okamžitě mizí** — HP, vyhledávání, sitemap, detail URL (404 nebo stránka „Inzerát vypršel“). Funkce `is_post_publicly_visible()` vyžaduje `expires_at > now()`. |
-| **Databáze** | Řádek v `posts` **zůstává** — nic se nemazá. Fotky (`post_images`), komentáře, reporty zůstávají navázané. |
+| **Databáze** | Řádek v `posts` **zůstává** — nic se nemazá. Fotky (`post_images`) a reporty zůstávají navázané. |
 | **Stav `status`** | Denní cron (pg_cron / Edge Function) nastaví `active` → `archived` u expirovaných inzerátů. Do doby cronu může zůstat technicky `active`, ale veřejně stejně neviditelný. |
 | **Majitel (klientská sekce)** | Vidí inzerát v záložce **„Expirované / Archivované“** s datem expirace a tlačítkem **„Obnovit“**. Může editovat, smazat (soft delete → `deleted`) nebo znovu publikovat. |
 | **Smazání** | Soft delete (`deleted`) je samostatná akce uživatele — expirace **nesmaže** data automaticky. |
@@ -465,13 +466,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 ### 5.3 Detail inzerátu (Produktová stránka)
 
 * **Obsah prezentace:** Název inzerátu, titulní fotka + galerie (max 6 fotek), strukturovaný popis, typ ceny (včetně konkrétní částky, pokud je pevná), štítek stavu, lokalita. Pokud uživatel publikoval AI verzi textu, v sekci Parametry se zobrazí **„Vytvořeno s pomocí AI: Ano“** (`posts.description_ai_assisted`, migrace **043**; copy v `LISTING_AI_DISCLOSURE`).
-* **Veřejné dotazy (Komentáře) – Ochrana proti spamu a černému trhu:**
-  * **Zákaz anonymity:** Komentáře jsou veřejně čitelné, ale přidat komentář mohou **striktně pouze přihlášení a ověření uživatelé**.
-  * **Databázové zabezpečení (Supabase RLS):** Tabulka `comments` má aktivní RLS. Zápis (`INSERT`) je povolen výhradně pro roli `authenticated` s `WITH CHECK (auth.uid() = user_id)` — uživatel nemůže zfalšovat ID autora. Při INSERTu se zároveň uloží `author_nickname` (snapshot z `profiles.nickname`).
-  * **Vazba na identitu:** Zobrazení autora čte `author_nickname` z řádku komentáře (ne live JOIN na `profiles`). Pokud `user_id IS NULL` (účet smazán), UI zobrazí **„[smazaný účet]“** bez ohledu na obsah `author_nickname`.
-  * **FK při GDPR:** `comments.user_id` má `ON DELETE SET NULL` — smazání `auth.users` **nesmí** kaskádově smazat komentáře ani zablokovat anonymizaci.
-  * **Komunitní moderování komentářů:** Tlačítko „Nahlásit“. Pokud komentář nasbírá **3 nahlášení od 3 různých přihlášených uživatelů** (`reporter_user_id`), automaticky mění stav na `hidden` a padá do karantény.
-  * **Rate limit:** Max **10 komentářů / hodinu / uživatel**.
+* **Bez veřejné diskuse:** Pod inzerátem nejsou komentáře ani fórum (Out of Scope — §2). Dotazy a nabídky jdou přes poptávkový formulář nebo „Zobrazit kontakt“.
 * **Ochrana kontaktů před scrapery (Anti-Scraping / Bot protection):**
   * **Tlačítko „Zobrazit kontakt“:** Telefon a e-mail prodejce nejsou v HTML kódu stránky ani v veřejném SELECT na `posts`/`profiles`. Zobrazí se až po kliknutí **přihlášeného** uživatele přes RPC `reveal_listing_contact` (SECURITY DEFINER): ověří viditelnost inzerátu, opt-in vlajky `show_contact_email` / `show_contact_phone`, zapíše `contact_reveals`. Sloupec `posts.contact_phone` má `REVOKE SELECT` pro role `anon`/`authenticated` (migrace `025`).
   * **Rate limit:** Max **20 zobrazení kontaktů / den / uživatel** (vynuceno v RPC, migrace `026`; konstanta `CONTACT_REVEAL_RATE_LIMIT_PER_DAY` v `app.ts`).
@@ -480,7 +475,6 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 * **Komunitní moderování inzerátů:**
   * **Inline:** Tlačítko „Nahlásit inzerát“ na detailu (Důvody: Podvod / Nelegální obsah / Sexuální obsah / Drogy / Spam / Nevhodné chování / Jiné). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky **zablokuje** (`blocked`, `status_reason_code = 'reports_threshold'`) — spadne do karantény pro moderátory.
   * **Standalone *(v0.5)*:** Formulář na `/nahlasit` (odkaz v patičce) — pole URL inzerátu (validace domény a slug), důvod (select), volitelný popis (max 500 znaků), e-mail oznamovatele (povinné pro nepřihlášené). Po odeslání: INSERT do `reports`, záznam v `audit_events`, e-mail adminovi (Resend), UI potvrzení „Děkujeme. Prověříme to do 24 hodin a dáme vám vědět.“ (§1.6).
-  * Stejná logika 3× threshold platí pro komentáře (existující trigger).
 * **Automatizované On-Page SEO, Rich Snippets & AI crawlery:**
   * **Dynamická Metadata (Next.js Metadata API):** Formát detailu: `[Název inzerátu] | [Lokalita]`; suffix stránky a `openGraph.siteName`: `zaPikolou.cz` (konstanta `SITE_DISPLAY_NAME`). Příklad title: *„Prodám dětské kolo Velo | Brno-Líšeň“*.
   * **Strukturovaná data (Schema.org JSON-LD):** Server-renderovaný `<script type="application/ld+json">` na detailu inzerátu — helper `buildListingJsonLd()` v `src/lib/seo/listing-json-ld.ts`, komponenta `ListingJsonLd`. *(✅ implementováno 2026-07-09)* Mapování podle `category_type`:
@@ -560,7 +554,7 @@ Z důvodu GDPR (minimalizace údajů) a ochrany infrastruktury je zaveden automa
 |--------|---------|
 | `profiles` | PII (`email`, `name`, `surname`) přepsána hashem, avatar smazán ze Storage |
 | Aktivní inzeráty | Přejdou do `deleted` |
-| `comments` | **Zůstanou zachované.** Před smazáním auth: `UPDATE comments SET author_nickname = '[smazaný účet]' WHERE user_id = $id`. Po smazání `auth.users`: FK `ON DELETE SET NULL` nastaví `user_id = NULL`. UI zobrazí „[smazaný účet]“. Diskuse pod inzerátem se **nesmaže**. |
+| `comments` | **Legacy tabulka** — produktová diskuse pod inzerátem neexistuje (§2). Při smazání účtu se řádky anonymizují (`author_nickname = '[smazaný účet]'`, `user_id` → NULL); cleanup drop tabulky je samostatný ticket. |
 | Auth účet | Smazán přes Supabase Auth (až po krocích výše) |
 
 * **Automatická e-mailová urgence (Pre-trigger):** **7 dní před anonymizací** (83. den neaktivity) upozornění přes Resend. Přihlášení resetuje časovač.
@@ -573,11 +567,11 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
 
 * **Systémové role (Postgres ENUM):**
   1. `user` – Výchozí role. Plný přístup k P2P funkcím, spravuje pouze vlastní obsah.
-  2. `moderator` – Vidí admin prvky u cizího obsahu. Může smazat/skrýt/obnovit jakýkoliv inzerát nebo komentář. **Nemá právo sahat na profily uživatelů.**
+  2. `moderator` – Vidí admin prvky u cizího obsahu. Může smazat/skrýt/obnovit jakýkoliv inzerát. **Nemá právo sahat na profily uživatelů.**
   3. `admin` – Plná práva moderátora + změna rolí, správa/anonymizace účtů a přístup k `/mod/uzivatele`. Identifikace přes JWT spárovaný s UUID v DB.
 
 * **UX Flow inline moderování (God Mode):**
-  * Uživatel s rolí `moderator` nebo `admin` na detailu **cizího** inzerátu/komentáře vidí vizuálně oddělenou administrační lištu:
+  * Uživatel s rolí `moderator` nebo `admin` na detailu **cizího** inzerátu vidí vizuálně oddělenou administrační lištu:
     **[Zablokovat]** · **[Smazat trvale]** · **[Historie]** · **[+ Poznámka]**
   * **Zablokovat** nastaví `blocked` + `status_reason_code = 'moderation'`. Majitel nemůže obnovit jedním kliknutím — jen úpravou a re-moderací (§4.1).
   * Při smazání/zablokování moderátorem: **povinný důvod** (dropdown) + volitelná textová poznámka → obojí do `audit_events` (+ volitelně `moderator_notes`).
@@ -587,7 +581,7 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
 
 | Route | Přístup | Obsah |
 |-------|---------|-------|
-| `/mod/karantena` | `moderator`, `admin` | Inzeráty ve stavu `blocked` a komentáře ve stavu `hidden`, seřazeno od nejnovějšího. Akce: obnovit (`active`) / smazat (`deleted`). |
+| `/mod/karantena` | `moderator`, `admin` | Inzeráty ve stavu `blocked`, seřazeno od nejnovějšího. Akce: obnovit (`active`) / smazat (`deleted`). (Legacy UI pro skryté `comments` může v kódu zůstat do cleanup ticketu.) |
 | `/mod/inzeraty` | `moderator`, `admin` | Tabulka všech inzerátů s filtrem stavu a kategorie; odkaz na detail. |
 | `/mod/uzivatele` | **jen `admin`** | Seznam profilů, role, počet inzerátů; odkaz na historii a poznámky profilu. |
 
@@ -617,7 +611,6 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
 |------|-------|----------------|
 | AI kontrola inzerátu | **20** / hodinu / uživatel | HTTP 429 + hláška v UI |
 | Zobrazení kontaktu | 20 / den / uživatel | HTTP 429 + hláška v UI |
-| Nový komentář | 10 / hodinu / uživatel | HTTP 429 + hláška v UI |
 | AI Edge Function (Supabase, voláno přímo z klienta) | Timeout 30 s | „Zkuste to prosím znovu za chvíli.“ (§1.6); server-side bezpečnostní pre-check v Edge Function proběhne vždy |
 | Next.js API Route | **Nepoužívat pro AI** | Proxy přes Vercel = riziko 504 (Hobby legacy limit 10 s) |
 
@@ -721,6 +714,11 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.32 | 2026-07-19 | **GDPR stránka + IP cron:** `/gdpr` (LegalDocumentPage), patička; migrace **050** + cron `anonymize-inquiry-ips` (7 dní); Supabase `eu-west-1` + Vercel `dub1` v §5.1; GDPR §6.2 prohlášení věku; backlog P37–P39; HP vykání („Přihlaste se“, „vašeho okolí“); Metodika §2.1 / §2.7–2.8 / §9.1.3 |
 | v3.33 | 2026-07-19 | **Fáze 5–7 + Resend EU:** P8/P9/P11 (AI technical error, timeout 25 s, client retry); P2 orphan draft cleanup; GDPR P37–P39 + P22/P24; Resend sending `eu-west-1` (zapikolou.cz); UX U1/U2/U5/U21; Metodika §2.1 / §3.1 / §6.3 |
 | v3.34 | 2026-07-20 | **SEO bible v1.2 + hydratace:** oddělené H1 / meta description / image alt; `buildListingMetaTitle`; migrace **051** (`meta_description`, `image_alt`); JSON-LD Offer.price jen u fixed; lokální SEO dojezdová vzdálenost; cena v meta jen `za X Kč`; Metodika §6.5 / §6.7 / §8.5; docs/seo/ |
+| v3.35 | 2026-07-20 | **SEO bible v1.5:** H1 use-case pokud se vejde; meta clamp drop CTA první; alt bez lokality; Metodika §8.5 |
+| v3.36 | 2026-07-20 | **SEO bible v1.6:** meta description bez CTA (snippet = klik → detail); CTA jen v těle |
+| v3.37 | 2026-07-20 | **Zrušení veřejné diskuse pod inzerátem:** Out of Scope §2; odstraněn blok komentářů z §5.3; konverze = poptávka + kontakt; `comments` = legacy DB |
+| v3.38 | 2026-07-20 | **SEO bible v1.7:** JSON-LD Offer.price i u negotiable (Google rich results); ne u Nabídni |
+| v3.39 | 2026-07-21 | **Odznaky zadavatele + profil + views:** badge Podnikatel (VOP §7.2), milníky 5/10/20/40 lifetime; `/uzivatel/[nickname]`; migrace **052** (`view_count`) + **053**; Metodika §8.1 |
 
 ---
 
@@ -770,7 +768,7 @@ U pravidelné akce: `event_date` = nejbližší termín; frekvence (např. každ
 
 - Chová se jako klasický post: název, fotka/galerie, popis, lokalita, štítek stavu, typ vstupu (zdarma / nabídni), **datum a čas konání** (`event_date`).
 - V popisu zadavatel uvede kapacitu (pokud ji chce limitovat) a doplňující informace; **strukturované datum konání** jde do sloupce `event_date`.
-- Fotka, geolokace, AI guardrail, komentáře, moderování — beze změny oproti ostatním kategoriím.
+- Fotka, geolokace, AI guardrail, moderování — beze změny oproti ostatním kategoriím.
 
 #### Registrace účastníků (= poptávkový formulář)
 
@@ -1158,7 +1156,7 @@ Povinný dropdown při smazání/skrytí moderátorem — hodnoty synchronizovan
 
 #### Vstupní body
 
-1. **Inline** — tlačítko „Nahlásit“ na detailu inzerátu a u komentáře.
+1. **Inline** — tlačítko „Nahlásit“ na detailu inzerátu.
 2. **Standalone** — `/nahlasit` (odkaz v patičce).
 
 #### Standalone formulář

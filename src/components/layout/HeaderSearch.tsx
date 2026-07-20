@@ -80,7 +80,7 @@ export function HeaderSearch() {
         className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400"
       />
       <input
-        type="text"
+        type="search"
         role="searchbox"
         name="q"
         value={value}
@@ -93,14 +93,14 @@ export function HeaderSearch() {
         enterKeyHint="search"
         aria-invalid={hint ? true : undefined}
         aria-describedby={hint ? "header-search-hint" : undefined}
-        className={`${headerInputHeightClass} w-full rounded-full border border-gray-200 bg-gray-50 pr-9 pl-9 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:ring-2 focus:ring-gray-200`}
+        className={`${headerInputHeightClass} w-full rounded-full border border-gray-200 bg-gray-50 pr-16 pl-9 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:ring-2 focus:ring-gray-200 sm:pr-9`}
       />
       {value ? (
         <button
           type="button"
           onClick={handleClear}
           aria-label="Vymazat hledání"
-          className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-200/80 hover:text-gray-600"
+          className="absolute top-1/2 right-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-200/80 hover:text-gray-600 sm:right-2"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -108,9 +108,11 @@ export function HeaderSearch() {
       <button
         type="submit"
         {...gtmCtaProps(GTM_CTA.HEADER_SEARCH_SUBMIT)}
-        className="sr-only"
+        aria-label="Hledat"
+        className="absolute top-1/2 right-1.5 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-200/80 hover:text-gray-900 sm:sr-only"
       >
-        Hledat
+        <Search className="h-4 w-4 sm:hidden" aria-hidden="true" />
+        <span className="sr-only">Hledat</span>
       </button>
       {hint ? (
         <p

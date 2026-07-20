@@ -271,7 +271,7 @@ Odděluje **dobrovolnou pauzu** (`hidden`) od **moderátorského / komunitního 
 **DB:**
 
 - `posts.status_reason_code`: `reports_threshold` | `moderation` (texty v `src/config/listing-status-reasons.ts`)
-- Trigger `check_report_threshold` — inzerát → `blocked`, komentář → `hidden`
+- Trigger `check_report_threshold` — inzerát → `blocked` (větev `comment` → `hidden` je legacy; veřejná diskuse pod inzerátem se nepoužívá)
 - `enforce_post_publish_gate` — z `blocked` nelze přejít na `active`/`hidden`/`archived` bez re-moderace; editace obsahu vynuluje `status_reason_code`
 
 **UI:** badge „Zablokováno“, komponenta `ListingBlockedNotice` v `/moje-inzeraty` a `/inzerat/.../upravit`.

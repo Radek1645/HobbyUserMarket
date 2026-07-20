@@ -123,7 +123,7 @@ export function HeaderLocationPanel() {
         onClick={togglePanel}
         className={[
           "relative z-10 flex h-10 shrink-0 items-center justify-center rounded-full border transition",
-          "w-10 p-0 sm:w-auto sm:max-w-[7.5rem] sm:justify-start sm:gap-1 sm:px-2.5 md:max-w-[9rem]",
+          "w-10 p-0 sm:w-auto sm:max-w-[12rem] sm:justify-start sm:gap-1 sm:px-2.5 md:max-w-[16rem]",
           locationButtonClass,
         ].join(" ")}
       >

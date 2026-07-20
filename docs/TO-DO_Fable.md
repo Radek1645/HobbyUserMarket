@@ -14,7 +14,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 
 | Oblast | Kritické | Vysoké | Střední | Nízké |
 |--------|:--------:|:------:|:-------:|:-----:|
-| **Security** | ~~2~~ ✅ 0 otevřených | ~~3~~ ✅ 0 otevřených (H2 CAPTCHA → Low) | ~~10~~ **1** otevřená (M10 reziduum) | ~~7~~ ~5 (+ rezidua H2/M9) |
+| **Security** | ~~2~~ ✅ 0 otevřených | ~~3~~ ✅ 0 otevřených (H2 CAPTCHA → Low) | ~~10~~ ✅ 0 otevřených (M10 ✅ 2026-07-20) | ~~7~~ ~5 (+ rezidua H2/M9) |
 | **Proces** | — | — | ~~12~~ 13 otevřených | — |
 | **UX** | — | — | ~28 | — |
 
@@ -29,11 +29,11 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 **Top věci k řešení:**
 
 0. **Smoke test** migrace 047 (Edge `moderate-listing` s P8/P9 už nasazeno).
-1. **P33 ops** — podpis Resend DPA; revize GDPR právníkem (sending region EU ✅).
-2. **Site Notice (U13)** — otestovat Vercel env; zvýraznit `maintenance`.
+1. **P33 ops** — ~~Resend DPA~~ ✅ archiv [`resend-dpa-signed.pdf`](./pravni/resend-dpa-signed.pdf); zbývá revize GDPR právníkem.
+2. ~~**Site Notice (U13)**~~ ✅ — výraznější `maintenance`; checklist env v Metodice §13.4.
 3. **Další UX** — U4, U6–U15, U17–U20, U22–U28 dle potřeby.
 4. **P32** — P2B e-maily 15/30 dní (před prvním IČO).
-5. **M10** — reziduální prompt injection.
+5. ~~**M10**~~ ✅ — rozšířené injection patterns (2026-07-20); redeploy Edge.
 
 ### Smoke test — migrace 047 + `moderate-listing` (2026-07-16)
 
@@ -145,7 +145,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | ~~**M7**~~ | `assert-image-limits.ts` | ~~Neomezená velikost base64.~~ | ✅ **2026-07-16** — 500 KB/fotka, 2 MB celkem, magic bytes. |
 | ~~**M8**~~ | `listing-images.ts`, `magic-bytes.ts` | ~~Důvěra v Content-Type.~~ | ✅ **2026-07-16** — magic bytes + Content-Type z detekce. |
 | ~~**M9**~~ | `inquiry/validation.ts` | ~~Jen MIME/přípona.~~ | ✅ **částečně** — magic bytes. **Reziduum Low:** AV. |
-| **M10** | `bound-user-content.ts`, `prompt-injection-guard.ts` | Prompt injection. | 🔄 Částečně — ohraničení + guard; reziduální vzory. |
+| **M10** | `bound-user-content.ts`, `prompt-injection-guard.ts` | Prompt injection. | ✅ **2026-07-20** — rozšířené CZ/EN vzory (src + Edge); ohraničení tagů beze změny. Redeploy `moderate-listing` po pushi. |
 
 
 ### 🟢 Low
@@ -202,7 +202,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | ~~**P9**~~ | `gemini.ts`, `openai.ts`, `fetch-with-timeout.ts` | ~~Chybí fetch timeout.~~ | ✅ `AbortSignal.timeout` 25 s → `GEMINI_TIMEOUT` / `OPENAI_TIMEOUT` → technical + OpenAI fallback. |
 | ~~**P10**~~ | `rate-limit.ts` | ~~Fails open (M6).~~ | ✅ **s M6** — fail closed. |
 | ~~**P11**~~ | `moderate-listing-client.ts` | ~~Bez auto-retry.~~ | ✅ Až 3 pokusy při `kind: "error"` (500/1500 ms); ne auth/rate-limit. |
-| **P12** | `ModerationRejectedDialog.tsx` | UI má `topicId` / `rejectedImageIndex`, ale **nikdy nezvýrazní problémovou fotku** ani téma. | Ukázat „problémová fotka #N“ a odscrollovat na obrázek. |
+| **P12** | `ModerationRejectedDialog.tsx` | UI má `topicId` / `rejectedImageIndex`, ale **nikdy nezvýrazní problémovou fotku** ani téma. | ✅ **2026-07-20** — text „Problémová fotka č. N“ + highlight + scroll v uploadu. |
 | **P13** | `CreateListingForm.tsx` (445–452) | Po AI dva kroky: `ModerationApprovedDialog` → `ModerationPreviewDialog` — klik navíc i bez otázek. | Přeskočit approved dialog při otevření preview, nebo sloučit. |
 | ~~**P14**~~ | ~~`config/moderation/index.ts`~~ | ~~`MODERATION_ENABLED` je klientsky čitelný flag → obejitelné přes devtools.~~ | ✅ **Vyřešeno s H1** (migrace 027) — publikace vyžaduje approval token z Edge Function; vypnutí flagu na klientovi publikaci neumožní (inzerát zůstane `draft`). |
 
@@ -227,7 +227,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | **P23** | ✅ `account.ts`, `delete-user.ts`, migrace `037` | ~~Chybí flow smazání účtu~~ | **Hotovo 2026-07-11.** Self-delete `/profil/nastaveni` (confirm e-mail + checkbox); admin `/mod/uzivatele` (důvod); RPC + Auth Admin delete; e-mail potvrzení. |
 | ~~**P24**~~ | `map-auth-error.ts`, `auth/callback`, `signInWithGoogle` | ~~Raw angličtina v `?error=`.~~ | ✅ `mapAuthError` + fallback bez propouštění EN. |
 | **P25** | produkt vs kód | PRD zmiňuje OTP; implementace je heslo + verifikační link, ne OTP login. | Sladit dokumentaci nebo doplnit magic-link/OTP. |
-| **P33** | GDPR §5.1, `pravni/README.md` | Data v EU. | 🔄 Supabase/Vercel/Resend sending `eu-west-1`; AI mimo EHP + DPA/SCC. Zbývá: podpis Resend DPA + revize právníkem. |
+| **P33** | GDPR §5.1, `pravni/README.md` | Data v EU. | 🔄 Supabase/Vercel/Resend sending `eu-west-1`; Resend DPA ✅ archiv; AI mimo EHP + DPA/SCC. Zbývá: revize právníkem. |
 | ~~**P37**~~ | GDPR §3.2 | ~~„logy serveru“ vs `inquiry_events`.~~ | ✅ Text sladěn s cronem 050 (IP u poptávek; hosting logy mimo). |
 | ~~**P38**~~ | GDPR §2 | ~~„2 měsíce“ vs 365 dní.~~ | ✅ Text: archivace + max. 365 dní od založení. |
 | ~~**P39**~~ | GDPR §2 newslettery | ~~Text vs žádný send.~~ | ✅ „připravujeme / zatím nezasíláme“ + odkaz na `/marketingovy-souhlas`. |
@@ -259,57 +259,57 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | ~~**U1**~~ | `CreateListingForm`, `MODERATION_TECHNICAL_UI` | ~~AI down = obsahové zamítnutí.~~ | ✅ Amber panel „Technická chyba“ + „Zkusit znovu“ (s P8/P11). |
 | ~~**U2**~~ | `CreateListingForm.tsx` | ~~Chybějící pole jen disabled+tooltip.~~ | ✅ Inline „Chybí: …“ nad tlačítkem. |
 | ~~**U3**~~ | `ListingInquiryForm.tsx` | ~~Tykání.~~ | ✅ „Zkontrolujte připojení“ (vykání). |
-| **U4** | `MyListingActions.tsx` | Pauza/smazání/prodloužení bez success/error toastu — jen redirect. | Optimistic UI nebo krátký potvrzovací banner. *(Částečně: chyba smazání v přehledu.)* |
+| **U4** | `MyListingActions.tsx` | Pauza/smazání/prodloužení bez success/error toastu — jen redirect. | ✅ **2026-07-20** — `?ok=paused|restored|extended` + zelený banner v Moje inzeráty. |
 | ~~**U5**~~ | `HomeListings.tsx` | ~~Max 9 bez indikace.~~ | ✅ „Zobrazit další“ + „Zobrazeno N z M“ (pool 36). |
-| **U13** | `SiteNoticeBar.tsx` | Odstávková lišta (`maintenance`) vizuálně zapadá — slabý kontrast, snadno přehlédnutelná. | Výraznější barva/pozadí, tučnější text, větší padding; ověřit na mobilu. ⏳ **Priorita zítra (2026-07-09)** |
+| **U13** | `SiteNoticeBar.tsx` | Odstávková lišta (`maintenance`) vizuálně zapadá. | ✅ **2026-07-20** — `bg-amber-400`, tučný text, větší padding; Metodika §13.4 checklist env. |
 
 ### Formuláře a validace
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **U6** | `CreateListingForm.tsx` | Krok 1→2 projde s prázdnou podkategorií, pokud uživatel nezmění default (edge case). | Zablokovat pokračování do výběru podkategorie. |
-| **U7** | `ListingInquiryForm.tsx` | Chybí hint max délky zprávy do server-side chyby (klient kontroluje jen min). | Zobrazit `message.length/1000` jako v create formu. |
-| **U8** | `ListingInquiryForm.tsx` | Bez validace e-mail vs. telefon na `senderContact` (jen délka ≥ 5). | Vzor e-mail/telefon s CZ příklady. |
-| **U9** | `ListingImageUpload.tsx` | Limit vstupní velikosti (25 MB) **není v hintu** — zmíněno jen 1 MB po kompresi. | „Max 25 MB před zmenšením, výsledek do 1 MB“. |
-| **U10** | `ListingImageUpload.tsx` | Dávkový upload: první chyba zruší celou dávku; bez per-file progressu. | Pokračovat s validními soubory; per-file status. |
-| **U11** | `AttachmentDropzone.tsx` | Bez progressu při base64 čtení/odesílání. | Spinner na submitu (částečně existuje). |
-| **U12** | `LocationInput.tsx` | Combobox bez `aria-activedescendant` / navigace šipkami. | Plný WAI-ARIA combobox pattern. |
+| **U6** | `CreateListingForm.tsx` | Krok 1→2 s prázdnou podkategorií. | ✅ **2026-07-20** — init/change kategorie bez auto-výběru podkategorie. |
+| **U7** | `ListingInquiryForm.tsx` | Chybí hint max délky zprávy. | ✅ **2026-07-20** — počítadlo `délka/max` + min. |
+| **U8** | `ListingInquiryForm.tsx` | Bez validace e-mail vs. telefon. | ✅ **2026-07-20** — `isValidInquiryContact` klient + server. |
+| **U9** | `ListingImageUpload.tsx` | Limit vstupní velikosti (25 MB) **není v hintu**. | ✅ **2026-07-20** — „vstup max. 25 MB před zmenšením, výsledek do 1 MB“. |
+| **U10** | `ListingImageUpload.tsx` | Dávkový upload: první chyba zruší celou dávku. | ✅ **2026-07-20** — špatné soubory přeskočí, validní zůstanou + souhrn chyb. |
+| **U11** | `AttachmentDropzone.tsx` | Bez progressu při base64. | ✅ **2026-07-20** — „Připravuji přílohy N/M…“ při odeslání. |
+| **U12** | `LocationInput.tsx` | Combobox bez šipek / activedescendant. | ✅ **2026-07-20** — Arrow/Home/End/Enter + `aria-activedescendant`. |
 
 ### Moderace UX
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
 | **U13** | `ModerationRejectedDialog.tsx` | „Rozumím, upravím inzerát“ je fajn, ale **bez navádění**, které pole opravit. | Akční copy + focus na první nevalidní pole. |
-| **U14** | `ModerationPreviewDialog.tsx` | „Publikovat bez vylepšení“ může mást (uživatel myslí, že musí použít AI text). | Vysvětlit v úvodu, že obě cesty jsou v pořádku. |
-| **U15** | `CreateListingForm.tsx` | Při zamítnutí chybí „zkusit znovu bez AI“ pro rate-limit/výpadek (blokováno P8). | Nouzová cesta po N selháních. |
-| **U25** | `ModerationPreviewDialog.tsx`, `ModerationApprovedDialog.tsx`, `CreateListingForm.tsx` | **Chybí AI disclaimer** — nikde není upozornění typu „AI může udělat chyby, zkontrolujte si text“ (viz Claude). PRD §5.1 footer stub + `podminky-inzerce.md` §3 vyžaduje označení „Vytvořeno s pomocí AI“ (AI Act). | Do `MODERATION_PREVIEW_UI` (intro pod dialogem hydratace) + volitelně overlay „Probíhá AI kontrola“ a patička. CZ copy dle PRD §1.6, např. *„AI může udělat chybu — před publikací si text zkontrolujte.“* U publikovaného inzerátu s AI textem badge „Vytvořeno s pomocí AI“ (flag v DB?). |
+| **U14** | `ModerationPreviewDialog.tsx` | „Publikovat bez vylepšení“ může mást. | ✅ **2026-07-20** — subtitle + `publishOriginalHint`: obě cesty OK. |
+| **U15** | `CreateListingForm.tsx` | „Zkusit znovu bez AI“ po rate-limit. | ⏳ Odloženo — conflict s publish gate (approval token); jen „Zkusit znovu“ AI. |
+| **U25** | `ModerationPreviewDialog.tsx`, `CreateListingForm.tsx` | **Chybí AI disclaimer**. | ✅ **2026-07-20** — `MODERATION_CHECKING_UI.disclaimer` + preview subtitle; badge `LISTING_AI_DISCLOSURE` na detailu. |
 
 ### Vyhledávání / procházení / poloha
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
 | ~~**U16**~~ | `HomeBrowse.tsx` | ~~CTA jen Google.~~ | ✅ „Google nebo klasicky e-mailem“. |
-| **U17** | `VisitorLocationProvider.tsx` (242–245) | Auto-otevření panelu polohy při první návštěvě — na mobilu rušivé. | Jemnější banner CTA místo modalu. |
-| **U18** | `HeaderLocationPanel.tsx` | Label polohy oříznutý na malých obrazovkách (`max-w-[7.5rem]`). | Tooltip/celý název. |
-| **U19** | `HeaderSearch.tsx` | Submit tlačítko `sr-only` — mouse-only mobil bez klávesnicového „search“. | Viditelná ikona hledání na mobilu. |
-| **U20** | `HomeListings.tsx` | Neplatné hledání (<3 znaky) ukáže prázdný list jen s podtitulkem. | Výrazný hint při nevalidním dotazu. |
+| **U17** | `VisitorLocationProvider.tsx` | Auto-otevření panelu polohy. | ✅ **2026-07-20** — auto-open už není; panel jen na toggle. |
+| **U18** | `HeaderLocationPanel.tsx` | Label polohy oříznutý. | ✅ **2026-07-20** — širší max-width + `title` s plným názvem. |
+| **U19** | `HeaderSearch.tsx` | Submit `sr-only` na mobilu. | ✅ **2026-07-20** — viditelná ikona hledání na mobilu. |
+| **U20** | `HomeListings.tsx` | Neplatné hledání (<3 znaky) ukáže prázdný list jen s podtitulkem. | ✅ **2026-07-20** — amber banner „alespoň 3 znaky“. |
 
 ### Auth UX
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
 | ~~**U21**~~ | `EmailAuthPanel`, `resendSignupVerificationEmail` | ~~Bez „poslat znovu“.~~ | ✅ Resend + cooldown 60 s. |
-| **U22** | `SetPasswordForm.tsx` / `nastavit-heslo/page.tsx` | Bez indikátoru síly hesla (jen min. 8). | Volitelný strength meter / kontrola běžných hesel. |
-| **U23** | `OnboardingForm.tsx` | Google uživatel bez vysvětlení, že VOP bylo přijato jinde (nebylo — P21). | OAuth consent + jasnější „jednorázové nastavení“. |
-| **U24** | `login/page.tsx` | `?error=` z OAuth může ukázat nepřeložené stringy. | CZ mapování chyb. |
+| **U22** | `SetPasswordForm.tsx` | Bez indikátoru síly hesla. | ✅ **2026-07-20** — strength meter (slabé/střední/silné). |
+| **U23** | `OnboardingForm.tsx` | Chybí „jednorázové nastavení“. | ✅ **2026-07-20** — copy jednorázového nastavení profilu. |
+| **U24** | `login/page.tsx` | `?error=` anglicky. | ✅ **2026-07-20** — `mapAuthError` i na login page (pás s P24). |
 
 ### Mobil & přístupnost
 
 | ID | Soubor | Slabina | Návrh |
 |----|--------|---------|-------|
-| **U26** | moderation dialogy | Focus trap/Escape/`aria-modal` OK; chybí návrat focusu na trigger po zavření. | Vrátit focus na spouštěcí prvek. |
-| **U27** | galerie na detailu | Miniatury `alt=""` (OK dekorativní); hlavní obrázek by měl mít popisný `alt` z názvu. | Předat title do `alt` na detailu. |
-| **U28** | `CreateListingForm.tsx` | Kroky 1–2 bez `aria-current="step"`. | Označit aktuální krok pro čtečky. |
+| **U26** | moderation dialogy | Chybí návrat focusu. | ✅ **2026-07-20** — restore `document.activeElement` po zavření. |
+| **U27** | galerie na detailu | Miniatury `alt=""`; hlavní obrázek popisný alt. | ✅ **2026-07-20** — `imageAlt` / fallback `title` v `ListingImageGallery`. |
+| **U28** | `CreateListingForm.tsx` | Kroky bez `aria-current`. | ✅ **2026-07-20** — `nav`/`ol` + `aria-current="step"`. |
 
 ### Performance / Core Web Vitals
 

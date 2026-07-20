@@ -12,6 +12,8 @@ type PasswordInputProps = {
   minLength?: number;
   hint?: string;
   prominent?: boolean;
+  value?: string;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 const inputClass =
@@ -29,6 +31,8 @@ export function PasswordInput({
   minLength,
   hint,
   prominent = false,
+  value,
+  onChange,
 }: PasswordInputProps) {
   const generatedId = useId();
   const id = idProp ?? generatedId;
@@ -51,6 +55,8 @@ export function PasswordInput({
           required={required}
           minLength={minLength}
           className={prominent ? prominentInputClass : inputClass}
+          value={value}
+          onChange={onChange}
         />
         <button
           type="button"

@@ -1,8 +1,7 @@
 import {
   LISTING_META_DESCRIPTION_MAX_LENGTH,
-  LISTING_META_DESCRIPTION_MIN_LENGTH,
 } from "@/config/listing-seo";
-import { SITE_DISPLAY_NAME } from "@/config/site";
+import { clampListingMetaDescription } from "@/lib/seo/clamp-listing-seo-text";
 
 /** Úvod popisu před oddělovačem Parametrů (`---`). */
 export function extractListingDescriptionIntro(description: string): string {
@@ -15,35 +14,15 @@ export function extractListingDescriptionIntro(description: string): string {
   return trimmed.slice(0, separatorIndex).trim();
 }
 
-const META_DESCRIPTION_PAD = ` Pro více informací kontaktujte prodejce na ${SITE_DISPLAY_NAME}.`;
-
 /**
- * Doplní krátkou meta description na cíl 150–160 znaků (bez vymýšlení produktových faktů).
+ * Meta description pro SERP — clamp (včetně drop CTA). Bez doplňování CTA padu (SEO bible v1.6).
+ * @deprecated Alias — preferuj přímo clampListingMetaDescription.
  */
 export function ensureMetaDescriptionLength(
   text: string,
   maxLength: number = LISTING_META_DESCRIPTION_MAX_LENGTH,
-  minLength: number = LISTING_META_DESCRIPTION_MIN_LENGTH,
 ): string {
-  const result = text.trim().slice(0, maxLength);
-  if (result.length >= minLength || result.length === 0) {
-    return result;
-  }
-
-  if (result.includes(SITE_DISPLAY_NAME)) {
-    return result;
-  }
-
-  const base = result.replace(/[.!?]\s*$/, "");
-  const padded = `${base}.${META_DESCRIPTION_PAD}`;
-  if (padded.length <= maxLength) {
-    return padded;
-  }
-
-  // Pad se nevejde celý — doplň co se vejde.
-  const room = maxLength - base.length - 1;
-  if (room < 20) return result;
-  return `${base}.${META_DESCRIPTION_PAD.slice(0, room)}`.trimEnd();
+  return clampListingMetaDescription(text, maxLength);
 }
 
 /**
@@ -57,20 +36,14 @@ export function resolveListingMetaDescription(input: {
 }): string {
   const stored = input.metaDescription?.trim();
   if (stored) {
-    return ensureMetaDescriptionLength(
-      stored.slice(0, LISTING_META_DESCRIPTION_MAX_LENGTH),
-    );
+    return clampListingMetaDescription(stored);
   }
 
   const intro = extractListingDescriptionIntro(input.description ?? "");
   if (intro) {
-    return ensureMetaDescriptionLength(
-      intro.slice(0, LISTING_META_DESCRIPTION_MAX_LENGTH),
-    );
+    return clampListingMetaDescription(intro);
   }
 
   const fallback = `${input.title} — ${input.locality}`.trim();
-  return ensureMetaDescriptionLength(
-    fallback.slice(0, LISTING_META_DESCRIPTION_MAX_LENGTH),
-  );
+  return clampListingMetaDescription(fallback);
 }

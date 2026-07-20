@@ -342,6 +342,89 @@ export function stripContactInfo(text: string): string {
   );
 }
 
+/** Hard cap — sync s src/config/listing-seo.ts */
+const LISTING_META_DESCRIPTION_MAX_LENGTH = 160;
+const LISTING_IMAGE_ALT_MAX_LENGTH = 125;
+
+const META_DESCRIPTION_CTA_HINTS = [
+  /pro více informací/i,
+  /podívejte se na detaily/i,
+  /kontaktujte prodejce/i,
+  /napište prodejci/i,
+  /detaily a kontakt na platformě/i,
+];
+
+function softClampText(text: string, maxLength: number): string {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= maxLength) return trimmed;
+
+  const slice = trimmed.slice(0, maxLength);
+  const sentenceEnd = Math.max(
+    slice.lastIndexOf(". "),
+    slice.lastIndexOf("! "),
+    slice.lastIndexOf("? "),
+    slice.lastIndexOf("."),
+    slice.lastIndexOf("!"),
+    slice.lastIndexOf("?"),
+  );
+
+  if (sentenceEnd >= Math.floor(maxLength * 0.6)) {
+    return slice.slice(0, sentenceEnd + 1).trimEnd();
+  }
+
+  const space = slice.lastIndexOf(" ");
+  if (space >= Math.floor(maxLength * 0.6)) {
+    return slice.slice(0, space).trimEnd();
+  }
+
+  return slice.trimEnd();
+}
+
+function splitIntoSentences(text: string): string[] {
+  const matches = text.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g);
+  if (!matches) return [text];
+  return matches.map((part) => part.trim()).filter(Boolean);
+}
+
+function isMetaCtaSentence(sentence: string): boolean {
+  return META_DESCRIPTION_CTA_HINTS.some((hint) => hint.test(sentence));
+}
+
+function dropTrailingMetaCtaSentences(text: string): string {
+  const sentences = splitIntoSentences(text.trim());
+  if (sentences.length <= 1) return text.trim();
+
+  while (
+    sentences.length > 1 &&
+    isMetaCtaSentence(sentences[sentences.length - 1]!)
+  ) {
+    sentences.pop();
+  }
+
+  return sentences.join(" ").replace(/\s+/g, " ").trim();
+}
+
+function clampMetaDescription(text: string | undefined): string | undefined {
+  if (!text?.trim()) return undefined;
+  const trimmed = text.trim();
+  if (trimmed.length <= LISTING_META_DESCRIPTION_MAX_LENGTH) {
+    return trimmed;
+  }
+  const withoutCta = dropTrailingMetaCtaSentences(trimmed);
+  const clamped =
+    withoutCta.length <= LISTING_META_DESCRIPTION_MAX_LENGTH
+      ? withoutCta
+      : softClampText(withoutCta, LISTING_META_DESCRIPTION_MAX_LENGTH);
+  return clamped || undefined;
+}
+
+function clampImageAlt(text: string | undefined): string | undefined {
+  if (!text?.trim()) return undefined;
+  const clamped = softClampText(text, LISTING_IMAGE_ALT_MAX_LENGTH);
+  return clamped || undefined;
+}
+
 export function normalizeModerationResult(
   result: ModerationResult,
   fallbackTitle: string,
@@ -366,8 +449,8 @@ export function normalizeModerationResult(
     priceType,
     priceAmount,
   );
-  const metaDescription = result.metaDescription?.trim() || undefined;
-  const imageAlt = result.imageAlt?.trim() || undefined;
+  const metaDescription = clampMetaDescription(result.metaDescription);
+  const imageAlt = clampImageAlt(result.imageAlt);
 
   if (result.status === "NEEDS_QUESTIONS") {
     return {

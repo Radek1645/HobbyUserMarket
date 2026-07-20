@@ -148,7 +148,7 @@ export function CreateListingForm({
     initialValues?.categoryType ?? "zbozi",
   );
   const [subcategorySlug, setSubcategorySlug] = useState(
-    initialValues?.subcategorySlug ?? CATEGORIES[0].subcategories[0]?.slug ?? "",
+    initialValues?.subcategorySlug ?? "",
   );
   const [conditionLabel, setConditionLabel] = useState<ConditionLabel>(
     initialValues?.conditionLabel ?? "used",
@@ -312,7 +312,8 @@ export function CreateListingForm({
   function handleCategoryChange(type: CategoryType) {
     setCategoryType(type);
     const next = getCategoryConfig(type);
-    setSubcategorySlug(next.subcategories[0]?.slug ?? "");
+    // U6: nevybírat automaticky první podkategorii — uživatel musí zvolit.
+    setSubcategorySlug("");
     setConditionLabel(next.conditionLabels[0]?.value ?? "used");
     setPriceType(next.priceTypes[0]?.value ?? "negotiable");
     if (type !== "prace") {
@@ -516,6 +517,14 @@ export function CreateListingForm({
       const rejection = moderationFailureToRejection(moderation);
       if (rejection) {
         setModerationRejection(rejection);
+        if (
+          typeof rejection.rejectedImageIndex === "number" &&
+          rejection.rejectedImageIndex >= 0
+        ) {
+          imageUploadRef.current?.highlightRejectedImage(
+            rejection.rejectedImageIndex,
+          );
+        }
         return;
       }
 
@@ -670,23 +679,27 @@ export function CreateListingForm({
         <input type="hidden" name="eventDate" value={eventDate} />
       ) : null}
 
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        <span
-          className={
-            step === 1 ? "font-medium text-gray-900" : "text-gray-500"
-          }
-        >
-          1. Kategorie
-        </span>
-        <span aria-hidden="true">→</span>
-        <span
-          className={
-            step === 2 ? "font-medium text-gray-900" : "text-gray-500"
-          }
-        >
-          2. Obsah
-        </span>
-      </div>
+      <nav aria-label="Kroky formuláře" className="flex items-center gap-2 text-sm text-gray-500">
+        <ol className="flex items-center gap-2">
+          <li
+            className={
+              step === 1 ? "font-medium text-gray-900" : "text-gray-500"
+            }
+            aria-current={step === 1 ? "step" : undefined}
+          >
+            1. Kategorie
+          </li>
+          <li aria-hidden="true">→</li>
+          <li
+            className={
+              step === 2 ? "font-medium text-gray-900" : "text-gray-500"
+            }
+            aria-current={step === 2 ? "step" : undefined}
+          >
+            2. Obsah
+          </li>
+        </ol>
+      </nav>
 
       {step === 1 ? (
         <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
