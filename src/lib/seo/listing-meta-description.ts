@@ -25,7 +25,7 @@ export function ensureMetaDescriptionLength(
   maxLength: number = LISTING_META_DESCRIPTION_MAX_LENGTH,
   minLength: number = LISTING_META_DESCRIPTION_MIN_LENGTH,
 ): string {
-  let result = text.trim().slice(0, maxLength);
+  const result = text.trim().slice(0, maxLength);
   if (result.length >= minLength || result.length === 0) {
     return result;
   }
