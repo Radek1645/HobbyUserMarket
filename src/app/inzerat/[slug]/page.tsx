@@ -347,7 +347,7 @@ export default async function ListingDetailPage({
                 <dd className="font-medium text-gray-900">
                   <Link
                     href={getAdvertiserListingsPath(advertiser.nickname)}
-                    className="underline-offset-2 hover:underline"
+                    className="font-semibold underline-offset-2 hover:underline"
                   >
                     {getAdvertiserPrimaryLabel(advertiser)}
                   </Link>

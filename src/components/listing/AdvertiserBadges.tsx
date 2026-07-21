@@ -4,7 +4,7 @@ import {
   resolveAdvertiserMilestone,
 } from "@/config/advertiser-badges";
 import {
-  advertiserMilestoneBadgeClass,
+  advertiserMilestoneBadgeClassByThreshold,
   advertiserPodnikatelBadgeClass,
 } from "@/config/ui-primitives";
 
@@ -43,7 +43,9 @@ export function AdvertiserBadges({
         ) : null}
         {milestone ? (
           <span
-            className={advertiserMilestoneBadgeClass}
+            className={
+              advertiserMilestoneBadgeClassByThreshold[milestone.threshold]
+            }
             title={milestoneTitle}
             aria-label={milestoneTitle}
           >

@@ -115,8 +115,8 @@ Na detailu inzerátu a stránce `/uzivatel/[nickname]` — odděleně od štítk
 
 | Konstanta | Použití |
 |-----------|---------|
-| `advertiserPodnikatelBadgeClass` | „Podnikatel“ (VOP §7.2) — slate |
-| `advertiserMilestoneBadgeClass` | „Aktivní inzerent · N+“ — emerald ring |
+| `advertiserPodnikatelBadgeClass` | „Podnikatel“ (VOP §7.2) — solidní slate, hned viditelný |
+| `advertiserMilestoneBadgeClassByThreshold` | „Aktivní inzerent · N+“ — 5 bronz / 10 stříbro / 20 zlato / 40 platina |
 
 Logika prahů a labelů: `src/config/advertiser-badges.ts`. Komponenta: `AdvertiserBadges`.
 

@@ -90,10 +90,17 @@ export const listingIntentDemandBadgeClass =
 export const listingCardSubcategoryBadgeClass =
   "inline-block max-w-full truncate rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-medium text-gray-800 shadow-sm";
 
-/** Štítek Podnikatel (VOP §7.2) u zadavatele. */
+/** Štítek Podnikatel (VOP §7.2) — solidní, hned odlišný od milníků. */
 export const advertiserPodnikatelBadgeClass =
-  "inline-flex items-center rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-white";
+  "inline-flex items-center rounded-full bg-slate-900 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-sm";
 
-/** Milník lifetime publikací u zadavatele. */
-export const advertiserMilestoneBadgeClass =
-  "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-900 ring-1 ring-inset ring-emerald-200";
+const advertiserMilestoneBadgeBaseClass =
+  "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset";
+
+/** 5+ bronz · 10+ stříbro · 20+ zlato · 40+ platina */
+export const advertiserMilestoneBadgeClassByThreshold = {
+  5: `${advertiserMilestoneBadgeBaseClass} bg-amber-50 text-amber-900 ring-amber-200`,
+  10: `${advertiserMilestoneBadgeBaseClass} bg-slate-100 text-slate-700 ring-slate-300`,
+  20: `${advertiserMilestoneBadgeBaseClass} bg-yellow-50 text-yellow-900 ring-yellow-300`,
+  40: `${advertiserMilestoneBadgeBaseClass} bg-violet-50 text-violet-900 ring-violet-200`,
+} as const;
