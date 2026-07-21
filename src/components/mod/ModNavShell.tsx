@@ -14,9 +14,11 @@ export function ModNavShell({ role }: ModNavShellProps) {
   const current =
     pathname.startsWith("/mod/uzivatele")
       ? "uzivatele"
-      : pathname.startsWith("/mod/inzeraty")
-        ? "inzeraty"
-        : "karantena";
+      : pathname.startsWith("/mod/blacklist")
+        ? "blacklist"
+        : pathname.startsWith("/mod/inzeraty")
+          ? "inzeraty"
+          : "karantena";
 
   return <ModNav role={role} current={current} />;
 }

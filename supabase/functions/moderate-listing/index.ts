@@ -46,18 +46,21 @@ import {
   SightengineUnavailableError,
 } from "../_shared/moderation/sightengine.ts";
 import {
-  incrementHardRejectAndMaybeLogThreshold,
+  incrementHardRejectAndMaybeApplyHardStop,
   recordHardRejectEvidence,
   uploadNsfwEvidenceImage,
 } from "../_shared/moderation/hard-reject-evidence.ts";
+import { isEmailBlacklisted } from "../_shared/moderation/account-blacklist.ts";
 
 /** CZ copy — drž sync s src/config/moderation/messages.ts (sync skript nekopíruje). */
 const HARD_HIT_TEXT_REASON =
-  "Text inzerátu obsahuje zakázaný obsah. Upravte název nebo popis a zkuste to znovu.";
+  "Text inzerátu porušuje podmínky platformy. Upravte název nebo popis. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
 const NSFW_IMAGE_REASON =
-  "Fotografie nesplňuje podmínky inzerce (nevhodný obsah). Nahrajte jiné snímky.";
+  "Fotografie porušuje podmínky platformy (nevhodný obsah). Nahrajte jiné snímky. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
 const SIGHTENGINE_UNAVAILABLE_MESSAGE =
   "Kontrola fotografií teď není dostupná. Zkuste to prosím za chvíli znovu.";
+const ACCOUNT_BLACKLISTED_MESSAGE =
+  "Účet je pozastaven kvůli porušení obchodních podmínek.";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,7 +114,11 @@ function technicalErrorResponse(
 async function respondWithLog(
   userId: string,
   logCtx: ModerationLogContext,
-  body: ModerationResult & { approvalToken?: string | null; errorCode?: string },
+  body: ModerationResult & {
+    approvalToken?: string | null;
+    errorCode?: string;
+    accountBlocked?: boolean;
+  },
   options?: { errorCode?: string; httpStatus?: number },
 ): Promise<Response> {
   const errorCode = options?.errorCode ?? body.errorCode;
@@ -155,7 +162,9 @@ function logRejectedFromContext(
   });
 }
 
-async function resolveUserId(req: Request): Promise<string | null> {
+async function resolveAuthUser(
+  req: Request,
+): Promise<{ userId: string; email: string | null } | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
 
@@ -168,7 +177,7 @@ async function resolveUserId(req: Request): Promise<string | null> {
     req.headers.get("apikey") ?? Deno.env.get("SUPABASE_ANON_KEY");
   if (!supabaseUrl || !apikey) {
     console.error(
-      "resolveUserId: missing env",
+      "resolveAuthUser: missing env",
       JSON.stringify({
         hasUrl: Boolean(supabaseUrl),
         hasApikey: Boolean(apikey),
@@ -188,7 +197,8 @@ async function resolveUserId(req: Request): Promise<string | null> {
     return null;
   }
 
-  return user?.id ?? null;
+  if (!user?.id) return null;
+  return { userId: user.id, email: user.email ?? null };
 }
 
 function logModerationAiProvider(
@@ -258,10 +268,13 @@ serve(async (req) => {
   }
 
   let userId: string | null = null;
+  let userEmail: string | null = null;
   const logCtx: ModerationLogContext = {};
 
   try {
-    userId = await resolveUserId(req);
+    const authUser = await resolveAuthUser(req);
+    userId = authUser?.userId ?? null;
+    userEmail = authUser?.email ?? null;
     if (!userId) {
       return jsonResponse(
         {
@@ -269,6 +282,24 @@ serve(async (req) => {
           message: "Pro AI kontrolu se přihlaste.",
         },
         401,
+      );
+    }
+
+    if (userEmail && (await isEmailBlacklisted(userEmail))) {
+      await logModerationCheck({
+        userId,
+        status: "REJECTED",
+        rejectionReason: ACCOUNT_BLACKLISTED_MESSAGE,
+        errorCode: "ACCOUNT_BLACKLISTED",
+      });
+      return jsonResponse(
+        {
+          status: "REJECTED",
+          reason: ACCOUNT_BLACKLISTED_MESSAGE,
+          accountBlocked: true,
+          errorCode: "ACCOUNT_BLACKLISTED",
+        },
+        403,
       );
     }
 
@@ -393,7 +424,10 @@ serve(async (req) => {
         reason: HARD_HIT_TEXT_REASON,
         titleSnippet: title,
       });
-      await incrementHardRejectAndMaybeLogThreshold(userId);
+      const accountBlocked = await incrementHardRejectAndMaybeApplyHardStop(
+        userId,
+        userEmail,
+      );
       return respondWithLog(
         userId,
         logCtx,
@@ -401,6 +435,7 @@ serve(async (req) => {
           status: "REJECTED",
           reason: HARD_HIT_TEXT_REASON,
           rejectedTopicId: hardHit.matchedCategory,
+          accountBlocked: accountBlocked || undefined,
         },
         { errorCode: "HARD_HIT_TEXT" },
       );
@@ -425,7 +460,10 @@ serve(async (req) => {
               storagePath: storagePath ?? undefined,
               imageIndex,
             });
-            await incrementHardRejectAndMaybeLogThreshold(userId);
+            const accountBlocked = await incrementHardRejectAndMaybeApplyHardStop(
+              userId,
+              userEmail,
+            );
             return respondWithLog(
               userId,
               logCtx,
@@ -433,6 +471,7 @@ serve(async (req) => {
                 status: "REJECTED",
                 reason: NSFW_IMAGE_REASON,
                 rejectedImageIndex: imageIndex,
+                accountBlocked: accountBlocked || undefined,
               },
               { errorCode: "NSFW_IMAGE" },
             );

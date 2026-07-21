@@ -49,7 +49,7 @@ K inzerátu nesmíte připojit fotografie, které jste převzali z jiného inzer
 
 ### Podnikatelská inzerce
 
-V kategoriích **Služby**, **Práce** a **Nemovitosti** uveďte pravdivě, zda inzerujete jako soukromá osoba, nebo jako podnikatel (firma/OSVČ). Podnikatel musí uvést obchodní název a IČO — viz [VOP §7](/vop).
+Inzerujete-li jako podnikatel (firma/OSVČ), uveďte to při **nastavení profilu** (název firmy a IČO, pokud je přiděleno). U vašich inzerátů se pak zobrazí štítek „Podnikatel" — viz [VOP §7](/vop).
 
 ### Limity publikace
 
@@ -122,7 +122,7 @@ Takový pokus:
 
 Opakované pokusy nahrát zakázaný sexuální / NSFW obsah nebo obejít moderaci (typicky několik zamítnutí v krátkém čase) mohou rovněž vést k pozastavení nebo zrušení účtu.
 
-> **Poznámka pro revizi právníkem:** Hard stop CSAM + evidence retention vs. oznamovací povinnost; sladit s DSA / trestním právem. Technicky auto-suspend účtu = fáze 2 (zatím jen log threshold).
+> **Poznámka pro revizi právníkem:** Hard stop CSAM + evidence retention vs. oznamovací povinnost; sladit s DSA / trestním právem. Technicky: blacklist e-mailu po 3 hard rejectech / 24 h (migrace 055); retence evidence 24 měsíců.
 
 ---
 

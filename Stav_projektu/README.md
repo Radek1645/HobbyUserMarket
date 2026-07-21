@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-21 (noc) | [2026-07-21-noc.md](./2026-07-21-noc.md) — hard stop blacklist 055, SoR e-maily, unban+obnova inzerátů, PRD v3.41 |
 | 2026-07-21 (večer) | [2026-07-21-vecer.md](./2026-07-21-vecer.md) — NSFW/hard-hit brána (Sightengine), migrace 054, PRD v3.40 |
 | 2026-07-21 | [2026-07-21.md](./2026-07-21.md) — odznaky Podnikatel/milníky, `/uzivatel`, migrace 052–053, PRD v3.39 |
 | 2026-07-20 | [2026-07-20.md](./2026-07-20.md) — SEO bible v1.2, migrace 051, AI meta/alt, PRD v3.34 |

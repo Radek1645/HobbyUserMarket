@@ -6,8 +6,8 @@ import { SITE_SHORT_NAME } from "@/config/site";
 export const HOME_SEO_BLURB = {
   heading: "Lokální bazar a inzerce ve vašem okolí",
   paragraphs: [
-    `${SITE_SHORT_NAME} je moderní lokální bazar — online inzerce zboží, služeb, práce, nemovitostí i událostí blízko vás. Inzerát založíte během pár minut: stačí fotka a krátký popis, AI doplní detaily.`,
-    "Prodejte přebytky, nabídněte službu nebo najděte výpomoc bez zbytečné omáčky.",
+    `${SITE_SHORT_NAME} je lokální bazar — online inzerce zboží, služeb, práce, nemovitostí i událostí blízko vás. Stačí fotka a krátký popis; AI připraví strukturovaný inzerát, který jde dobře najít ve vyhledávačích i v okolí.`,
+    "Nabídněte věc nebo službu, hledejte práci, bydlení či výpomoc — domluvu si řešíte přímo mezi sebou.",
   ],
   links: [
     {

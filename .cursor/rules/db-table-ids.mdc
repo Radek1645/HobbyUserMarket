@@ -15,6 +15,7 @@ U **nových tabulek** (migrace, `supabase_schema.sql`) přidej lidsky čitelné 
 | `posts` | `id BIGSERIAL` | PK |
 | `moderation_checks` | `log_no BIGINT GENERATED ALWAYS AS IDENTITY` | PK |
 | `moderation_hard_reject_evidence` | `evidence_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
+| `account_blacklist` | `blacklist_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
 | `reports` | `report_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
 | `profiles` | `profile_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
 | `inquiry_events` | `inquiry_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |

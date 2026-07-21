@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/anonymize-inquiry-ips",
       "schedule": "45 3 * * *"
+    },
+    {
+      "path": "/api/cron/purge-hard-stop-evidence",
+      "schedule": "0 4 * * *"
     }
   ]
 }

@@ -49,7 +49,7 @@ K inzerátu nesmíte připojit fotografie, které jste převzali z jiného inzer
 
 ### Podnikatelská inzerce
 
-V kategoriích **Služby**, **Práce** a **Nemovitosti** uveďte pravdivě, zda inzerujete jako soukromá osoba, nebo jako podnikatel (firma/OSVČ). Podnikatel musí uvést obchodní název a IČO — viz [VOP §7](/vop).
+Inzerujete-li jako podnikatel (firma/OSVČ), uveďte to při **nastavení profilu** (název firmy a IČO, pokud je přiděleno). U vašich inzerátů se pak zobrazí štítek „Podnikatel" — viz [VOP §7](/vop).
 
 ### Limity publikace
 

@@ -101,7 +101,7 @@ Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
 | [VOP §3](./vop-fo.md) — licence, vodoznak (volitelně), recyklace fotek | ✅ draft | vodoznak volitelný (není v plánu) · detekce recyklace ❌ |
 | [VOP §7](./vop-fo.md) — Podnikatel, IČO, štítek | ✅ draft | profil firma ✅ · badge ✅ · IČO volitelné ⚠️ |
 | [Pravidla §2.2](./podminky-inzerce.md) — seznam zakázaného obsahu | ✅ draft 1.2 | `prohibited-topics.ts` ✅ · web `/podminky-inzerce` stub ❌ |
-| [Pravidla §2.4](./podminky-inzerce.md) + [VOP §4.5](./vop-fo.md) — CSAM hard stop | ✅ draft 2026-07-21 | hard-hit text ✅ · auto-suspend účtu ❌ (fáze 2) |
+| [Pravidla §2.4](./podminky-inzerce.md) + [VOP §4.5](./vop-fo.md) — CSAM hard stop | ✅ draft 2026-07-21 | hard-hit text ✅ · blacklist účtu ✅ (055, SoR e-mail) |
 | Checkbox věku 15+ | ✅ | `RegistrationConsentFields` ✅ |
 
 ## Revize draft 1.4 (2026-07-11) — balíčky inzerce

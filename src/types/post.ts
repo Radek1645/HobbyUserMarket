@@ -18,7 +18,8 @@ export type PostStatus =
 export type PostStatusReasonCode =
   | "reports_threshold"
   | "moderation"
-  | "lifetime_max";
+  | "lifetime_max"
+  | "account_blacklist";
 
 export type PriceType =
   | "fixed"

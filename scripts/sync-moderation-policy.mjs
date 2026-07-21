@@ -152,6 +152,13 @@ export const HARD_REJECT_AUTOBAN_THRESHOLD = ${hardRejectThreshold};
 export const HARD_REJECT_WINDOW_MS = ${hardRejectWindowMs};
 
 export const MODERATION_EVIDENCE_BUCKET = ${JSON.stringify(evidenceBucket)};
+
+export const ACCOUNT_BLACKLIST_REASON_AUTOMATIC = ${JSON.stringify(
+    readModerationConst(
+      "ACCOUNT_BLACKLIST_REASON_AUTOMATIC",
+      "3_hard_rejects_24h",
+    ),
+  )};
 `,
 );
 console.log("Synced moderation constants:", constantsTarget);

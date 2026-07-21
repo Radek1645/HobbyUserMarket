@@ -35,6 +35,7 @@ function mapResponse(
       reason: response.reason ?? MODERATION_DEFAULT_REJECTION_REASON,
       topicId: response.rejectedTopicId,
       rejectedImageIndex: response.rejectedImageIndex,
+      accountBlocked: response.accountBlocked === true,
     };
   }
 

@@ -334,6 +334,7 @@ Plné SELECTY a vysvětlení tabulek: [`Metodika.md` §6.12](./Metodika.md#612-s
 |---------|------|------------------|
 | `moderation_checks` | Log každého volání Edge Function (status, error_code, title_preview) | `log_no` |
 | `moderation_hard_reject_evidence` | Hard-hit text, NSFW fotka, Sightengine výpadek, threshold 3×/24h | `evidence_no` |
+| `account_blacklist` | Hard stop e-mail (auto/manual), soft unban | `blacklist_no` |
 
 ```sql
 -- Posledních 50 kontrol

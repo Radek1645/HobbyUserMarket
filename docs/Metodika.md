@@ -350,14 +350,53 @@ Podrobné zadání a rizika: [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw
 | Krok | Co dělá | Při hit |
 |------|---------|---------|
 | **Hard-hit text** | `checkHardHitText` na název + popis (CZ/EN fráze, leetspeak) ze `hard-hit-terms.ts` | `REJECTED` + `errorCode: HARD_HIT_TEXT`, Gemini se **nevolá** |
-| **Sightengine** | Model `nudity-2.1` na každou fotku (base64); prahy ≈0.6 / ≈0.8 | `REJECTED` + `errorCode: NSFW_IMAGE`, Gemini se **nevolá** |
+| **Sightengine** | Model `nudity-2.1` na každou fotku (base64); prahy níže | `REJECTED` + `errorCode: NSFW_IMAGE`, Gemini se **nevolá** |
 | **Sightengine výpadek** | Timeout 5 s / chyba API / chybějící secrets | `TECHNICAL_ERROR` / `SIGHTENGINE_UNAVAILABLE` — **ne** do Gemini, **ne** hard-reject counter |
 
-**Evidence (migrace `054`):** tabulka `moderation_hard_reject_evidence` + privátní bucket `moderation-evidence`. Ukládá se *před* vytvořením inzerátu (v requestu jsou jen base64, ještě není `post_id`). **Nesouvisí** s `/mod/karantena` (`blocked` inzeráty).
+#### Sightengine — která pole z JSON vyhodnocujeme
 
-**Counter:** společný počet `hard_hit_text` + `nsfw_image` za 24 h na uživatele. Po **3** hitách se zaloguje `hard_reject_threshold_reached` (auto-suspend účtu = fáze 2, zatím ne).
+API vrací objekt `nudity` (model `nudity-2.1`). Kód (`sightengine.ts`) rozhoduje **jen** podle těchto skóre:
 
-Konfigurace: `NSFW_NUDITY_*_THRESHOLD`, `HARD_REJECT_AUTOBAN_THRESHOLD` v `src/config/moderation/index.ts` (sync do Edge přes `npm run sync:moderation`). Secrets: `SIGHTENGINE_API_USER`, `SIGHTENGINE_API_SECRET`.
+| Pole v JSON | Práh (konstanta) | Reason při rejectu |
+|-------------|------------------|--------------------|
+| `nudity.sexual_activity` | **> 0.6** (`NSFW_NUDITY_RAW_THRESHOLD`) | `nudity_raw` |
+| `nudity.sexual_display` | **> 0.6** | `nudity_raw` |
+| `nudity.erotica` | **> 0.8** (`NSFW_NUDITY_PARTIAL_THRESHOLD`) | `nudity_partial` |
+| `nudity.raw` / `nudity.partial` | stejné prahy | legacy (starší model, pokud API ještě vrátí) |
+
+**Nevyhodnocujeme** (i když API vrátí): `suggestive`, `very_suggestive`, `mildly_suggestive`, `none`, `suggestive_classes` (lingerie, bikini, cleavage…), `context`.
+
+Důsledek: fotka osoby v prádle může mít `suggestive` / `lingerie` ≈ 0.99 a přesto **projít** Sightenginem — sémantiku (escort návnada vs. prodej věci) řeší Gemini (`sexual_services`). Hard nudity (sexuální aktivita / erotica) odřízne Sightengine před Gemini.
+
+**Evidence (migrace `054`):** tabulka `moderation_hard_reject_evidence` + privátní bucket `moderation-evidence`. Ukládá se *před* vytvořením inzerátu (v requestu jsou jen base64, ještě není `post_id`). **Nesouvisí** s `/mod/karantena` (`blocked` inzeráty z reportů).
+
+**Hard reject (1.–2.):** UI dialog — inzerát porušuje podmínky; nesouhlas → `info@zapikolou.cz` (`OPERATOR_CONTACT_EMAIL`). Evidence + counter.
+
+**Hard stop (3× / 24 h):** migrace **`055`** — tabulka `account_blacklist` (klíč = normalizovaný e-mail, `source` = `automatic` | `manual`, soft unban přes `removed_at`).
+
+| Akce | Chování |
+|------|---------|
+| Insert blacklist | Edge při 3. hitu (`3_hard_rejects_24h`) nebo staff v `/mod/blacklist` |
+| Skrytí inzerátů | `active` / `hidden` → `blocked` + `status_reason_code = account_blacklist` (bez mazání; draft/archived nechá) |
+| Gate | Middleware + `is_email_blacklisted()` → `/ucet-pozastaven`; Edge odmítne `ACCOUNT_BLACKLISTED` |
+| E-mail (SoR) | Při **novém** hard stopu i při unbanu (Resend). Auto-ban: Edge → `POST /api/internal/notify-account-hard-stop` (`CRON_SECRET`). Ruční: server action. |
+| Odebrání z blacklistu (unban) | Soft remove + důvod + **obnova inzerátů** + e-mail — viz níže |
+| Retence | Cron `/api/cron/purge-hard-stop-evidence` — evidence + snapshoty + *historie* blacklistu po **730 dnech**; aktivní blacklist se nemaže |
+
+#### Obnova účtu po omylu (odebrání z blacklistu)
+
+Když uživatel napíše na `info@zapikolou.cz` (nebo po ruční kontrole evidence) a **uznáte, že obsah neporušuje pravidla** / šlo o false positive:
+
+1. Otevřete **`/mod/blacklist`** (God Mode — staff).
+2. U aktivního řádku vyplňte **důvod odebrání** (např. „omyl — běžný prodej oblečení, ne escort“) a klikněte **Odebrat z blacklistu**.
+3. V DB se nastaví `removed_at`, `removed_by`, `removed_reason` — řádek zůstane v historii (`?historie=1`), unikátní aktivní e-mail se uvolní.
+4. **Účet znovu funguje** — middleware už neresměruje na `/ucet-pozastaven`, uživatel se může přihlásit a zakládat nové inzeráty.
+5. **Inzeráty se obnoví automaticky** — všechny s `blocked` + `status_reason_code = account_blacklist` jdou zpět na **`active`** (důvod se vymaže). Inzeráty zablokované jiným důvodem (`moderation`, `reports_threshold`) se **nedotknou**.
+6. Uživatel dostane **e-mail** o zrušení pozastavení (včetně poznámky moderátora).
+
+Evidence hard rejectů (`moderation_hard_reject_evidence`) ani snapshoty v bucketu se unbanem **nemažou** — zůstanou pro audit / policii do retence 24 měsíců.
+
+Konfigurace: `NSFW_NUDITY_*_THRESHOLD`, `HARD_REJECT_AUTOBAN_THRESHOLD`, `HARD_STOP_EVIDENCE_RETENTION_DAYS` v `src/config/`. Secrets: `SIGHTENGINE_API_USER`, `SIGHTENGINE_API_SECRET`, na Edge také **`CRON_SECRET`** (+ volitelně `SITE_URL`) pro SoR e-mail po auto-banu.
 
 ### 6.5 Co AI kontroluje na fotkách
 
@@ -461,7 +500,7 @@ Kontakty patří do chráněných polí profilu / inzerátu a zobrazí se až po
 |---------|---------|
 | Více než 20 AI kontrol za hodinu | Hláška o limitu, zkusit později |
 | Hard-hit text / NSFW fotka | `REJECTED` bez volání Gemini; evidence |
-| 3× hard reject za 24 h | Log `hard_reject_threshold_reached` (suspend až fáze 2) |
+| 3× hard reject za 24 h | Hard stop → `account_blacklist` + `/ucet-pozastaven` |
 | Sightengine nedostupný | Technická chyba (`SIGHTENGINE_UNAVAILABLE`), ne zamítnutí obsahu |
 | AI nedostupná / timeout (25 s) | Amber/červená hláška ve formuláři, ne popup |
 | Google zablokuje vstup (`PROHIBITED_CONTENT`) | Obsahové zamítnutí s hláškou o bezpečnostním filtru; u nevinných fotek mitigováno zkráceným Gemini promptem (`geminiSafe`) |
@@ -476,6 +515,7 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 |---------|-------------|---------|------------------|
 | `moderation_checks` | Každé volání `moderate-listing` (APPROVED / REJECTED / NEEDS_QUESTIONS) + `error_code` | `028` | **`log_no`** (PK) |
 | `moderation_hard_reject_evidence` | Hard-hit text, NSFW fotka, výpadek Sightengine, threshold 3×/24h | `054` | **`evidence_no`** (+ UUID `id`) |
+| `account_blacklist` | Hard stop podle e-mailu (auto/manual), soft unban | `055` | **`blacklist_no`** (+ UUID `id`) |
 | Storage bucket `moderation-evidence` | Snapshoty NSFW fotek (privátní, jen service_role) | `054` | — |
 
 **Inkrementální ID:** stejně jako u `reports.report_no` — v Table Editoru / SQL hledej podle `log_no` / `evidence_no` (1, 2, 3…), ne podle UUID. UUID zůstává technický identifikátor.
@@ -600,6 +640,15 @@ FROM public.moderation_hard_reject_evidence e
 LEFT JOIN public.profiles p ON p.id = e.user_id
 WHERE e.kind = 'hard_reject_threshold_reached'
 ORDER BY e.created_at DESC;
+```
+
+#### E2) Aktivní blacklist
+
+```sql
+SELECT blacklist_no, email, source, reason, created_at
+FROM public.account_blacklist
+WHERE removed_at IS NULL
+ORDER BY created_at DESC;
 ```
 
 #### F) Kontroly jednoho uživatele (podle e-mailu)
@@ -811,6 +860,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 |---------------|----------|------|
 | `/api/cron/gdpr-retention` | `15 3 * * *` | Neaktivní účty: varování 7 dní předem, po **90 dnech** bez přihlášení a bez aktivního inzerátu anonymizace profilu + smazání auth (`045`, `src/config/gdpr-retention.ts`) |
 | `/api/cron/anonymize-inquiry-ips` | `45 3 * * *` | Zkrácení IP v `inquiry_events` starších než **7 dní** (IPv4 → `x.x.x.0`, jinak `anonymized`). RPC `anonymize_old_inquiry_ips`, migrace **050**, config `src/config/ip-anonymization.ts` |
+| `/api/cron/purge-hard-stop-evidence` | `0 4 * * *` | Evidence hard-stop + snapshoty + historie blacklistu starší než **730 dní** (`HARD_STOP_EVIDENCE_RETENTION_DAYS`); aktivní blacklist se nemaže |
 
 Auth: `Authorization: Bearer CRON_SECRET` (stejně jako ostatní crony). Rate-limit poptávek používá IP jen v okně 24 h — anonymizace po 7 dnech ho neovlivní.
 
@@ -921,7 +971,7 @@ Role se **nastavuje v databázi**, ne v aplikaci. Postup je v [`supabase-prikazy
 | `/mod/uzivatele` | Jen admin — správa uživatelů, smazání účtu, balíčky | **ano** |
 | Detail cizího inzerátu | Lišta: Zablokovat, Smazat, Obnovit, Upravit | **ano** (Historie, Poznámka — zatím ne) |
 
-Hard-hit / NSFW evidence z pre-Gemini brány (§6.4) je v tabulce `moderation_hard_reject_evidence` (+ bucket `moderation-evidence`) — **není** to `/mod/karantena`. Admin UI nad evidence = fáze 2. SQL přehledy kontrol: [§6.12](#612-sql--přehled-kontrol-v-supabase).
+Hard-hit / NSFW evidence z pre-Gemini brány (§6.4) je v `moderation_hard_reject_evidence` (+ bucket `moderation-evidence`). Hard stop účtů: `account_blacklist` + UI `/mod/blacklist` (neplést s `/mod/karantena`). Stop stránka: `/ucet-pozastaven`. SQL: [§6.12](#612-sql--přehled-kontrol-v-supabase).
 
 Ruční SQL (blokace, dotazy na nahlášení): [`supabase-prikazy.md`](./supabase-prikazy.md).
 

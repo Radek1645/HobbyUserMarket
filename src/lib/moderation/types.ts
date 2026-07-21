@@ -60,6 +60,8 @@ export type ModerateListingResponse = {
   approvalToken?: string | null;
   /** Hard gate / technické kódy (HARD_HIT_TEXT, NSFW_IMAGE, …). */
   errorCode?: string;
+  /** Po 3. hard rejectu / už blacklisted — klient redirectne na stop stránku. */
+  accountBlocked?: boolean;
 };
 
 export type ListingModerationInput = {
@@ -102,11 +104,13 @@ export type ListingModerationFailure =
       reason: string;
       topicId?: string;
       rejectedImageIndex?: number;
+      accountBlocked?: boolean;
     }
   | {
       ok: false;
       kind: "error";
       error: string;
+      accountBlocked?: boolean;
     };
 
 export type ListingModerationOutcome =

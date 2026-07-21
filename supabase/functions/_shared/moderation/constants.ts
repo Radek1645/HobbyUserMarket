@@ -23,3 +23,5 @@ export const HARD_REJECT_AUTOBAN_THRESHOLD = 3;
 export const HARD_REJECT_WINDOW_MS = 86400000;
 
 export const MODERATION_EVIDENCE_BUCKET = "moderation-evidence";
+
+export const ACCOUNT_BLACKLIST_REASON_AUTOMATIC = "3_hard_rejects_24h";

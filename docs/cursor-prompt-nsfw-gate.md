@@ -112,12 +112,13 @@ UI review fronty = **mimo scope fáze 1** (stačí tabulka + storage).
 
 ---
 
-## Fáze 2 (follow-up, mimo tento PR / nebo samostatný commit po fázi 1)
+## Fáze 2 — hard stop blacklist (implementováno)
 
-- Migrace: suspend mechanismus na profilu (např. `profiles.suspended_at` / status) + gate při auth / create listing / moderate-listing.
-- Při `count >= HARD_REJECT_AUTOBAN_THRESHOLD` v 24h → suspend + event `auto_ban_triggered`.
-- Jednoduché admin UI nad `moderation_hard_reject_evidence` (neplést s `/mod/karantena`).
-- Ladění prahů Sightengine podle false positives (plavky, sport).
+- Migrace **055** `account_blacklist` (e-mail, `source` automatic/manual, soft unban `removed_at`).
+- Při `count >= HARD_REJECT_AUTOBAN_THRESHOLD` v 24h → blacklist + skrytí inzerátů (`status_reason_code = account_blacklist`) + event `hard_reject_threshold_reached`.
+- Middleware gate → `/ucet-pozastaven`; admin UI `/mod/blacklist`.
+- Retence evidence/historie: cron `purge-hard-stop-evidence` (730 dní).
+- Ladění prahů Sightengine podle false positives (plavky, sport) — ongoing.
 
 ---
 
@@ -141,8 +142,8 @@ UI review fronty = **mimo scope fáze 1** (stačí tabulka + storage).
 - [x] Klient zobrazí zamítnutí (ne technický retry loop) u hard rejectů. *(status REJECTED → kind rejected)*
 - [x] Sightengine výpadek/timeout → `TECHNICAL_ERROR` / `SIGHTENGINE_UNAVAILABLE`, **ne** tichý průchod do Gemini, **ne** hard-reject counter.
 - [x] Čistý flow (bez hard rejectu) beze změny volá Gemini/OpenAI jako dřív.
-- [x] Po 3 hard rejectech v 24h je zalogovaný `hard_reject_threshold_reached` (suspend až fáze 2).
-- [x] Evidence není veřejně čitelná; žádné automatické mazání.
+- [x] Po 3 hard rejectech v 24h je zalogovaný `hard_reject_threshold_reached` **a** účet jde na `account_blacklist` (fáze 2).
+- [x] Evidence není veřejně čitelná; automatické mazání až po retenci 24 měsíců (cron).
 
 ---
 

@@ -1,8 +1,8 @@
 # TO-DO — další den (smoke produkce)
 
-> **Datum plánu:** 2026-07-21 → testovat **2026-07-21 / ráno**  
-> **Po:** deploy `main` (`3aff570` + `1e821de`), migrace **052** + **053**, Edge `moderate-listing`  
-> **PRD:** v3.39 · snapshot [`Stav_projektu/2026-07-21.md`](../Stav_projektu/2026-07-21.md)
+> **Datum plánu:** 2026-07-21 večer → testovat **2026-07-22**  
+> **Po:** hard stop blacklist (migrace **055**), Edge `moderate-listing`, e-maily SoR, cron retence  
+> **PRD:** v3.41 · snapshot [`Stav_projektu/2026-07-21-noc.md`](../Stav_projektu/2026-07-21-noc.md)
 
 Zaškrtávej `[x]` přímo v tomto souboru.
 
@@ -10,31 +10,44 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 
 ## 0. Před testy
 
-- [ ] Vercel build `main` zelený
+- [ ] Vercel build `main` zelený (po pushi z ukončení práce)
 - [ ] Otevřít produkci `https://zapikolou.cz` (ne localhost)
+- [ ] Edge secrets: `CRON_SECRET` (= Vercel) + `SITE_URL=https://zapikolou.cz`
 
 ---
 
-## 1. Odznaky zadavatele + `/uzivatel` (053)
+## 1. Hard stop / blacklist (priorita zítra)
 
 | # | Scénář | Jak | Očekávání | ✓ |
 |---|--------|-----|-----------|---|
-| T1 | Badge **Podnikatel** | Detail inzerátu od účtu s `is_company` | U jména firmy štítek Podnikatel; hover: VOP text | ☐ |
-| T2 | Milník **5+** | Účet s ≥5 lifetime publikacemi (ne drafty) | Štítek `Aktivní inzerent · 5+` (nebo vyšší práh) | ☐ |
-| T3 | Bez milníku | Účet s 0–4 publikacemi, ne firma | Žádný milník ani Podnikatel | ☐ |
-| T4 | Klik na zadavatele | Klik na jméno / firmu v parametrech | `/uzivatel/[nickname]`, grid aktivních inzerátů | ☐ |
-| T5 | Paginace | Zadavatel s >9 aktivními | 9 karet; Další → `?stranka=2` | ☐ |
-| T6 | Majitel — hint | Přihlášený majitel na vlastním detailu | Stejné odznaky + text o důvěryhodnosti | ☐ |
-| T7 | Prázdný profil | Nickname bez aktivních (nebo po archivaci) | Hlavička OK, hláška „žádné veřejné inzeráty“ | ☐ |
+| H1 | Hard reject hláška | Inzerát s hard-hit textem (1×) | Dialog: porušení podmínek + kontakt `info@…`; účet dál funguje | ☐ |
+| H2 | NSFW reject | Fotka nad prahem (nebo 2. hard-hit) | Reject + evidence; stále bez blacklistu | ☐ |
+| H3 | Auto hard stop 3×/24h | 3. hard reject na test účtu | Redirect `/ucet-pozastaven`; řádek v `account_blacklist` (`automatic`); aktivní inzeráty `blocked` + `account_blacklist` | ☐ |
+| H4 | E-mail hard stop | Po H3 (nebo ruční add) | Mail „Účet … byl pozastaven“ (Resend / schránka) | ☐ |
+| H5 | Gate | Přihlášený blacklisted → jiná URL | Redirect na `/ucet-pozastaven`; odhlášení funguje | ☐ |
+| H6 | Unban + obnova | `/mod/blacklist` → Odebrat + důvod | Účet OK; inzeráty z hard stopu znovu `active`; mail o obnově | ☐ |
+| H7 | Ruční blacklist | Staff přidá cizí e-mail + důvod | `source=manual`; stejný gate + mail | ☐ |
+
+SQL rychlá kontrola:
+
+```sql
+SELECT blacklist_no, email, source, reason, removed_at
+FROM public.account_blacklist
+ORDER BY created_at DESC
+LIMIT 10;
+```
 
 ---
 
-## 2. Zobrazení inzerátu (052)
+## 2. Zbytek ze včerejška (053 / 052) — pokud zbude čas
 
-| # | Scénář | Jak | Očekávání | ✓ |
-|---|--------|-----|-----------|---|
-| V1 | View count majitel | Vlastní detail → anonymní okno → znovu jako majitel | Počet zobrazení se zvýší (dedup 24 h) | ☐ |
-| V2 | Majitel nepočítá | Majitel opakovaně otevře vlastní detail | `view_count` se **nezvyšuje** | ☐ |
+| # | Scénář | Očekávání | ✓ |
+|---|--------|-----------|---|
+| T1 | Badge **Podnikatel** | Štítek u firmy | ☐ |
+| T2 | Milník **5+** | `Aktivní inzerent · 5+` | ☐ |
+| T4 | `/uzivatel/[nickname]` | Grid aktivních | ☐ |
+| V1 | View count | Anonymní view navýší (dedup 24 h) | ☐ |
+| V2 | Majitel nepočítá | Vlastní detail `view_count` nestoupá | ☐ |
 
 ---
 
@@ -42,23 +55,19 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
-| A6 | Poptávka Práce: platné PDF/JPG; falešná přípona `.pdf` + text | Platná OK; falešná → chyba | ☐ |
-| B1 | SQL: `company_ico_verified = true` jako user | Zamítnuto (`42501`) | ☐ |
-| B2 | SQL: `payment_status = 'paid'` na vlastním postu | Zamítnuto | ☐ |
-| B3 | SQL: `renew_count + 10` | Zamítnuto | ☐ |
-| B4 | SQL: `expires_at` + 5 let bez duration | Zamítnuto | ☐ |
-| B5 | UI prodloužení v Moje inzeráty | Projde (`renew_count` +1) | ☐ |
-| D1 | `/llms.txt` s `[` / `]` v titulku | Markdown nerozbije | ☐ |
+| A6 | Poptávka Práce: PDF/JPG OK; falešné `.pdf` | Platná OK; falešná → chyba | ☐ |
+| B1–B4 | SQL RLS (ico / payment / renew / expires) | `42501` | ☐ |
+| B5 | UI prodloužení | `renew_count` +1 | ☐ |
+| D1 | `/llms.txt` s `[` / `]` v titulku | Markdown OK | ☐ |
 
-Detail tabulek: [`TO-DO_Fable.md`](./TO-DO_Fable.md) §0 Smoke A–D.
+Detail: [`TO-DO_Fable.md`](./TO-DO_Fable.md) §0 Smoke A–D.
 
 ---
 
 ## Po dokončení
 
-- [ ] Zaškrtnout hotové řádky i v [`Stav_projektu/2026-07-21.md`](../Stav_projektu/2026-07-21.md)
-- [ ] A6/B/D propsat do `TO-DO_Fable.md` (datum u ✓)
-- [ ] Krátká poznámka do nového `Stav_projektu` při ukončení dne
+- [ ] Zaškrtnout hotové řádky i ve snapshotu
+- [ ] Selhání zapsat níže (URL / nickname / konzole)
 
 ## Poznámky / selhání
 

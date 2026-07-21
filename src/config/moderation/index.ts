@@ -2,6 +2,7 @@ export {
   buildModerationSystemPrompt,
 } from "@/config/moderation/build-prompt";
 export {
+  ACCOUNT_SUSPENDED_UI,
   LISTING_AI_DISCLOSURE,
   LISTING_AI_DISCLOSURE_LABEL,
   LISTING_TERMS_PATH,
@@ -67,8 +68,7 @@ export const NSFW_NUDITY_PARTIAL_THRESHOLD = 0.8;
 export const SIGHTENGINE_FETCH_TIMEOUT_MS = 5_000;
 
 /**
- * Po N hard rejectech (text+NSFW) v 24 h — fáze 1 jen log threshold;
- * auto-suspend až fáze 2.
+ * Po N hard rejectech (text+NSFW) v 24 h → hard stop (blacklist e-mailu).
  */
 export const HARD_REJECT_AUTOBAN_THRESHOLD = 3;
 
@@ -76,3 +76,12 @@ export const HARD_REJECT_AUTOBAN_THRESHOLD = 3;
 export const HARD_REJECT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export const MODERATION_EVIDENCE_BUCKET = "moderation-evidence" as const;
+
+export {
+  ACCOUNT_BLACKLIST_REASON_AUTOMATIC,
+  ACCOUNT_BLACKLIST_SOURCE,
+  ACCOUNT_SUSPENDED_PATH,
+  HARD_STOP_EVIDENCE_RETENTION_DAYS,
+  normalizeBlacklistEmail,
+  type AccountBlacklistSource,
+} from "@/config/account-blacklist";

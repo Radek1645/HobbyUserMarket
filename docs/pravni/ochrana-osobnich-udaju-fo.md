@@ -27,6 +27,7 @@ Správcem osobních údajů je Provozovatel platformy zaPikolou.cz. Zpracovává
 | Novinky a tipy e-mailem (připravujeme) | E-mailová adresa | Souhlas (čl. 6 odst. 1 písm. a) | Souhlas můžeme uložit při registraci; obchodní sdělení zatím nezasíláme. Po spuštění do odvolání souhlasu — viz [Marketingový souhlas](/marketingovy-souhlas) |
 | Analytika webu (GA4) | Technické identifikátory, agregované údaje o chování na webu | Souhlas (čl. 6 odst. 1 písm. a) — aktivace až po souhlasu v cookie liště | Dle nastavení nástroje a do odvolání souhlasu |
 | Provozní a bezpečnostní záznamy | IP u poptávek, technické identifikátory | Oprávněný zájem (čl. 6 odst. 1 písm. f) | IP u poptávek anonymizována do 7 dnů (§3.2); logy hostingu dle poskytovatele |
+| Hard-stop / bezpečnostní evidence (CSAM gate, NSFW) | E-mail na blacklistu, evidence zamítnutí, snapshoty fotek v privátním úložišti | Oprávněný zájem / plnění právních povinností (čl. 6 odst. 1 písm. f / c) | Evidence a historie odebraných blacklist záznamů nejvýše **24 měsíců**; aktivní blacklist po dobu trvání opatření |
 
 ---
 

@@ -1,7 +1,11 @@
 /**
- * Evidence hard rejectů + counter v 24h okně (fáze 1 bez auto-suspend).
+ * Evidence hard rejectů + counter v 24h okně → hard stop (blacklist).
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
+import {
+  applyAutomaticAccountBlacklist,
+  isEmailBlacklisted,
+} from "./account-blacklist.ts";
 import {
   HARD_REJECT_AUTOBAN_THRESHOLD,
   HARD_REJECT_WINDOW_MS,
@@ -104,12 +108,13 @@ export async function recordHardRejectEvidence(
 }
 
 /**
- * Po hard rejectu spočítá hits v okně; při dosažení thresholdu zaloguje event
- * (suspend až fáze 2).
+ * Po hard rejectu spočítá hits v okně; při ≥ thresholdu blacklist + evidence event.
+ * @returns true pokud byl uplatněn hard stop (blacklist).
  */
-export async function incrementHardRejectAndMaybeLogThreshold(
+export async function incrementHardRejectAndMaybeApplyHardStop(
   userId: string,
-): Promise<void> {
+  email: string | null | undefined,
+): Promise<boolean> {
   try {
     const admin = createServiceClient();
     const windowStart = new Date(
@@ -125,25 +130,33 @@ export async function incrementHardRejectAndMaybeLogThreshold(
 
     if (error) {
       console.error("hard-reject count:", error);
-      return;
+      return false;
     }
 
     const hitCount = count ?? 0;
-    if (hitCount !== HARD_REJECT_AUTOBAN_THRESHOLD) {
-      return;
+    if (hitCount < HARD_REJECT_AUTOBAN_THRESHOLD) {
+      return false;
+    }
+
+    if (email && (await isEmailBlacklisted(email))) {
+      await applyAutomaticAccountBlacklist({ userId, email });
+      return true;
     }
 
     await recordHardRejectEvidence({
       userId,
       kind: "hard_reject_threshold_reached",
-      reason: `count=${hitCount};threshold=${HARD_REJECT_AUTOBAN_THRESHOLD};window_ms=${HARD_REJECT_WINDOW_MS}`,
+      reason: `count=${hitCount};threshold=${HARD_REJECT_AUTOBAN_THRESHOLD};window_ms=${HARD_REJECT_WINDOW_MS};blacklist=1`,
     });
 
-    console.log(
-      "hard_reject_threshold_reached:",
-      JSON.stringify({ userId, count: hitCount }),
-    );
+    const applied = await applyAutomaticAccountBlacklist({ userId, email });
+    return applied;
   } catch (error) {
     console.error("hard-reject threshold:", error);
+    return false;
   }
 }
+
+/** @deprecated Použij incrementHardRejectAndMaybeApplyHardStop. */
+export const incrementHardRejectAndMaybeLogThreshold =
+  incrementHardRejectAndMaybeApplyHardStop;

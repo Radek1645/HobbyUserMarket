@@ -7,6 +7,7 @@ import {
   MODERATION_ENABLED,
   MODERATION_MAX_QUESTIONS,
   MODERATION_TECHNICAL_UI,
+  ACCOUNT_SUSPENDED_PATH,
 } from "@/config/moderation";
 import {
   LISTING_DURATION_DEFAULT_DAYS,
@@ -514,6 +515,10 @@ export function CreateListingForm({
     }
 
     if (!moderation.ok) {
+      if (moderation.accountBlocked) {
+        window.location.assign(ACCOUNT_SUSPENDED_PATH);
+        return;
+      }
       const rejection = moderationFailureToRejection(moderation);
       if (rejection) {
         setModerationRejection(rejection);

@@ -5,6 +5,7 @@ export const POST_STATUS_REASON = {
   reports_threshold: "reports_threshold",
   moderation: "moderation",
   lifetime_max: "lifetime_max",
+  account_blacklist: "account_blacklist",
 } as const satisfies Record<PostStatusReasonCode, PostStatusReasonCode>;
 
 export const POST_STATUS_REASON_MESSAGES: Record<
@@ -17,6 +18,8 @@ export const POST_STATUS_REASON_MESSAGES: Record<
     "Inzerát byl zablokován moderátorem, protože porušuje pravidla platformy nebo zákon.",
   [POST_STATUS_REASON.lifetime_max]:
     "Inzerát dosáhl maximální doby existence (365 dní od založení) a byl automaticky ukončen.",
+  [POST_STATUS_REASON.account_blacklist]:
+    "Inzerát byl skryt, protože účet porušil podmínky platformy (hard stop).",
 };
 
 export const BLOCKED_LISTING_RECOVERY_HINT =

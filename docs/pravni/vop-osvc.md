@@ -111,7 +111,7 @@ Provozovatel může inzerát **odstranit** nebo **zablokovat** (skrýt z veřejn
 
 Provozovatel si vyhrazuje právo **zrušit automatické zablokování** i bez úpravy obsahu inzerátu, pokud vyhodnotí, že hlášení byla zjevně nedůvodná, účelová nebo koordinovaná (např. zneužití hlášení proti konkurenci).
 
-**Hard stop — CSAM a závažné zneužití:** Při pokusu nahrát nebo šířit obsah související se sexuálním zneužíváním dětí (CSAM), nebo při opakovaných pokusech obejít moderaci / nahrát zakázaný sexuální či jinak zvlášť závažný obsah, je Provozovatel oprávněn **okamžitě pozastavit nebo zrušit uživatelský účet** (včetně všech inzerátů) **bez předchozí výzvy**, a to i u běžného uživatele. Lhůta 30 dní dle odstavce níže se v těchto případech neuplatní. Provozovatel může obsah uchovat v omezené evidenci pro plnění zákonných povinností a v zákonem stanovených případech věc oznámit příslušným orgánům.
+**Hard stop — CSAM a závažné zneužití:** Při pokusu nahrát nebo šířit obsah související se sexuálním zneužíváním dětí (CSAM), nebo při opakovaných pokusech obejít moderaci / nahrát zakázaný sexuální či jinak zvlášť závažný obsah, je Provozovatel oprávněn **okamžitě pozastavit nebo zrušit uživatelský účet** (včetně všech inzerátů) **bez předchozí výzvy**, a to i u Podnikatele. Lhůta 30 dní dle odstavce níže se v těchto případech neuplatní. Provozovatel může obsah uchovat v omezené evidenci pro plnění zákonných povinností a v zákonem stanovených případech věc oznámit příslušným orgánům.
 
 **Úplné ukončení služeb Podnikateli:** Pokud se Provozovatel rozhodne zcela zrušit nebo trvale pozastavit uživatelský účet Podnikatele (nikoli pouze skrýt jednotlivý inzerát), je povinen poskytnout Podnikateli e-mailem odůvodnění tohoto rozhodnutí nejméně **30 dní** před tím, než ukončení nabude účinnosti. Lhůta 30 dní neplatí, pokud Podnikatel prokazatelně opakovaně porušuje tyto VOP nebo Pravidla inzerce, jedná protiprávně, pokud jde o CSAM či obdobně závažné porušení dle předchozího odstavce, nebo pokud okamžité zrušení účtu vyžaduje zákon či rozhodnutí dozorového úřadu.
 
@@ -147,11 +147,11 @@ Registrace osob **mladších 15 let** není dovolena. U osob mladších 15 let m
 
 ### 7.1 Přípustnost podnikatelské inzerce
 
-Platforma umožňuje inzerci fyzickým osobám i podnikatelům/právnickým osobám — zejména v kategoriích **Služby**, **Práce** a **Nemovitosti**. Uživatel je povinen při vkládání inzerátu pravdivě uvést, zda inzeruje jako **soukromá osoba**, nebo **v rámci své podnikatelské či jiné výdělečné činnosti** (dále jen „Podnikatel").
+Platforma umožňuje inzerci fyzickým osobám i podnikatelům/právnickým osobám. Uživatel je povinen při **nastavení profilu** (registraci) pravdivě uvést, zda inzeruje jako **soukromá osoba**, nebo **v rámci své podnikatelské či jiné výdělečné činnosti** (dále jen „Podnikatel").
 
 ### 7.2 Označení Podnikatele
 
-Je-li Uživatel Podnikatelem, je povinen v inzerátu uvést **obchodní firmu/název a IČO** a inzerát je viditelně označen štítkem „Podnikatel". Toto označení slouží k tomu, aby zájemce věděl, že jde o nabídku od podnikatele, a nikoliv od soukromé osoby — od čehož se mohou odvíjet odlišná práva zájemce jako spotřebitele, včetně případného práva na odstoupení od smlouvy, pokud jsou splněny zákonné podmínky. Tato práva se neuplatní při obchodu mezi dvěma soukromými osobami.
+Označí-li se Uživatel při nastavení profilu jako Podnikatel, je povinen uvést **obchodní firmu/název** a **IČO** (pokud mu bylo přiděleno). U jeho inzerátů se pak viditelně zobrazí štítek „Podnikatel". Toto označení slouží k tomu, aby zájemce věděl, že jde o nabídku od podnikatele, a nikoliv od soukromé osoby — od čehož se mohou odvíjet odlišná práva zájemce jako spotřebitele, včetně případného práva na odstoupení od smlouvy, pokud jsou splněny zákonné podmínky. Tato práva se neuplatní při obchodu mezi dvěma soukromými osobami.
 
 ### 7.3 Vztah k nařízení (EU) 2019/1150 (P2B)
 
@@ -170,7 +170,7 @@ Platforma neumožňuje Podnikatelům přímé placené ovlivňování (tzv. topo
 
 ### 7.5 Přístup k vygenerovaným datům
 
-Podnikatel má po dobu aktivního uživatelského účtu přístup k **agregovaným statistikám** interakcí u svých vlastních inzerátů (zejména k celkovému počtu zobrazení kontaktů a počtu odeslaných poptávek v klientské sekci). Podnikatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu Podnikatele jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
+Podnikatel má po dobu aktivního uživatelského účtu přístup k **agregovaným statistikám** u svých vlastních inzerátů (zejména k celkovému počtu **zobrazení inzerátu** v klientské sekci). Poptávky od zájemců se doručují e-mailem. Podnikatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu Podnikatele jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
 
 ---
 

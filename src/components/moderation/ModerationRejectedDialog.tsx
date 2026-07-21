@@ -5,6 +5,7 @@ import {
   MODERATION_REJECTION_UI,
   PROHIBITED_TOPICS,
 } from "@/config/moderation";
+import { OPERATOR_CONTACT_EMAIL } from "@/config/app";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
@@ -141,6 +142,17 @@ export function ModerationRejectedDialog({
           >
             {MODERATION_REJECTION_UI.termsLinkLabel}
           </Link>
+          .
+        </p>
+
+        <p className="mt-2 text-sm text-gray-600">
+          {MODERATION_REJECTION_UI.contactDisagreePrefix}{" "}
+          <a
+            href={`mailto:${OPERATOR_CONTACT_EMAIL}`}
+            className="font-medium text-gray-900 underline-offset-2 hover:underline"
+          >
+            {OPERATOR_CONTACT_EMAIL}
+          </a>
           .
         </p>
 

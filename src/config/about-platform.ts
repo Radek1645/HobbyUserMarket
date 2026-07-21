@@ -7,18 +7,26 @@ export const ABOUT_PLATFORM_PATH = "/co-je-zapikolou";
 export const ABOUT_PLATFORM_UI = {
   footerLinkLabel: "O platformě",
   metaTitle: `Online bazar a inzerce | ${SITE_DISPLAY_NAME}`,
-  metaDescription: `${SITE_SHORT_NAME} — online bazar a inzerce pro zboží, služby, práci, nemovitosti a akce ve vašem okolí. Neprodáváme za vás — propojujeme inzerenty a zájemce.`,
+  metaDescription: `${SITE_SHORT_NAME} — lokální inzerce s AI: z fotky a krátkého popisu připravíme inzerát, který jde dobře najít ve vyhledávačích i v okolí. Neprodáváme za vás — propojujeme lidi.`,
   pageTitle: "Co je zaPikolou?",
   lead:
-    "Jsme lokální inzertní nástěnka — místo, kde lidé ve vašem okolí nabízejí a hledají věci, služby, práci, bydlení nebo akce.",
+    "Jsme lokální inzertní nástěnka s misí: rychle propojit lidi ve vašem okolí — a připravit každý inzerát tak, aby byl srozumitelný lidem i vyhledávačům.",
   sections: [
+    {
+      title: "Proč existujeme",
+      body: "Chceme, aby nabídka z okolí byla vidět tam, kde lidé skutečně hledají — na Googlu, Seznamu i přímo u nás. Nejsme další přeplněný formulář: stačí fotka a krátký nástřel, zbytek pomůžeme dát dohromady.",
+    },
+    {
+      title: "AI inzerát připravený na organiku",
+      body: "AI z vašeho nástřelu připraví strukturovaný inzerát: výstižný nadpis, čitelný popis, parametry a texty pro vyhledávače (meta popis, popisek fotky). Cíl je jednoduchý — inzerát, který jde dobře najít organicky podle věci a lokality, ne jen při scrollování na webu. Text před publikací vždy zkontrolujete a můžete upravit.",
+    },
     {
       title: "Inzertní nástěnka, ne obchod",
       body: "zaPikolou.cz není e-shop ani zprostředkovatel obchodu. Nepřebíráme roli prodejce, kupujícího, zaměstnavatele ani pronajímatele. Inzeráty vkládají sami uživatelé a domluvu mezi sebou si řeší přímo.",
     },
     {
       title: "Co u nás najdete",
-      body: "Na platformě můžete zveřejnit nabídku nebo poptávku zboží, služeb, pracovních příležitostí, nemovitostí a událostí. Cílem je jednoduché a rychlé propojení lidí v okolí — bez složitého formuláře a s pomocí AI při psaní inzerátu.",
+      body: "Zboží, služby, práci, nemovitosti i události. Cílem je rychlé propojení lidí v okolí — bez složitého formuláře a s pomocí AI při psaní inzerátu.",
     },
     {
       title: "Kdo za obsah odpovídá",

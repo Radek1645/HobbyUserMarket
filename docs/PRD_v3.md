@@ -1,10 +1,10 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.40  
+> **Verze dokumentu:** v3.41  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`050_anonymize_inquiry_ips.sql`](../supabase/050_anonymize_inquiry_ips.sql) · [`051_posts_seo_fields.sql`](../supabase/051_posts_seo_fields.sql) · [`052_listing_views.sql`](../supabase/052_listing_views.sql) · [`053_advertiser_public.sql`](../supabase/053_advertiser_public.sql) · [`054_moderation_hard_reject_evidence.sql`](../supabase/054_moderation_hard_reject_evidence.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`050_anonymize_inquiry_ips.sql`](../supabase/050_anonymize_inquiry_ips.sql) · [`051_posts_seo_fields.sql`](../supabase/051_posts_seo_fields.sql) · [`052_listing_views.sql`](../supabase/052_listing_views.sql) · [`053_advertiser_public.sql`](../supabase/053_advertiser_public.sql) · [`054_moderation_hard_reject_evidence.sql`](../supabase/054_moderation_hard_reject_evidence.sql) · [`055_account_blacklist.sql`](../supabase/055_account_blacklist.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
 > **Datum:** 2026-07-21
 
@@ -720,6 +720,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.38 | 2026-07-20 | **SEO bible v1.7:** JSON-LD Offer.price i u negotiable (Google rich results); ne u Nabídni |
 | v3.39 | 2026-07-21 | **Odznaky zadavatele + profil + views:** badge Podnikatel (VOP §7.2), milníky 5/10/20/40 lifetime; `/uzivatel/[nickname]`; migrace **052** (`view_count`) + **053**; Metodika §8.1 |
 | v3.40 | 2026-07-21 | **NSFW / hard-hit brána před Gemini:** Sightengine nudity-2.1 + hard-hit text; evidence `moderation_hard_reject_evidence` + bucket `moderation-evidence` (migrace **054**); threshold log (suspend fáze 2); docs `cursor-prompt-nsfw-gate.md` |
+| v3.41 | 2026-07-21 | **Hard stop blacklist:** migrace **055** `account_blacklist` (e-mail, auto/manual, soft unban); 3×/24h → blacklist + skrytí inzerátů (`account_blacklist`); `/ucet-pozastaven`; `/mod/blacklist`; cron retence 730 dní |
 
 ---
 

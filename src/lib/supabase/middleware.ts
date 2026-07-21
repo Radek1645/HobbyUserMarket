@@ -1,4 +1,5 @@
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
+import { ACCOUNT_SUSPENDED_PATH } from "@/config/account-blacklist";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -6,6 +7,10 @@ const AUTH_PATHS = ["/login", "/auth/", "/api/"];
 
 function isAuthPath(pathname: string): boolean {
   return AUTH_PATHS.some((prefix) => pathname.startsWith(prefix));
+}
+
+function isAccountSuspendedPath(pathname: string): boolean {
+  return pathname === ACCOUNT_SUSPENDED_PATH;
 }
 
 export async function updateSession(request: NextRequest) {
@@ -49,6 +54,32 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (user) {
+    const email = user.email?.trim();
+    if (email && !isAccountSuspendedPath(pathname) && !isAuthPath(pathname)) {
+      const { data: blacklisted } = await supabase.rpc("is_email_blacklisted", {
+        p_email: email,
+      });
+      if (blacklisted === true) {
+        const url = request.nextUrl.clone();
+        url.pathname = ACCOUNT_SUSPENDED_PATH;
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
+    }
+
+    if (email && isAccountSuspendedPath(pathname)) {
+      const { data: blacklisted } = await supabase.rpc("is_email_blacklisted", {
+        p_email: email,
+      });
+      if (blacklisted !== true) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/";
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
+      return supabaseResponse;
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("nickname")
