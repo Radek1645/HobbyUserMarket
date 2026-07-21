@@ -9,9 +9,12 @@ export {
   MODERATION_CHECKING_UI,
   MODERATION_DEFAULT_REJECTION_REASON,
   MODERATION_GEMINI_QUOTA_ERROR,
+  MODERATION_HARD_HIT_TEXT_REASON,
+  MODERATION_NSFW_IMAGE_REASON,
   MODERATION_PREVIEW_UI,
   MODERATION_RATE_LIMIT_MESSAGE,
   MODERATION_REJECTION_UI,
+  MODERATION_SIGHTENGINE_UNAVAILABLE,
   MODERATION_TECHNICAL_ERROR,
   MODERATION_TECHNICAL_UI,
 } from "@/config/moderation/messages";
@@ -22,6 +25,11 @@ export {
   type ProhibitedTopic,
   type ProhibitedTopicId,
 } from "@/config/moderation/prohibited-topics";
+export {
+  HARD_HIT_CATEGORIES,
+  type HardHitCategory,
+  type HardHitCategoryId,
+} from "@/config/moderation/hard-hit-terms";
 
 /**
  * Volá Edge Function `moderate-listing` před uložením (create i edit).
@@ -48,3 +56,23 @@ export const MODERATION_CLIENT_MAX_ATTEMPTS = 3;
 
 /** Prodlevy mezi retry (ms) — jen pro `kind: "error"`, ne pro obsahové REJECTED. */
 export const MODERATION_CLIENT_RETRY_DELAYS_MS = [500, 1500] as const;
+
+/** Sightengine nudity-2.1 — práh pro sexual_activity / sexual_display (≈ legacy raw). */
+export const NSFW_NUDITY_RAW_THRESHOLD = 0.6;
+
+/** Sightengine nudity-2.1 — práh pro erotica (≈ legacy partial). */
+export const NSFW_NUDITY_PARTIAL_THRESHOLD = 0.8;
+
+/** Timeout Sightengine check (ms). */
+export const SIGHTENGINE_FETCH_TIMEOUT_MS = 5_000;
+
+/**
+ * Po N hard rejectech (text+NSFW) v 24 h — fáze 1 jen log threshold;
+ * auto-suspend až fáze 2.
+ */
+export const HARD_REJECT_AUTOBAN_THRESHOLD = 3;
+
+/** Rolling window pro hard-reject counter (ms). */
+export const HARD_REJECT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export const MODERATION_EVIDENCE_BUCKET = "moderation-evidence" as const;

@@ -76,6 +76,18 @@ export const MODERATION_PREVIEW_UI = {
 export const MODERATION_DEFAULT_REJECTION_REASON =
   "Inzerát obsahuje zakázaný obsah nebo porušuje pravidla platformy.";
 
+/** Hard-hit text pre-filter (před Gemini). */
+export const MODERATION_HARD_HIT_TEXT_REASON =
+  "Text inzerátu obsahuje zakázaný obsah. Upravte název nebo popis a zkuste to znovu.";
+
+/** NSFW fotka (Sightengine, před Gemini). */
+export const MODERATION_NSFW_IMAGE_REASON =
+  "Fotografie nesplňuje podmínky inzerce (nevhodný obsah). Nahrajte jiné snímky.";
+
+/** Sightengine nedostupný — fail closed, ne hard reject. */
+export const MODERATION_SIGHTENGINE_UNAVAILABLE =
+  "Kontrola fotografií teď není dostupná. Zkuste to prosím za chvíli znovu.";
+
 export const MODERATION_TECHNICAL_ERROR =
   "AI kontrola teď nefunguje. Zkuste to prosím za chvíli znovu.";
 

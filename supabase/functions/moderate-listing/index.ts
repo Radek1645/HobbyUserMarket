@@ -31,7 +31,7 @@ import {
   containsPromptInjection,
   PROMPT_INJECTION_REJECTION_REASON,
 } from "../_shared/moderation/prompt-injection-guard.ts";
-import { findProhibitedKeyword } from "../_shared/moderation/prohibited-scan.ts";
+import { findProhibitedKeyword, checkHardHitText } from "../_shared/moderation/prohibited-scan.ts";
 import { assertAiModerationRateLimit } from "../_shared/moderation/rate-limit.ts";
 import { assertModerationImagesWithinLimits } from "../_shared/moderation/assert-image-limits.ts";
 import { issueModerationApproval } from "../_shared/moderation/issue-approval.ts";
@@ -41,6 +41,23 @@ import {
   assertValidCategoryPair,
   resolveCategoryAiPrompt,
 } from "../_shared/moderation/category-prompts.ts";
+import {
+  checkImageNudity,
+  SightengineUnavailableError,
+} from "../_shared/moderation/sightengine.ts";
+import {
+  incrementHardRejectAndMaybeLogThreshold,
+  recordHardRejectEvidence,
+  uploadNsfwEvidenceImage,
+} from "../_shared/moderation/hard-reject-evidence.ts";
+
+/** CZ copy — drž sync s src/config/moderation/messages.ts (sync skript nekopíruje). */
+const HARD_HIT_TEXT_REASON =
+  "Text inzerátu obsahuje zakázaný obsah. Upravte název nebo popis a zkuste to znovu.";
+const NSFW_IMAGE_REASON =
+  "Fotografie nesplňuje podmínky inzerce (nevhodný obsah). Nahrajte jiné snímky.";
+const SIGHTENGINE_UNAVAILABLE_MESSAGE =
+  "Kontrola fotografií teď není dostupná. Zkuste to prosím za chvíli znovu.";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -94,9 +111,10 @@ function technicalErrorResponse(
 async function respondWithLog(
   userId: string,
   logCtx: ModerationLogContext,
-  body: ModerationResult & { approvalToken?: string | null },
+  body: ModerationResult & { approvalToken?: string | null; errorCode?: string },
   options?: { errorCode?: string; httpStatus?: number },
 ): Promise<Response> {
+  const errorCode = options?.errorCode ?? body.errorCode;
   await logModerationCheck({
     userId,
     intent: logCtx.intent,
@@ -107,11 +125,15 @@ async function respondWithLog(
     rejectedTopicId: body.rejectedTopicId,
     rejectionReason: body.reason,
     rejectedImageIndex: body.rejectedImageIndex,
-    errorCode: options?.errorCode,
+    errorCode,
     titlePreview: logCtx.title,
   });
 
-  return jsonResponse(body, options?.httpStatus ?? 200);
+  const { errorCode: _omit, ...rest } = body;
+  return jsonResponse(
+    errorCode ? { ...rest, errorCode } : rest,
+    options?.httpStatus ?? 200,
+  );
 }
 
 function logRejectedFromContext(
@@ -358,6 +380,87 @@ serve(async (req) => {
         { status: "REJECTED", reason },
         { errorCode: "VALIDATION_INVALID_CATEGORY", httpStatus: 400 },
       );
+    }
+
+    // --- Pre-Gemini gate: hard-hit text + NSFW fotky ---
+    const hardHit = checkHardHitText(`${title}\n${description}`);
+    if (hardHit.rejected) {
+      await recordHardRejectEvidence({
+        userId,
+        kind: "hard_hit_text",
+        matchedCategory: hardHit.matchedCategory,
+        matchedTerm: hardHit.matchedTerm,
+        reason: HARD_HIT_TEXT_REASON,
+        titleSnippet: title,
+      });
+      await incrementHardRejectAndMaybeLogThreshold(userId);
+      return respondWithLog(
+        userId,
+        logCtx,
+        {
+          status: "REJECTED",
+          reason: HARD_HIT_TEXT_REASON,
+          rejectedTopicId: hardHit.matchedCategory,
+        },
+        { errorCode: "HARD_HIT_TEXT" },
+      );
+    }
+
+    if (imagesBase64.length > 0) {
+      for (let imageIndex = 0; imageIndex < imagesBase64.length; imageIndex++) {
+        const imageBase64 = imagesBase64[imageIndex];
+        try {
+          const nudity = await checkImageNudity(imageBase64);
+          if (nudity.rejected) {
+            const storagePath = await uploadNsfwEvidenceImage(
+              userId,
+              imageBase64,
+              imageIndex,
+            );
+            await recordHardRejectEvidence({
+              userId,
+              kind: "nsfw_image",
+              reason: nudity.reason,
+              titleSnippet: title,
+              storagePath: storagePath ?? undefined,
+              imageIndex,
+            });
+            await incrementHardRejectAndMaybeLogThreshold(userId);
+            return respondWithLog(
+              userId,
+              logCtx,
+              {
+                status: "REJECTED",
+                reason: NSFW_IMAGE_REASON,
+                rejectedImageIndex: imageIndex,
+              },
+              { errorCode: "NSFW_IMAGE" },
+            );
+          }
+        } catch (nudityError) {
+          if (nudityError instanceof SightengineUnavailableError) {
+            await recordHardRejectEvidence({
+              userId,
+              kind: "sightengine_unavailable",
+              reason: nudityError.message,
+              titleSnippet: title,
+              imageIndex,
+            });
+            await logRejectedFromContext(
+              userId,
+              logCtx,
+              SIGHTENGINE_UNAVAILABLE_MESSAGE,
+              "SIGHTENGINE_UNAVAILABLE",
+            );
+            return technicalErrorResponse(
+              SIGHTENGINE_UNAVAILABLE_MESSAGE,
+              503,
+              "SIGHTENGINE_UNAVAILABLE",
+            );
+          }
+          throw nudityError;
+        }
+      }
     }
 
     const categoryAiPrompt = resolveCategoryAiPrompt(

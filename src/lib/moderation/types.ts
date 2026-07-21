@@ -58,6 +58,8 @@ export type ModerateListingResponse = {
   questions?: ModerationQuestion[];
   /** H1: token pro server-side publikaci (vydán po průchodu bezpečnostním filtrem). */
   approvalToken?: string | null;
+  /** Hard gate / technické kódy (HARD_HIT_TEXT, NSFW_IMAGE, …). */
+  errorCode?: string;
 };
 
 export type ListingModerationInput = {

@@ -324,7 +324,37 @@ npx supabase functions deploy moderate-listing
 
 | Funkce | Účel |
 |--------|------|
-| `moderate-listing` | AI kontrola inzerátu, vydání approval tokenu |
+| `moderate-listing` | AI kontrola inzerátu (+ pre-Gemini NSFW/hard-hit), vydání approval tokenu |
+
+### SQL — přehled AI / NSFW kontrol
+
+Plné SELECTY a vysvětlení tabulek: [`Metodika.md` §6.12](./Metodika.md#612-sql--přehled-kontrol-v-supabase).
+
+| Tabulka | Účel | Inkrementální ID |
+|---------|------|------------------|
+| `moderation_checks` | Log každého volání Edge Function (status, error_code, title_preview) | `log_no` |
+| `moderation_hard_reject_evidence` | Hard-hit text, NSFW fotka, Sightengine výpadek, threshold 3×/24h | `evidence_no` |
+
+```sql
+-- Posledních 50 kontrol
+SELECT log_no, created_at, status, error_code, title_preview, rejection_reason
+FROM public.moderation_checks
+ORDER BY created_at DESC
+LIMIT 50;
+
+-- Hard-hit / NSFW evidence
+SELECT evidence_no, created_at, kind, matched_category, matched_term, title_snippet, storage_path
+FROM public.moderation_hard_reject_evidence
+ORDER BY created_at DESC
+LIMIT 50;
+
+-- Souhrn za 24 h
+SELECT status, error_code, count(*) AS pocet
+FROM public.moderation_checks
+WHERE created_at >= now() - interval '24 hours'
+GROUP BY status, error_code
+ORDER BY pocet DESC;
+```
 
 ### Secrets (API klíče v cloudu)
 
@@ -332,8 +362,8 @@ Secrets jsou **jen na serveru** Edge Functions — nikdy do gitu.
 
 | Příkaz / akce | Vysvětlení | Příklad |
 |---------------|------------|---------|
-| Dashboard → Edge Functions → Secrets | Ruční nastavení v UI | `GEMINI_API_KEY`, `OPENAI_API_KEY` |
-| `npx supabase secrets set KEY=hodnota` | Nastavení secretu přes CLI | `npx supabase secrets set GEMINI_API_KEY=...` |
+| Dashboard → Edge Functions → Secrets | Ruční nastavení v UI | `GEMINI_API_KEY`, `OPENAI_API_KEY`, `SIGHTENGINE_API_USER`, `SIGHTENGINE_API_SECRET` |
+| `npx supabase secrets set KEY=hodnota` | Nastavení secretu přes CLI | `npx supabase secrets set SIGHTENGINE_API_USER=...` |
 | `npx supabase secrets list` | Vypíše názvy secretů (ne hodnoty) | — |
 
 Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, ale při problémech deploy zopakuj.

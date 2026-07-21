@@ -13,15 +13,16 @@ alwaysApply: false
 
 - **Gemini (primární):** `gemini-2.5-flash` — default v `_shared/moderation/gemini.ts`; override Supabase secretem `GEMINI_MODEL`.
 - **OpenAI (fallback):** `gpt-4o-mini` — pokud Gemini selže a je nastaven `OPENAI_API_KEY`; override `OPENAI_MODERATION_MODEL`.
-- Secrets `GEMINI_API_KEY` / `OPENAI_API_KEY` **jen** v Supabase Edge Functions secrets, ne v Next.js env ani `.env.local`.
+- Secrets `GEMINI_API_KEY` / `OPENAI_API_KEY` / `SIGHTENGINE_API_USER` / `SIGHTENGINE_API_SECRET` **jen** v Supabase Edge Functions secrets, ne v Next.js env ani `.env.local`.
 
 ## Struktura kódu
 
 - Edge Function: `supabase/functions/moderate-listing/index.ts`
+- Pre-Gemini: hard-hit (`prohibited-scan.ts` + `hard-hit-terms.ts`), NSFW (`sightengine.ts`), evidence (`hard-reject-evidence.ts`)
 - Gemini volání: `supabase/functions/_shared/moderation/gemini.ts`
 - Klient: `src/lib/moderation/moderate-listing-client.ts` → `supabase.functions.invoke()` (ne Next.js API route)
 - Feature flag: `MODERATION_ENABLED` v `src/config/moderation/index.ts`
-- Detailní docs: `docs/moderace-inzeratu.md`
+- Detailní docs: `docs/moderace-inzeratu.md`, zadání brány: `docs/cursor-prompt-nsfw-gate.md`
 
 ## Deploy pořadí
 
@@ -32,11 +33,12 @@ npm run sync:moderation
 npx supabase functions deploy moderate-listing
 ```
 
-`sync:moderation` kopíruje `prohibited-topics.ts`, generuje `constants.ts` z `app.ts` a spustí export kategorií.
+`sync:moderation` kopíruje `prohibited-topics.ts` / `hard-hit-terms.ts`, generuje `constants.ts` a spustí export kategorií.
 
 ## Co vyžaduje re-sync + re-deploy
 
 - `src/config/moderation/prohibited-topics.ts`
+- `src/config/moderation/hard-hit-terms.ts`
 - `src/config/moderation/build-prompt.ts` (+ ručně stejná změna v `supabase/functions/_shared/moderation/build-prompt.ts`)
 - `src/config/moderation/bound-user-content.ts`
 - `src/lib/moderation/prohibited-scan.ts`

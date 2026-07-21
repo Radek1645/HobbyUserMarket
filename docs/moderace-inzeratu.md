@@ -2,7 +2,7 @@
 
 Dokumentace k AI guardrailu podle PRD §5.4. Platí pro **založení** i **úpravu** inzerátu — oba flow sdílejí stejnou vrstvu.
 
-> **Stav:** AI moderace je **zapnutá** (`MODERATION_ENABLED = true`). Vyžaduje deploy Edge Function `moderate-listing` a secret `GEMINI_API_KEY` v Supabase.
+> **Stav:** AI moderace je **zapnutá** (`MODERATION_ENABLED = true`). Vyžaduje deploy Edge Function `moderate-listing` a secrety `GEMINI_API_KEY` (+ `SIGHTENGINE_API_USER` / `SIGHTENGINE_API_SECRET`) v Supabase.
 
 ---
 
@@ -12,7 +12,10 @@ Dokumentace k AI guardrailu podle PRD §5.4. Platí pro **založení** i **úpra
 Formulář (create / edit)
     → runListingModeration()          … jednotný vstup v prohlížeči
         → [vypnuto] strip kontaktů, uložení (bez tokenu → draft, nepublikuje)
-        → [zapnuto] Edge Function moderate-listing (Gemini / GPT)
+        → [zapnuto] Edge Function moderate-listing
+            → hard-hit text pre-filter (bez Gemini)
+            → Sightengine NSFW gate na fotky (bez Gemini)
+            → Gemini / GPT
             → APPROVED / NEEDS_QUESTIONS → approvalToken v odpovědi
             → REJECTED → popup ModerationRejectedDialog
             → technická chyba (503) / chyba sítě → červený alert ve formuláři (retry)
@@ -21,6 +24,7 @@ Formulář (create / edit)
         → publish_approved_post(approvalToken) → active
 ```
 
+- **Pre-Gemini brána (fáze 1):** hard-hit text + Sightengine nudity — viz [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) a [`riziko-gemini-api-zakazany-obsah.md`](./riziko-gemini-api-zakazany-obsah.md). Evidence v `moderation_hard_reject_evidence` + bucket `moderation-evidence` (migrace **054**). Není to `/mod/karantena`.
 - AI se **nevolá přes Next.js API** (riziko timeoutu na Vercel) — jen přes Supabase Edge Function z klienta.
 - **Publikaci na `active` nelze obejít** bez approval tokenu z Edge Function (migrace `027`, viz níže).
 - Seznam zakázaného obsahu je v **konfiguračních souborech**; AI prompt se z něj **generuje automaticky** (pro Gemini zkrácená varianta bez explicitních `criteria`).
@@ -41,6 +45,7 @@ Pokud AI dočasně nefunguje (kvóta, výpadek poskytovatele, chybné klíče, t
 | Cesta | Účel |
 |-------|------|
 | `src/config/moderation/prohibited-topics.ts` | **Hlavní soubor** — seznam zakázaných kategorií |
+| `src/config/moderation/hard-hit-terms.ts` | Hard-hit fráze (CSAM) — reject před Gemini |
 | `src/config/moderation/messages.ts` | Texty popupu, cesta k podmínkám inzerce |
 | `src/config/moderation/build-prompt.ts` | Sestavení system promptu pro AI ze seznamu |
 | `src/config/moderation/index.ts` | Přepínač `MODERATION_ENABLED`, rate limit |

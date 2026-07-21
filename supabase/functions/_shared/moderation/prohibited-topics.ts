@@ -35,7 +35,9 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
     criteria:
       "Nabídka nebo poptávka sexuálních služeb, erotických masáží s explicitním sexuálním kontextem, pornografického obsahu, eskort služeb, „privátů“. " +
       "Také inzeráty u zboží nebo módy, které primárně sexualizují osobu na fotografii (model v negližé na posteli, boudoir póza) místo produktu — zejména u vágního textu typu „spodní prádlo“ bez velikosti, značky a produktové fotografie (typický vzor escort návnady). " +
-      "U módy platí: spodní a intimní prádlo jen s fotkou věci a uvedenou velikostí; jinak REJECTED.",
+      "U módy platí: spodní a intimní prádlo jen s fotkou věci a uvedenou velikostí; jinak REJECTED. " +
+      "Zamítni i kódovaný sexuální obsah: „adult“ / „18+ only“ ve smyslu sexuální nabídky, „lolita“ v erotickém kontextu. " +
+      "Výjimka: běžný prodej knihy/filmu Lolita (Nabokov) nebo zboží „adult size“ / pro dospělé bez sexuálního kontextu — APPROVED.",
     keywords: ["escort", "erotika", "sex ", "porno", "privát"],
   },
   {
