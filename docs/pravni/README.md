@@ -69,10 +69,12 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 - [x] Ověřit **Supabase region** — `eu-west-1` (West EU, Ireland); zapsáno v GDPR §5.1 (2026-07-19)
 - [x] Ověřit **Vercel** Function region — `dub1` (Dublin); zapsáno v GDPR §5.1 (2026-07-19)
 - [x] **Gemini / OpenAI** — popsány v GDPR §5.1 jako přenos mimo EHP + DPA/SCC (2026-07-19)
+- [x] **Sightengine** — popsán v GDPR §5.1 (předfiltrace fotek; routing může být mimo EHP; DPA u poskytovatele) (2026-07-21)
 - [x] **Tabulka zpracovatelů** v FO i OSVC §5.1 (2026-07-19)
 - [x] Ověřit **Resend** sending region — Ireland `eu-west-1`, doména `zapikolou.cz` Verified (2026-07-19); zapsáno v GDPR §5.1
 - [x] **Resend DPA** — staženo 2026-07-20 do [`resend-dpa-signed.pdf`](./resend-dpa-signed.pdf) (DocuSign `CC958417-…`, Updated 12/31/2025). Předpodepsaná Resendem; závazná od registrace účtu — bez countersign. Zahrnuje SCC / GDPR.
-- [ ] Revize právníkem před publikací finálního GDPR textu
+- [ ] **Sightengine DPA** — podepsat / vrátit na support@sightengine.com (EU zákazník)
+- [ ] Revize právníkem před publikací finálního GDPR textu (vč. Sightengine + CSAM hard stop ve VOP/Pravidlech)
 
 Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
 
@@ -99,6 +101,7 @@ Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
 | [VOP §3](./vop-fo.md) — licence, vodoznak (volitelně), recyklace fotek | ✅ draft | vodoznak volitelný (není v plánu) · detekce recyklace ❌ |
 | [VOP §7](./vop-fo.md) — Podnikatel, IČO, štítek | ✅ draft | profil firma ✅ · badge ✅ · IČO volitelné ⚠️ |
 | [Pravidla §2.2](./podminky-inzerce.md) — seznam zakázaného obsahu | ✅ draft 1.2 | `prohibited-topics.ts` ✅ · web `/podminky-inzerce` stub ❌ |
+| [Pravidla §2.4](./podminky-inzerce.md) + [VOP §4.5](./vop-fo.md) — CSAM hard stop | ✅ draft 2026-07-21 | hard-hit text ✅ · auto-suspend účtu ❌ (fáze 2) |
 | Checkbox věku 15+ | ✅ | `RegistrationConsentFields` ✅ |
 
 ## Revize draft 1.4 (2026-07-11) — balíčky inzerce
@@ -115,6 +118,7 @@ Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
 - [ ] Vyloučení zákona č. 39/2020 Sb. (realitní zprostředkování)
 - [ ] Rozsah povinností u inzerce práce
 - [ ] Společné správcovství GA4 — zda se vztahuje na naši implementaci
+- [ ] CSAM hard stop (VOP §4.5 / Pravidla §2.4) + Sightengine v GDPR §5.1
 - [x] Checkbox věku v registračním formuláři — hotovo v kódu
 
 ## Poznámky

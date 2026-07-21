@@ -80,11 +80,13 @@ Uživatel nesmí k vlastnímu inzerátu připojit fotografie, které pořídil n
 
 ### 4.1 Automatizovaná kontrola obsahu (AI)
 
-Každý inzerát před zveřejněním prochází **automatizovanou kontrolou obsahu** pomocí systému umělé inteligence, a to včetně všech nahraných fotografií. Inzerát je zveřejněn teprve po úspěšném absolvování této kontroly. Automatizovaná kontrola posuzuje soulad se zákonem, s těmito VOP a s [Pravidly inzerce](/podminky-inzerce), zejména s aktuálním seznamem zakázaného obsahu dle čl. 4.2.
+Každý inzerát před zveřejněním prochází **automatizovanou kontrolou obsahu**, a to včetně všech nahraných fotografií. Kontrola může zahrnovat předfiltraci fotografií (např. detekce nahoty) a následné posouzení textu a fotografií systémem umělé inteligence. Inzerát je zveřejněn teprve po úspěšném absolvování této kontroly. Automatizovaná kontrola posuzuje soulad se zákonem, s těmito VOP a s [Pravidly inzerce](/podminky-inzerce), zejména s aktuálním seznamem zakázaného obsahu dle čl. 4.2.
 
 ### 4.2 Seznam zakázaného obsahu
 
 Konkrétní kategorie zakázaného nebo omezeného obsahu (např. jednotlivé druhy zboží, služeb či klíčových slov) jsou vedeny v [Pravidlech inzerce](/podminky-inzerce) mimo tento dokument. Provozovatel je oprávněn tento seznam **kdykoli aktualizovat** s okamžitou účinností — typicky v reakci na nové způsoby zneužití platformy — bez nutnosti současné změny těchto VOP. Aktuální znění je vždy dostupné na uvedeném odkazu.
+
+**Absolutní zákaz (CSAM):** Jakýkoli obsah související se sexuálním zneužíváním dětí je zakázán bez výjimky. Sankce a postup jsou v [Pravidlech inzerce](/podminky-inzerce) čl. 2.4 a v čl. 4.5 těchto VOP.
 
 ### 4.3 Lidský přezkum (God Mode)
 
@@ -109,7 +111,9 @@ Provozovatel může inzerát **odstranit** nebo **zablokovat** (skrýt z veřejn
 
 Provozovatel si vyhrazuje právo **zrušit automatické zablokování** i bez úpravy obsahu inzerátu, pokud vyhodnotí, že hlášení byla zjevně nedůvodná, účelová nebo koordinovaná (např. zneužití hlášení proti konkurenci).
 
-**Úplné ukončení služeb Podnikateli:** Pokud se Provozovatel rozhodne zcela zrušit nebo trvale pozastavit uživatelský účet Podnikatele (nikoli pouze skrýt jednotlivý inzerát), je povinen poskytnout Podnikateli e-mailem odůvodnění tohoto rozhodnutí nejméně **30 dní** před tím, než ukončení nabude účinnosti. Lhůta 30 dní neplatí, pokud Podnikatel prokazatelně opakovaně porušuje tyto VOP nebo Pravidla inzerce, jedná protiprávně, nebo pokud okamžité zrušení účtu vyžaduje zákon či rozhodnutí dozorového úřadu.
+**Hard stop — CSAM a závažné zneužití:** Při pokusu nahrát nebo šířit obsah související se sexuálním zneužíváním dětí (CSAM), nebo při opakovaných pokusech obejít moderaci / nahrát zakázaný sexuální či jinak zvlášť závažný obsah, je Provozovatel oprávněn **okamžitě pozastavit nebo zrušit uživatelský účet** (včetně všech inzerátů) **bez předchozí výzvy**, a to i u běžného uživatele. Lhůta 30 dní dle odstavce níže se v těchto případech neuplatní. Provozovatel může obsah uchovat v omezené evidenci pro plnění zákonných povinností a v zákonem stanovených případech věc oznámit příslušným orgánům.
+
+**Úplné ukončení služeb Podnikateli:** Pokud se Provozovatel rozhodne zcela zrušit nebo trvale pozastavit uživatelský účet Podnikatele (nikoli pouze skrýt jednotlivý inzerát), je povinen poskytnout Podnikateli e-mailem odůvodnění tohoto rozhodnutí nejméně **30 dní** před tím, než ukončení nabude účinnosti. Lhůta 30 dní neplatí, pokud Podnikatel prokazatelně opakovaně porušuje tyto VOP nebo Pravidla inzerce, jedná protiprávně, pokud jde o CSAM či obdobně závažné porušení dle předchozího odstavce, nebo pokud okamžité zrušení účtu vyžaduje zákon či rozhodnutí dozorového úřadu.
 
 ### 4.6 Odůvodnění opatření
 

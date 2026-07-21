@@ -66,7 +66,8 @@ Na platformě je zakázáno inzerovat zejména:
 - omamné a psychotropní látky,
 - kradené věci,
 - obsah porušující autorská práva nebo práva třetích osob,
-- obsah diskriminační, nenávistný nebo jinak protiprávní.
+- obsah diskriminační, nenávistný nebo jinak protiprávní,
+- **jakýkoli obsah související se sexuálním zneužíváním dětí (CSAM)** — viz čl. 2.4.
 
 Provozovatel si vyhrazuje právo inzerát odmítnout nebo odstranit i v dalších případech porušení [VOP](/vop) nebo zákona.
 
@@ -87,6 +88,7 @@ Následující kategorie jsou **zakázané nebo omezené** a kontroluje je autom
 | Drogy a omamné látky | Prodej, nákup nebo propagace nelegálních drog a prekurzorů |
 | Zbraně a munice | Střelné zbraně, munice, výbušniny mimo legální rámec |
 | Sexuální služby a pornografie | Escort, erotické služby, pornografie; u módy i eroticky laděné „prodeje prádla“ bez produktové fotky |
+| CSAM / sexuální zneužívání dětí | Jakýkoli text, fotografie nebo jiný obsah související se sexuálním zneužíváním dětí — **absolutní zákaz** (čl. 2.4) |
 | Lidské orgány a tkáně | Prodej orgánů nebo tkání mimo legální dárcovství |
 | Kradené věci | Vědomá nabídka kradeného zboží |
 | Padělky a nelegální repliky | Padělky prezentované jako originál |
@@ -106,6 +108,21 @@ Spodní a intimní prádlo **lze** inzerovat v kategorii **Zboží → Móda a o
 - **Fotografie** ukazuje samotné prádlo (věšák, rozložený kus, detail) — ne modela v prádle na posteli ani boudoir styl.
 - **Popis** obsahuje **velikost** a stav; doporučujeme uvést i značku.
 - Inzerát musí působit jako běžný sousedský prodej oblečení. Vágní text („spodní prádlo“ bez parametrů) v kombinaci s erotickou fotografií je považován za zakázaný obsah (sexuální služby / escort návnada).
+
+### 2.4 CSAM — absolutní zákaz (hard stop)
+
+Na platformě je **absolutně zakázáno** nahrávat, popisovat, nabízet, poptávat nebo jinak šířit obsah související se **sexuálním zneužíváním dětí** (CSAM — *Child Sexual Abuse Material*), včetně textových narážek, kódovaných výrazů a jakýchkoli souvisejících fotografií.
+
+Takový pokus:
+
+1. **nebude zveřejněn** (automatizovaná kontrola jej odmítne),
+2. může být **zaznamenán** pro účely bezpečnosti platformy a plnění zákonných povinností,
+3. opravňuje Provozovatele k **okamžitému pozastavení nebo zrušení účtu** bez předchozí výzvy (viz [VOP](/vop) §4.5),
+4. může vést k **oznámení příslušným orgánům**, pokud to vyžaduje zákon.
+
+Opakované pokusy nahrát zakázaný sexuální / NSFW obsah nebo obejít moderaci (typicky několik zamítnutí v krátkém čase) mohou rovněž vést k pozastavení nebo zrušení účtu.
+
+> **Poznámka pro revizi právníkem:** Hard stop CSAM + evidence retention vs. oznamovací povinnost; sladit s DSA / trestním právem. Technicky auto-suspend účtu = fáze 2 (zatím jen log threshold).
 
 ---
 

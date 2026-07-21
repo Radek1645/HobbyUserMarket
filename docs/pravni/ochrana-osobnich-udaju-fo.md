@@ -63,11 +63,12 @@ Pokud se u konkrétního analytického nástroje uplatní **společné správcov
 | Resend | transakční e-maily (notifikace, poptávky) | EU — Ireland (`eu-west-1`), doména `zapikolou.cz` (ověřeno v Resend dashboardu 2026-07-19); účetní/provozní údaje poskytovatele mohou být mimo EHP — DPA a SCC dle smlouvy s Resend |
 | Google | přihlášení přes Google (OAuth) | dle služby Google |
 | Google (Gemini) | automatická moderace textu a fotografií inzerátů | přenos mimo EHP (typicky USA) — DPA / SCC dle smlouvy s Google |
+| Sightengine (Kozelo SAS) | předfiltrace fotografií (detekce nahoty / nevhodného obsahu) před AI moderací | výchozí zpracování může probíhat ve více regionech (včetně mimo EHP); omezení regionu typicky Enterprise — DPA dle smlouvy se Sightengine; provozovatel: Francie |
 | OpenAI | záložní AI moderace (pokud je aktivní) | přenos mimo EHP (typicky USA) — DPA / SCC dle smlouvy s OpenAI |
 | Google | analytika webu (GA4 / GTM) — jen po souhlasu v cookie liště | dle služby Google |
 | Mapy.cz | geokódování a našeptávač lokality | CZ / EU |
 
-Odesílání e-mailů přes Resend běží v EU (`eu-west-1`). U služeb Google (včetně Gemini) a OpenAI a u účetních/provozních údajů u Resend může docházet k přenosu mimo EHP; v takovém případě se uplatní odpovídající záruky (např. standardní smluvní doložky / Data Privacy Framework) dle smluv s daným poskytovatelem. Text a fotografie inzerátu se k AI odesílají jen za účelem moderace.
+Odesílání e-mailů přes Resend běží v EU (`eu-west-1`). U služeb Google (včetně Gemini), Sightengine a OpenAI a u účetních/provozních údajů u Resend může docházet k přenosu mimo EHP; v takovém případě se uplatní odpovídající záruky (např. standardní smluvní doložky / Data Privacy Framework) dle smluv s daným poskytovatelem. Text a fotografie inzerátu se k moderaci (včetně předfiltrace fotografií) odesílají jen za tímto účelem.
 
 ---
 
