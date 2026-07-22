@@ -53,7 +53,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 - [x] `git status` — bez `.env`
 - [x] Commit `06ef2f5`
-- [ ] Push na `origin`
+- [x] Push na `origin`
 
 ---
 
@@ -63,7 +63,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [ ] Push proběhl bez chyby
+- [x] Push proběhl bez chyby
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -76,4 +76,4 @@ git push -u origin HEAD
 | Migrace + EF nasazené | ✅ |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit + push | ☐ |
+| Commit + push | ✅ |
