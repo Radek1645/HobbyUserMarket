@@ -13,8 +13,16 @@ const SIGHTENGINE_CHECK_URL = "https://api.sightengine.com/1.0/check.json";
 const SIGHTENGINE_MODEL = "nudity-2.1";
 
 export type ImageNudityCheckResult =
-  | { rejected: false; raw?: unknown }
-  | { rejected: true; reason: "nudity_raw" | "nudity_partial"; raw?: unknown };
+  | {
+      rejected: false;
+      /** Celé JSON tělo z Sightengine API. */
+      response: unknown;
+    }
+  | {
+      rejected: true;
+      reason: "nudity_raw" | "nudity_partial";
+      response: unknown;
+    };
 
 export class SightengineUnavailableError extends Error {
   constructor(message = "SIGHTENGINE_UNAVAILABLE") {
@@ -155,7 +163,7 @@ export async function checkImageNudity(
 
   const decision = evaluateNudityScores(body.nudity);
   if (decision.rejected && decision.reason) {
-    return { rejected: true, reason: decision.reason, raw: body.nudity };
+    return { rejected: true, reason: decision.reason, response: payload };
   }
-  return { rejected: false, raw: body.nudity };
+  return { rejected: false, response: payload };
 }

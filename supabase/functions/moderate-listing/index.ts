@@ -79,6 +79,14 @@ type ModerationLogContext = {
   categoryType?: string;
   subcategorySlug?: string;
   imageCount?: number;
+  /** Až 6 Sightengine odpovědí — ukládá se do moderation_checks. */
+  sightengineResponses?: unknown;
+};
+
+type SightengineResponseEntry = {
+  imageIndex: number;
+  response?: unknown;
+  error?: string;
 };
 
 function parseModerationPriceAmount(value: unknown): number | undefined {
@@ -134,6 +142,7 @@ async function respondWithLog(
     rejectedImageIndex: body.rejectedImageIndex,
     errorCode,
     titlePreview: logCtx.title,
+    sightengineResponses: logCtx.sightengineResponses,
   });
 
   const { errorCode: _omit, ...rest } = body;
@@ -159,6 +168,7 @@ function logRejectedFromContext(
     rejectionReason,
     errorCode,
     titlePreview: logCtx.title,
+    sightengineResponses: logCtx.sightengineResponses,
   });
 }
 
@@ -442,10 +452,17 @@ serve(async (req) => {
     }
 
     if (imagesBase64.length > 0) {
+      const sightengineResponses: SightengineResponseEntry[] = [];
       for (let imageIndex = 0; imageIndex < imagesBase64.length; imageIndex++) {
         const imageBase64 = imagesBase64[imageIndex];
         try {
           const nudity = await checkImageNudity(imageBase64);
+          sightengineResponses.push({
+            imageIndex,
+            response: nudity.response,
+          });
+          logCtx.sightengineResponses = sightengineResponses;
+
           if (nudity.rejected) {
             const storagePath = await uploadNsfwEvidenceImage(
               userId,
@@ -459,6 +476,7 @@ serve(async (req) => {
               titleSnippet: title,
               storagePath: storagePath ?? undefined,
               imageIndex,
+              sightengineResponses,
             });
             const accountBlocked = await incrementHardRejectAndMaybeApplyHardStop(
               userId,
@@ -478,12 +496,18 @@ serve(async (req) => {
           }
         } catch (nudityError) {
           if (nudityError instanceof SightengineUnavailableError) {
+            sightengineResponses.push({
+              imageIndex,
+              error: nudityError.message,
+            });
+            logCtx.sightengineResponses = sightengineResponses;
             await recordHardRejectEvidence({
               userId,
               kind: "sightengine_unavailable",
               reason: nudityError.message,
               titleSnippet: title,
               imageIndex,
+              sightengineResponses,
             });
             await logRejectedFromContext(
               userId,
@@ -500,6 +524,7 @@ serve(async (req) => {
           throw nudityError;
         }
       }
+      logCtx.sightengineResponses = sightengineResponses;
     }
 
     const categoryAiPrompt = resolveCategoryAiPrompt(

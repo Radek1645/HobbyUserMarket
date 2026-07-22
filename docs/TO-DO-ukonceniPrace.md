@@ -18,44 +18,42 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 1. Ověření funkčnosti
 
-- [x] Čistý průchod moderací (pozastavený inzerát → úprava → schválení)
-- [x] Hard-hit text → reject + evidence
-- [x] Lingerie → Gemini sexual_services (Sightengine jen suggestive)
-- [ ] NSFW hard fotka / 3× threshold *(volitelné, fáze 1 neblokuje)*
+- [x] Ruční blacklist hide (5) + 404 detail + pryč z přehledu
+- [x] Unban restore (5) + SoR maily (hard stop + unban), kontakt `info@`
+- [ ] Auto hard stop H3 / gate H5 *(zbývá)*
+- [ ] NSFW hard fotka / produkční smoke *(volitelné)*
 
 ---
 
 ## 2. Nasazení infrastruktury
 
-- [x] Migrace **054** — uživatel potvrdil
-- [x] Secrets Sightengine — v `supabase secrets list`
-- [x] Edge Functions — sync + deploy `moderate-listing` (i redeploy po hard-hit doplňcích)
+- [x] Migrace **056** — uživatel potvrdil
+- [x] Migrace **057** — uživatel potvrdil
+- [x] Edge Functions — sync + deploy `moderate-listing`
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
 
 ## 3. Dokumentace
 
-- [x] **Metodika** — §6.4 pre-brána, §6.12 SQL SELECTY, `*_no`
-- [x] **PRD** — v3.40
-- [x] `cursor-prompt-nsfw-gate.md`, `riziko-gemini-api-zakazany-obsah.md`
-- [x] `moderace-inzeratu.md`, `supabase-prikazy.md`
-- [x] **Stav_projektu/2026-07-21-vecer.md**
+- [x] **Metodika** — §6.4 hard stop + 057 + `SITE_OPERATOR_CONTACT_EMAIL`
+- [x] **PRD** — v3.43
+- [x] **Stav_projektu/2026-07-22.md**
 
 ---
 
 ## 4. Snapshot session — `Stav_projektu/`
 
-- [x] Soubor `Stav_projektu/2026-07-21-vecer.md`
+- [x] Soubor `Stav_projektu/2026-07-22.md`
 - [x] Řádek v [`Stav_projektu/README.md`](../Stav_projektu/README.md)
 
 ---
 
 ## 5. Git — příprava a commity
 
-- [x] `git status` — bez `.env`
-- [x] Commit `769050e`
-- [x] Push na `origin`
+- [ ] `git status` — bez `.env`
+- [ ] Commit
+- [ ] Push na `origin`
 
 ---
 
@@ -65,7 +63,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [x] Push proběhl bez chyby
+- [ ] Push proběhl bez chyby
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -78,5 +76,4 @@ git push -u origin HEAD
 | Migrace + EF nasazené | ✅ |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit na `main` | ✅ |
-| Push na `origin` | ✅ |
+| Commit + push | ☐ |

@@ -21,11 +21,21 @@ export type AccountBlacklistRow = {
   removed_reason: string | null;
 };
 
+/** Escapes `%` / `_` so PostgREST `ilike` matches the e-mail literally. */
+function escapeIlikePattern(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+export type HideListingsResult = {
+  hiddenCount: number;
+  errorCode?: string;
+};
+
 /** Skryje veřejné / pozastavené inzeráty uživatele (bez mazání). Draft a archived nechá. */
 export async function hideListingsForBlacklistedUser(
   admin: SupabaseClient,
   userId: string,
-): Promise<number> {
+): Promise<HideListingsResult> {
   const { data, error } = await admin
     .from("posts")
     .update({
@@ -39,9 +49,9 @@ export async function hideListingsForBlacklistedUser(
 
   if (error) {
     console.error("hideListingsForBlacklistedUser:", error);
-    return 0;
+    return { hiddenCount: 0, errorCode: error.code ?? "hide_failed" };
   }
-  return data?.length ?? 0;
+  return { hiddenCount: data?.length ?? 0 };
 }
 
 /**
@@ -76,14 +86,48 @@ export async function findUserIdByEmail(
   email: string,
 ): Promise<string | null> {
   const normalized = normalizeBlacklistEmail(email);
-  const { data: profile } = await admin
+  if (!normalized) return null;
+
+  const { data: exact, error: exactError } = await admin
     .from("profiles")
     .select("id")
-    .ilike("email", normalized)
+    .eq("email", normalized)
     .limit(1)
     .maybeSingle<{ id: string }>();
 
-  return profile?.id ?? null;
+  if (exactError) {
+    console.error("findUserIdByEmail eq:", exactError);
+  }
+  if (exact?.id) return exact.id;
+
+  const { data: loose, error: looseError } = await admin
+    .from("profiles")
+    .select("id")
+    .ilike("email", escapeIlikePattern(normalized))
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+
+  if (looseError) {
+    console.error("findUserIdByEmail ilike:", looseError);
+  }
+  if (loose?.id) return loose.id;
+
+  // Auth e-mail může existovat i když profiles.email chybí / nesedí.
+  try {
+    const { data: authData, error: authError } =
+      await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    if (authError) {
+      console.error("findUserIdByEmail auth.listUsers:", authError);
+      return null;
+    }
+    const match = authData.users.find(
+      (user) => normalizeBlacklistEmail(user.email ?? "") === normalized,
+    );
+    return match?.id ?? null;
+  } catch (error) {
+    console.error("findUserIdByEmail auth lookup:", error);
+    return null;
+  }
 }
 
 type ApplyBlacklistParams = {
@@ -98,13 +142,19 @@ type ApplyBlacklistParams = {
 
 /**
  * Vloží aktivní blacklist (idempotentní). Vrátí true, pokud byl nový záznam.
+ * Hide běží vždy (i při už existujícím blacklistu) — opraví dříve neskryté inzeráty.
  */
 export async function applyAccountBlacklist(
   params: ApplyBlacklistParams,
-): Promise<{ inserted: boolean; userId: string | null }> {
+): Promise<{
+  inserted: boolean;
+  userId: string | null;
+  hiddenCount: number;
+  hideErrorCode?: string;
+}> {
   const email = normalizeBlacklistEmail(params.email);
   if (!email) {
-    return { inserted: false, userId: params.userId ?? null };
+    return { inserted: false, userId: params.userId ?? null, hiddenCount: 0 };
   }
 
   const { data: existing } = await params.admin
@@ -126,7 +176,11 @@ export async function applyAccountBlacklist(
       // Race na unique index — bereme jako už blacklisted.
       if (error.code !== "23505") {
         console.error("applyAccountBlacklist insert:", error);
-        return { inserted: false, userId: params.userId ?? null };
+        return {
+          inserted: false,
+          userId: params.userId ?? null,
+          hiddenCount: 0,
+        };
       }
     } else {
       inserted = true;
@@ -137,11 +191,25 @@ export async function applyAccountBlacklist(
   if (!userId) {
     userId = await findUserIdByEmail(params.admin, email);
   }
-  if (userId) {
-    await hideListingsForBlacklistedUser(params.admin, userId);
+
+  if (!userId) {
+    console.error(
+      "applyAccountBlacklist: user not found for email, listings not hidden:",
+      email,
+    );
+    return { inserted, userId: null, hiddenCount: 0 };
   }
 
-  return { inserted, userId };
+  const hideResult = await hideListingsForBlacklistedUser(
+    params.admin,
+    userId,
+  );
+  return {
+    inserted,
+    userId,
+    hiddenCount: hideResult.hiddenCount,
+    hideErrorCode: hideResult.errorCode,
+  };
 }
 
 export async function removeFromAccountBlacklist(params: {

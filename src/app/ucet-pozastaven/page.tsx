@@ -1,7 +1,9 @@
 import { signOut } from "@/app/actions/auth";
 import { ACCOUNT_SUSPENDED_UI } from "@/config/moderation";
-import { OPERATOR_CONTACT_EMAIL } from "@/config/app";
-import { SITE_DISPLAY_NAME } from "@/config/site";
+import {
+  SITE_DISPLAY_NAME,
+  SITE_OPERATOR_CONTACT_EMAIL,
+} from "@/config/site";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,10 +21,10 @@ export default function AccountSuspendedPage() {
       <p className="mt-4 text-base text-gray-700">
         {ACCOUNT_SUSPENDED_UI.contactPrefix}{" "}
         <a
-          href={`mailto:${OPERATOR_CONTACT_EMAIL}`}
+          href={`mailto:${SITE_OPERATOR_CONTACT_EMAIL}`}
           className="font-medium text-gray-900 underline-offset-2 hover:underline"
         >
-          {OPERATOR_CONTACT_EMAIL}
+          {SITE_OPERATOR_CONTACT_EMAIL}
         </a>
         .
       </p>

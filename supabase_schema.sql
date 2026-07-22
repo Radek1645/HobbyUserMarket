@@ -1101,6 +1101,7 @@ CREATE POLICY post_images_storage_delete ON storage.objects
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 
 GRANT SELECT ON public.posts TO anon, authenticated, service_role;
+GRANT UPDATE ON public.posts TO service_role;
 GRANT INSERT, UPDATE, DELETE ON public.posts TO authenticated;
 GRANT USAGE, SELECT ON SEQUENCE public.posts_id_seq TO authenticated;
 

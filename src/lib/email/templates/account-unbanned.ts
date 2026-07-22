@@ -1,5 +1,7 @@
-import { OPERATOR_CONTACT_EMAIL } from "@/config/app";
-import { SITE_DISPLAY_NAME } from "@/config/site";
+import {
+  SITE_DISPLAY_NAME,
+  SITE_OPERATOR_CONTACT_EMAIL,
+} from "@/config/site";
 
 type BuildAccountUnbannedEmailParams = {
   homeUrl: string;
@@ -21,7 +23,7 @@ pozastavení vašeho účtu na ${SITE_DISPLAY_NAME} bylo zrušeno.
 ${note ? `Poznámka moderátora:\n${note}\n\n` : ""}Přihlášení: ${params.homeUrl}
 Moje inzeráty: ${params.myListingsUrl}
 
-Dotazy: ${OPERATOR_CONTACT_EMAIL}
+Dotazy: ${SITE_OPERATOR_CONTACT_EMAIL}
 
 ---
 ${SITE_DISPLAY_NAME}

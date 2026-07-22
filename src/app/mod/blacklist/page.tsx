@@ -24,11 +24,21 @@ const ERROR_MESSAGES: Record<string, string> = {
   admin_client: "Chybí service role klíč na serveru.",
 };
 
+const HIDE_ERROR_MESSAGES: Record<string, string> = {
+  "42501":
+    "DB odmítla UPDATE na posts (service_role). Spusťte migraci 057_service_role_posts_update.sql.",
+};
+
 type PageProps = {
   searchParams: Promise<{
     error?: string;
     added?: string;
     removed?: string;
+    already?: string;
+    hidden?: string;
+    restored?: string;
+    no_user?: string;
+    hide_error?: string;
     historie?: string;
     email_failed?: string;
   }>;
@@ -64,7 +74,26 @@ export default async function ModBlacklistPage({ searchParams }: PageProps) {
 
         {params.added === "1" ? (
           <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-            E-mail byl přidán na blacklist.
+            {params.already === "1"
+              ? "E-mail už byl na blacklistu — inzeráty jsme znovu skryli."
+              : "E-mail byl přidán na blacklist."}
+            {params.hidden != null ? (
+              <span className="mt-1 block">
+                Skryto inzerátů (active/hidden → blocked): {params.hidden}.
+              </span>
+            ) : null}
+            {params.no_user === "1" ? (
+              <span className="mt-1 block text-amber-900">
+                Účet s tímto e-mailem v profiles/auth nenalezen — blacklist platí,
+                ale žádné inzeráty se neskryly.
+              </span>
+            ) : null}
+            {params.hide_error ? (
+              <span className="mt-1 block text-amber-900">
+                {HIDE_ERROR_MESSAGES[params.hide_error] ??
+                  `Skrytí inzerátů selhalo (kód ${params.hide_error}).`}
+              </span>
+            ) : null}
             {params.email_failed === "1" ? (
               <span className="mt-1 block text-amber-900">
                 Upozornění e-mailem se nepodařilo odeslat — zkontrolujte Resend.
@@ -76,6 +105,11 @@ export default async function ModBlacklistPage({ searchParams }: PageProps) {
           <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
             E-mail byl odebrán z blacklistu. Účet i inzeráty skryté hard stopem
             jsou znovu aktivní.
+            {params.restored != null ? (
+              <span className="mt-1 block">
+                Obnoveno inzerátů: {params.restored}.
+              </span>
+            ) : null}
             {params.email_failed === "1" ? (
               <span className="mt-1 block text-amber-900">
                 Potvrzení e-mailem se nepodařilo odeslat — zkontrolujte Resend.

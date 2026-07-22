@@ -1,5 +1,7 @@
-import { OPERATOR_CONTACT_EMAIL } from "@/config/app";
-import { SITE_DISPLAY_NAME } from "@/config/site";
+import {
+  SITE_DISPLAY_NAME,
+  SITE_OPERATOR_CONTACT_EMAIL,
+} from "@/config/site";
 import type { AccountBlacklistSource } from "@/config/account-blacklist";
 
 type BuildAccountHardStopEmailParams = {
@@ -35,7 +37,7 @@ ${reasonLine}
 Právní / smluvní základ:
 VOP (§4.5 Hard stop — CSAM a závažné zneužití) a Pravidla inzerce (§2.4).
 
-Pokud jde o omyl, napište nám na ${OPERATOR_CONTACT_EMAIL} nebo použijte stížnost dle DSA:
+Pokud jde o omyl, napište nám na ${SITE_OPERATOR_CONTACT_EMAIL} nebo použijte stížnost dle DSA:
 ${params.dsaUrl}
 
 Související dokumentace: ${params.vopUrl}

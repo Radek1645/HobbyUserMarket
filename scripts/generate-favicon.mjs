@@ -66,6 +66,8 @@ await writePng(join(publicDir, "google-auth-logo-120.png"), 120, {
   rounded: false,
 });
 await writePng(join(publicDir, "favicon-96.png"), 96, { rounded: true });
+// Conventional fallback path some crawlers/browsers request (not just /favicon.ico).
+await writePng(join(publicDir, "favicon.png"), 48, { rounded: true });
 
 const png48 = await writePng(join(publicDir, "favicon-48.png"), 48, {
   rounded: true,

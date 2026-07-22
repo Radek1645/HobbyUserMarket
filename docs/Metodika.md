@@ -366,20 +366,24 @@ API vrací objekt `nudity` (model `nudity-2.1`). Kód (`sightengine.ts`) rozhodu
 
 **Nevyhodnocujeme** (i když API vrátí): `suggestive`, `very_suggestive`, `mildly_suggestive`, `none`, `suggestive_classes` (lingerie, bikini, cleavage…), `context`.
 
+**Ukládání celého JSON (migrace `056`):** u každé fotky, kterou Sightengine stihne zkontrolovat, ukládáme **celé API tělo** (ne jen `nudity`) do jednoho sloupce `sightengine_responses` (JSONB pole max. 6 položek tvaru `{ imageIndex, response? , error? }`). Zápis:
+- při NSFW reject / výpadku → `moderation_hard_reject_evidence` **i** `moderation_checks`,
+- při průchodu bránou → `moderation_checks` (spolu s APPROVED / NEEDS_QUESTIONS / pozdější REJECTED od Gemini).
+
 Důsledek: fotka osoby v prádle může mít `suggestive` / `lingerie` ≈ 0.99 a přesto **projít** Sightenginem — sémantiku (escort návnada vs. prodej věci) řeší Gemini (`sexual_services`). Hard nudity (sexuální aktivita / erotica) odřízne Sightengine před Gemini.
 
 **Evidence (migrace `054`):** tabulka `moderation_hard_reject_evidence` + privátní bucket `moderation-evidence`. Ukládá se *před* vytvořením inzerátu (v requestu jsou jen base64, ještě není `post_id`). **Nesouvisí** s `/mod/karantena` (`blocked` inzeráty z reportů).
 
-**Hard reject (1.–2.):** UI dialog — inzerát porušuje podmínky; nesouhlas → `info@zapikolou.cz` (`OPERATOR_CONTACT_EMAIL`). Evidence + counter.
+**Hard reject (1.–2.):** UI dialog — inzerát porušuje podmínky; nesouhlas → `info@zapikolou.cz` (`SITE_OPERATOR_CONTACT_EMAIL`, ne osobní gmail z env). Evidence + counter.
 
-**Hard stop (3× / 24 h):** migrace **`055`** — tabulka `account_blacklist` (klíč = normalizovaný e-mail, `source` = `automatic` | `manual`, soft unban přes `removed_at`).
+**Hard stop (3× / 24 h):** migrace **`055`** — tabulka `account_blacklist` (klíč = normalizovaný e-mail, `source` = `automatic` | `manual`, soft unban přes `removed_at`). Skrytí/obnova inzerátů vyžaduje **`057`** (`GRANT UPDATE ON posts TO service_role`) — bez toho hide tiše spadne `42501`.
 
 | Akce | Chování |
 |------|---------|
 | Insert blacklist | Edge při 3. hitu (`3_hard_rejects_24h`) nebo staff v `/mod/blacklist` |
-| Skrytí inzerátů | `active` / `hidden` → `blocked` + `status_reason_code = account_blacklist` (bez mazání; draft/archived nechá) |
+| Skrytí inzerátů | `active` / `hidden` → `blocked` + `status_reason_code = account_blacklist` (bez mazání; draft/archived nechá); UI hlásí počet / chybu hide |
 | Gate | Middleware + `is_email_blacklisted()` → `/ucet-pozastaven`; Edge odmítne `ACCOUNT_BLACKLISTED` |
-| E-mail (SoR) | Při **novém** hard stopu i při unbanu (Resend). Auto-ban: Edge → `POST /api/internal/notify-account-hard-stop` (`CRON_SECRET`). Ruční: server action. |
+| E-mail (SoR) | Kontakt vždy `info@…`. Při **novém** hard stopu i při unbanu (Resend). Auto-ban: Edge → `POST /api/internal/notify-account-hard-stop` (`CRON_SECRET`). Ruční: server action. |
 | Odebrání z blacklistu (unban) | Soft remove + důvod + **obnova inzerátů** + e-mail — viz níže |
 | Retence | Cron `/api/cron/purge-hard-stop-evidence` — evidence + snapshoty + *historie* blacklistu po **730 dnech**; aktivní blacklist se nemaže |
 
@@ -513,9 +517,10 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 
 | Tabulka | Co obsahuje | Migrace | Inkrementální ID |
 |---------|-------------|---------|------------------|
-| `moderation_checks` | Každé volání `moderate-listing` (APPROVED / REJECTED / NEEDS_QUESTIONS) + `error_code` | `028` | **`log_no`** (PK) |
-| `moderation_hard_reject_evidence` | Hard-hit text, NSFW fotka, výpadek Sightengine, threshold 3×/24h | `054` | **`evidence_no`** (+ UUID `id`) |
+| `moderation_checks` | Každé volání `moderate-listing` + volitelně `sightengine_responses` | `028` / `056` | **`log_no`** (PK) |
+| `moderation_hard_reject_evidence` | Hard-hit / NSFW / Sightengine výpadek / threshold; `sightengine_responses` | `054` / `056` | **`evidence_no`** (+ UUID `id`) |
 | `account_blacklist` | Hard stop podle e-mailu (auto/manual), soft unban | `055` | **`blacklist_no`** (+ UUID `id`) |
+| *(grants)* `posts` UPDATE pro `service_role` | Hide/restore při hard stopu | `057` | — |
 | Storage bucket `moderation-evidence` | Snapshoty NSFW fotek (privátní, jen service_role) | `054` | — |
 
 **Inkrementální ID:** stejně jako u `reports.report_no` — v Table Editoru / SQL hledej podle `log_no` / `evidence_no` (1, 2, 3…), ne podle UUID. UUID zůstává technický identifikátor.
@@ -531,6 +536,7 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 | `error_code` | Např. `HARD_HIT_TEXT`, `NSFW_IMAGE`, `SIGHTENGINE_UNAVAILABLE`, `RATE_LIMIT`… |
 | `rejection_reason` | Text důvodu (pokud REJECTED) |
 | `title_preview` | Zkrácený název pro orientaci (ne plný popis) |
+| `sightengine_responses` | JSONB pole až 6 Sightengine odpovědí (`056`) |
 
 #### Sloupce `moderation_hard_reject_evidence`
 
@@ -544,6 +550,7 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 | `matched_category` / `matched_term` | U textu: kategorie + normalizovaný token (ne plný CSAM text) |
 | `title_snippet` | Krátký náhled názvu |
 | `storage_path` | Cesta ve bucketu `moderation-evidence` (u NSFW fotky) |
+| `sightengine_responses` | JSONB pole až 6 odpovědí API (`056`) |
 
 **Table Editor:** Supabase → Table Editor → `moderation_checks` / `moderation_hard_reject_evidence` (řazení podle `created_at` DESC nebo `log_no` / `evidence_no` DESC).  
 **SQL Editor:** níže — spouštěj jako admin/service (RLS u evidence/checks povoluje SELECT i moderátorům přes app JWT; v Dashboard SQL Editoru obvykle běží s vyššími právy).

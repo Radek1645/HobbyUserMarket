@@ -11,6 +11,7 @@ export type ModListingSummary = {
   createdAt: string;
   updatedAt: string;
   reportCount: number;
+  viewCount: number;
 };
 
 export type ModHiddenComment = {
@@ -58,7 +59,9 @@ export async function loadBlockedListings(): Promise<ModListingSummary[]> {
   const supabase = await createClient();
   const { data: posts, error } = await supabase
     .from("posts")
-    .select("id, title, slug, status, status_reason_code, created_at, updated_at")
+    .select(
+      "id, title, slug, status, status_reason_code, created_at, updated_at, view_count",
+    )
     .eq("status", POST_STATUS.blocked)
     .order("updated_at", { ascending: false })
     .returns<
@@ -70,6 +73,7 @@ export async function loadBlockedListings(): Promise<ModListingSummary[]> {
         status_reason_code: PostStatusReasonCode | null;
         created_at: string;
         updated_at: string;
+        view_count: number | null;
       }>
     >();
 
@@ -86,6 +90,7 @@ export async function loadBlockedListings(): Promise<ModListingSummary[]> {
     createdAt: post.created_at,
     updatedAt: post.updated_at,
     reportCount: reportCounts.get(post.id) ?? 0,
+    viewCount: post.view_count ?? 0,
   }));
 }
 
@@ -96,7 +101,9 @@ export async function loadModListings(params: {
   const supabase = await createClient();
   let query = supabase
     .from("posts")
-    .select("id, title, slug, status, status_reason_code, created_at, updated_at")
+    .select(
+      "id, title, slug, status, status_reason_code, created_at, updated_at, view_count",
+    )
     .neq("status", POST_STATUS.draft)
     .order("updated_at", { ascending: false })
     .limit(params.limit ?? 100);
@@ -114,6 +121,7 @@ export async function loadModListings(params: {
       status_reason_code: PostStatusReasonCode | null;
       created_at: string;
       updated_at: string;
+      view_count: number | null;
     }>
   >();
 
@@ -130,6 +138,7 @@ export async function loadModListings(params: {
     createdAt: post.created_at,
     updatedAt: post.updated_at,
     reportCount: reportCounts.get(post.id) ?? 0,
+    viewCount: post.view_count ?? 0,
   }));
 }
 

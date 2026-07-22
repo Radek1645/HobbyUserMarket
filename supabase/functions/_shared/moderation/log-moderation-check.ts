@@ -14,6 +14,8 @@ export type ModerationCheckLog = {
   rejectedImageIndex?: number;
   errorCode?: string;
   titlePreview?: string;
+  /** Až 6 Sightengine odpovědí v jednom poli. */
+  sightengineResponses?: unknown;
 };
 
 function truncatePreview(text: string, max = 120): string {
@@ -49,6 +51,7 @@ export async function logModerationCheck(
     title_preview: entry.titlePreview
       ? truncatePreview(entry.titlePreview)
       : null,
+    sightengine_responses: entry.sightengineResponses ?? null,
   });
 
   if (error) {

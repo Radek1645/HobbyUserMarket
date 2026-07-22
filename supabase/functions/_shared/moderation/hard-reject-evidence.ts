@@ -27,6 +27,8 @@ export type RecordHardRejectEvidenceParams = {
   titleSnippet?: string;
   storagePath?: string;
   imageIndex?: number;
+  /** Až 6 Sightengine odpovědí v jednom poli. */
+  sightengineResponses?: unknown;
 };
 
 function createServiceClient() {
@@ -97,6 +99,7 @@ export async function recordHardRejectEvidence(
         : null,
       storage_path: params.storagePath ?? null,
       image_index: params.imageIndex ?? null,
+      sightengine_responses: params.sightengineResponses ?? null,
     });
 
     if (error) {

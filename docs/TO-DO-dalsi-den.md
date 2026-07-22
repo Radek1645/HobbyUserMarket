@@ -2,7 +2,7 @@
 
 > **Datum plánu:** 2026-07-21 večer → testovat **2026-07-22**  
 > **Po:** hard stop blacklist (migrace **055**), Edge `moderate-listing`, e-maily SoR, cron retence  
-> **PRD:** v3.41 · snapshot [`Stav_projektu/2026-07-21-noc.md`](../Stav_projektu/2026-07-21-noc.md)
+> **PRD:** v3.43 · snapshot [`Stav_projektu/2026-07-22.md`](../Stav_projektu/2026-07-22.md) · migrace **056–057**
 
 Zaškrtávej `[x]` přímo v tomto souboru.
 
@@ -23,10 +23,10 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 | H1 | Hard reject hláška | Inzerát s hard-hit textem (1×) | Dialog: porušení podmínek + kontakt `info@…`; účet dál funguje | ☐ |
 | H2 | NSFW reject | Fotka nad prahem (nebo 2. hard-hit) | Reject + evidence; stále bez blacklistu | ☐ |
 | H3 | Auto hard stop 3×/24h | 3. hard reject na test účtu | Redirect `/ucet-pozastaven`; řádek v `account_blacklist` (`automatic`); aktivní inzeráty `blocked` + `account_blacklist` | ☐ |
-| H4 | E-mail hard stop | Po H3 (nebo ruční add) | Mail „Účet … byl pozastaven“ (Resend / schránka) | ☐ |
+| H4 | E-mail hard stop | Po H3 (nebo ruční add) | Mail „Účet … byl pozastaven“ (Resend / schránka) | ☑ localhost |
 | H5 | Gate | Přihlášený blacklisted → jiná URL | Redirect na `/ucet-pozastaven`; odhlášení funguje | ☐ |
-| H6 | Unban + obnova | `/mod/blacklist` → Odebrat + důvod | Účet OK; inzeráty z hard stopu znovu `active`; mail o obnově | ☐ |
-| H7 | Ruční blacklist | Staff přidá cizí e-mail + důvod | `source=manual`; stejný gate + mail | ☐ |
+| H6 | Unban + obnova | `/mod/blacklist` → Odebrat + důvod | Účet OK; inzeráty z hard stopu znovu `active`; mail o obnově | ☑ localhost |
+| H7 | Ruční blacklist | Staff přidá cizí e-mail + důvod | `source=manual`; stejný gate + mail | ☑ localhost (hide 5 / restore 5 po 057) |
 
 SQL rychlá kontrola:
 

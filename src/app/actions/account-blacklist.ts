@@ -25,6 +25,15 @@ function requireStaff() {
   });
 }
 
+function blacklistRedirect(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue;
+    query.set(key, String(value));
+  }
+  redirect(`/mod/blacklist?${query.toString()}`);
+}
+
 export async function adminAddToBlacklist(formData: FormData) {
   const staff = await requireStaff();
   const emailRaw = String(formData.get("email") ?? "");
@@ -43,13 +52,14 @@ export async function adminAddToBlacklist(formData: FormData) {
     redirect("/mod/blacklist?error=admin_client");
   }
 
-  const { inserted, userId } = await applyAccountBlacklist({
-    admin: adminResult.client,
-    email,
-    reason: reason.slice(0, 500),
-    source: ACCOUNT_BLACKLIST_SOURCE.manual,
-    createdBy: staff.id,
-  });
+  const { inserted, userId, hiddenCount, hideErrorCode } =
+    await applyAccountBlacklist({
+      admin: adminResult.client,
+      email,
+      reason: reason.slice(0, 500),
+      source: ACCOUNT_BLACKLIST_SOURCE.manual,
+      createdBy: staff.id,
+    });
 
   if (inserted) {
     const emailSent = await notifyAccountHardStop({
@@ -58,14 +68,23 @@ export async function adminAddToBlacklist(formData: FormData) {
       reason: reason.slice(0, 500),
       userId,
     });
-    redirect(
-      emailSent
-        ? "/mod/blacklist?added=1"
-        : "/mod/blacklist?added=1&email_failed=1",
-    );
+    blacklistRedirect({
+      added: 1,
+      hidden: hiddenCount,
+      no_user: userId ? undefined : 1,
+      hide_error: hideErrorCode,
+      email_failed: emailSent ? undefined : 1,
+    });
   }
 
-  redirect("/mod/blacklist?error=already_listed");
+  // Už na listu — hide stejně proběhl (oprava dříve neskrytých inzerátů).
+  blacklistRedirect({
+    added: 1,
+    already: 1,
+    hidden: hiddenCount,
+    no_user: userId ? undefined : 1,
+    hide_error: hideErrorCode,
+  });
 }
 
 export async function adminRemoveFromBlacklist(formData: FormData) {
@@ -102,11 +121,11 @@ export async function adminRemoveFromBlacklist(formData: FormData) {
     userId: result.userId,
   });
 
-  redirect(
-    emailSent
-      ? "/mod/blacklist?removed=1"
-      : "/mod/blacklist?removed=1&email_failed=1",
-  );
+  blacklistRedirect({
+    removed: 1,
+    restored: result.restoredListings,
+    email_failed: emailSent ? undefined : 1,
+  });
 }
 
 export async function loadAccountBlacklist(params?: {
