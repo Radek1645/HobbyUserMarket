@@ -62,7 +62,9 @@ Formulář (název, popis, kategorie, cena, fotky…)
 | `src/lib/moderation/parse-listing-description.ts` | Parsování uloženého popisu na úvod + Parametry |
 | `src/lib/moderation/append-question-answers.ts` | Sloučení odpovědí z dotazníku do popisu |
 | `src/lib/moderation/format-question-answers.ts` | `paramLabel`, zkrácení otázek, formát km/Kč/m² |
-| `src/components/moderation/ModerationPreviewDialog.tsx` | UI náhledu, dotazník, počítadlo znaků |
+| `src/components/moderation/ModerationPreviewDialog.tsx` | UI náhledu, dotazník, počítadlo znaků, kvalita inzerátu |
+| `src/config/listing-quality.ts` | Rubric a copy skóre kvality |
+| `src/lib/moderation/listing-quality-score.ts` | Deterministický výpočet skóre + tip |
 | `src/components/listing/ListingDescription.tsx` | Zobrazení úvod + Parametry na detailu inzerátu |
 | `src/components/listing/CreateListingForm.tsx` | Orchestrace celého flow při Publikovat / Uložit |
 
@@ -232,8 +234,22 @@ Krátké potvrzení „Inzerát je v pořádku“ → tlačítko **Pokračovat**
 |-------|---------|
 | Název | Editovatelný (`cleanedTitle`) |
 | Popis | Editovatelná `textarea` (`cleanedDescription` z AI) |
-| Dotazník | Zobrazí se jen u `NEEDS_QUESTIONS`; všechny otázky **povinné** |
+| **Kvalita inzerátu** | Deterministické % vedle labelu popisu + max. 1 tip (fotka / odpovědi / doplnění). Soft nudge — neblokuje publikaci. Live přepočet při odpovědích a úpravě textu. |
+| Dotazník | Zobrazí se jen u `NEEDS_QUESTIONS`; odpovědi **volitelné** (prázdné nezdrží publikaci, ale snižují skóre) |
 | Počítadlo znaků | Počítá finální popis včetně odpovědí |
+
+#### Kvalita inzerátu (score)
+
+Nejde o predikci prodeje — jen **úplnost a připravenost** textu po hydrataci.
+
+- Rubric: [`src/config/listing-quality.ts`](../src/config/listing-quality.ts)
+- Výpočet: [`src/lib/moderation/listing-quality-score.ts`](../src/lib/moderation/listing-quality-score.ts)
+- Signály: fotky (0 fotek → strop 25 %), struktura popisu (úvod + Parametry), zodpovězené otázky, meta description / image alt
+- Tip u nižšího skóre může scrollovat na `#improve-listing` („Vylepšete svůj inzerát“)
+
+#### SEO při slabém zadání
+
+AI nesmí vymýšlet fakta. Chybí-li kritická data → `NEEDS_QUESTIONS`. Meta title skládá kód (`buildListingMetaTitle`); meta description má fallback AI → úvod popisu → `title — lokalita` (`resolveListingMetaDescription`). Slabý vstup = nižší kvalita + tipy, ne hard block publikace.
 
 **Tři akce:**
 

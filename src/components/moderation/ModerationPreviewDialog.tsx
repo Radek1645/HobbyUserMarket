@@ -2,6 +2,11 @@
 
 import { LISTING_DESCRIPTION_MAX_LENGTH } from "@/config/app";
 import {
+  IMPROVE_LISTING_SECTION_ID,
+  LISTING_QUALITY_UI,
+  getListingQualityScoreClass,
+} from "@/config/listing-quality";
+import {
   LISTING_IMAGE_ALT_MAX_LENGTH,
   LISTING_META_DESCRIPTION_MAX_LENGTH,
 } from "@/config/listing-seo";
@@ -11,6 +16,7 @@ import {
   listingFormSecondaryButtonClass,
 } from "@/config/listing-form-ui";
 import { appendQuestionAnswersToDescription } from "@/lib/moderation/append-question-answers";
+import { computeListingQualityScore } from "@/lib/moderation/listing-quality-score";
 import type { ModerationQuestion } from "@/lib/moderation/types";
 import { ChevronDown, Info, Loader2, Pencil } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -23,6 +29,8 @@ export type ModerationPreviewState = {
   metaDescription?: string;
   imageAlt?: string;
   questions: ModerationQuestion[];
+  /** Počet fotek ve formuláři v momentě AI kontroly. */
+  imageCount: number;
 };
 
 type ModerationPreviewDialogProps = {
@@ -163,6 +171,26 @@ export function ModerationPreviewDialog({
     [aiDescription, visibleQuestions, questionAnswers],
   );
 
+  const quality = useMemo(
+    () =>
+      computeListingQualityScore({
+        imageCount: preview?.imageCount ?? 0,
+        description: projectedDescription,
+        metaDescription,
+        imageAlt,
+        questions: visibleQuestions,
+        questionAnswers,
+      }),
+    [
+      preview?.imageCount,
+      projectedDescription,
+      metaDescription,
+      imageAlt,
+      visibleQuestions,
+      questionAnswers,
+    ],
+  );
+
   const descriptionOverLimit =
     projectedDescription.length > LISTING_DESCRIPTION_MAX_LENGTH;
 
@@ -176,6 +204,12 @@ export function ModerationPreviewDialog({
       imageAlt: imageAlt.trim() || undefined,
       questionAnswers,
     });
+  }
+
+  function scrollToImproveSection() {
+    document
+      .getElementById(IMPROVE_LISTING_SECTION_ID)
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function toggleSeoEditing() {
@@ -264,12 +298,48 @@ export function ModerationPreviewDialog({
           </div>
 
           <div>
-            <label
-              htmlFor={descriptionId}
-              className="block text-sm font-semibold text-neutral-900"
-            >
-              {MODERATION_PREVIEW_UI.descriptionLabel}
-            </label>
+            <div className="flex items-baseline justify-between gap-3">
+              <label
+                htmlFor={descriptionId}
+                className="min-w-0 text-sm font-semibold text-neutral-900"
+              >
+                {MODERATION_PREVIEW_UI.descriptionLabel}
+              </label>
+              <p
+                className={[
+                  "shrink-0 text-xs font-semibold tabular-nums",
+                  getListingQualityScoreClass(quality.band),
+                ].join(" ")}
+                aria-label={LISTING_QUALITY_UI.scoreAriaLabel(quality.score)}
+              >
+                {LISTING_QUALITY_UI.scoreLabel} {quality.score}&nbsp;%
+              </p>
+            </div>
+            {quality.tip ? (
+              quality.tipScrollsToImprove && visibleQuestions.length > 0 ? (
+                <button
+                  type="button"
+                  disabled={publishing}
+                  onClick={scrollToImproveSection}
+                  aria-label={LISTING_QUALITY_UI.scrollToImproveAriaLabel}
+                  className={[
+                    "mt-1 text-left text-xs leading-snug underline-offset-2 transition hover:underline disabled:opacity-60",
+                    getListingQualityScoreClass(quality.band),
+                  ].join(" ")}
+                >
+                  {quality.tip}
+                </button>
+              ) : (
+                <p
+                  className={[
+                    "mt-1 text-xs leading-snug",
+                    getListingQualityScoreClass(quality.band),
+                  ].join(" ")}
+                >
+                  {quality.tip}
+                </p>
+              )
+            ) : null}
             <textarea
               id={descriptionId}
               value={aiDescription}
@@ -429,7 +499,10 @@ export function ModerationPreviewDialog({
           ) : null}
 
           {visibleQuestions.length > 0 ? (
-            <fieldset className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+            <fieldset
+              id={IMPROVE_LISTING_SECTION_ID}
+              className="scroll-mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4"
+            >
               <legend className="px-1 text-sm font-semibold text-neutral-900">
                 {MODERATION_PREVIEW_UI.questionsHeading}
               </legend>

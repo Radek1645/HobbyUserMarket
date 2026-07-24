@@ -585,6 +585,7 @@ export function CreateListingForm({
       metaDescription: moderation.metaDescription,
       imageAlt: moderation.imageAlt,
       questions: moderation.questions ?? [],
+      imageCount: moderationImages?.imagesBase64.length ?? 0,
     });
     setModerationApprovedOpen(true);
   }

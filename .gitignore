@@ -35,6 +35,11 @@ yarn-error.log*
 # slovní popis projektu (lokálně)
 /description_projekt/
 
+# Interní / lokální dokumenty — ne do gitu (logy, osobní drafty, exporty)
+/docs/_local/
+/docs/LinkendIn/
+/docs/Vercel_logy/
+
 # API keys (nikdy do gitu)
 ../Key/
 client_secret_*.json
