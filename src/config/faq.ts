@@ -30,7 +30,7 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
     id: "kontakt",
     question: "Jak funguje kontakt na inzerenta?",
     answer:
-      "Telefon ani e-mail v inzerátu neuvidíte hned. Nejdřív se přihlaste a klikněte na „Zobrazit kontakt“ — teprve pak se údaje odhalí. Druhá cesta je poptávka přes formulář na detailu: zpráva přijde inzerentovi e-mailem, vy si mezi sebou domluvíte detaily. Chat na webu nemáme.",
+      "Kontakt (telefon a e-mail) schováváme kvůli ochraně soukromí — aby inzerenty nezahltila spam, roboti ani náhodní sběrači čísel. Údaje uvidíte až po přihlášení a kliknutí na „Zobrazit kontakt“. Druhá cesta je poptávka přes formulář na detailu: zpráva přijde inzerentovi e-mailem a detaily si domluvíte mezi sebou.",
   },
   {
     id: "v-cem-jine",
