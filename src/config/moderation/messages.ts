@@ -15,12 +15,12 @@ export const LISTING_AI_DISCLOSURE = {
 export const LISTING_AI_DISCLOSURE_LABEL = LISTING_AI_DISCLOSURE.paramLabel;
 
 export const MODERATION_REJECTION_UI = {
-  title: "Inzerát porušuje podmínky platformy",
+  title: "Inzerát porušuje podmínky webu",
   intro:
     "Obsah nelze publikovat. Upravte název, popis nebo fotografie tak, aby odpovídaly pravidlům lokálního tržiště.",
   termsLinkLabel: "Podmínky inzerce",
   closeLabel: "Rozumím, upravím inzerát",
-  summaryHeading: "Na platformě není dovoleno mimo jiné:",
+  summaryHeading: "Na webu není dovoleno mimo jiné:",
   contactDisagreePrefix: "Pokud s rozhodnutím nesouhlasíte, napište nám na",
 } as const;
 
@@ -83,15 +83,15 @@ export const MODERATION_PREVIEW_UI = {
 } as const;
 
 export const MODERATION_DEFAULT_REJECTION_REASON =
-  "Inzerát obsahuje zakázaný obsah nebo porušuje pravidla platformy.";
+  "Inzerát obsahuje zakázaný obsah nebo porušuje pravidla webu.";
 
 /** Hard-hit text pre-filter (před Gemini). */
 export const MODERATION_HARD_HIT_TEXT_REASON =
-  "Text inzerátu porušuje podmínky platformy. Upravte název nebo popis. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
+  "Text inzerátu porušuje podmínky webu. Upravte název nebo popis. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
 
 /** NSFW fotka (Sightengine, před Gemini). */
 export const MODERATION_NSFW_IMAGE_REASON =
-  "Fotografie porušuje podmínky platformy (nevhodný obsah). Nahrajte jiné snímky. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
+  "Fotografie porušuje podmínky webu (nevhodný obsah). Nahrajte jiné snímky. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
 
 /** Sightengine nedostupný — fail closed, ne hard reject. */
 export const MODERATION_SIGHTENGINE_UNAVAILABLE =

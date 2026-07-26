@@ -38,7 +38,7 @@ export const PROMPT_INJECTION_REJECTION_REASON =
   "Text inzerátu obsahuje neplatný obsah. Upravte název nebo popis a zkuste to znovu.";
 
 export const PROHIBITED_OUTPUT_REJECTION_REASON =
-  "Navržený text porušuje pravidla platformy. Upravte obsah a zkuste to znovu.";
+  "Navržený text porušuje pravidla webu. Upravte obsah a zkuste to znovu.";
 
 export function containsPromptInjection(text: string): boolean {
   const normalized = text.trim();

@@ -278,8 +278,10 @@ Flow v `appendQuestionAnswersToDescription()`:
 |---------|-------------------------|
 | Cena | `8000` → `8 000 Kč` |
 | Nájezd | `120000` → `120 000 km` |
+| Hmotnost | `12.5` → `12,5 kg` |
 | Plocha | `65` → `65 m²` |
 | Rok / STK | `2016` beze změny |
+| Poslední servis (auta-moto) | datum beze změny jednotky |
 
 Odpovědi z dotazníku se **nepersistují do samostatné tabulky** — jsou součástí sloupce `posts.description`.
 
@@ -320,7 +322,7 @@ Každá kategorie může mít `aiPrompt` na úrovni celé kategorie; podkategori
       slug: "auta-moto",
       label: "Auta a moto",
       aiPrompt:
-        "Úvod + Parametry (rok, nájezd, motorizace, STK…). Na cenu se neptej…",
+        "Úvod + Parametry (rok, nájezd, STK, poslední servis…). Na cenu se neptej…",
     },
   ],
 }

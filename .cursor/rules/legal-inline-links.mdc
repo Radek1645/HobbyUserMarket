@@ -1,0 +1,14 @@
+---
+description: Zmínky právních dokumentů v UI musí být odkazy
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Právní dokumenty v UI copy
+
+Když user-facing text konkrétně jmenuje VOP, Podmínky inzerce, Zásady ochrany osobních údajů / GDPR nebo Balíčky/Limity inzerce, použij odkaz — ne holý text.
+
+- Fráze: `src/config/legal-inline-links.ts`
+- Render: `<LegalLinkedText text="…" />`
+- Nové skloňování přidej do configu (delší fráze dřív v seznamu není nutné — řadí se podle délky)
+- JSON-LD / e-maily / plaintext: bez HTML odkazů

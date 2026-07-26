@@ -6,6 +6,7 @@ import {
   CREATE_LISTING_GUIDE_PATH,
   CREATE_LISTING_GUIDE_UI,
 } from "@/config/create-listing-guide";
+import { FAQ_PATH, FAQ_UI } from "@/config/faq";
 import {
   COOKIES_PATH,
   DSA_CONTACT_PATH,
@@ -64,6 +65,7 @@ export const FOOTER_ABOUT_LINKS = [
     href: CREATE_LISTING_GUIDE_PATH,
     label: CREATE_LISTING_GUIDE_UI.footerLinkLabel,
   },
+  { href: FAQ_PATH, label: FAQ_UI.footerLinkLabel },
   {
     href: LLMS_TXT_PATH,
     label: LLMS_TXT_UI.footerLinkLabel,

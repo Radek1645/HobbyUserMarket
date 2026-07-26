@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.43  
+> **Verze dokumentu:** v3.45  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`055_account_blacklist.sql`](../supabase/055_account_blacklist.sql) · [`056_sightengine_responses.sql`](../supabase/056_sightengine_responses.sql) · [`057_service_role_posts_update.sql`](../supabase/057_service_role_posts_update.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`058_moderation_category_suggestion.sql`](../supabase/058_moderation_category_suggestion.sql) · [`059_audit_events.sql`](../supabase/059_audit_events.sql) · [`060_fix_audit_status_cast.sql`](../supabase/060_fix_audit_status_cast.sql) · [`061_moderator_notes.sql`](../supabase/061_moderator_notes.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-22
+> **Datum:** 2026-07-26
 
 ---
 
@@ -440,8 +440,8 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * **Footer — globální dostupnost:** Patička je součástí `AppShell` a zobrazuje se na **všech veřejných i autentizovaných stránkách** (včetně `/mod/*`). Tři sloupce (`src/config/footer.ts`):
     * **Dokumenty:** VOP, Podmínky inzerce, Marketingový souhlas, Limity/Balíčky inzerce, Nahlásit (`/nahlasit`)
     * **Kontakt:** Provozovatel webu (`/kontakt`)
-    * **Co je zaPikolou?:** O platformě (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`)
-    * FAQ (`/faq`) — plánováno; accordion stránka odvozená z VOP (viz §11.3)
+    * **Co je zaPikolou?:** O webu zaPikolou (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`)
+    * FAQ (`/faq`) — ✅ accordion + patička + `src/config/faq.ts` (viz §11.3)
 
 ### 5.2 Autentizace a správa profilu
 
@@ -518,7 +518,8 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
     4. **Limit délky:** `cleanedDescription` max **2000** znaků celkem; u `NEEDS_QUESTIONS` max **1600** znaků (rezerva **400** na odpovědi doplněné do Parametrů).
   * **UX Flow v modálním okně „AI náhled a doplnění“** (texty v `src/config/moderation/messages.ts`, tón §1.6):
     * **Učesaný text inzerátu** v editovatelné `textarea` (struktura úvod + `---` + Parametry).
-    * **Dynamický dotazník („Vylepšete svůj inzerát“):** Max 5 otázek; odpovědi povinné; ukládají se jako odrážky v sekci Parametry (ne celé věty otázek).
+    * **Kvalita inzerátu (soft nudge):** Deterministické skóre 0–100 % vedle labelu popisu (fotky, struktura textu, zodpovězené otázky, SEO pole). Max. jeden tip; u nezodpovězených otázek odkaz na sekci níže. Nízké skóre **neblokuje** publikaci. Rubric: `src/config/listing-quality.ts`. Detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md).
+    * **Dynamický dotazník („Vylepšete svůj inzerát“):** Max 5 otázek; odpovědi **volitelné** (prázdné nezdrží publikaci, snižují skóre kvality); vyplněné se ukládají jako odrážky v sekci Parametry (ne celé věty otázek).
     * Počítadlo znaků v modalu zahrnuje **projekovaný finální popis** včetně odpovědí (limit 2000).
     * Během volání AI: **full-screen overlay** se spinnerem (ne banner dole).
     * **Akce uživatele:**
@@ -723,6 +724,8 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.41 | 2026-07-21 | **Hard stop blacklist:** migrace **055** `account_blacklist` (e-mail, auto/manual, soft unban); 3×/24h → blacklist + skrytí inzerátů (`account_blacklist`); `/ucet-pozastaven`; `/mod/blacklist`; cron retence 730 dní |
 | v3.42 | 2026-07-22 | **Sightengine JSONB** `sightengine_responses` (až 6) v evidence + `moderation_checks` (migrace **056**); God Mode sloupec zobrazení (`view_count`) |
 | v3.43 | 2026-07-22 | **Hard stop hide/restore fix:** migrace **057** `GRANT UPDATE ON posts TO service_role`; SoR kontakt pevně `SITE_OPERATOR_CONTACT_EMAIL`; UI počet skrytých/obnovených + chyba hide |
+| v3.44 | 2026-07-24 | **Kvalita inzerátu + volitelné otázky:** soft deterministické skóre v AI náhledu (`listing-quality.ts`); odpovědi v „Vylepšete svůj inzerát“ **volitelné** (neblokují publikaci); Metodika §6.7; [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) |
+| v3.45 | 2026-07-26 | **v0.5 DoD:** FAQ `/faq` + patička; `audit_events` (**059/060**); `moderator_notes` (**061**); AI `categorySuggestion` (**058**); CTA dle kategorie; UI copy „web“ místo „platforma“ (mimo VOP/GDPR); Metodika §2.1.1 / §11.4 |
 
 ---
 
@@ -1205,7 +1208,6 @@ Patička je renderována v `AppShell` → `SiteFooter` na **všech stránkách**
 | **Podmínky inzerce** | HTML | `/podminky-inzerce` | Pravidla pro inzerenty, moderace (existující stub) |
 | **Zásady ochrany osobních údajů** | HTML (markdown z `docs/pravni/`) · PDF volitelně | `/gdpr` · `/docs/gdpr-v*.pdf` | GDPR, zpracování dat; FO/OSVČ dle `NEXT_PUBLIC_MONETIZATION_ENABLED` |
 | **Cookies** | HTML / modal | `/cookies` nebo consent banner | GTM consent mode |
-| **FAQ** | HTML (accordion) | `/faq` | Viz níže |
 
 PDF soubory ukládat do `public/docs/` s verzí v názvu souboru (`vop-v1.0.pdf`).
 
@@ -1223,7 +1225,7 @@ PDF soubory ukládat do `public/docs/` s verzí v názvu souboru (`vop-v1.0.pdf`
 - Přístupnost: `<button aria-expanded>` + `aria-controls` pro panel obsahu; klávesnice (Enter/Space).
 - Na mobilu: jedna otázka otevřená najednou (volitelně) — méně scrollu.
 
-**Odkaz v patičce:** „Časté dotazy“ → `/faq`
+**Odkaz v patičce:** sloupec **Co je zaPikolou?** → „Časté dotazy“ → `/faq` (ne ve sloupci Dokumenty)
 
 #### DoD (právní sekce)
 

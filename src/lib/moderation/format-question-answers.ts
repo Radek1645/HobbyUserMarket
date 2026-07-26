@@ -9,6 +9,8 @@ const QUESTION_SHORT_LABELS: [RegExp, string][] = [
   [/najeto|kilometr|nájezd/i, "Nájezd"],
   [/motorizace|typ\s+paliva|palivo/i, "Motorizace"],
   [/technick[ouá]\s+kontrol|\bstk\b/i, "STK platná do"],
+  [/servisní\s+prohlíd|poslední\s+servis|datum\s+servis/i, "Poslední servis"],
+  [/hmotnost|váha|\bkg\b/i, "Hmotnost"],
   [/představa\s+o\s+cen|jaká\s+je.*cen/i, "Cena"],
   [/kde\s+přesně|lokalit|adres|místo\s+konání/i, "Místo konání"],
   [/velikost|rozměr/i, "Rozměry"],
@@ -111,6 +113,19 @@ export function formatAnswerForDisplay(
   if (/najeto|kilometr|nájezd/i.test(q) || label === "nájezd") {
     const amount = parsePriceInput(trimmed);
     if (amount != null) return `${formatCzkAmount(amount)} km`;
+  }
+
+  if (
+    (/hmotnost|váha|\bkg\b/i.test(q) || label === "hmotnost") &&
+    !/\bkg\b/i.test(trimmed)
+  ) {
+    const kgMatch = /^(\d+(?:[.,]\d+)?)\s*$/.exec(trimmed);
+    if (kgMatch?.[1]) {
+      const amount = Number.parseFloat(kgMatch[1].replace(",", "."));
+      if (!Number.isNaN(amount)) {
+        return `${amount.toLocaleString("cs-CZ")} kg`;
+      }
+    }
   }
 
   if (

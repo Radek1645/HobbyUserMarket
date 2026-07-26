@@ -1,7 +1,7 @@
 # TO-DO Fable — Audit projektu HobbyUserMarket
 
 > **Autor:** Fable (AI audit)
-> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-16 (security hardening M3–M9, L1, llms.txt)
+> **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-24 (P40 AI Act / prompt versioning)
 > **Rozsah auditu:** Server Actions, API routes, Supabase schéma + RLS, Edge Functions (moderace), `src/lib`, auth/onboarding flow, browse/UX komponenty.
 > **Zdroj požadavků:** [`PRD_v3.md`](./PRD_v3.md) (v3.18)
 > **Metodika značení:** severity **Critical / High / Medium / Low**; ID `C#` (security), `P#` (proces), `U#` (UX). Stav: ✅ hotovo · 🔄 rozpracováno · ⏳ čeká.
@@ -15,7 +15,7 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 | Oblast | Kritické | Vysoké | Střední | Nízké |
 |--------|:--------:|:------:|:-------:|:-----:|
 | **Security** | ~~2~~ ✅ 0 otevřených | ~~3~~ ✅ 0 otevřených (H2 CAPTCHA → Low) | ~~10~~ ✅ 0 otevřených (M10 ✅ 2026-07-20) | ~~7~~ ~5 (+ rezidua H2/M9) |
-| **Proces** | — | — | ~~12~~ 13 otevřených | — |
+| **Proces** | — | — | ~~12~~ 14 otevřených (+ P40 budoucí) | — |
 | **UX** | — | — | ~28 | — |
 
 > **Stav fáze 1 (PII):** C1, C2, M1 a M2 **hotové** migracemi [`025_contact_privacy_hardening.sql`](../supabase/025_contact_privacy_hardening.sql) + [`026_contact_reveal_rate_limit.sql`](../supabase/026_contact_reveal_rate_limit.sql) + úpravou `contact.ts`, `inzerat/[slug]/page.tsx`, `moje-inzeraty/page.tsx`, `get-listing-for-edit.ts`, `config/app.ts`. **Fáze 1 dokončena.**
@@ -34,6 +34,8 @@ Tento dokument je backlog nálezů a návrhů. Slouží jako TO-DO seznam k post
 3. **Další UX** — U4, U6–U15, U17–U20, U22–U28 dle potřeby.
 4. **P32** — P2B e-maily 15/30 dní (před prvním IČO).
 5. ~~**M10**~~ ✅ — rozšířené injection patterns (2026-07-20); redeploy Edge.
+6. **P40** (budoucí) — lehká evidence verzí AI promptů (AI Act governance, ne plný registry).
+7. ~~**P41** AI návrh kategorie~~ ✅ — telemetrie v `moderation_checks` (`058`); bez auto-create kategorií.
 
 ### Smoke test — migrace 047 + `moderate-listing` (2026-07-16)
 
@@ -205,6 +207,8 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | **P12** | `ModerationRejectedDialog.tsx` | UI má `topicId` / `rejectedImageIndex`, ale **nikdy nezvýrazní problémovou fotku** ani téma. | ✅ **2026-07-20** — text „Problémová fotka č. N“ + highlight + scroll v uploadu. |
 | **P13** | `CreateListingForm.tsx` (445–452) | Po AI dva kroky: `ModerationApprovedDialog` → `ModerationPreviewDialog` — klik navíc i bez otázek. | Přeskočit approved dialog při otevření preview, nebo sloučit. |
 | ~~**P14**~~ | ~~`config/moderation/index.ts`~~ | ~~`MODERATION_ENABLED` je klientsky čitelný flag → obejitelné přes devtools.~~ | ✅ **Vyřešeno s H1** (migrace 027) — publikace vyžaduje approval token z Edge Function; vypnutí flagu na klientovi publikaci neumožní (inzerát zůstane `draft`). |
+| **P40** | `build-prompt.ts`, `category-prompts`, `moderation_checks`, AI Act čl. 50 | Formální „prompt registry“ **není povinný** podle AI Act. Jsme deployer (Gemini/OpenAI); povinnost je hlavně **transparency** (označení AI textu — už máme). Git + sync promptů už funguje jako verzovaný katalog. | **Budoucí / Low:** (1) u každého `moderation_checks` logovat `promptVersion` / git hash + model; (2) 1 stránka inventáře AI systémů (role deployer, účel, disclosure, vendor). **Ne teď:** Langfuse/PromptLayer, schvalovací workflow. Trigger: právní audit, A/B prompty, nebo požadavek právníka na audit trail změn. |
+| ~~**P41**~~ | `parse-response.ts`, `058`, `build-prompt` | ~~Chybí signál, kam by AI zařadila inzerát / co v taxonomii chybí.~~ | ✅ **2026-07-26** — `categorySuggestion` v AI JSON → sloupce `category_fit` / `suggested_*` / `category_taxonomy_hint` v `moderation_checks`. Klientovi se neposílá. Ruční rozšíření kategorií dle agregace (Metodika A2). |
 
 ### Poptávka / kontakt
 
@@ -246,7 +250,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | **P27** | kód | ✅ Inline „Nahlásit“, `/nahlasit`, patička; migrace **040–042**; e-mail adminovi (`ADMIN_NOTIFICATION_EMAIL`). | Redirect po 3× report (404); `audit_events` insert. |
 | **P28** | kód | ~~Chybí sitemap/robots~~ — ✅ `sitemap.ts`, `robots.ts`, `llms.txt` (2026-07-09). Zbývá: monitoring, backup/runbook v repu. | Ops checklist; dokumentovat Supabase PITR/zálohy. |
 | **P29** | `actions/listing-management.ts` | Chyby managementu **tiše redirectují** na `/moje-inzeraty` bez flash zprávy. | Vracet error stav / `?error=`. *(Částečně: `deleteListing` → `?deleteError=1` + banner v `moje-inzeraty`.)* |
-| **P30** | `supabase_schema.sql` | `audit_events`, `moderator_notes`, `inquiry_events` v PRD, **nenapojeno** v kódu. | Inkrementálně: nejdřív logovat poptávky a výsledky moderace. *(Částečně: migrace **028** `moderation_checks` + `log-moderation-check.ts` v EF.)* |
+| **P30** | `059`–`061`, `moderation-listings.ts` | ~~`audit_events` / poznámky chyběly~~ | ✅ **2026-07-26** — `audit_events` + `moderator_notes` (+ číselník `moderator_note_kinds`, UI panel na detailu). Zbývá: God Mode sjednocená timeline UI. |
 
 ---
 
@@ -355,6 +359,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | ~~**7. UX vylepšení**~~ | ~~U1–U3, U5, U16, U21, P7~~ | ✅ **2026-07-19** technická AI panel, missing fields, load more, resend e-mail. Zbývají další U# dle priority. | částečně |
 | **8. Admin/ops (post-MVP)** | P26, P27, P28, P30, L6 | God Mode, reporting, monitoring, audit log dle PRD §11. | dle PRD |
 | **9. Performance (volitelné)** | P34, L8 | LCP <1 s; favicon/OG — rychlé výhry po launchi. | 0,5–1 dne |
+| **10. AI Act governance (budoucí)** | P40 | Verze promptů v logu + inventář AI systémů; ne plný prompt registry. | 0,5 dne až při potřebě |
 
 ---
 
@@ -362,7 +367,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 
 - **DoD §1.1/3 (ochrana kontaktů):** ✅ **splněno** — C1/C2 (migrace 025) + rate limit reveal PRD §5.3 (M1, migrace 026).
 - **DoD §1.1/5 (bezpečnostní filtr projde vždy):** ✅ **splněno** — H1/P1/P14 (migrace 027): publikace jen přes approval token z Edge Function, DB gating stavů. Reziduum: obsah plných fotek není hashově vázán na moderovaný náhled (viz H1).
-- **DoD §1.5 (v0.5 audit/God Mode):** částečně — nahlášení + karanténa + inzeráty ✅ (P26/P27); zbývá audit UI (P30), moderátorské poznámky, FAQ accordion.
+- **DoD §1.5 (v0.5 audit/God Mode):** částečně — nahlášení + karanténa + inzeráty ✅ (P26/P27); moderátorské poznámky ✅ (`061`); FAQ accordion ✅ (`/faq`); zbývá audit UI / sjednocená timeline (P30).
 
 ### Changelog revizí
 
@@ -389,5 +394,6 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 | 2026-07-19 | **Fáze 6:** P37–P39 GDPR text ↔ kód; P33 §5.1 FO+OSVC; P20/P21 ✅; P22 marketing page; P24 `mapAuthError`; checkbox „až spustíme“. |
 | 2026-07-19 | **Fáze 7 (část):** U1/U2/U5/U21 + P7/U3/U16 ✅; P32 odloženo (před IČO). |
 | 2026-07-19 | **P33:** Resend sending region Ireland `eu-west-1` (zapikolou.cz Verified) zapsán do GDPR §5.1; zbývá DPA + revize právníkem. |
+| 2026-07-24 | **P40 ⏳** AI Act — formální prompt registry ne; budoucí lehká evidence (`promptVersion` v `moderation_checks` + inventář AI systémů). Disclosure AI textu už hotové. |
 
 *Konec dokumentu. Před implementací ověřte každý otevřený bod proti aktuální větvi.*

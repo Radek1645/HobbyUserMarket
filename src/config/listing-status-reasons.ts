@@ -15,11 +15,11 @@ export const POST_STATUS_REASON_MESSAGES: Record<
   [POST_STATUS_REASON.reports_threshold]:
     "Inzerát byl nahlášen jako závadný třemi různými uživateli a byl skryt z veřejného zobrazení.",
   [POST_STATUS_REASON.moderation]:
-    "Inzerát byl zablokován moderátorem, protože porušuje pravidla platformy nebo zákon.",
+    "Inzerát byl zablokován moderátorem, protože porušuje pravidla webu nebo zákon.",
   [POST_STATUS_REASON.lifetime_max]:
     "Inzerát dosáhl maximální doby existence (365 dní od založení) a byl automaticky ukončen.",
   [POST_STATUS_REASON.account_blacklist]:
-    "Inzerát byl skryt, protože účet porušil podmínky platformy (hard stop).",
+    "Inzerát byl skryt, protože účet porušil podmínky webu (hard stop).",
 };
 
 export const BLOCKED_LISTING_RECOVERY_HINT =

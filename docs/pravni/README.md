@@ -121,6 +121,14 @@ Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
 - [ ] CSAM hard stop (VOP §4.5 / Pravidla §2.4) + Sightengine v GDPR §5.1
 - [x] Checkbox věku v registračním formuláři — hotovo v kódu
 
+## Odkazy z UI copy na tyto dokumenty
+
+Když webový text **jmenuje** VOP / Podmínky inzerce / GDPR / Balíčky inzerce, musí to být odkaz (ne holý název).
+
+- Config frází: [`src/config/legal-inline-links.ts`](../../src/config/legal-inline-links.ts)
+- Komponenta: `<LegalLinkedText />` — viz také root [`README.md`](../../README.md) (sekce UI copy)
+- FAQ už to používá; u nových UI textů stejný postup
+
 ## Poznámky
 
 - Evropská platforma ODR byla k 20. 3. 2025 zrušena — v textech není odkazována.

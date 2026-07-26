@@ -1,8 +1,8 @@
 # Metodika — Local Hobby Market
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
-> **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **NSFW / hard-hit brána:** [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
-> **Datum:** 2026-07-21
+> **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **Hydratace / kvalita inzerátu:** [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) · **NSFW / hard-hit brána:** [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
+> **Datum:** 2026-07-24
 
 ---
 
@@ -49,6 +49,13 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání).
 4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou, názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo). Výchozí počet karet je 9; pokud je ve filtrovaném poolu víc, tlačítko **„Zobrazit další“** doplní další dávku (až do načtených 36).
 5. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
+
+### 2.1.1 Časté dotazy (`/faq`)
+
+1. V patičce (sloupec **Co je zaPikolou?**) je odkaz **Časté dotazy**.
+2. Stránka `/faq` ukáže accordion — po kliknutí na otázku se odklopí odpověď (najednou jedna otevřená).
+3. Texty jsou v [`src/config/faq.ts`](../src/config/faq.ts) (lidsky, ne kopie VOP). Aktuálně ~10 položek (kontakt, rozdíl oproti inzertním webům, Kvalita, „Vytvořeno s pomocí AI“, moderace, účet…). Zmínky VOP / Podmínek inzerce / GDPR / Nahlásit linkuje `LegalLinkedText` (viz root README).
+4. Pro SEO: JSON-LD `FAQPage` + záznam v `sitemap.xml`. Právní dokumenty jsou v patičce — na `/faq` se neduplikují.
 
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
 
@@ -120,17 +127,18 @@ Na všech stránkách je společná hlavička (wordmark **zaPikolou.cz**, vyhled
 |---------|--------|
 | **Dokumenty** | VOP, **Zásady ochrany osobních údajů** (`/gdpr`), Podmínky inzerce, Zásady cookies, Marketingový souhlas, Limity/Balíčky inzerce, DSA kontaktní centrum, Nahlásit inzerát |
 | **Kontakt** | Provozovatel webu (`/kontakt`) |
-| **Co je zaPikolou?** | O platformě (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`), Pro AI (`/llms.txt`) |
+| **Co je zaPikolou?** | O webu zaPikolou (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`), **Časté dotazy** (`/faq`), Pro AI (`/llms.txt`) |
 
-V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), krátký tagline a verze platformy (`0.1`).
+V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), krátký tagline, verze platformy (`0.1`) a rok (`2026`).
 
 ### 2.8 Informační stránky
 
 | URL | Účel |
 |-----|------|
-| `/co-je-zapikolou` | Co platforma je a není (inzertní nástěnka, ne e-shop) |
+| `/co-je-zapikolou` | Co web je a není (inzertní nástěnka, ne e-shop); patička **O webu zaPikolou** |
 | `/jak-vytvorit-inzerat` | Průvodce ve 4 krocích; přepínatelné demo scénáře (Elektronika / Kolo / Spotřebič) včetně fotek a OCR štítku |
 | `/kontakt` | Provozovatel (jméno, e-mail, datová schránka) |
+| `/faq` | Časté dotazy — accordion, texty v `src/config/faq.ts` (PRD §11.3) |
 | `/cookies` | Zásady používání souborů cookie (právní text z `docs/pravni/cookies.md`) |
 | `/gdpr` | Zásady ochrany osobních údajů (`docs/pravni/ochrana-osobnich-udaju-fo.md` / `-osvc.md` dle monetizace) |
 | `/marketingovy-souhlas` | Marketingový souhlas (stav „zatím nezasíláme“, odvolání e-mailem) |
@@ -418,7 +426,7 @@ Pokud **jedna** fotka porušuje pravidla, celý inzerát je zamítnut — výbě
 **Hydratace** = AI vezme hrubý nástřel od uživatele a připraví strukturovaný inzerát (pravidla: [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)):
 
 1. **H1 / název** (`cleanedTitle`) — obecný název věci první, max ~60 znaků, bez vaty a bez lokality.
-2. **Úvod** — až 6 vět (synonyma, cena, předání / dojezdová vzdálenost, CTA přes platformu).
+2. **Úvod** — až 6 vět (synonyma, cena, předání / dojezdová vzdálenost, CTA přes web).
 3. Oddělovač `---`
 4. Sekce **Parametry** — odrážky ve tvaru `• Popisek: hodnota`
 5. **Meta description** + **alt hlavní fotky** — ukládají se do `meta_description` / `image_alt` (jen při volbě AI textu).
@@ -429,7 +437,8 @@ Příklad po hydrataci:
 
 ```
 Prodám dětské kolo Velo v dobrém stavu. Cena 800 Kč, osobní předání v Brně-Líšni.
-Pro více informací napište prodejci zprávu přes platformu.
+Pro více informací napište prodejci zprávu přes web.
+(u práce: „…napište zadavateli…“; u služeb poskytovateli; u události pořadateli; u nemovitosti inzerentovi — viz `listing-cta.ts`)
 ---
 Parametry
 • Značka: Velo
@@ -460,9 +469,10 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 **Průběh pro uživatele:**
 
 1. Modal **„AI vám vylepšila inzerát!“** — náhled AI textu (textarea max. 6 řádků, scroll uvnitř).
-2. Sekce **„Vylepšete svůj inzerát“** — volitelné doplňující otázky (1–5). Nevyplněné otázky **publikaci neblokují**; vyplněné odpovědi se doplní do Parametrů.
-3. Po potvrzení se odpovědi **automaticky doplní** do sekce Parametry (s jednotkami — rozměry v **cm**, objem v **ml**, pokud uživatel jednotku nevyplní).
-4. Odpovědi se **neukládají zvlášť** v databázi — jsou součástí finálního popisu.
+2. Vedle **„Popis inzerátu“** soft indikátor **Kvalita X %** (deterministicky z fotek, textu, odpovědí a SEO polí — ne predikce prodeje). Max. jeden tip; u nezodpovězených otázek např. **„Tip: doplňte detaily níže.“** s odkazem na sekci níže. Nízké skóre **neblokuje** publikaci. Detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) § Kvalita inzerátu.
+3. Sekce **„Vylepšete svůj inzerát“** — volitelné doplňující otázky (1–5). Nevyplněné otázky **publikaci neblokují**; vyplněné odpovědi se doplní do Parametrů (a zvednou skóre).
+4. Po potvrzení se odpovědi **automaticky doplní** do sekce Parametry (s jednotkami — rozměry v **cm**, objem v **ml**, pokud uživatel jednotku nevyplní).
+5. Odpovědi se **neukládají zvlášť** v databázi — jsou součástí finálního popisu.
 
 **Jednotky v Parametrech:** AI se ptá s jednotkou v otázce (např. „Jaké jsou rozměry v cm?“) a `paramLabel` sladí s očekávaným parametrem (`Rozměry`, `Objem`). Klient při slučování odpovědí doplňuje `cm` / `ml`, pokud chybí.
 
@@ -537,6 +547,9 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 | `rejection_reason` | Text důvodu (pokud REJECTED) |
 | `title_preview` | Zkrácený název pro orientaci (ne plný popis) |
 | `sightengine_responses` | JSONB pole až 6 Sightengine odpovědí (`056`) |
+| `category_fit` | AI telemetrie (`058`): `match` / `better_existing` / `missing_taxonomy` |
+| `suggested_category_type` / `suggested_subcategory_slug` | Návrh existujícího páru (ne nové slugy) |
+| `category_taxonomy_hint` | Volný český popis chybějící podkategorie — podklad pro ruční rozšíření |
 
 #### Sloupce `moderation_hard_reject_evidence`
 
@@ -566,6 +579,10 @@ SELECT
   mc.intent,
   mc.category_type,
   mc.subcategory_slug,
+  mc.category_fit,
+  mc.suggested_category_type,
+  mc.suggested_subcategory_slug,
+  mc.category_taxonomy_hint,
   mc.image_count,
   mc.rejected_topic_id,
   mc.rejection_reason,
@@ -576,6 +593,25 @@ SELECT
 FROM public.moderation_checks mc
 LEFT JOIN public.profiles p ON p.id = mc.user_id
 ORDER BY mc.created_at DESC
+LIMIT 50;
+```
+
+#### A2) Návrhy na rozšíření taxonomie (AI hinty)
+
+```sql
+SELECT
+  category_fit,
+  category_type AS zvoleno_type,
+  subcategory_slug AS zvoleno_sub,
+  suggested_category_type,
+  suggested_subcategory_slug,
+  category_taxonomy_hint,
+  count(*) AS pocet
+FROM public.moderation_checks
+WHERE created_at >= now() - interval '30 days'
+  AND category_fit IN ('better_existing', 'missing_taxonomy')
+GROUP BY 1, 2, 3, 4, 5, 6
+ORDER BY pocet DESC
 LIMIT 50;
 ```
 
@@ -803,7 +839,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 **`src/app/sitemap.ts`** → generuje `/sitemap.xml`
 
 - Next.js při požadavku na `/sitemap.xml` spustí tuto funkci a vrátí XML se seznamem URL.
-- Obsahuje **statické stránky**: `/`, `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`, `/vop`, `/gdpr`, `/balicky-inzerce`, `/podminky-inzerce`, `/marketingovy-souhlas`, `/cookies`.
+- Obsahuje **statické stránky**: `/`, `/co-je-zapikolou`, `/jak-vytvorit-inzerat`, `/kontakt`, `/faq`, `/vop`, `/gdpr`, `/balicky-inzerce`, `/podminky-inzerce`, `/marketingovy-souhlas`, `/cookies`.
 - Obsahuje **aktivní inzeráty** — načte je přes `get-sitemap-listings.ts`.
 - **`revalidate = 300`** (5 minut): cache se obnoví nejpozději za 5 minut, takže nový nebo expirovaný inzerát se v sitemap projeví bez ručního zásahu.
 - Expirované nebo smazané inzeráty v sitemap **nejsou** — vyhledávač je nemá indexovat.
@@ -988,18 +1024,205 @@ Ruční SQL (blokace, dotazy na nahlášení): [`supabase-prikazy.md`](./supabas
 2. Prohlédne inzerát na produkčním webu (stejný vzhled jako uživatelé).
 3. Rozhodne: **obnovit** (vrátit mezi aktivní) nebo **smazat / ponechat skrytý**.
 4. U akce zadá **důvod** (povinný dropdown) a volitelnou poznámku.
-5. Vše se zapíše do **audit logu** (`audit_events`).
+5. Změna stavu se zapíše do **audit logu** (`audit_events`, migrace **059**) — včetně `reason_note` z kontextu akce.
 
 ### 11.4 Historie a poznámky
 
-U inzerátu nebo profilu moderátor vidí časovou osu:
+**V DB (hotovo, 059 + 060):** tabulka `audit_events` — append-only historizace lifecycle inzerátu.  
+Zdroj kódů v app: [`src/config/audit-events.ts`](../src/config/audit-events.ts). Není DB číselník — jen `TEXT` + uzavřená sada z triggeru.
 
-- změny stavu,
-- odhalení kontaktů,
-- odeslané poptávky,
-- nahlášení.
+| `event_type` | Kdy |
+|--------------|-----|
+| `post_created` | insert inzerátu |
+| `post_published` | draft → active |
+| `post_hidden` | → hidden (pauza) |
+| `post_restored` | hidden / archived / blocked → active |
+| `post_blocked` | → blocked (moderace, blacklist…) |
+| `post_auto_blocked_reports` | → blocked + `status_reason_code = reports_threshold` |
+| `post_expired` | → archived |
+| `post_renewed` | zvýšení `renew_count` (prodloužení) |
+| `post_reverted_to_draft` | → draft (editace / re-moderace) |
+| `post_deleted_by_owner` | → deleted (ne-staff) |
+| `post_deleted_by_mod` | → deleted (moderator / admin) |
+| `post_status_changed` | fallback ostatní přechody stavu |
+| `post_reported` | insert do `reports` |
 
-Ruční poznámky (`moderator_notes`) vidí jen moderátor/admin — běžný uživatel ne.
+Payload typicky obsahuje `from_status`, `to_status`, `status_reason_code` (+ u mod akcí `reason_note` / `mod_action`). Engagement (`contact_reveals`, `inquiry_events`) zůstává v oddělených tabulkách.
+
+**God Mode UI timeline** (sjednocení audit + engagement + reports na detailu) — zatím ne; data jdou číst SQL / Table Editor.
+
+### 11.4.1 Moderátorské poznámky (`moderator_notes`, migrace **061**)
+
+Interní kontext mezi směnami (ne audit). Vidí jen `moderator` / `admin`.  
+UI: na detailu inzerátu (God Mode) tlačítko **Poznámky** vedle Karantény — panel se otevře až po kliknutí (ne omylem).  
+Ve formuláři je **select typu** z číselníku (`MODERATOR_NOTE_KINDS` / `moderator_note_kinds`).  
+Editace: jen **autor** a jen **do 24 h** od vytvoření.
+
+**Číselník typů** `moderator_note_kinds` (zatím jedna hodnota):
+
+| `code` | `label` |
+|--------|---------|
+| `zadano_uzivatelem` | Zadáno uživatelem |
+
+App konstanty: [`src/config/moderator-notes.ts`](../src/config/moderator-notes.ts).
+
+#### SQL — poznámky
+
+**A) Seznam typů (číselník)**
+
+```sql
+SELECT code, label, sort_order, is_active
+FROM public.moderator_note_kinds
+ORDER BY sort_order, code;
+```
+
+**B) Přidat typ do číselníku (až budete rozšiřovat)**
+
+```sql
+INSERT INTO public.moderator_note_kinds (code, label, sort_order)
+VALUES ('volani', 'Telefonát', 20)
+ON CONFLICT (code) DO UPDATE
+SET label = EXCLUDED.label,
+    sort_order = EXCLUDED.sort_order,
+    is_active = true;
+```
+
+**C) Insert poznámky k inzerátu** (nahraď UUID autora a `post_id`)
+
+```sql
+INSERT INTO public.moderator_notes (
+  entity_type,
+  entity_id,
+  kind_code,
+  body,
+  author_user_id
+) VALUES (
+  'post',
+  '<POST_ID>',
+  'zadano_uzivatelem',
+  'Volal, slíbil upravit fotky.',
+  '<AUTHOR_USER_UUID>'
+)
+RETURNING note_no, created_at, kind_code, body;
+```
+
+**D) Výpis poznámek u inzerátu**
+
+```sql
+SELECT
+  n.note_no,
+  n.created_at,
+  n.updated_at,
+  n.kind_code,
+  k.label AS kind_label,
+  n.body,
+  n.author_user_id,
+  p.nickname,
+  p.email
+FROM public.moderator_notes n
+JOIN public.moderator_note_kinds k ON k.code = n.kind_code
+LEFT JOIN public.profiles p ON p.id = n.author_user_id
+WHERE n.entity_type = 'post'
+  AND n.entity_id = '<POST_ID>'
+ORDER BY n.created_at DESC;
+```
+
+**E) Update textu** (jen autor + do 24 h — jinak trigger/RLS odmítne)
+
+```sql
+UPDATE public.moderator_notes
+SET body = 'Upravená poznámka: domluveno na pátek.'
+WHERE note_no = <NOTE_NO>
+  AND author_user_id = auth.uid()
+RETURNING note_no, updated_at, body;
+```
+
+V Dashboard SQL Editoru často **není** `auth.uid()` — použij konkrétní UUID:
+
+```sql
+UPDATE public.moderator_notes
+SET body = 'Upravená poznámka.'
+WHERE note_no = <NOTE_NO>
+  AND author_user_id = '<AUTHOR_USER_UUID>'
+  AND created_at >= now() - interval '24 hours'
+RETURNING note_no, updated_at, body;
+```
+
+**F) Poznámky u profilu** (stejná tabulka, `entity_type = profile`)
+
+```sql
+INSERT INTO public.moderator_notes (
+  entity_type, entity_id, kind_code, body, author_user_id
+) VALUES (
+  'profile',
+  '<PROFILE_USER_UUID>',
+  'zadano_uzivatelem',
+  'Falešný kontakt, sledovat.',
+  '<AUTHOR_USER_UUID>'
+);
+```
+
+#### SQL — prohlížení audit logu
+
+**A) Poslední události (všechny inzeráty)**
+
+```sql
+SELECT
+  ae.event_no,
+  ae.created_at,
+  ae.event_type,
+  ae.entity_id AS post_id,
+  ae.actor_role,
+  ae.actor_user_id,
+  p.nickname,
+  p.email,
+  ae.payload
+FROM public.audit_events ae
+LEFT JOIN public.profiles p ON p.id = ae.actor_user_id
+WHERE ae.entity_type = 'post'
+ORDER BY ae.created_at DESC
+LIMIT 50;
+```
+
+**B) Historie jednoho inzerátu** (nahraď `<POST_ID>` číslem z `posts.id`)
+
+```sql
+SELECT
+  ae.event_no,
+  ae.created_at,
+  ae.event_type,
+  ae.actor_role,
+  ae.actor_user_id,
+  p.nickname,
+  p.email,
+  ae.payload
+FROM public.audit_events ae
+LEFT JOIN public.profiles p ON p.id = ae.actor_user_id
+WHERE ae.entity_type = 'post'
+  AND ae.entity_id = '<POST_ID>'
+ORDER BY ae.created_at ASC;
+```
+
+**C) Podle slugu** (např. z URL `/inzerat/...`)
+
+```sql
+SELECT
+  ae.event_no,
+  ae.created_at,
+  ae.event_type,
+  ae.actor_role,
+  p.nickname,
+  p.email,
+  ae.payload
+FROM public.audit_events ae
+JOIN public.posts po ON po.id::text = ae.entity_id
+LEFT JOIN public.profiles p ON p.id = ae.actor_user_id
+WHERE ae.entity_type = 'post'
+  AND po.slug = '<SLUG>'
+ORDER BY ae.created_at ASC;
+```
+
+`actor_role`: u staff účtu (`admin` / `moderator`) má přednost před `owner` — i když pauzuješ vlastní inzerát. Konkrétní kdo = `actor_user_id` (+ join na `profiles`). `system` = cron / service_role bez session.
 
 ### 11.5 Rozdíl moderator vs. admin
 
@@ -1351,6 +1574,7 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 | [`PRD_v3.md`](./PRD_v3.md) | Produktová a technická specifikace |
 | [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) | SEO bible inzerátů (H1, meta, alt, schema) — verzovaná |
 | [`moderace-inzeratu.md`](./moderace-inzeratu.md) | Konfigurace AI pravidel, deploy, sync |
+| [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) | Hydratace textu, dotazník, skóre kvality inzerátu |
 | [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) | NSFW / hard-hit brána před Gemini (Sightengine, evidence) |
 | [`riziko-gemini-api-zakazany-obsah.md`](./riziko-gemini-api-zakazany-obsah.md) | Riziko Gemini ToS / CSAM — problém a návrh řešení |
 | [`supabase-prikazy.md`](./supabase-prikazy.md#nastavení-admina-a-moderátora) | SQL, migrace, bootstrap admina, **zvýšení limitu inzerátů** |

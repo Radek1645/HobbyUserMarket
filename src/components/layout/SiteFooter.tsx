@@ -5,7 +5,7 @@ import {
   FOOTER_DOCUMENT_LINKS,
   FOOTER_UI,
 } from "@/config/footer";
-import { SITE_SHORT_NAME, SITE_VERSION } from "@/config/site";
+import { SITE_SHORT_NAME, SITE_VERSION, SITE_YEAR } from "@/config/site";
 import Link from "next/link";
 
 const footerLinkClass =
@@ -62,7 +62,10 @@ export function SiteFooter() {
           <CookieConsentSettingsLink />
           <p className="mt-2">
             <span className="font-medium text-gray-900">{SITE_SHORT_NAME}</span>
-            <span className="text-gray-500"> v{SITE_VERSION}</span>
+            <span className="text-gray-500">
+              {" "}
+              v{SITE_VERSION} · {SITE_YEAR}
+            </span>
             {" — "}
             {FOOTER_UI.tagline}
           </p>

@@ -16,6 +16,11 @@ export type ModerationCheckLog = {
   titlePreview?: string;
   /** Až 6 Sightengine odpovědí v jednom poli. */
   sightengineResponses?: unknown;
+  /** AI telemetrie kategorií (058) — neautomatické vytváření. */
+  categoryFit?: string;
+  suggestedCategoryType?: string;
+  suggestedSubcategorySlug?: string;
+  categoryTaxonomyHint?: string;
 };
 
 function truncatePreview(text: string, max = 120): string {
@@ -52,6 +57,12 @@ export async function logModerationCheck(
       ? truncatePreview(entry.titlePreview)
       : null,
     sightengine_responses: entry.sightengineResponses ?? null,
+    category_fit: entry.categoryFit?.trim() || null,
+    suggested_category_type: entry.suggestedCategoryType?.trim() || null,
+    suggested_subcategory_slug: entry.suggestedSubcategorySlug?.trim() || null,
+    category_taxonomy_hint: entry.categoryTaxonomyHint
+      ? truncatePreview(entry.categoryTaxonomyHint, 120)
+      : null,
   });
 
   if (error) {

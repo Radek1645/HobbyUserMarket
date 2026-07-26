@@ -26,7 +26,7 @@ export function AdvertiserBadges({
   const podnikatelTitle =
     "Inzerát od podnikatele — ne od soukromé osoby (VOP).";
   const milestoneTitle = milestone
-    ? `Zadavatel má alespoň ${milestone.threshold} publikovaných inzerátů na platformě.`
+    ? `Zadavatel má alespoň ${milestone.threshold} publikovaných inzerátů na webu.`
     : undefined;
 
   return (

@@ -1,11 +1,11 @@
 import { SITE_DISPLAY_NAME, SITE_SHORT_NAME } from "@/config/site";
 import { VOP_PATH } from "@/config/legal";
 
-/** SEO stránka — co je platforma (odkaz z patičky). */
+/** SEO stránka — co je web (odkaz z patičky). */
 export const ABOUT_PLATFORM_PATH = "/co-je-zapikolou";
 
 export const ABOUT_PLATFORM_UI = {
-  footerLinkLabel: "O platformě",
+  footerLinkLabel: "O webu zaPikolou",
   metaTitle: `Online bazar a inzerce | ${SITE_DISPLAY_NAME}`,
   metaDescription: `${SITE_SHORT_NAME} — lokální inzerce s AI: z fotky a krátkého popisu připravíme inzerát, který jde dobře najít ve vyhledávačích i v okolí. Neprodáváme za vás — propojujeme lidi.`,
   pageTitle: "Co je zaPikolou?",
@@ -14,11 +14,11 @@ export const ABOUT_PLATFORM_UI = {
   sections: [
     {
       title: "Proč existujeme",
-      body: "Chceme, aby nabídka z okolí byla vidět tam, kde lidé skutečně hledají — na Googlu, Seznamu i přímo u nás. Nejsme další přeplněný formulář: stačí fotka a krátký nástřel, zbytek pomůžeme dát dohromady.",
+      body: "Chceme, aby nabídka z okolí byla vidět tam, kde lidé skutečně hledají — na Googlu, Seznamu i přímo u nás. Nejsme další přeplněný formulář: stačí fotka a krátký popis jen důležitých detailů, zbytek pomůžeme dát dohromady.",
     },
     {
-      title: "AI inzerát připravený na organiku",
-      body: "AI z vašeho nástřelu připraví strukturovaný inzerát: výstižný nadpis, čitelný popis, parametry a texty pro vyhledávače (meta popis, popisek fotky). Cíl je jednoduchý — inzerát, který jde dobře najít organicky podle věci a lokality, ne jen při scrollování na webu. Text před publikací vždy zkontrolujete a můžete upravit.",
+      title: "AI inzerát připravený pro vyhledávání",
+      body: "AI z vašeho krátkého popisu připraví strukturovaný inzerát: výstižný nadpis, čitelný text, parametry a texty pro vyhledávače (meta popis, popisek fotky). Cíl je jednoduchý — inzerát, který jde dobře najít ve vyhledávačích podle věci a lokality, ne jen při scrollování na webu. Text před publikací vždy zkontrolujete a můžete upravit.",
     },
     {
       title: "Inzertní nástěnka, ne obchod",
@@ -34,7 +34,7 @@ export const ABOUT_PLATFORM_UI = {
     },
     {
       title: "Lokálně a s kontrolou",
-      body: "Inzeráty se zobrazují ve vašem okolí. Před publikací kontrolujeme, že text sedí k fotkám a splňuje podmínky inzerce. Nelegální nebo nevhodný obsah lze nahlásit — reagujeme podle pravidel platformy.",
+      body: "Inzeráty se zobrazují ve vašem okolí. Před publikací kontrolujeme, že text sedí k fotkám a splňuje podmínky inzerce. Nelegální nebo nevhodný obsah lze nahlásit — reagujeme podle pravidel webu.",
     },
   ],
   vopHint: "Podrobná pravidla, odpovědnost a práva uživatelů najdete ve",

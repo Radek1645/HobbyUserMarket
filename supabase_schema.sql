@@ -1444,11 +1444,20 @@ CREATE TABLE IF NOT EXISTS public.moderation_checks (
   rejected_image_index SMALLINT,
   error_code           TEXT,
   title_preview        TEXT,
+  category_fit         TEXT,
+  suggested_category_type TEXT,
+  suggested_subcategory_slug TEXT,
+  category_taxonomy_hint TEXT,
 
   CONSTRAINT moderation_checks_status_check
     CHECK (status IN ('APPROVED', 'REJECTED', 'NEEDS_QUESTIONS')),
   CONSTRAINT moderation_checks_image_count_check
-    CHECK (image_count BETWEEN 0 AND 6)
+    CHECK (image_count BETWEEN 0 AND 6),
+  CONSTRAINT moderation_checks_category_fit_check
+    CHECK (
+      category_fit IS NULL
+      OR category_fit IN ('match', 'better_existing', 'missing_taxonomy')
+    )
 );
 
 CREATE INDEX IF NOT EXISTS moderation_checks_created_at_idx
@@ -1461,6 +1470,10 @@ CREATE INDEX IF NOT EXISTS moderation_checks_rejected_idx
   ON public.moderation_checks (created_at DESC)
   WHERE status = 'REJECTED';
 
+CREATE INDEX IF NOT EXISTS moderation_checks_category_fit_idx
+  ON public.moderation_checks (category_fit, created_at DESC)
+  WHERE category_fit IS NOT NULL AND category_fit <> 'match';
+
 ALTER TABLE public.moderation_checks ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS moderation_checks_select_moderator ON public.moderation_checks;
@@ -1469,6 +1482,74 @@ CREATE POLICY moderation_checks_select_moderator ON public.moderation_checks
   USING (public.is_moderator_or_admin());
 
 GRANT INSERT, SELECT ON public.moderation_checks TO service_role;
+
+-- =============================================================================
+-- 11b. AUDIT LIFECYCLE INZERÁTU (059) — append-only
+-- Plné triggery: supabase/059_audit_events.sql
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS public.audit_events (
+  event_no       BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  entity_type    TEXT NOT NULL,
+  entity_id      TEXT NOT NULL,
+  event_type     TEXT NOT NULL,
+  actor_user_id  UUID REFERENCES auth.users (id) ON DELETE SET NULL,
+  actor_role     TEXT,
+  payload        JSONB NOT NULL DEFAULT '{}'::jsonb,
+
+  CONSTRAINT audit_events_entity_type_check
+    CHECK (entity_type IN ('post', 'profile')),
+  CONSTRAINT audit_events_entity_id_not_empty
+    CHECK (char_length(trim(entity_id)) > 0),
+  CONSTRAINT audit_events_event_type_not_empty
+    CHECK (char_length(trim(event_type)) > 0)
+);
+
+CREATE INDEX IF NOT EXISTS audit_events_entity_idx
+  ON public.audit_events (entity_type, entity_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS audit_events_created_at_idx
+  ON public.audit_events (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS audit_events_event_type_idx
+  ON public.audit_events (event_type, created_at DESC);
+
+ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS audit_events_select_moderator ON public.audit_events;
+CREATE POLICY audit_events_select_moderator ON public.audit_events
+  FOR SELECT TO authenticated
+  USING (public.is_moderator_or_admin());
+
+GRANT SELECT ON public.audit_events TO authenticated;
+GRANT SELECT, INSERT ON public.audit_events TO service_role;
+
+-- =============================================================================
+-- 11c. MODERÁTORSKÉ POZNÁMKY (061) — plné RLS/triggery v 061_moderator_notes.sql
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS public.moderator_note_kinds (
+  code        TEXT PRIMARY KEY,
+  label       TEXT NOT NULL,
+  sort_order  SMALLINT NOT NULL DEFAULT 0,
+  is_active   BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS public.moderator_notes (
+  note_no         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  entity_type     TEXT NOT NULL,
+  entity_id       TEXT NOT NULL,
+  kind_code       TEXT NOT NULL REFERENCES public.moderator_note_kinds (code),
+  body            TEXT NOT NULL,
+  author_user_id  UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  CONSTRAINT moderator_notes_entity_type_check
+    CHECK (entity_type IN ('post', 'profile')),
+  CONSTRAINT moderator_notes_body_length
+    CHECK (char_length(body) BETWEEN 1 AND 2000)
+);
 
 -- =============================================================================
 -- 12. CRON ARCHIVACE EXPIROVANÝCH INZERÁTŮ (035)

@@ -1,3 +1,9 @@
+import {
+  VALID_CATEGORY_TYPES,
+  VALID_SUBCATEGORY_SLUGS,
+} from "./category-prompts.ts";
+import { applyListingPlatformCta } from "./listing-cta.ts";
+
 export type ModerationStatus = "APPROVED" | "REJECTED" | "NEEDS_QUESTIONS";
 
 export type ModerationQuestion = {
@@ -6,8 +12,24 @@ export type ModerationQuestion = {
   paramLabel?: string;
 };
 
+/** Drž sync s src/config/moderation/category-fit.ts */
+export type CategoryFit = "match" | "better_existing" | "missing_taxonomy";
+
+export type CategorySuggestion = {
+  fit: CategoryFit;
+  categoryType?: string;
+  subcategorySlug?: string;
+  hint?: string;
+};
+
 /** Hard limit — drž v sync s src/config/moderation/index.ts MODERATION_MAX_QUESTIONS */
 const MODERATION_MAX_QUESTIONS = 5;
+const CATEGORY_TAXONOMY_HINT_MAX_LENGTH = 120;
+const CATEGORY_FIT_VALUES: readonly CategoryFit[] = [
+  "match",
+  "better_existing",
+  "missing_taxonomy",
+];
 
 export type ModerationResult = {
   status: ModerationStatus;
@@ -19,6 +41,8 @@ export type ModerationResult = {
   imageAlt?: string;
   cleanedDescription?: string;
   questions?: ModerationQuestion[];
+  /** Interní telemetrie — neposílat klientovi. */
+  categorySuggestion?: CategorySuggestion;
 };
 
 function extractJsonObject(raw: string): string {
@@ -159,6 +183,52 @@ function parseQuestions(value: unknown): ModerationQuestion[] | undefined {
   return questions.slice(0, MODERATION_MAX_QUESTIONS);
 }
 
+function isValidSuggestedPair(
+  categoryType: string,
+  subcategorySlug: string,
+): boolean {
+  if (!(VALID_CATEGORY_TYPES as readonly string[]).includes(categoryType)) {
+    return false;
+  }
+  return Boolean(VALID_SUBCATEGORY_SLUGS[categoryType]?.includes(subcategorySlug));
+}
+
+function parseCategorySuggestion(
+  value: unknown,
+): CategorySuggestion | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const fitRaw = asOptionalString(record.fit);
+  if (!fitRaw || !(CATEGORY_FIT_VALUES as readonly string[]).includes(fitRaw)) {
+    return undefined;
+  }
+  const fit = fitRaw as CategoryFit;
+
+  let categoryType = asOptionalString(record.categoryType);
+  let subcategorySlug = asOptionalString(record.subcategorySlug);
+  if (categoryType && subcategorySlug) {
+    if (!isValidSuggestedPair(categoryType, subcategorySlug)) {
+      categoryType = undefined;
+      subcategorySlug = undefined;
+    }
+  } else {
+    categoryType = undefined;
+    subcategorySlug = undefined;
+  }
+
+  let hint = asOptionalString(record.hint);
+  if (hint && hint.length > CATEGORY_TAXONOMY_HINT_MAX_LENGTH) {
+    hint = `${hint.slice(0, CATEGORY_TAXONOMY_HINT_MAX_LENGTH - 1)}…`;
+  }
+
+  return {
+    fit,
+    ...(categoryType ? { categoryType } : {}),
+    ...(subcategorySlug ? { subcategorySlug } : {}),
+    ...(hint ? { hint } : {}),
+  };
+}
+
 /** Otázka směřuje na cenu — redundantní, když už je ve formuláři. */
 export function isPriceRelatedQuestion(label: string): boolean {
   const normalized = label.toLowerCase();
@@ -230,6 +300,7 @@ export function parseModerationResponse(raw: string): ModerationResult {
     imageAlt: asOptionalString(parsed.imageAlt),
     cleanedDescription: asOptionalString(parsed.cleanedDescription),
     questions: parseQuestions(parsed.questions),
+    categorySuggestion: parseCategorySuggestion(parsed.categorySuggestion),
   };
 }
 
@@ -351,7 +422,11 @@ const META_DESCRIPTION_CTA_HINTS = [
   /podívejte se na detaily/i,
   /kontaktujte prodejce/i,
   /napište prodejci/i,
-  /detaily a kontakt na platformě/i,
+  /napište zadavateli/i,
+  /napište poskytovateli/i,
+  /napište pořadateli/i,
+  /napište inzerentovi/i,
+  /detaily a kontakt na (?:platformě|webu)/i,
 ];
 
 function softClampText(text: string, maxLength: number): string {
@@ -431,23 +506,30 @@ export function normalizeModerationResult(
   fallbackDescription: string,
   priceType?: string,
   priceAmount?: number,
+  categoryType?: string,
 ): ModerationResult {
   if (result.status === "REJECTED") {
     return {
       status: "REJECTED",
       reason:
         result.reason ??
-        "Inzerát porušuje pravidla platformy. Upravte obsah a zkuste to znovu.",
+        "Inzerát porušuje pravidla webu. Upravte obsah a zkuste to znovu.",
       rejectedTopicId: result.rejectedTopicId,
       rejectedImageIndex: result.rejectedImageIndex,
+      categorySuggestion: result.categorySuggestion,
     };
   }
 
   const cleanedTitle = (result.cleanedTitle ?? fallbackTitle).trim();
-  const cleanedDescription = applyFormPriceToCleanedDescription(
-    stripContactInfo((result.cleanedDescription ?? fallbackDescription).trim()),
-    priceType,
-    priceAmount,
+  const cleanedDescription = applyListingPlatformCta(
+    applyFormPriceToCleanedDescription(
+      stripContactInfo(
+        (result.cleanedDescription ?? fallbackDescription).trim(),
+      ),
+      priceType,
+      priceAmount,
+    ),
+    categoryType,
   );
   const metaDescription = clampMetaDescription(result.metaDescription);
   const imageAlt = clampImageAlt(result.imageAlt);
@@ -460,6 +542,7 @@ export function normalizeModerationResult(
       metaDescription,
       imageAlt,
       questions: result.questions,
+      categorySuggestion: result.categorySuggestion,
     };
   }
 
@@ -469,5 +552,6 @@ export function normalizeModerationResult(
     cleanedDescription,
     metaDescription,
     imageAlt,
+    categorySuggestion: result.categorySuggestion,
   };
 }

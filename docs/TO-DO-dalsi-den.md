@@ -1,8 +1,9 @@
-# TO-DO — další den (smoke produkce)
+# TO-DO — další seance (smoke produkce)
 
-> **Datum plánu:** 2026-07-21 večer → testovat **2026-07-22**  
-> **Po:** hard stop blacklist (migrace **055**), Edge `moderate-listing`, e-maily SoR, cron retence  
-> **PRD:** v3.43 · snapshot [`Stav_projektu/2026-07-22.md`](../Stav_projektu/2026-07-22.md) · migrace **056–057**
+> **Odloženo:** 2026-07-26 → spustit v **příští seanci**  
+> **Po:** hard stop (**055–057**), FAQ/audit/poznámky (**058–061**), Edge `moderate-listing`  
+> **PRD:** v3.45 · snapshot [`Stav_projektu/2026-07-26.md`](../Stav_projektu/2026-07-26.md)  
+> **Poznámka:** H4/H6/H7 už ověřeno na localhost; na produkci znovu jen pokud chceš jistotu.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
 
@@ -10,13 +11,13 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 
 ## 0. Před testy
 
-- [ ] Vercel build `main` zelený (po pushi z ukončení práce)
+- [ ] Vercel build `main` zelený
 - [ ] Otevřít produkci `https://zapikolou.cz` (ne localhost)
 - [ ] Edge secrets: `CRON_SECRET` (= Vercel) + `SITE_URL=https://zapikolou.cz`
 
 ---
 
-## 1. Hard stop / blacklist (priorita zítra)
+## 1. Hard stop / blacklist (priorita)
 
 | # | Scénář | Jak | Očekávání | ✓ |
 |---|--------|-----|-----------|---|
@@ -39,7 +40,7 @@ LIMIT 10;
 
 ---
 
-## 2. Zbytek ze včerejška (053 / 052) — pokud zbude čas
+## 2. Zbytek (053 / 052) — pokud zbude čas
 
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
@@ -51,7 +52,7 @@ LIMIT 10;
 
 ---
 
-## 3. Smoke 047 — zbývající (přenos)
+## 3. Smoke 047 — zbývající
 
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
@@ -61,6 +62,17 @@ LIMIT 10;
 | D1 | `/llms.txt` s `[` / `]` v titulku | Markdown OK | ☐ |
 
 Detail: [`TO-DO_Fable.md`](./TO-DO_Fable.md) §0 Smoke A–D.
+
+---
+
+## 4. FAQ / audit / poznámky (2026-07-26)
+
+| # | Scénář | Očekávání | ✓ |
+|---|--------|-----------|---|
+| F1 | `/faq` | Accordion, ≥5 otázek; odkazy VOP/Podmínky fungují; v patičce u **Co je zaPikolou?** | ☐ |
+| F2 | Poznámky God Mode | Staff na detailu → **Poznámky** → uložit / edit do 24 h | ☐ |
+| F3 | Audit po pauza | Po změně stavu řádek v `audit_events` (`event_type` + actor) | ☐ |
+| F4 | CTA „přes web“ | Nový AI inzerát má CTA …zprávu přes web (ne platformu) | ☐ |
 
 ---
 

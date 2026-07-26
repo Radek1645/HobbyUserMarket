@@ -15,7 +15,7 @@ type BuildAccountHardStopEmailParams = {
 function sourceLabel(source: AccountBlacklistSource): string {
   return source === "automatic"
     ? "automaticky po opakovaném porušení podmínek inzerce (3 zamítnutí během 24 hodin)"
-    : "rozhodnutím moderátora platformy";
+    : "rozhodnutím moderátora webu";
 }
 
 export function buildAccountHardStopEmail(

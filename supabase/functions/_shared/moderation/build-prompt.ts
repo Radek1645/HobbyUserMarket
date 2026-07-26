@@ -1,5 +1,9 @@
-import { PROHIBITED_TOPICS } from "./prohibited-topics.ts";
+﻿import { PROHIBITED_TOPICS } from "./prohibited-topics.ts";
 import { buildDescriptionLengthPromptRules } from "./description-length-prompt.ts";
+import {
+  VALID_CATEGORY_TYPES,
+  VALID_SUBCATEGORY_SLUGS,
+} from "./category-prompts.ts";
 
 export type BuildModerationSystemPromptOptions = {
   /**
@@ -9,6 +13,13 @@ export type BuildModerationSystemPromptOptions = {
    */
   geminiSafe?: boolean;
 };
+
+function formatTaxonomyCatalogForPrompt(): string {
+  return VALID_CATEGORY_TYPES.map((type) => {
+    const slugs = VALID_SUBCATEGORY_SLUGS[type]?.join(", ") ?? "";
+    return `${type}: ${slugs}`;
+  }).join("\n");
+}
 
 /** Sestaví system prompt pro Gemini / GPT z aktuálního seznamu zakázaného obsahu. */
 export function buildModerationSystemPrompt(
@@ -41,6 +52,13 @@ Pravidla pro fotografie:
 - U REJECTED kvůli fotce uveď rejectedImageIndex (0-based index fotky v pořadí).
 - Hlavní fotka (mainImageIndex) slouží výhradně pro cross-validaci text ↔ foto: název a popis musí odpovídat tomu, co je na hlavní fotce (náhled na homepage). Sémantická neshoda → REJECTED (konzistence).
 - Zvolená kategorie a podkategorie jsou závazné. Pokud text nebo fotografie zjevně patří do jiné kategorie/podkategorie než té z formuláře, vrať REJECTED s krátkým českým důvodem typu „Inzerát je zařazený do špatné kategorie. Vyberte prosím vhodnější podkategorii.“.
+- Telemetrie kategorií (vždy, i u APPROVED / NEEDS_QUESTIONS / REJECTED): vyplň categorySuggestion. Neslouží k automatickému zakládání kategorií — jen interní vodítko.
+  - fit=match — volba z formuláře je v pořádku (categoryType/subcategorySlug můžeš zopakovat nebo vynechat).
+  - fit=better_existing — existuje lepší pár v katalogu níže; vyplň categoryType + subcategorySlug výhradně z katalogu (žádné nové slugy).
+  - fit=missing_taxonomy — obsah je v aktuální taxonomii obtížně zařaditelný / „ostatni“ je příliš široké; categoryType/subcategorySlug nech prázdné nebo nejbližší existující a do hint napiš krátký český návrh chybějící podkategorie (max ~120 znaků, např. „zahradní technika / sekačky“).
+  - Nikdy nevymýšlej nové categoryType mimo katalog. Hint není slug — platforma kategorie nevytváří.
+- Katalog (type: slug, …):
+${formatTaxonomyCatalogForPrompt()}
 - Pro hydrataci a doplňující otázky (NEEDS_QUESTIONS) procházej VŠECHNY přiložené fotografie — fakta z jakékoli fotky zapracuj do úvodu nebo Parametrů; ptej se jen pokud údaj není v textu, formuláři ani na žádné fotce.
 
 Kontakty (e-mail, telefon) v textu nejsou důvod k zamítnutí — pouze je v cleanedDescription nahraď [SKRYTO – použij chráněné pole].
@@ -65,15 +83,15 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.6:
 - cleanedDescription struktura:
   1) ÚVOD: až 6 vět; cenu z formuláře v úvodu. Pevná → „Cena 4 000 Kč.“ Dohodou → „Cena 4 000 Kč, dohodou.“ (dohoda jen zde, ne v meta). Do textu necpát „cca“.
   2) PARAMETRY: po prázdném řádku, oddělovači „---“ a nadpisu „Parametry“ odrážky „• Popisek: hodnota“.
-  3) CTA na konci úvodu (před ---): jen platforma („Pro více informací napište prodejci zprávu přes platformu.“). Nikdy telefon/e-mail v CTA.
-- Jednotky v Parametrech povinné, pokud dávají smysl (cm, ml/l, m², km).
+  3) CTA na konci úvodu (před ---): jen platforma — přesnou větu vezmi z user promptu (u zboží „prodejci“, u práce „zadavateli“, u služeb „poskytovateli“, u události „pořadateli“, u nemovitosti „inzerentovi“). Nikdy telefon/e-mail v CTA.
+- Jednotky v Parametrech povinné, pokud dávají smysl (cm, ml/l, m², km, kg).
 - Příklad cleanedTitle: „Baterie Li-ion 48V 17Ah Samsung“ (nebo s use-case, pokud se vejde: „Baterie Samsung 48V na elektrokolo“)
 - Příklad metaDescription (měkký cíl): „Baterie Li-ion Samsung 48V 17Ah ve Slavkově u Brna za 4 000 Kč. Spolehlivý akumulátor na elektrokolo.“
-- Příklad cleanedDescription (zboží, dohodou): „Nabízím málo používaný Li-ion akumulátor Samsung 48V. Tato baterie na elektrokolo má kapacitu 17 Ah (816 Wh); samotná baterka je připravená k použití. Cena 4 000 Kč, dohodou. Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna. Pro více informací napište prodejci zprávu přes platformu.\\n\\n---\\n\\nParametry\\n• Napětí: 48 V\\n• Kapacita: 17 Ah (816 Wh)\\n• Stav: málo používaný"
+- Příklad cleanedDescription (zboží, dohodou): „Nabízím málo používaný Li-ion akumulátor Samsung 48V. Tato baterie na elektrokolo má kapacitu 17 Ah (816 Wh); samotná baterka je připravená k použití. Cena 4 000 Kč, dohodou. Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna. Pro více informací napište prodejci zprávu přes web.\\n\\n---\\n\\nParametry\\n• Napětí: 48 V\\n• Kapacita: 17 Ah (816 Wh)\\n• Stav: málo používaný"
 - U statusu NEEDS_QUESTIONS: úvod + Parametry jen s fakty, které už znáš; chybějící údaje ptej v dotazníku. Nikdy nevkládej do Parametrů placeholder „…" nebo prázdnou hodnotu.
 - Frázi „osobní prohlídka po domluvě" používej pouze u nemovitostí. U zboží a módy piš „osobní předání po domluvě" nebo „vyzvednutí po domluvě".
 - U každé otázky v poli questions uveď label a paramLabel (max. 4 slova, bez otazníku).
-- U otázek na měřitelné veličiny uveď jednotku v label (cm, ml, m², km) a slad paramLabel.
+- U otázek na měřitelné veličiny uveď jednotku v label (cm, ml, m², km, kg) a slad paramLabel.
 - Pokud user prompt uvádí typ ceny a částku z formuláře (pevná nebo dohodou), NIKDY se na cenu neptej — uveď ji v úvodu; v metaDescription jen „za X Kč“.
 - Pokud je popis dostatečný včetně parametrů, vrať APPROVED (NEEDS_QUESTIONS nezneužívej).
 
@@ -90,6 +108,12 @@ Odpověz výhradně validním JSON:
   "metaDescription": "string",
   "imageAlt": "string",
   "cleanedDescription": "string",
-  "questions": [{ "id": "string", "label": "string", "paramLabel": "string" }]
+  "questions": [{ "id": "string", "label": "string", "paramLabel": "string" }],
+  "categorySuggestion": {
+    "fit": "match" | "better_existing" | "missing_taxonomy",
+    "categoryType": "zbozi",
+    "subcategorySlug": "elektronika",
+    "hint": "volitelný český popis chybějící podkategorie"
+  }
 }`;
 }

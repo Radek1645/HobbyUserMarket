@@ -9,7 +9,11 @@ const META_DESCRIPTION_CTA_HINTS = [
   /podívejte se na detaily/i,
   /kontaktujte prodejce/i,
   /napište prodejci/i,
-  /detaily a kontakt na platformě/i,
+  /napište zadavateli/i,
+  /napište poskytovateli/i,
+  /napište pořadateli/i,
+  /napište inzerentovi/i,
+  /detaily a kontakt na (?:platformě|webu)/i,
 ];
 
 /**

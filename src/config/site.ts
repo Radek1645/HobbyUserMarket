@@ -31,3 +31,6 @@ export const SITE_HOME_ARIA_LABEL = `${SITE_DISPLAY_NAME} — ${SITE_TAGLINE}`;
 
 /** Veřejná verze platformy (zobrazená v patičce). */
 export const SITE_VERSION = "0.1";
+
+/** Rok v patičce — aktuálnost platformy. */
+export const SITE_YEAR = 2026;

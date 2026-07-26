@@ -5,6 +5,7 @@ import {
   adminDeleteListing,
   adminRestoreListing,
 } from "@/app/actions/moderation-listings";
+import { ModeratorNotesPanel } from "@/components/mod/ModeratorNotesPanel";
 import {
   modalCancelOutlineButtonClass,
   modalDangerButtonClass,
@@ -14,6 +15,7 @@ import {
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { POST_STATUS } from "@/config/post-status";
 import { getPostStatusReasonMessage } from "@/config/listing-status-reasons";
+import type { ModeratorNoteRow } from "@/lib/mod/moderator-notes";
 import type { PostStatusReasonCode } from "@/types/post";
 import Link from "next/link";
 import { useState } from "react";
@@ -24,6 +26,8 @@ type ModeratorListingBarProps = {
   postTitle: string;
   status: string;
   statusReasonCode: PostStatusReasonCode | null;
+  notes: ModeratorNoteRow[];
+  noteFlash?: "created" | "updated" | "error" | null;
 };
 
 export function ModeratorListingBar({
@@ -32,13 +36,18 @@ export function ModeratorListingBar({
   postTitle,
   status,
   statusReasonCode,
+  notes,
+  noteFlash = null,
 }: ModeratorListingBarProps) {
   const [confirmAction, setConfirmAction] = useState<
     "block" | "delete" | "restore" | null
   >(null);
+  // Po uložení poznámky nechat panel otevřený (redirect s ?noteOk=).
+  const [notesOpen, setNotesOpen] = useState(() => noteFlash != null);
 
   const returnPath = getListingPath(postSlug);
   const reasonMessage = getPostStatusReasonMessage(statusReasonCode);
+  const notesCount = notes.length;
 
   return (
     <>
@@ -88,7 +97,32 @@ export function ModeratorListingBar({
           >
             Karanténa
           </Link>
+          <button
+            type="button"
+            onClick={() => setNotesOpen((open) => !open)}
+            aria-expanded={notesOpen}
+            aria-controls="moderator-notes-panel"
+            className={
+              notesOpen
+                ? "rounded-lg border border-amber-500 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-950"
+                : "rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-950 transition hover:bg-amber-100"
+            }
+          >
+            Poznámky{notesCount > 0 ? ` (${notesCount})` : ""}
+          </button>
         </div>
+
+        {notesOpen ? (
+          <div id="moderator-notes-panel" className="mt-4">
+            <ModeratorNotesPanel
+              postId={postId}
+              postSlug={postSlug}
+              notes={notes}
+              flash={noteFlash}
+              embedded
+            />
+          </div>
+        ) : null}
       </div>
 
       {confirmAction ? (

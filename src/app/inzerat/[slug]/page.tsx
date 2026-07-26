@@ -13,6 +13,7 @@ import { ListingViewBeacon } from "@/components/listing/ListingViewBeacon";
 import { ReportListingButton } from "@/components/listing/ReportListingButton";
 import { ModeratorListingBar } from "@/components/mod/ModeratorListingBar";
 import { BackLink } from "@/components/navigation/BackLink";
+import { loadModeratorNotesForPost } from "@/lib/mod/moderator-notes";
 import { ListingJsonLd } from "@/components/seo/ListingJsonLd";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { getListingIntentLabel } from "@/config/listing-intent";
@@ -238,6 +239,19 @@ export default async function ListingDetailPage({
     jsonLdImageUrls.push(post.main_image_url);
   }
 
+  const moderatorNotes =
+    isStaff && currentUser
+      ? await loadModeratorNotesForPost(post.id, currentUser.id)
+      : [];
+  const noteFlash =
+    query.noteOk === "1"
+      ? ("created" as const)
+      : query.noteOk === "updated"
+        ? ("updated" as const)
+        : query.noteError
+          ? ("error" as const)
+          : null;
+
   return (
     <article className="px-4 py-8 sm:px-6">
       {post.status === "active" ? (
@@ -257,7 +271,7 @@ export default async function ListingDetailPage({
         gtmId={GTM_CTA.DETAIL_BACK_HOME}
       />
 
-      {isStaff && !isOwner ? (
+      {isStaff ? (
         <div className="mt-4">
           <ModeratorListingBar
             postId={post.id}
@@ -265,6 +279,8 @@ export default async function ListingDetailPage({
             postTitle={post.title}
             status={post.status}
             statusReasonCode={statusReasonCode ?? null}
+            notes={moderatorNotes}
+            noteFlash={noteFlash}
           />
         </div>
       ) : null}

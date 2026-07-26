@@ -18,17 +18,16 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 1. Ověření funkčnosti
 
-- [x] Ruční blacklist hide (5) + 404 detail + pryč z přehledu
-- [x] Unban restore (5) + SoR maily (hard stop + unban), kontakt `info@`
-- [ ] Auto hard stop H3 / gate H5 *(zbývá)*
-- [ ] NSFW hard fotka / produkční smoke *(volitelné)*
+- [x] FAQ `/faq` + patička + LegalLinkedText
+- [x] Moderátorské poznámky (God Mode)
+- [x] Audit events (po 060)
+- [ ] Produkční smoke H1–H3 / F1–F4 *(příští session — `TO-DO-dalsi-den.md`)*
 
 ---
 
 ## 2. Nasazení infrastruktury
 
-- [x] Migrace **056** — uživatel potvrdil
-- [x] Migrace **057** — uživatel potvrdil
+- [x] Migrace **058–061** — uživatel potvrdil
 - [x] Edge Functions — sync + deploy `moderate-listing`
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
@@ -36,24 +35,24 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 3. Dokumentace
 
-- [x] **Metodika** — §6.4 hard stop + 057 + `SITE_OPERATOR_CONTACT_EMAIL`
-- [x] **PRD** — v3.43
-- [x] **Stav_projektu/2026-07-22.md**
+- [x] **Metodika** — §2.1.1 FAQ, §11.4 audit/poznámky
+- [x] **PRD** — v3.45
+- [x] **Stav_projektu/2026-07-26.md**
 
 ---
 
 ## 4. Snapshot session — `Stav_projektu/`
 
-- [x] Soubor `Stav_projektu/2026-07-22.md`
+- [x] Soubor `Stav_projektu/2026-07-26.md`
 - [x] Řádek v [`Stav_projektu/README.md`](../Stav_projektu/README.md)
 
 ---
 
 ## 5. Git — příprava a commity
 
-- [x] `git status` — bez `.env`
-- [x] Commit `06ef2f5`
-- [x] Push na `origin`
+- [ ] `git status` — bez `.env`
+- [ ] Commit
+- [ ] Push na `origin`
 
 ---
 
@@ -63,7 +62,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [x] Push proběhl bez chyby
+- [ ] Push proběhl bez chyby
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -76,4 +75,4 @@ git push -u origin HEAD
 | Migrace + EF nasazené | ✅ |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit + push | ✅ |
+| Commit + push | ☐ |

@@ -142,9 +142,12 @@ export const CATEGORIES: CategoryConfig[] = [
         slug: "auta-moto",
         label: "Auta a moto",
         titlePlaceholder: "např. Škoda Octavia 2.0 TDI",
-        descriptionPlaceholder: "Rok, nájezd, motorizace, STK, výbava, stav…",
+        descriptionPlaceholder:
+          "Rok, nájezd, motorizace, STK, poslední servis, výbava, stav…",
         aiPrompt:
-          "Úvod + Parametry (rok, nájezd, motorizace, STK, výbava, stav). Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu. Dotazník jen na chybějící údaje.",
+          "Úvod + Parametry (rok, nájezd, motorizace, STK, datum poslední servisní prohlídky, výbava, stav). " +
+          "Chybí-li datum poslední servisní prohlídky, zeptej se (paramLabel: „Poslední servis“). " +
+          "Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu. Dotazník jen na chybějící údaje.",
       },
       {
         slug: "moda-obleceni",
@@ -396,6 +399,14 @@ export function getCategoryConfig(type: CategoryType): CategoryConfig {
     throw new Error(`Neznámá kategorie: ${type}`);
   }
   return found;
+}
+
+/** Kompaktní katalog pro AI prompt — návrhy jen z těchto slugů. */
+export function formatTaxonomyCatalogForPrompt(): string {
+  return CATEGORIES.map((category) => {
+    const slugs = category.subcategories.map((sub) => sub.slug).join(", ");
+    return `${category.type}: ${slugs}`;
+  }).join("\n");
 }
 
 export function isValidSubcategory(

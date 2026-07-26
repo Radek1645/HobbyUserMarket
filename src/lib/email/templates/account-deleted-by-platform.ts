@@ -24,7 +24,7 @@ export function buildAccountDeletedByPlatformEmail(
 
   const text = `Dobrý den${params.nickname ? `, ${params.nickname}` : ""},
 
-váš účet na ${SITE_DISPLAY_NAME} byl administrátorem platformy smazán.
+váš účet na ${SITE_DISPLAY_NAME} byl administrátorem webu smazán.
 
 Důvod:
 ${reasonLabel}${note ? `\n\nPoznámka moderátora:\n${note}` : ""}

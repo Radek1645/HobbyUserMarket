@@ -19,6 +19,8 @@ U **nových tabulek** (migrace, `supabase_schema.sql`) přidej lidsky čitelné 
 | `reports` | `report_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
 | `profiles` | `profile_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
 | `inquiry_events` | `inquiry_no BIGINT GENERATED ALWAYS AS IDENTITY` | vedle UUID `id` |
+| `audit_events` | `event_no BIGINT GENERATED ALWAYS AS IDENTITY` | PK |
+| `moderator_notes` | `note_no BIGINT GENERATED ALWAYS AS IDENTITY` | PK |
 
 ## Pravidla
 

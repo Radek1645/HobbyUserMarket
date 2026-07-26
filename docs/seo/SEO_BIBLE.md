@@ -66,7 +66,7 @@ Snippet v organice nastavuje očekávání **klik → detail inzerátu** (fotky,
 - **Soft cíl pro AI:** ideálně ~150–160 znaků (klidně až ~200). **Žádný hard reject** při uložení kvůli délce.
 - **Hard cap storage/SERP:** 160 znaků — delší text platforma **ořízne** (`clampListingMetaDescription`). Krátký text **nedoplňuj CTA** — spíš fakt (stav, use-case), jinak nech kratší.
 - **Priorita vět:** produkt + lokalita + cena → benefit / use-case. Preferuj oznamovací věty před „Hledáte…?“.
-- **Zákaz CTA ve meta:** „napište prodejci“, „kontaktujte“, „detaily a kontakt na platformě“, brand webu. CTA jen v **těle** inzerátu (§3.4).
+- **Zákaz CTA ve meta:** „napište prodejci“, „kontaktujte“, „detaily a kontakt na webu“, brand webu. CTA jen v **těle** inzerátu (§3.4).
 - **Při clampu:** nejdřív **vyhoď CTA větu** (když ji AI přesto vrátí), teprve pak větný / slovný řez.
 - **Cena v meta:** jen čisté číslo + `Kč` (např. `za 4 000 Kč`).  
   **Zákaz** ve meta: `cca`, `orientační`, `dohodou`, `odměna dohodou`. Typ ceny (dohodou) patří do těla inzerátu, ne do SERP snippetu.
@@ -80,7 +80,7 @@ Snippet v organice nastavuje očekávání **klik → detail inzerátu** (fotky,
 3. **Lokální SEO** — u menší obce přirozeně propojit lokalitu se spádovým městem **bez závazku dopravy** (*Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna.*). **Zákaz** slibovat dovoz/dopravu do města, pokud to inzerent výslovně nenapsal. Vyžaduje `locationText` ve vstupu AI.
 4. **Kontext vyhledávání** — účel a související slova (pneu → auto, disky; router → Wi‑Fi, síť).
 5. **Parametry** — technika na konci v odrážkách po `---` / `Parametry` (stávající struktura).
-6. **CTA** — jen kanály platformy (*napište prodejci zprávu přes platformu*). **Nikdy** telefon/e-mail v CTA, pokud nejsou u inzerátu explicitně dostupné jako kontaktní pole.
+6. **CTA** — jen kanály webu („…zprávu přes web“); oslovení podle kategorie (*prodejci* / *zadavateli* / *poskytovateli* / *pořadateli* / *inzerentovi* — `listing-cta.ts`). **Nikdy** telefon/e-mail v CTA, pokud nejsou u inzerátu explicitně dostupné jako kontaktní pole.
 7. **Cena v těle:** číslo z formuláře. U `fixed` → `Cena 4 000 Kč.` U `negotiable` → číslo + že je cena dohodou (např. `Cena 4 000 Kč, dohodou.`). Slovo „orientační“ je v těle volitelné; „cca“ do textu necpát.
 
 ### 3.5 ALT fotek

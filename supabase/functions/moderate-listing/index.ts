@@ -54,9 +54,9 @@ import { isEmailBlacklisted } from "../_shared/moderation/account-blacklist.ts";
 
 /** CZ copy — drž sync s src/config/moderation/messages.ts (sync skript nekopíruje). */
 const HARD_HIT_TEXT_REASON =
-  "Text inzerátu porušuje podmínky platformy. Upravte název nebo popis. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
+  "Text inzerátu porušuje podmínky webu. Upravte název nebo popis. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
 const NSFW_IMAGE_REASON =
-  "Fotografie porušuje podmínky platformy (nevhodný obsah). Nahrajte jiné snímky. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
+  "Fotografie porušuje podmínky webu (nevhodný obsah). Nahrajte jiné snímky. Pokud s rozhodnutím nesouhlasíte, kontaktujte nás.";
 const SIGHTENGINE_UNAVAILABLE_MESSAGE =
   "Kontrola fotografií teď není dostupná. Zkuste to prosím za chvíli znovu.";
 const ACCOUNT_BLACKLISTED_MESSAGE =
@@ -143,9 +143,14 @@ async function respondWithLog(
     errorCode,
     titlePreview: logCtx.title,
     sightengineResponses: logCtx.sightengineResponses,
+    categoryFit: body.categorySuggestion?.fit,
+    suggestedCategoryType: body.categorySuggestion?.categoryType,
+    suggestedSubcategorySlug: body.categorySuggestion?.subcategorySlug,
+    categoryTaxonomyHint: body.categorySuggestion?.hint,
   });
 
-  const { errorCode: _omit, ...rest } = body;
+  // Telemetrie kategorií zůstává jen v DB — klientovi neposíláme.
+  const { errorCode: _omit, categorySuggestion: _hint, ...rest } = body;
   return jsonResponse(
     errorCode ? { ...rest, errorCode } : rest,
     options?.httpStatus ?? 200,
@@ -577,6 +582,7 @@ serve(async (req) => {
       description,
       priceType,
       priceAmount,
+      categoryType,
     );
     const result = applyPostModerationSafetyChecks(
       normalized,

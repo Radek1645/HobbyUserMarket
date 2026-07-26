@@ -76,7 +76,7 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
     id: "animals_illegal",
     label: "Nelegální obchod se zvířaty",
     criteria:
-      "Prodej ohrožených druhů, zvířat bez povolení, psů z množíren v rozporu s místními pravidly platformy.",
+      "Prodej ohrožených druhů, zvířat bez povolení, psů z množíren v rozporu s místními pravidly webu.",
   },
   {
     id: "medical_prescription",

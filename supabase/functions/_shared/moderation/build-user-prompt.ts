@@ -6,6 +6,7 @@ import {
   LISTING_PROMPT_TAGS,
   wrapListingUserField,
 } from "./bound-user-content.ts";
+import { getListingPlatformCta } from "./listing-cta.ts";
 
 export type ModerationRequestBody = {
   intent?: string;
@@ -116,6 +117,9 @@ export function buildModerationUserPrompt(
     body.intent ? `Akce: ${body.intent}` : null,
     body.categoryType
       ? `Kategorie: ${body.categoryType}${body.subcategorySlug ? ` / ${body.subcategorySlug}` : ""}`
+      : null,
+    body.categoryType
+      ? `CTA věta na konec úvodu cleanedDescription (před ---), doslovně:\n${getListingPlatformCta(body.categoryType)}`
       : null,
     categoryAiPrompt
       ? `Kontext kategorie pro hydrataci a doplňující otázky:\n${categoryAiPrompt}`

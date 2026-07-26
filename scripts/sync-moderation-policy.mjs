@@ -32,6 +32,31 @@ const boundUserContentTarget = join(
 copyFileSync(boundUserContentSource, boundUserContentTarget);
 console.log("Synced bound-user-content:", boundUserContentTarget);
 
+const listingCtaSource = join(root, "src/config/moderation/listing-cta.ts");
+const listingCtaTarget = join(
+  root,
+  "supabase/functions/_shared/moderation/listing-cta.ts",
+);
+const listingCtaContent = readFileSync(listingCtaSource, "utf8")
+  .replace(/^import type \{ CategoryType \} from "@\/types\/post";\r?\n\r?\n/, "")
+  .replace(
+    "export const LISTING_PLATFORM_CTA_BY_CATEGORY: Record<CategoryType, string>",
+    "const LISTING_PLATFORM_CTA_BY_CATEGORY: Record<string, string>",
+  )
+  .replace(
+    "return LISTING_PLATFORM_CTA_BY_CATEGORY[categoryType as CategoryType];",
+    "return LISTING_PLATFORM_CTA_BY_CATEGORY[categoryType]!;",
+  )
+  .replace(
+    "const DEFAULT_CTA = LISTING_PLATFORM_CTA_BY_CATEGORY.zbozi;",
+    "const DEFAULT_CTA = LISTING_PLATFORM_CTA_BY_CATEGORY.zbozi!;",
+  );
+writeFileSync(
+  listingCtaTarget,
+  `/** Auto-synced from src/config/moderation/listing-cta.ts — do not edit. */\n${listingCtaContent}`,
+);
+console.log("Synced listing-cta:", listingCtaTarget);
+
 const prohibitedScanSource = join(root, "src/lib/moderation/prohibited-scan.ts");
 const prohibitedScanTarget = join(
   root,

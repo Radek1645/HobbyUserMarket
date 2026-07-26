@@ -22,7 +22,7 @@ function legalBasis(reasonCode: PostStatusReasonCode): string {
   if (reasonCode === "reports_threshold") {
     return "Pravidla inzerce (§4) a VOP (§4.5) — inzerát byl nahlášen třemi různými uživateli.";
   }
-  return "VOP (§4.5) a Pravidla inzerce — rozhodnutí moderátora platformy.";
+  return "VOP (§4.5) a Pravidla inzerce — rozhodnutí moderátora webu.";
 }
 
 function actionLabel(action: ListingRestrictionAction): string {
@@ -40,7 +40,7 @@ export function buildListingRestrictedEmail(
 ): { subject: string; text: string } {
   const reason =
     getPostStatusReasonMessage(params.reasonCode) ??
-    "Inzerát porušuje pravidla platformy nebo zákon.";
+    "Inzerát porušuje pravidla webu nebo zákon.";
   const detail = params.reasonDetail?.trim();
   const appealLines = [
     `Stížnost nebo odvolání: ${params.dsaUrl}`,

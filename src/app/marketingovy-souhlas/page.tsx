@@ -24,9 +24,9 @@ export default function MarketingConsentPage() {
         <h2 className="text-lg font-semibold text-gray-900">Co souhlas znamená</h2>
         <p>
           Pokud při registraci zaškrtnete volitelný souhlas, můžeme vám na e-mail
-          u účtu zasílat novinky o platformě, tipy k inzerci a související
+          u účtu zasílat novinky o webu, tipy k inzerci a související
           obchodní sdělení. Souhlas není povinný — bez něj účet založíte a
-          platformu používáte stejně.
+          web používáte stejně.
         </p>
       </section>
 

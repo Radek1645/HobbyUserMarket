@@ -183,6 +183,16 @@ async function runModeratorListingAction(
     redirect(`${returnPath}?error=${validationError}`);
   }
 
+  // Kontext pro trg_posts_audit_lifecycle (důvod / poznámka v payload).
+  await supabase.rpc("set_audit_context", {
+    p_payload: {
+      mod_action: action,
+      reason_code:
+        action === "restore" ? null : POST_STATUS_REASON.moderation,
+      reason_note: reasonNote ?? null,
+    },
+  });
+
   const { error: updateError } = await supabase
     .from("posts")
     .update({

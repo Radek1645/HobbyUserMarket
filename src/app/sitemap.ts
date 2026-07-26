@@ -26,6 +26,11 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
     priority: 0.3,
   },
   {
+    url: "/faq",
+    changeFrequency: "monthly",
+    priority: 0.5,
+  },
+  {
     url: "/vop",
     changeFrequency: "monthly",
     priority: 0.3,

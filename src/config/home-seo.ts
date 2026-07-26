@@ -19,6 +19,6 @@ export const HOME_SEO_BLURB = {
       label: "Jak vytvořit inzerát",
     },
   ],
-  linksIntro: "Více o platformě na stránce",
+  linksIntro: "Více o webu na stránce",
   linksJoin: "a v průvodci",
 } as const;

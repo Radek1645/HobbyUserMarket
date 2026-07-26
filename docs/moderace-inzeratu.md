@@ -56,6 +56,12 @@ Pokud AI dočasně nefunguje (kvóta, výpadek poskytovatele, chybné klíče, t
 | `supabase/functions/_shared/moderation/issue-approval.ts` | Vydání approval tokenu po AI schválení |
 | `supabase/functions/_shared/moderation/` | Kopie pravidel pro deploy (sync skriptem) |
 | `src/lib/moderation/prohibited-scan.ts` | Server-side keyword scan před uložením |
+| `src/config/moderation/category-fit.ts` | Enum `match` / `better_existing` / `missing_taxonomy` (telemetrie) |
+| migrace `058` | Sloupce AI návrhu kategorie v `moderation_checks` (bez auto-create) |
+
+### AI návrh kategorie (telemetrie)
+
+Po AI volání se do `moderation_checks` uloží `category_fit` + návrh existujícího páru nebo `category_taxonomy_hint`. **Klient to nedostane**; platforma **nezakládá** kategorie. Agregace: Metodika A2. Nasazení: migrace `058` + `npx supabase functions deploy moderate-listing`.
 
 ---
 
