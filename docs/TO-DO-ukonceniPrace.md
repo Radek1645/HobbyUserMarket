@@ -50,8 +50,8 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 5. Git — příprava a commity
 
-- [ ] `git status` — bez `.env`
-- [ ] Commit
+- [x] `git status` — bez `.env`
+- [x] Commit `7453cb1`
 - [ ] Push na `origin`
 
 ---
