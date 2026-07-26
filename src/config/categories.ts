@@ -373,6 +373,11 @@ export const CATEGORIES: CategoryConfig[] = [
         label: "Péče, zahrada, domácnost",
         titlePlaceholder: "např. Pomoc se zahradou na víkend",
         descriptionPlaceholder: "Rozsah práce, termín, požadavky, odměna…",
+        aiPrompt:
+          "Inzerent HLEDÁ pracovníka / brigádníka do domácnosti, péče nebo zahrady " +
+          "(úklid, mytí oken a žaluzií, hlídání, sekání trávy, drobné domácí práce). " +
+          "To patří sem — NIKDY ne REJECTED jen proto, že podobná témata existují i u služeb. " +
+          "Do sluzby patří jen když inzerent sám nabízí službu zákazníkům (např. „nabízím úklid bytů“), ne když nabízí brigádu / hledá pomocníka.",
       },
       {
         slug: "ostatni",
@@ -388,7 +393,10 @@ export const CATEGORIES: CategoryConfig[] = [
     descriptionPlaceholder:
       "Rozsah práce, požadavky (věk, praxe), termín nástupu, počet hodin…",
     aiPrompt:
-      "Uživatel nabízí práci/brigádu. Zaměř se na: termín nástupu, požadavky na pracovníka a odměnu. Chybí-li tyto informace, zeptej se na ně. NEPOKOUŠEJ SE v tomto kroku upravovat nebo cenzurovat telefonní čísla a e-maily, to řeší systém jinde.\n\n" +
+      "Uživatel nabízí práci/brigádu (hledá pracovníka). Zaměř se na: termín nástupu, požadavky na pracovníka a odměnu. Chybí-li tyto informace, zeptej se na ně. NEPOKOUŠEJ SE v tomto kroku upravovat nebo cenzurovat telefonní čísla a e-maily, to řeší systém jinde.\n\n" +
+      "Rozdíl od kategorií sluzby: „Brigáda na…“, „Hledám pomocníka…“, hodinová mzda za výpomoc = prace. " +
+      "REJECTED kvůli kategorii jen když inzerent zjevně nabízí vlastní službu zákazníkům (ne hledá člověka). " +
+      "Jiná podkategorie v rámci prace (např. brigady-jednorazove vs pece-zahrada) NENÍ důvod k REJECTED — použij categorySuggestion.fit=better_existing.\n\n" +
       ADVERTISER_TYPE_AI_RULES,
   },
 ];

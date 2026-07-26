@@ -50,8 +50,11 @@ ${rules}
 Pravidla pro fotografie:
 - Bezpečnostní filtr musí projít VŠECHNY fotografie (max. 6). Zamítnutí jedné fotky = zamítnutí celého inzerátu.
 - U REJECTED kvůli fotce uveď rejectedImageIndex (0-based index fotky v pořadí).
-- Hlavní fotka (mainImageIndex) slouží výhradně pro cross-validaci text ↔ foto: název a popis musí odpovídat tomu, co je na hlavní fotce (náhled na homepage). Sémantická neshoda → REJECTED (konzistence).
-- Zvolená kategorie a podkategorie jsou závazné. Pokud text nebo fotografie zjevně patří do jiné kategorie/podkategorie než té z formuláře, vrať REJECTED s krátkým českým důvodem typu „Inzerát je zařazený do špatné kategorie. Vyberte prosím vhodnější podkategorii.“.
+- Hlavní fotka (mainImageIndex) slouží výhradně pro cross-validaci text ↔ foto: nabízená věc/služba v názvu a popisu musí být na hlavní fotce rozpoznatelná (náhled na homepage). REJECTED jen při zjevné neshodě (např. text o telefonu, na fotce lednice).
+- Na fotce smí být i doplňky / okolí / stylizace (židle u stolku, krabice, pozadí). Pokud popis výslovně říká, že něco na fotce NENÍ součástí prodeje (např. „židličky nejsou součástí“, „bez příslušenství“), NIKDY to není důvod k REJECTED — naopak je to v pořádku. Do cleanedDescription tu výjimku zachovej.
+- Zvolená kategorie (categoryType) je závazná. REJECTED kvůli kategorii jen když text/fotky zjevně patří do JINÉHO typu (např. zboží vs práce, nebo práce vs služby při jasném záměru). Důvod česky: „Inzerát je zařazený do špatné kategorie. Vyberte prosím vhodnější podkategorii.“
+- Jiná podkategorie ve STEJNÉM categoryType (překryv, např. pece-zahrada vs brigady-jednorazove) NIKDY není REJECTED — nech APPROVED/NEEDS_QUESTIONS a do categorySuggestion dej fit=better_existing.
+- Práce vs služby: „Brigáda na…“, „Hledám pomocníka…“, odměna Kč/h za výpomoc = prace. „Nabízím úklid / službu zákazníkům“ = sluzby. Nepřehazuj brigádu do služeb jen kvůli tématu (okna, úklid, zahrada).
 - Telemetrie kategorií (vždy, i u APPROVED / NEEDS_QUESTIONS / REJECTED): vyplň categorySuggestion. Neslouží k automatickému zakládání kategorií — jen interní vodítko.
   - fit=match — volba z formuláře je v pořádku (categoryType/subcategorySlug můžeš zopakovat nebo vynechat).
   - fit=better_existing — existuje lepší pár v katalogu níže; vyplň categoryType + subcategorySlug výhradně z katalogu (žádné nové slugy).

@@ -15,8 +15,6 @@ import {
 export type ListingQualityScoreInput = {
   imageCount: number;
   description: string;
-  metaDescription?: string;
-  imageAlt?: string;
   questions: ReadonlyArray<{ id: string }>;
   questionAnswers: Record<string, string>;
 };
@@ -46,18 +44,29 @@ function countAnsweredQuestions(
   return { total, answered };
 }
 
-function scoreDescription(description: string): number {
+type DescriptionScoreBreakdown = {
+  points: number;
+  introLength: number;
+  paramCount: number;
+  introComplete: boolean;
+  paramsComplete: boolean;
+};
+
+function scoreDescription(description: string): DescriptionScoreBreakdown {
   const parsed = parseListingDescription(description);
   const introLength = parsed.intro.trim().length;
   const realParams = parsed.parameters.filter(
     (param) => param.label && !isPlaceholderParameterValue(param.value),
   );
+  const paramCount = realParams.length;
 
   let points = 0;
   const introMax = Math.round(LISTING_QUALITY_POINTS.description * 0.6);
   const paramsMax = LISTING_QUALITY_POINTS.description - introMax;
+  const introComplete = introLength >= LISTING_QUALITY_INTRO_GOOD_MIN_CHARS;
+  const paramsComplete = paramCount >= 3;
 
-  if (introLength >= LISTING_QUALITY_INTRO_GOOD_MIN_CHARS) {
+  if (introComplete) {
     points += introMax;
   } else if (introLength > 0) {
     points += Math.round(
@@ -65,13 +74,19 @@ function scoreDescription(description: string): number {
     );
   }
 
-  if (realParams.length >= 3) {
+  if (paramsComplete) {
     points += paramsMax;
-  } else if (realParams.length > 0) {
-    points += Math.round((realParams.length / 3) * paramsMax);
+  } else if (paramCount > 0) {
+    points += Math.round((paramCount / 3) * paramsMax);
   }
 
-  return points;
+  return {
+    points,
+    introLength,
+    paramCount,
+    introComplete,
+    paramsComplete,
+  };
 }
 
 function scoreQuestions(
@@ -87,22 +102,23 @@ function resolveTipCode(input: {
   imageCount: number;
   unansweredCount: number;
   score: number;
-  band: ListingQualityBand;
+  description: DescriptionScoreBreakdown;
 }): ListingQualityTipCode | null {
   if (input.imageCount <= 0) return "missing_photo";
   if (input.unansweredCount > 0) {
     if (input.score >= 70) return "can_improve";
     return "needs_answers";
   }
-  if (input.band === "excellent") return "perfect";
-  if (input.band === "good") return null;
-  if (input.band === "fair" || input.band === "weak") return "needs_info";
+  if (!input.description.introComplete) return "needs_longer_intro";
+  if (!input.description.paramsComplete) return "needs_params";
+  if (input.score >= 100) return "perfect";
   return "needs_info";
 }
 
 /**
  * Deterministické skóre kvality inzerátu (0–100) + jeden tip.
  * Nejde o predikci prodeje — jen úplnost a připravenost textu.
+ * SEO (meta/alt) skóre neovlivňuje — připravuje AI.
  */
 export function computeListingQualityScore(
   input: ListingQualityScoreInput,
@@ -113,13 +129,12 @@ export function computeListingQualityScore(
     input.questionAnswers,
   );
   const unansweredCount = questionTotal - answered;
+  const description = scoreDescription(input.description);
 
   let raw =
     (imageCount > 0 ? LISTING_QUALITY_POINTS.photos : 0) +
-    scoreDescription(input.description) +
-    scoreQuestions(input.questions, input.questionAnswers) +
-    (input.metaDescription?.trim() ? LISTING_QUALITY_POINTS.seoMeta : 0) +
-    (input.imageAlt?.trim() ? LISTING_QUALITY_POINTS.seoAlt : 0);
+    description.points +
+    scoreQuestions(input.questions, input.questionAnswers);
 
   if (imageCount <= 0) {
     raw = Math.min(raw, LISTING_QUALITY_NO_PHOTO_SCORE_CAP);
@@ -131,7 +146,7 @@ export function computeListingQualityScore(
     imageCount,
     unansweredCount,
     score,
-    band,
+    description,
   });
   const tip = tipCode ? LISTING_QUALITY_UI.tips[tipCode] : null;
   const tipScrollsToImprove =

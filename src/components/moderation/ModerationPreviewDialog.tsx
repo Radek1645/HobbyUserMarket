@@ -4,6 +4,7 @@ import { LISTING_DESCRIPTION_MAX_LENGTH } from "@/config/app";
 import {
   IMPROVE_LISTING_SECTION_ID,
   LISTING_QUALITY_UI,
+  LISTING_SEO_SECTION_ID,
   getListingQualityScoreClass,
 } from "@/config/listing-quality";
 import {
@@ -176,16 +177,12 @@ export function ModerationPreviewDialog({
       computeListingQualityScore({
         imageCount: preview?.imageCount ?? 0,
         description: projectedDescription,
-        metaDescription,
-        imageAlt,
         questions: visibleQuestions,
         questionAnswers,
       }),
     [
       preview?.imageCount,
       projectedDescription,
-      metaDescription,
-      imageAlt,
       visibleQuestions,
       questionAnswers,
     ],
@@ -345,9 +342,9 @@ export function ModerationPreviewDialog({
               value={aiDescription}
               disabled={publishing}
               onChange={(event) => setAiDescription(event.target.value)}
-              rows={6}
+              rows={8}
               maxLength={LISTING_DESCRIPTION_MAX_LENGTH}
-              className="mt-1 max-h-36 w-full resize-none overflow-y-auto rounded-xl border border-neutral-500 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-600/35 disabled:opacity-60"
+              className="mt-1 min-h-[10rem] max-h-[min(20rem,42vh)] w-full resize-y overflow-y-auto rounded-xl border border-neutral-500 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-600/35 disabled:opacity-60"
             />
             <p
               className={[
@@ -370,7 +367,10 @@ export function ModerationPreviewDialog({
           </div>
 
           {showSeoSection ? (
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50">
+            <div
+              id={LISTING_SEO_SECTION_ID}
+              className="rounded-xl border border-neutral-200 bg-neutral-50"
+            >
               <div className="flex items-stretch gap-0.5">
                 <button
                   type="button"
@@ -541,7 +541,7 @@ export function ModerationPreviewDialog({
           ) : null}
         </div>
 
-        <div className="space-y-2 border-t border-neutral-200 bg-neutral-50 px-5 py-4 sm:px-6">
+        <div className="shrink-0 space-y-1.5 border-t border-neutral-200 bg-neutral-50 px-5 py-3 sm:px-6">
           <button
             ref={publishAiRef}
             type="button"
@@ -552,7 +552,7 @@ export function ModerationPreviewDialog({
               descriptionOverLimit
             }
             onClick={handlePublishAi}
-            className={`flex w-full flex-col items-center ${listingFormPrimaryButtonClass}`}
+            className={`w-full ${listingFormPrimaryButtonClass}`}
           >
             {publishing ? (
               <span className="flex items-center gap-2">
@@ -560,32 +560,32 @@ export function ModerationPreviewDialog({
                 Ukládám…
               </span>
             ) : (
-              <span>{MODERATION_PREVIEW_UI.publishAiLabel}</span>
-            )}
-            {!publishing ? (
-              <span className="mt-0.5 text-xs font-normal text-white/80">
-                {MODERATION_PREVIEW_UI.publishAiHint}
+              <span>
+                {MODERATION_PREVIEW_UI.publishAiLabel}
+                <span className="ml-1.5 font-normal text-white/80">
+                  · {MODERATION_PREVIEW_UI.publishAiHint}
+                </span>
               </span>
-            ) : null}
+            )}
           </button>
 
           <button
             type="button"
             disabled={publishing}
             onClick={onPublishOriginal}
-            className={`flex w-full flex-col items-center ${listingFormSecondaryButtonClass}`}
+            className={`w-full ${listingFormSecondaryButtonClass}`}
           >
-            <span>{MODERATION_PREVIEW_UI.publishOriginalLabel}</span>
-            <span className="mt-0.5 text-center text-xs font-normal text-neutral-600">
-              {MODERATION_PREVIEW_UI.publishOriginalHint}
-            </span>
+            {MODERATION_PREVIEW_UI.publishOriginalLabel}
           </button>
+          <p className="px-1 text-center text-[11px] leading-snug text-neutral-500">
+            {MODERATION_PREVIEW_UI.publishOriginalHint}
+          </p>
 
           <button
             type="button"
             disabled={publishing}
             onClick={onClose}
-            className="w-full rounded-xl px-4 py-2.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-200/80 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition hover:bg-neutral-200/80 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {MODERATION_PREVIEW_UI.cancelLabel}
           </button>

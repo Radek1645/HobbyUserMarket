@@ -176,12 +176,14 @@ Moderace rozlišuje **dvě úrovně** — nesmí se zaměňovat:
 ### Pravidla (od 2026-07-13)
 
 1. **Obecné pravidlo** v `src/config/moderation/build-prompt.ts` (sync do `_shared/moderation/build-prompt.ts`):
-   - Zvolená kategorie a podkategorie jsou závazné.
-   - Zjevná neshoda textu nebo fotek → `REJECTED` s důvodem typu: *„Inzerát je zařazený do špatné kategorie. Vyberte prosím vhodnější podkategorii.“*
+   - Závazný je hlavně **categoryType**. `REJECTED` jen při zjevně špatném typu (zboží vs práce, práce vs služby…).
+   - Jiná podkategorie ve stejném typu → ne `REJECTED`, jen `categorySuggestion.fit=better_existing`.
+   - Brigáda / hledám pomocníka (okna, úklid, zahrada) = `prace`, ne `sluzby`.
 
 2. **Podkategorie s vlastním `aiPrompt`** v `src/config/categories.ts` — AI dostane konkrétnější očekávání. Příklad `zbozi/potraviny-domaci`:
    - Očekává jedlé výrobky (med, zavařeniny, pečivo…).
    - Zjevně nejedlý produkt (elektronika, router, WiFi extender, nábytek…) → `REJECTED`.
+   - `prace/pece-zahrada`: úklid / mytí oken / zahrada jako brigáda patří sem; nepřehazovat do služeb.
 
 3. **Kde upravovat chování:**
    - Obecné pravidlo → `build-prompt.ts`
@@ -202,6 +204,7 @@ Moderace rozlišuje **dvě úrovně** — nesmí se zaměňovat:
 | TP-Link TL-WA850RE (WiFi extender) + fotka zařízení | `zbozi` / `potraviny-domaci` | `REJECTED` — špatná podkategorie |
 | Med z vlastní včelny | `zbozi` / `potraviny-domaci` | `APPROVED` nebo `NEEDS_QUESTIONS` (chybí množství, alergeny…) |
 | iPhone 13 | `zbozi` / `elektronika` | `APPROVED` / `NEEDS_QUESTIONS` |
+| Brigáda na mytí oken 250 Kč/h | `prace` / `pece-zahrada` | `APPROVED` / `NEEDS_QUESTIONS` — ne `REJECTED` (není služba) |
 
 ---
 
@@ -210,7 +213,7 @@ Moderace rozlišuje **dvě úrovně** — nesmí se zaměňovat:
 | Co | Kolik fotek | Účel |
 |----|-------------|------|
 | **Bezpečnostní filtr** | Všechny nahrané (max. 6) | Zbraně, drogy, porno… — zamítnutí jedné = zamítnutí celého inzerátu |
-| **Cross-validace text ↔ foto** | Hlavní fotka (`mainImageIndex`) | Konzistence názvu/popisu s náhledem |
+| **Cross-validace text ↔ foto** | Hlavní fotka (`mainImageIndex`) | Nabízená věc musí být na náhledu; doplňky na fotce OK, pokud popis výslovně vylučuje („židličky nejsou součástí“ → ne REJECTED) |
 | **AI hydratace / dotazník** | **Všechny** fotografie | Vizuální kontext a doplňující otázky; hlavní fotka jen pro cross-validaci |
 
 Klient připraví snímky v `src/lib/moderation/prepare-moderation-images.ts` (resize na `MODERATION_IMAGE_MAX_DIMENSION`, default 512 px) a pošle je v jednom payloadu `imagesBase64` + `mainImageIndex`. Hvězdička u miniatury = **náhled na homepage**, ne „jediná kontrolovaná fotka“.

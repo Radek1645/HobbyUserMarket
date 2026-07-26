@@ -244,8 +244,12 @@ Nejde o predikci prodeje — jen **úplnost a připravenost** textu po hydrataci
 
 - Rubric: [`src/config/listing-quality.ts`](../src/config/listing-quality.ts)
 - Výpočet: [`src/lib/moderation/listing-quality-score.ts`](../src/lib/moderation/listing-quality-score.ts)
-- Signály: fotky (0 fotek → strop 25 %), struktura popisu (úvod + Parametry), zodpovězené otázky, meta description / image alt
-- Tip u nižšího skóre může scrollovat na `#improve-listing` („Vylepšete svůj inzerát“)
+- Signály: fotky (0 fotek → strop 25 %), struktura popisu (úvod + Parametry), zodpovězené otázky. **SEO (meta/alt) skóre neovlivňuje** — připravuje AI; tužka v náhledu je jen volitelný override.
+- Tip vždy ukáže *co* chybí do 100 % (fotka → odpovědi → krátký úvod / málo Parametrů). „Inzerát je v pořádku“ jen při 100 %.
+- Plné body za popis: úvod ≥ 80 znaků + aspoň 3 Parametry (ne jen dlouhý seznam odrážek bez úvodu).
+- Parser Parametrů (`parseListingDescription`) je **obecný**: z kandidátů oddělení (`\n\n---\n\n`, volný `---`, jen nadpis Parametry…) vybere split s nejvíce platnými odrážkami — ne na jeden inzerát.
+- Po AI odpovědi klient sjednotí popis přes `normalizeListingDescriptionStructure` (kanonické odřádkování), aby v náhledu nebylo „…web. --- Parametry“ na jednom řádku.
+- Tip u nezodpovězených otázek může scrollovat na `#improve-listing`
 
 #### SEO při slabém zadání
 

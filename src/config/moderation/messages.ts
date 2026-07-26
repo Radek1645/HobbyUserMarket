@@ -56,10 +56,11 @@ export const MODERATION_PREVIEW_UI = {
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
   seoSectionLabel: "Texty pro vyhledávače",
-  seoSectionHint: "Meta popis a alt fotky — volitelné, ale pomáhají ve výsledcích hledání.",
+  seoSectionHint:
+    "Připravil AI. Úprava jen pokud víte, co děláte — jinak nechte tak.",
   seoEditAriaLabel: "Odemknout úpravy textů pro vyhledávače",
   seoLockAriaLabel: "Zamknout úpravy textů pro vyhledávače",
-  seoLockedHint: "Pro úpravu klikněte na tužku.",
+  seoLockedHint: "Jen náhled. Úprava přes tužku — běžně není potřeba.",
   metaDescriptionLabel: "Meta popis (vyhledávače)",
   metaDescriptionHelp:
     "Zobrazí se ve výsledcích Googlu a Seznamu a zvyšuje viditelnost.",
@@ -74,7 +75,7 @@ export const MODERATION_PREVIEW_UI = {
   publishAiHint: "Doporučeno",
   publishOriginalLabel: "Ponechat můj původní text",
   publishOriginalHint:
-    "Obě cesty jsou v pořádku. Tato volba zahodí AI návrh a publikuje váš původní text. Kontaktní údaje v popisu se automaticky skryjí.",
+    "Zahodí AI návrh. Kontakty v původním textu se skryjí.",
   descriptionLengthWarning: (current: number, max: number) =>
     `Popis včetně odpovědí má ${current} znaků — maximum je ${max}. Zkrácením textu nebo odpovědí to vejde.`,
   descriptionLengthCounter: (current: number, max: number) =>

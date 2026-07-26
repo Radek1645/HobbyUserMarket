@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.45  
+> **Verze dokumentu:** v3.46  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`058_moderation_category_suggestion.sql`](../supabase/058_moderation_category_suggestion.sql) · [`059_audit_events.sql`](../supabase/059_audit_events.sql) · [`060_fix_audit_status_cast.sql`](../supabase/060_fix_audit_status_cast.sql) · [`061_moderator_notes.sql`](../supabase/061_moderator_notes.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-26
+> **Datum:** 2026-07-27
 
 ---
 
@@ -726,6 +726,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.43 | 2026-07-22 | **Hard stop hide/restore fix:** migrace **057** `GRANT UPDATE ON posts TO service_role`; SoR kontakt pevně `SITE_OPERATOR_CONTACT_EMAIL`; UI počet skrytých/obnovených + chyba hide |
 | v3.44 | 2026-07-24 | **Kvalita inzerátu + volitelné otázky:** soft deterministické skóre v AI náhledu (`listing-quality.ts`); odpovědi v „Vylepšete svůj inzerát“ **volitelné** (neblokují publikaci); Metodika §6.7; [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) |
 | v3.45 | 2026-07-26 | **v0.5 DoD:** FAQ `/faq` + patička; `audit_events` (**059/060**); `moderator_notes` (**061**); AI `categorySuggestion` (**058**); CTA dle kategorie; UI copy „web“ místo „platforma“ (mimo VOP/GDPR); Metodika §2.1.1 / §11.4 |
+| v3.46 | 2026-07-27 | **Kvalita + moderace + SEO title:** skóre bez SEO (tužka volitelná); tipy do 100 %; tolerantní parser Parametrů + normalizace odřádkování; kompaktní AI preview footer; false positive opravy (práce vs služby, fotka s výjimkou v textu); META_TITLE obec/město + zkracování H1 na slovech (SEO bible **v1.8**) |
 
 ---
 

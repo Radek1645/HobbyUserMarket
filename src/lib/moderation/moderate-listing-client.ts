@@ -12,6 +12,7 @@ import {
 } from "@/config/moderation";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeListingDescriptionStructure } from "@/lib/moderation/parse-listing-description";
 import {
   clampListingImageAlt,
   clampListingMetaDescription,
@@ -22,6 +23,15 @@ import type {
   ListingModerationSuccess,
   ModerateListingResponse,
 } from "@/lib/moderation/types";
+
+function resolveCleanedDescription(
+  responseDescription: string | undefined,
+  fallbackDescription: string,
+): string {
+  return normalizeListingDescriptionStructure(
+    responseDescription?.trim() || fallbackDescription,
+  );
+}
 
 function mapResponse(
   response: ModerateListingResponse,
@@ -53,7 +63,10 @@ function mapResponse(
       ok: true,
       skipped: false,
       cleanedTitle: response.cleanedTitle ?? title,
-      cleanedDescription: response.cleanedDescription ?? description,
+      cleanedDescription: resolveCleanedDescription(
+        response.cleanedDescription,
+        description,
+      ),
       metaDescription,
       imageAlt,
       questions: response.questions?.slice(0, MODERATION_MAX_QUESTIONS),
@@ -65,7 +78,10 @@ function mapResponse(
     ok: true,
     skipped: false,
     cleanedTitle: response.cleanedTitle ?? title,
-    cleanedDescription: response.cleanedDescription ?? description,
+    cleanedDescription: resolveCleanedDescription(
+      response.cleanedDescription,
+      description,
+    ),
     metaDescription,
     imageAlt,
     approvalToken: response.approvalToken ?? undefined,

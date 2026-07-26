@@ -3,19 +3,23 @@
 /** Kotva sekce „Vylepšete svůj inzerát“ v ModerationPreviewDialog. */
 export const IMPROVE_LISTING_SECTION_ID = "improve-listing";
 
+/** Kotva sekce „Texty pro vyhledávače“ v ModerationPreviewDialog. */
+export const LISTING_SEO_SECTION_ID = "listing-seo";
+
 /** Bez fotky score nesmí přesáhnout tento strop. */
 export const LISTING_QUALITY_NO_PHOTO_SCORE_CAP = 25;
 
 /** Minimální délka úvodu popisu pro plné body za text. */
 export const LISTING_QUALITY_INTRO_GOOD_MIN_CHARS = 80;
 
-/** Váhy bodů — součet = 100. */
+/**
+ * Váhy bodů — součet = 100.
+ * SEO (meta/alt) sem nepatří: generuje AI, tužka je jen volitelný override.
+ */
 export const LISTING_QUALITY_POINTS = {
-  photos: 40,
-  description: 25,
+  photos: 45,
+  description: 30,
   questions: 25,
-  seoMeta: 5,
-  seoAlt: 5,
 } as const;
 
 export type ListingQualityBand =
@@ -29,6 +33,8 @@ export type ListingQualityTipCode =
   | "missing_photo"
   | "needs_answers"
   | "needs_info"
+  | "needs_longer_intro"
+  | "needs_params"
   | "can_improve"
   | "perfect";
 
@@ -38,7 +44,11 @@ export const LISTING_QUALITY_UI = {
   tips: {
     missing_photo: "Chybí fotka — výrazně pomáhá.",
     needs_answers: "Tip: doplňte odpovědi níže.",
-    needs_info: "Inzerát potřebuje doplnit informace.",
+    needs_info: "Tip: doplňte delší úvod nebo více Parametrů v popisu.",
+    needs_longer_intro:
+      "Tip: doplňte delší úvod popisu (pár vět před Parametry).",
+    needs_params:
+      "Tip: pod úvod doplňte sekci Parametry (oddělovač --- a aspoň 3 odrážky).",
     can_improve: "Tip: doplňte detaily níže.",
     perfect: "Inzerát je v pořádku.",
   },

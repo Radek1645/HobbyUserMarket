@@ -36,3 +36,11 @@ export function formatHeaderLocation(locationText: string): string {
 
   return formatted.replace(/\s*-\s*město$/i, "").trim();
 }
+
+/**
+ * Lokalita do `<title>` / meta — jen obec/město (ne ulice).
+ * Ulice je v DB a na detailu; v SERP title je zbytečná a ukrajuje H1.
+ */
+export function formatMetaTitleLocality(locationText: string): string {
+  return formatHeaderLocation(locationText);
+}

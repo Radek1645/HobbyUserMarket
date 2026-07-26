@@ -3,7 +3,7 @@
 import { SITE_DISPLAY_NAME } from "@/config/site";
 
 /** Musí odpovídat hlavičce Verze v docs/seo/SEO_BIBLE.md. */
-export const LISTING_SEO_BIBLE_VERSION = "1.7";
+export const LISTING_SEO_BIBLE_VERSION = "1.8";
 
 /**
  * Cílová max. délka H1 / cleanedTitle (AI).

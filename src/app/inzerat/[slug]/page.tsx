@@ -26,7 +26,10 @@ import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
-import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
+import {
+  formatMetaTitleLocality,
+  formatPublicListingLocation,
+} from "@/lib/posts/format-public-location";
 import { getListingImages } from "@/lib/posts/listing-images";
 import {
   getAdvertiserListingsPath,
@@ -105,14 +108,15 @@ export async function generateMetadata({
   if (!post) return { title: `Inzerát | ${SITE_DISPLAY_NAME}` };
 
   const location = formatPublicListingLocation(post.location_text);
+  const metaLocality = formatMetaTitleLocality(post.location_text);
   const pageUrl = `${getSiteUrl()}${getListingPath(post.slug)}`;
   const description = resolveListingMetaDescription({
     metaDescription: post.meta_description,
     description: post.description,
     title: post.title,
-    locality: location,
+    locality: metaLocality,
   });
-  const documentTitle = buildListingMetaTitle(post.title, location);
+  const documentTitle = buildListingMetaTitle(post.title, metaLocality);
   const imageAlt = post.image_alt?.trim() || post.title;
 
   return {

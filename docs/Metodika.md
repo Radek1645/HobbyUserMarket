@@ -469,7 +469,7 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 **Průběh pro uživatele:**
 
 1. Modal **„AI vám vylepšila inzerát!“** — náhled AI textu (textarea max. 6 řádků, scroll uvnitř).
-2. Vedle **„Popis inzerátu“** soft indikátor **Kvalita X %** (deterministicky z fotek, textu, odpovědí a SEO polí — ne predikce prodeje). Max. jeden tip; u nezodpovězených otázek např. **„Tip: doplňte detaily níže.“** s odkazem na sekci níže. Nízké skóre **neblokuje** publikaci. Detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) § Kvalita inzerátu.
+2. Vedle **„Popis inzerátu“** soft indikátor **Kvalita X %** (deterministicky z fotek, textu a odpovědí — ne predikce prodeje; SEO pole skóre neovlivňují). Max. jeden tip; u nezodpovězených otázek např. **„Tip: doplňte detaily níže.“** s odkazem na sekci níže. Nízké skóre **neblokuje** publikaci. Detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) § Kvalita inzerátu.
 3. Sekce **„Vylepšete svůj inzerát“** — volitelné doplňující otázky (1–5). Nevyplněné otázky **publikaci neblokují**; vyplněné odpovědi se doplní do Parametrů (a zvednou skóre).
 4. Po potvrzení se odpovědi **automaticky doplní** do sekce Parametry (s jednotkami — rozměry v **cm**, objem v **ml**, pokud uživatel jednotku nevyplní).
 5. Odpovědi se **neukládají zvlášť** v databázi — jsou součástí finálního popisu.
@@ -813,7 +813,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 #### Meta a AI hydratace (shrnutí)
 
 - **H1** = `posts.title` (AI `cleanedTitle`) — obecný název první, max ~45; synonyma v závorkách ne; krátký use-case jen pokud se vejde.
-- **`<title>`** skládá kód z H1 + lokality + značky (`buildListingMetaTitle`); priorita lokalita > brand > specifikace H1.
+- **`<title>`** skládá kód z H1 + **obce/města** + značky (`buildListingMetaTitle` + `formatMetaTitleLocality`); ulice do title nepatří. Priorita lokalita > brand > specifikace H1; H1 se zkracuje na hranici slov.
 - **Meta description** = `posts.meta_description` (AI); soft cíl ~155; **bez CTA** (produkt + lokalita + cena + benefit); clamp dropne CTA jako pojistka; cena jen `za X Kč`. Fallback: úvod popisu před `---`.
 - **Alt** = `posts.image_alt` na hlavní i náhledy galerie (bez lokality); avatar v chrome `alt=""`.
 - **JSON-LD Offer.price** u pevné ceny, dohodou (orientační částka) i zdarma; ne u „Nabídni“ / výměny.

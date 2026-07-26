@@ -42,7 +42,7 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
     id: "kvalita-inzeratu",
     question: "Co znamená Kvalita u inzerátu a proč mám odpovídat na otázky AI?",
     answer:
-      "U náhledu inzerátu uvidíte ukazatel „Kvalita“ v procentech — jak je nabídka úplná a připravená (fotky, text, doplněné údaje). Když něco doplníte (odpovědi na otázky AI, detaily v textu), procenta se hned zvednou. Není to odhad, jestli se věc určitě prodá, ani trest: i s nižším skóre můžete publikovat. AI se ptá jen na to, co v textu nebo na fotkách chybí a co kupující často potřebují vědět. Odpovědi jsou dobrovolné, ale doplní se do Parametrů a inzerát je pak srozumitelnější — a tím i blíže prodeji.",
+      "U náhledu inzerátu uvidíte ukazatel „Kvalita“ v procentech — jak je nabídka úplná a připravená (fotky, text, doplněné údaje). Pod procenty je tip, co doplnit do 100 % — typicky delší úvod popisu nebo odpovědi na otázky AI. Texty pro vyhledávače připraví AI sama; kvalitu neovlivňují. Když něco doplníte, procenta se hned zvednou. Není to odhad, jestli se věc určitě prodá, ani trest: i s nižším skóre můžete publikovat. AI se ptá jen na to, co v textu nebo na fotkách chybí a co kupující často potřebují vědět. Odpovědi jsou dobrovolné, ale doplní se do Parametrů a inzerát je pak srozumitelnější.",
   },
   {
     id: "vytvoreno-s-pomoci-ai",

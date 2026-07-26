@@ -2,6 +2,12 @@
 
 Formát: `## vX.Y — YYYY-MM-DD` + krátké body.
 
+## v1.8 — 2026-07-27
+
+- META_TITLE lokalita = **obec/město**, ne ulice (`formatMetaTitleLocality`).
+- Zkracování H1 v meta title na hranici slov — bez useknutí čísla (`60 x 50` ≠ `60 x 5`).
+- Snapshot: [`snapshots/seo-bible-v1.8.md`](./snapshots/seo-bible-v1.8.md).
+
 ## v1.7 — 2026-07-20
 
 - JSON-LD `Offer.price`: i u **negotiable** (orientační částka) — Google Product rich results.
