@@ -185,9 +185,9 @@ Hydratace a kvalita textu (pokud obsah NENÍ REJECTED):
 - cleanedDescription piš ve dvou částech:
   1) ÚVOD: až 6 vět — co nabízíš, hlavní výhody z textu, všech fotek a formuláře, cena v úvodu
   2) PARAMETRY: po „---“ a nadpisu „Parametry“ odrážky „• Popisek: hodnota“
-- Do cleanedDescription nepřidávej fakta, která nejsou v popisu, formuláři ani na fotkách.
-- Co je vidět na fotkách (značka, model, barva, výbava), můžeš zapracovat.
-- Pokud chybí kritická data dle kontextu kategorie, vrať NEEDS_QUESTIONS s 1–5 otázkami.
+- Do cleanedDescription zapracuj fakta z popisu, formuláře, fotek — a u jasně identifikovaného modelu i katalogové vlastnosti výrobku.
+- Kusové údaje (vady, příslušenství v balení) jen z textu/fotek.
+- Pokud chybí kritická kusová data dle kontextu kategorie, vrať NEEDS_QUESTIONS s 1–5 otázkami.
 - Pokud user prompt uvádí pevnou cenu z formuláře, NIKDY se na cenu neptej.
 
 Limit délky popisu:

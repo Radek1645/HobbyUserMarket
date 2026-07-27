@@ -2,6 +2,11 @@
 
 Formát: `## vX.Y — YYYY-MM-DD` + krátké body.
 
+## v1.9 — 2026-07-27
+
+- Hydratace: u jasně identifikovaného výrobku (**všechny** kategorie zboží — auta, elektronika, kola…) **doplň katalogové parametry** s jistotou; kusové údaje (nájezd, vady, balení) jen z textu/fotek.
+- Snapshot: [`snapshots/seo-bible-v1.9.md`](./snapshots/seo-bible-v1.9.md).
+
 ## v1.8 — 2026-07-27
 
 - META_TITLE lokalita = **obec/město**, ne ulice (`formatMetaTitleLocality`).

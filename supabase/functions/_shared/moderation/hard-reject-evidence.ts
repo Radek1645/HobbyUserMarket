@@ -49,11 +49,12 @@ function stripBase64Payload(imageBase64: string): string {
   return trimmed;
 }
 
-/** Uloží JPEG snapshot do privátního bucketu; při chybě vrátí null (evidence jde dál). */
+/** Uloží přesný moderovaný soubor do privátního bucketu. */
 export async function uploadNsfwEvidenceImage(
   userId: string,
   imageBase64: string,
   imageIndex: number,
+  mimeType = "image/jpeg",
 ): Promise<string | null> {
   try {
     const admin = createServiceClient();
@@ -64,11 +65,13 @@ export async function uploadNsfwEvidenceImage(
       bytes[i] = binary.charCodeAt(i);
     }
 
-    const path = `${userId}/${Date.now()}-${imageIndex}.jpg`;
+    const extension =
+      mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+    const path = `${userId}/${Date.now()}-${imageIndex}.${extension}`;
     const { error } = await admin.storage
       .from(MODERATION_EVIDENCE_BUCKET)
       .upload(path, bytes, {
-        contentType: "image/jpeg",
+        contentType: mimeType,
         upsert: false,
       });
 

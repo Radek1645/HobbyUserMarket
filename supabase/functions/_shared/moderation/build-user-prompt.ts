@@ -10,6 +10,7 @@ import { getListingPlatformCta } from "./listing-cta.ts";
 
 export type ModerationRequestBody = {
   intent?: string;
+  issueApproval?: boolean;
   title: string;
   description: string;
   categoryType?: string;
@@ -20,11 +21,20 @@ export type ModerationRequestBody = {
   eventDate?: string;
   /** Lokalita z formuláře — lokální SEO / spádové město. */
   locationText?: string;
+  latitude?: number;
+  longitude?: number;
   priceType?: string;
   priceTypeLabel?: string;
   priceAmount?: number;
+  exchangeFor?: string;
+  listingDurationDays?: number;
+  showContactEmail?: boolean;
+  showContactPhone?: boolean;
+  contactPhone?: string;
+  jobCvRequired?: boolean;
   mainImageIndex?: number;
   imagesBase64?: string[];
+  imageMimeTypes?: string[];
 };
 
 function formatCzkAmount(amount: number): string {
@@ -133,6 +143,9 @@ export function buildModerationUserPrompt(
       ? `Datum a čas konání z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.eventDate, formatEventDateForPrompt(body.eventDate))}`
       : null,
     formatPriceFromForm(body),
+    body.priceType === "exchange" && body.exchangeFor?.trim()
+      ? `Požadovaná výměna z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.exchangeFor, body.exchangeFor.trim())}`
+      : null,
     body.locationText?.trim()
       ? `Lokalita z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.location, body.locationText.trim())}`
       : null,

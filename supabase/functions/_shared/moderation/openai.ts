@@ -2,6 +2,7 @@ import {
   fetchWithTimeout,
   isFetchTimeoutError,
 } from "./fetch-with-timeout.ts";
+import { OPENAI_MODERATION_RESPONSE_SCHEMA } from "./response-schema.ts";
 
 type OpenAiContentPart =
   | { type: "text"; text: string }
@@ -15,6 +16,7 @@ export async function callOpenAiModeration(params: {
   systemPrompt: string;
   userPrompt: string;
   imagesBase64: string[];
+  imageMimeTypes: string[];
 }): Promise<string> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) {
@@ -24,11 +26,13 @@ export async function callOpenAiModeration(params: {
   const model = resolveOpenAiModerationModel();
 
   const userContent: OpenAiContentPart[] = [{ type: "text", text: params.userPrompt }];
-  for (const data of params.imagesBase64) {
+  for (const [index, data] of params.imagesBase64.entries()) {
     if (data) {
       userContent.push({
         type: "image_url",
-        image_url: { url: `data:image/jpeg;base64,${data}` },
+        image_url: {
+          url: `data:${params.imageMimeTypes[index] ?? "image/jpeg"};base64,${data}`,
+        },
       });
     }
   }
@@ -46,7 +50,14 @@ export async function callOpenAiModeration(params: {
         body: JSON.stringify({
           model,
           temperature: 0.2,
-          response_format: { type: "json_object" },
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "listing_moderation_result",
+              strict: true,
+              schema: OPENAI_MODERATION_RESPONSE_SCHEMA,
+            },
+          },
           messages: [
             { role: "system", content: params.systemPrompt },
             { role: "user", content: userContent },

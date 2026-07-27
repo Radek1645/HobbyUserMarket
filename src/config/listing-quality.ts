@@ -43,13 +43,11 @@ export const LISTING_QUALITY_UI = {
   scoreAriaLabel: (score: number) => `Kvalita inzerátu ${score} %`,
   tips: {
     missing_photo: "Chybí fotka — výrazně pomáhá.",
-    needs_answers: "Tip: doplňte odpovědi níže.",
-    needs_info: "Tip: doplňte delší úvod nebo více Parametrů v popisu.",
-    needs_longer_intro:
-      "Tip: doplňte delší úvod popisu (pár vět před Parametry).",
-    needs_params:
-      "Tip: pod úvod doplňte sekci Parametry (oddělovač --- a aspoň 3 odrážky).",
-    can_improve: "Tip: doplňte detaily níže.",
+    needs_answers: "Tip: vylepšete svůj inzerát a doplňte detaily.",
+    needs_info: "Tip: vylepšete svůj inzerát a doplňte detaily.",
+    needs_longer_intro: "Tip: vylepšete svůj inzerát a doplňte detaily.",
+    needs_params: "Tip: vylepšete svůj inzerát a doplňte detaily.",
+    can_improve: "Tip: vylepšete svůj inzerát a doplňte detaily.",
     perfect: "Inzerát je v pořádku.",
   },
   scrollToImproveAriaLabel: "Přejít na sekci Vylepšete svůj inzerát",

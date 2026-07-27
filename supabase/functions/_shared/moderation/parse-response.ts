@@ -45,116 +45,42 @@ export type ModerationResult = {
   categorySuggestion?: CategorySuggestion;
 };
 
-function extractJsonObject(raw: string): string {
-  const trimmed = raw.trim();
-  if (trimmed.startsWith("{")) {
-    return trimmed;
-  }
-
-  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenceMatch?.[1]) {
-    return fenceMatch[1].trim();
-  }
-
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start >= 0 && end > start) {
-    return trimmed.slice(start, end + 1);
-  }
-
-  throw new Error("AI nevrátila validní JSON.");
-}
-
-function normalizeJsonQuotes(input: string): string {
-  return input
-    .replace(/\u201C|\u201D/g, '"')
-    .replace(/\u2018|\u2019/g, "'");
-}
-
-/** Odstraní trailing commas před ] nebo } — častá chyba Gemini JSON. */
-function stripTrailingCommas(input: string): string {
-  let prev = "";
-  let current = input;
-  while (prev !== current) {
-    prev = current;
-    current = current.replace(/,(\s*[}\]])/g, "$1");
-  }
-  return current;
-}
-
-/** Escapuje neescapované řádky/taby uvnitř JSON stringů. */
-function escapeControlCharsInJsonStrings(json: string): string {
-  let result = "";
-  let inString = false;
-  let escaped = false;
-
-  for (let i = 0; i < json.length; i++) {
-    const ch = json[i]!;
-    if (!inString) {
-      result += ch;
-      if (ch === '"') inString = true;
-      escaped = false;
-      continue;
-    }
-    if (escaped) {
-      result += ch;
-      escaped = false;
-      continue;
-    }
-    if (ch === "\\") {
-      result += ch;
-      escaped = true;
-      continue;
-    }
-    if (ch === '"') {
-      result += ch;
-      inString = false;
-      continue;
-    }
-    if (ch === "\n") {
-      result += "\\n";
-      continue;
-    }
-    if (ch === "\r") {
-      result += "\\r";
-      continue;
-    }
-    if (ch === "\t") {
-      result += "\\t";
-      continue;
-    }
-    result += ch;
-  }
-
-  return result;
-}
+const MODERATION_RESPONSE_FIELDS = [
+  "status",
+  "reason",
+  "rejectedTopicId",
+  "rejectedImageIndex",
+  "cleanedTitle",
+  "metaDescription",
+  "imageAlt",
+  "cleanedDescription",
+  "questions",
+  "categorySuggestion",
+] as const;
 
 function parseJsonFromAi(raw: string): Record<string, unknown> {
-  const extracted = extractJsonObject(raw);
-  const candidates = [
-    extracted,
-    stripTrailingCommas(extracted),
-    stripTrailingCommas(escapeControlCharsInJsonStrings(extracted)),
-    stripTrailingCommas(
-      escapeControlCharsInJsonStrings(normalizeJsonQuotes(extracted)),
-    ),
-  ];
-
-  let lastError: unknown;
-  for (const candidate of candidates) {
-    try {
-      return JSON.parse(candidate) as Record<string, unknown>;
-    } catch (error) {
-      lastError = error;
+  try {
+    const parsed = JSON.parse(raw.trim()) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("JSON root is not an object");
     }
+    const record = parsed as Record<string, unknown>;
+    const allowedFields = new Set<string>(MODERATION_RESPONSE_FIELDS);
+    if (Object.keys(record).some((field) => !allowedFields.has(field))) {
+      throw new Error("JSON contains an unknown field");
+    }
+    if (
+      MODERATION_RESPONSE_FIELDS.some(
+        (field) => !Object.prototype.hasOwnProperty.call(record, field),
+      )
+    ) {
+      throw new Error("JSON is missing a required field");
+    }
+    return record;
+  } catch (error) {
+    console.error("parseJsonFromAi failed:", error);
+    throw new Error("AI nevrátila validní JSON dle požadovaného schématu.");
   }
-
-  console.error(
-    "parseJsonFromAi failed:",
-    lastError,
-    extracted.slice(0, 800),
-  );
-  throw new Error("AI nevrátila validní JSON.");
 }
 
 function asOptionalString(value: unknown): string | undefined {
@@ -273,7 +199,10 @@ export function filterRedundantPriceQuestions(
   return { ...result, questions };
 }
 
-export function parseModerationResponse(raw: string): ModerationResult {
+export function parseModerationResponse(
+  raw: string,
+  imageCount: number,
+): ModerationResult {
   const parsed = parseJsonFromAi(raw);
   const status = parsed.status;
 
@@ -286,20 +215,43 @@ export function parseModerationResponse(raw: string): ModerationResult {
   }
 
   const rejectedImageIndex =
-    typeof parsed.rejectedImageIndex === "number"
+    typeof parsed.rejectedImageIndex === "number" &&
+    Number.isInteger(parsed.rejectedImageIndex)
       ? parsed.rejectedImageIndex
       : undefined;
 
+  if (
+    rejectedImageIndex != null &&
+    (rejectedImageIndex < 0 || rejectedImageIndex >= imageCount)
+  ) {
+    throw new Error("AI vrátila index fotografie mimo platný rozsah.");
+  }
+
+  const reason = asOptionalString(parsed.reason);
+  const cleanedTitle = asOptionalString(parsed.cleanedTitle);
+  const cleanedDescription = asOptionalString(parsed.cleanedDescription);
+  const questions = parseQuestions(parsed.questions);
+
+  if (status === "REJECTED" && !reason) {
+    throw new Error("AI zamítnutí neobsahuje důvod.");
+  }
+  if (status !== "REJECTED" && (!cleanedTitle || !cleanedDescription)) {
+    throw new Error("AI schválení neobsahuje povinné publikační texty.");
+  }
+  if (status === "NEEDS_QUESTIONS" && !questions?.length) {
+    throw new Error("AI vyžádala doplnění, ale nevrátila žádné otázky.");
+  }
+
   return {
     status,
-    reason: asOptionalString(parsed.reason),
+    reason,
     rejectedTopicId: asOptionalString(parsed.rejectedTopicId),
     rejectedImageIndex,
-    cleanedTitle: asOptionalString(parsed.cleanedTitle),
+    cleanedTitle,
     metaDescription: asOptionalString(parsed.metaDescription),
     imageAlt: asOptionalString(parsed.imageAlt),
-    cleanedDescription: asOptionalString(parsed.cleanedDescription),
-    questions: parseQuestions(parsed.questions),
+    cleanedDescription,
+    questions,
     categorySuggestion: parseCategorySuggestion(parsed.categorySuggestion),
   };
 }

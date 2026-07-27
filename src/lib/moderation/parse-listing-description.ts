@@ -9,6 +9,9 @@ const PARAMETERS_HEADING_PATTERN = /^(Parametry|Technické údaje)$/i;
 /** Odrážka parametru: • / - / * / – / — */
 const PARAMETER_BULLET_PATTERN = /^(?:[•\-*]|[–—])\s+(.*)$/;
 
+/** Řádek nebo label jen z pomlček — oddělovač úvod/Parametry, ne parametr. */
+const STRUCTURAL_SEPARATOR_PATTERN = /^-{2,}$/;
+
 export type ListingParameter = {
   label: string;
   value: string;
@@ -16,6 +19,44 @@ export type ListingParameter = {
 
 function normalizeParameterLabel(label: string): string {
   return label.trim().toLocaleLowerCase("cs");
+}
+
+function isStructuralSeparatorLine(line: string): boolean {
+  return STRUCTURAL_SEPARATOR_PATTERN.test(line.trim());
+}
+
+/** Odstraní trailing oddělovač / nadpis Parametry z úvodu po špatném splitu. */
+function stripTrailingSeparators(intro: string): string {
+  let result = intro;
+  for (let i = 0; i < 3; i += 1) {
+    const next = result
+      .replace(/(?:\r?\n|[ \t])*-{3,}[ \t]*$/g, "")
+      .replace(/(?:\r?\n|[ \t])*(?:Parametry|Technické údaje)[ \t]*$/gi, "")
+      .replace(/(?:\r?\n|[ \t])*[•\-*–—][ \t]*$/g, "");
+    if (next === result) break;
+    result = next;
+  }
+  return result.trimEnd();
+}
+
+/** Vyšší = čistší úvod (bez uniklého nadpisu / oddělovače). */
+function introSplitQuality(intro: string): number {
+  let score = 0;
+  if (!/(?:^|\r?\n)[ \t]*(?:Parametry|Technické údaje)[ \t]*(?:\r?\n|$)/i.test(intro)) {
+    score += 2;
+  }
+  if (!/(?:^|\r?\n)[ \t]*-{3,}[ \t]*(?:\r?\n|$)/m.test(intro)) {
+    score += 1;
+  }
+  return score;
+}
+
+/** Před pomlčkami už je nadpis Parametry → další --- je šum v bloku parametrů. */
+function hasParametersHeadingBefore(description: string, index: number): boolean {
+  const before = description.slice(0, index);
+  return /(?:^|\r?\n)[ \t]*(?:Parametry|Technické údaje)[ \t]*(?:\r?\n|$)/i.test(
+    before,
+  );
 }
 
 /** Placeholder bez skutečné hodnoty — AI je nemá nechat v Parametrech u NEEDS_QUESTIONS. */
@@ -107,31 +148,28 @@ function collectSplitCandidates(description: string): SplitCandidate[] {
     candidates.push({ introEnd, paramsStart });
   }
 
-  // 1) Kanonický: \n\n---\n\n
-  for (const match of description.matchAll(/\r?\n\r?\n-{3,}\r?\n\r?\n/g)) {
+  // Kanonický i inline oddělovač, např. „…web. --- Parametry\n• Stav: …“.
+  // paramsStart nechává nadpis parseru; tím se vyhneme problémům s greedy \s*.
+  for (const match of description.matchAll(/-{3,}/g)) {
     if (match.index === undefined) continue;
-    pushUnique(match.index, match.index + match[0].length);
-  }
 
-  // 2) Řádek samotných pomlček: \n---\n
-  for (const match of description.matchAll(
-    /(?:^|\r?\n)[ \t]*-{3,}[ \t]*(?=\r?\n|$)/g,
-  )) {
-    if (match.index === undefined) continue;
-    const dashOffset = match[0].search(/-/);
-    const introEnd = match.index + dashOffset;
-    const afterDashes = match[0].slice(dashOffset).match(/^-{3,}[ \t]*/)?.[0].length ?? 3;
-    pushUnique(introEnd, match.index + dashOffset + afterDashes);
-  }
+    const separatorStart = match.index;
+    const separatorEnd = separatorStart + match[0].length;
+    if (hasParametersHeadingBefore(description, separatorStart)) continue;
 
-  // 3) Inline / volný --- před nadpisem nebo odrážkou (např. „…web. --- Parametry\n• …“)
-  for (const match of description.matchAll(
-    /\s+-{3,}\s*(?:(?:Parametry|Technické údaje)\s*)?(?=\r?\n\s*(?:[•\-*–—]\s|(?:Parametry|Technické údaje)\b)|\r?\n|$)/gi,
-  )) {
-    if (match.index === undefined) continue;
-    const dashOffset = match[0].search(/-/);
-    const introEnd = match.index + dashOffset;
-    pushUnique(introEnd, match.index + match[0].length);
+    const lineStart =
+      description.lastIndexOf("\n", Math.max(0, separatorStart - 1)) + 1;
+    const beforeOnLine = description.slice(lineStart, separatorStart);
+    if (/^[ \t]*[•\-*–—][ \t]*$/.test(beforeOnLine)) continue;
+
+    const afterSeparator = description.slice(separatorEnd);
+    const startsParametersBlock =
+      /^\s*(?:(?:Parametry|Technické údaje)[ \t]*(?:\r?\n|$)\s*)?(?:[•\-*–—][ \t]+|$)/i.test(
+        afterSeparator,
+      );
+    if (!startsParametersBlock) continue;
+
+    pushUnique(separatorStart, separatorEnd);
   }
 
   // 4) Jen nadpis Parametry (bez ---)
@@ -148,26 +186,32 @@ function collectSplitCandidates(description: string): SplitCandidate[] {
 export function parseParameterLine(line: string): ListingParameter | null {
   const trimmed = line.trim();
   if (!trimmed || PARAMETERS_HEADING_PATTERN.test(trimmed)) return null;
+  if (isStructuralSeparatorLine(trimmed)) return null;
 
   const bulletMatch = PARAMETER_BULLET_PATTERN.exec(trimmed);
   if (bulletMatch) {
     const content = bulletMatch[1] ?? "";
     const colonMatch = /:\s*/.exec(content);
     if (colonMatch && colonMatch.index !== undefined) {
+      const label = content.slice(0, colonMatch.index).trim();
+      if (!label || isStructuralSeparatorLine(label)) return null;
       return {
-        label: content.slice(0, colonMatch.index).trim(),
+        label,
         value: content.slice(colonMatch.index + colonMatch[0].length).trim(),
       };
     }
 
     const spaceValueMatch = /^(.+?)\s+(\d[\d\s]*(?:\s*m²|\s*m2)?)$/i.exec(content);
     if (spaceValueMatch) {
+      const label = spaceValueMatch[1]!.trim();
+      if (!label || isStructuralSeparatorLine(label)) return null;
       return {
-        label: spaceValueMatch[1]!.trim(),
+        label,
         value: spaceValueMatch[2]!.trim(),
       };
     }
 
+    if (!content || isStructuralSeparatorLine(content)) return null;
     return { label: content, value: "" };
   }
 
@@ -176,8 +220,11 @@ export function parseParameterLine(line: string): ListingParameter | null {
     return { label: trimmed, value: "" };
   }
 
+  const label = trimmed.slice(0, newlineIndex).trim();
+  if (!label || isStructuralSeparatorLine(label)) return null;
+
   return {
-    label: trimmed.slice(0, newlineIndex).trim(),
+    label,
     value: trimmed.slice(newlineIndex + 1).trim(),
   };
 }
@@ -235,21 +282,29 @@ export function parseListingDescription(description: string): ParsedListingDescr
     const realCount = countRealParameters(parameters);
     if (realCount === 0) continue;
 
-    // Více parametrů vyhrává; při remíze preferuj delší úvod (split blíž k Parametrům).
+    // Více parametrů vyhrává; při remíze čistší úvod, pak delší úvod.
+    const quality = introSplitQuality(intro);
+    const bestQuality = introSplitQuality(best.intro);
     const better =
       realCount > bestCount ||
-      (realCount === bestCount && intro.length > best.intro.length);
+      (realCount === bestCount && quality > bestQuality) ||
+      (realCount === bestCount &&
+        quality === bestQuality &&
+        intro.length > best.intro.length);
     if (!better) continue;
 
     bestCount = realCount;
     best = {
-      intro: intro || best.intro,
+      intro: stripTrailingSeparators(intro) || best.intro,
       parametersHeading: heading,
       parameters,
     };
   }
 
-  return best;
+  return {
+    ...best,
+    intro: stripTrailingSeparators(best.intro),
+  };
 }
 
 /** Sestaví blok parametrů pro uložení do DB. */

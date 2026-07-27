@@ -179,10 +179,6 @@ export async function syncListingImagesFromForm(
       return { error: "Fotky se nepodařilo upravit." };
     }
 
-    for (const row of removedRows ?? []) {
-      await supabase.storage.from(LISTING_IMAGE_BUCKET).remove([row.storage_path]);
-    }
-
     const { error: deleteError } = await supabase
       .from("post_images")
       .delete()
@@ -192,6 +188,19 @@ export async function syncListingImagesFromForm(
     if (deleteError) {
       console.error("syncListingImages delete:", deleteError);
       return { error: "Fotky se nepodařilo smazat." };
+    }
+
+    // SEC-H02: Storage policy nedovolí smazat objekt, dokud jej referencuje
+    // post_images. Nejprve proto atomicky odpojíme DB řádek (trigger → draft),
+    // až potom uklidíme objekt. Selhání Storage úklidu vytvoří jen orphan,
+    // nikoli možnost vyměnit fotku publikovaného inzerátu.
+    for (const row of removedRows ?? []) {
+      const { error: storageError } = await supabase.storage
+        .from(LISTING_IMAGE_BUCKET)
+        .remove([row.storage_path]);
+      if (storageError) {
+        console.error("syncListingImages storage cleanup:", storageError);
+      }
     }
   }
 

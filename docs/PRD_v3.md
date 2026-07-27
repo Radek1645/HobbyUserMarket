@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.46  
+> **Verze dokumentu:** v3.47  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`058_moderation_category_suggestion.sql`](../supabase/058_moderation_category_suggestion.sql) · [`059_audit_events.sql`](../supabase/059_audit_events.sql) · [`060_fix_audit_status_cast.sql`](../supabase/060_fix_audit_status_cast.sql) · [`061_moderator_notes.sql`](../supabase/061_moderator_notes.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`061_moderator_notes.sql`](../supabase/061_moderator_notes.sql) · [`062_security_hardening_approval_binding.sql`](../supabase/062_security_hardening_approval_binding.sql) · [`063_security_fingerprint_from_post.sql`](../supabase/063_security_fingerprint_from_post.sql) · [`064_moderation_ai_audit_metadata.sql`](../supabase/064_moderation_ai_audit_metadata.sql) · [`065_fingerprint_newline_canonicalization.sql`](../supabase/065_fingerprint_newline_canonicalization.sql) · [`066_publish_gate_staff_owner.sql`](../supabase/066_publish_gate_staff_owner.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-27
+> **Datum:** 2026-07-28
 
 ---
 
@@ -37,7 +37,7 @@ MVP je hotové, když platí všechny body:
 2. **Lokální relevance:** Návštěvník s povolenou polohou vidí **6–9 inzerátů (mobil / desktop)**. Priorita: nejbližší v adaptivním okruhu (**15–60 km**). Pokud v okruhu není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** s hláškou.
 3. **Ochrana kontaktů:** V HTML zdroji detailu inzerátu **není** telefon ani e-mail před kliknutím na „Zobrazit kontakt“ (ověřitelné v DevTools). `posts.contact_phone` není čitelný přes veřejné SELECT (column-level REVOKE); e-mail cizího profilu není enumerovatelný přes RLS. Odhalení jde výhradně přes RPC `reveal_listing_contact` (přihlášení, viditelnost inzerátu, opt-in, rate limit 20/den).
 4. **SEO:** Detail inzerátu má server-renderovaný HTML, dynamický Title tag, JSON-LD a je v `sitemap.xml`.
-5. **Moderování:** 3 nahlášení od 3 různých uživatelů **zablokuje** inzerát (`blocked`); moderátor ho vidí na `/mod/karantena`. Majitel se z `blocked` dostane ven **jen úpravou obsahu** a novým AI schválením — nelze jedním kliknutím obnovit jako u `hidden` (pauza). Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků. Publikace na `active` vyžaduje **approval token** z Edge Function a RPC `publish_approved_post` — přímý insert/update na `active` z role `authenticated` je blokován (migrace `027`). *(Od v0.5: každé stažení/skrytí má záznam v audit logu s důvodem — §11.1.)*
+5. **Moderování:** 3 nahlášení od 3 různých uživatelů **zablokuje** inzerát (`blocked`); moderátor ho vidí na `/mod/karantena`. Majitel se z `blocked` dostane ven **jen úpravou obsahu** a novým AI schválením — nelze jedním kliknutím obnovit jako u `hidden` (pauza). Bezpečnostní AI filtr prochází **všechny nahrané fotografie** — výběr hlavní fotky nesmí obejít kontrolu ostatních snímků. Publikace na `active` vyžaduje **approval token** z Edge Function a service-role RPC `publish_approved_post` svázaný s **content fingerprintem** a SHA-256 fotek (migrace `027` + `062`–`066`) — přímý insert/update na `active` z role `authenticated` je blokován. Staff bypass platí jen pro God Mode úpravu **cizího** inzerátu; vlastní inzeráty moderátora/admina jdou stejným tokem. *(Od v0.5: každé stažení/skrytí má záznam v audit logu s důvodem — §11.1.)*
 
 ### 1.2 Definition of Done (v0.1.1 — Volitelná platnost inzerátu)
 
@@ -523,22 +523,24 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
     * Počítadlo znaků v modalu zahrnuje **projekovaný finální popis** včetně odpovědí (limit 2000).
     * Během volání AI: **full-screen overlay** se spinnerem (ne banner dole).
     * **Akce uživatele:**
-      1. **Doplnit, upravit a publikovat (Doporučeno):** Finální verze (včetně `title`) uložena do DB — nejprve `status = 'draft'`, po uploadu fotek RPC `publish_approved_post` s `approvalToken` z AI → `active`.
+      1. **Doplnit, upravit a publikovat (Doporučeno):** Uživatel potvrdí finální text → **druhé** volání `moderate-listing` s `issueApproval: true` (přesný text + bajty fotek) → Edge vydá token → Server Action uloží `draft`, nahraje fotky a service-role `publish_approved_post` → `active`.
       2. **Publikovat bez vylepšení:** Zahodí AI korektury textu, ale **vždy platí:**
          - Bezpečnostní filtr (zbraně, drogy, porno, orgány) — neprůstřelný; bez approval tokenu zůstane inzerát `draft`.
+         - Finální `issueApproval` kontrola přesného odesílaného obsahu (stejný token flow).
          - **Server-side strip kontaktů** v popisu (DB trigger + regex) — nahrazení `[SKRYTO – použij chráněné pole]`.
          - **Server-side keyword scan** (`prohibited-scan.ts`) — rychlý filtr zjevných zakázaných výrazů před uložením.
       3. **Zrušit:** Koncept zahozen, v DB nevzniká zápis (nebo zůstane `draft` při selhání publish).
 
-* **Server-side vynucení publikace *(migrace `027`)*:**
-  * Edge Function po průchodu bezpečnostním filtrem (status ≠ `REJECTED`) vloží záznam do `moderation_approvals` (TTL 30 min, jednorázový, váže `user_id` + počet moderovaných fotek) a vrátí klientovi `approvalToken`.
-  * `createListing` / `updateListing` (při re-moderaci) vkládají/aktualizují řádek jako `draft`, nahrají fotky a volají `publish_approved_post(post_id, token, target)` — jediná cesta na `active` (u pauznutého inzerátu `target = 'hidden'`).
-  * RLS `posts_insert_own` povolí insert jen se `status = 'draft'`. Trigger `enforce_post_publish_gate` blokuje přímý přechod na viditelný stav; editace obsahu (název/popis/kategorie) nebo změna fotek shodí inzerát zpět na `draft` (re-moderace). Moderátor/admin a `service_role` mají výjimku.
+* **Server-side vynucení publikace *(migrace `027` + `062`–`066`)*:**
+  * Po potvrzení AI náhledu Edge znovu zkontroluje **přesný** finální text a bajty fotek (`issueApproval: true`), spočítá SHA-256 content fingerprint + image hashes, vloží řádek do `moderation_approvals` (TTL 30 min, jednorázový) a vrátí `approvalToken`.
+  * Fingerprint pokrývá title, description a všechna publish-sensitive pole (kategorie, stav, cena/výměna, lokalita/souřadnice, datum, délka, kontaktní volby, job CV…).
+  * `createListing` / `updateListing` ukládají `draft`, nahrají fotky, stáhnou aktuální Storage objekty a volají **service-role only** `publish_approved_post` s vazbami image řádků — DB atomicky porovná fingerprint řádku `posts` i identitu/pořadí/hlavní fotku/hashe `post_images`.
+  * RLS `posts_insert_own` povolí insert jen se `status = 'draft'`. Trigger `enforce_post_publish_gate` blokuje přímý přechod na viditelný stav; změna publish-sensitive polí nebo fotek shodí inzerát na `draft`. Staff bypass (`066`) jen pro God Mode úpravu **cizího** inzerátu; `service_role` má výjimku.
+  * Rate limit AI: `rate_limits` bez grantů pro `authenticated`/`anon`; inkrementace jen přes `increment_rate_limit` (`062`).
   * **Gemini prompt:** Pro Gemini se používá zkrácený system prompt (`geminiSafe: true` — jen ID + label kategorií), aby Google nevypnul vstup filtrem `PROHIBITED_CONTENT` u nevinných fotek. OpenAI fallback používá plný prompt s `criteria`.
 
 * **Editace existujícího inzerátu:**
-  * Změna **názvu, popisu, fotek nebo kategorie** → povinná znovu AI kontrola (min. bezpečnostní filtr + strip kontaktů); DB trigger degraduje inzerát na `draft` do spotřebování nového approval tokenu.
-  * Změna pouze **ceny, lokality, stavu nebo platnosti** → bez AI, přímé uložení (stav se nemění).
+  * Změna kteréhokoli **publish-sensitive pole** (název, popis, kategorie, stav, cena, lokalita, datum/platnost, kontaktní volby, CV…) nebo **fotografií** → povinná znovu AI kontrola + nový token; DB trigger degraduje na `draft`.
   * Inzerát ve stavu `draft` (neúspěšná publikace) lze doupravit z `/moje-inzeraty` — formulář vynutí AI kontrolu (`forceModeration`).
 
 ### 5.5 Politika správy uživatelských dat (GDPR & Retence)
@@ -727,6 +729,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.44 | 2026-07-24 | **Kvalita inzerátu + volitelné otázky:** soft deterministické skóre v AI náhledu (`listing-quality.ts`); odpovědi v „Vylepšete svůj inzerát“ **volitelné** (neblokují publikaci); Metodika §6.7; [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) |
 | v3.45 | 2026-07-26 | **v0.5 DoD:** FAQ `/faq` + patička; `audit_events` (**059/060**); `moderator_notes` (**061**); AI `categorySuggestion` (**058**); CTA dle kategorie; UI copy „web“ místo „platforma“ (mimo VOP/GDPR); Metodika §2.1.1 / §11.4 |
 | v3.46 | 2026-07-27 | **Kvalita + moderace + SEO title:** skóre bez SEO (tužka volitelná); tipy do 100 %; tolerantní parser Parametrů + normalizace odřádkování; kompaktní AI preview footer; false positive opravy (práce vs služby, fotka s výjimkou v textu); META_TITLE obec/město + zkracování H1 na slovech (SEO bible **v1.8**) |
+| v3.47 | 2026-07-28 | **Bezpečnostní harden publish gate:** content fingerprint + SHA-256 fotek (`062`–`065`); service-role-only `publish_approved_post`; finální `issueApproval` po AI náhledu; publish-sensitive editace vždy re-moderace; staff bypass jen cizí inzerát (`066`); rate limit atomický; Next.js 15.5.22; SEO bible **v1.9** (katalog u identifikovaného modelu); audit [`SECURITY_AND_UX_AUDIT_20260727.md`](./SECURITY_AND_UX_AUDIT_20260727.md) |
 
 ---
 

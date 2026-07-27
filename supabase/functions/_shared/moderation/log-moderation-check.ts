@@ -21,6 +21,13 @@ export type ModerationCheckLog = {
   suggestedCategoryType?: string;
   suggestedSubcategorySlug?: string;
   categoryTaxonomyHint?: string;
+  promptVersion?: string;
+  aiProvider?: string;
+  aiModel?: string;
+  usedFallback?: boolean;
+  policyHash?: string;
+  inputFingerprint?: string;
+  imageHashes?: string[];
 };
 
 function truncatePreview(text: string, max = 120): string {
@@ -29,16 +36,16 @@ function truncatePreview(text: string, max = 120): string {
   return `${trimmed.slice(0, max - 1)}…`;
 }
 
-/** Append-only log — selhání zápisu neblokuje moderaci. */
+/** Append-only log; volající rozhodne, zda jeho selhání smí zablokovat approval. */
 export async function logModerationCheck(
   entry: ModerationCheckLog,
-): Promise<void> {
+): Promise<boolean> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !serviceRoleKey) {
     console.warn("log-moderation-check: missing Supabase env, skipping");
-    return;
+    return false;
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
@@ -63,9 +70,18 @@ export async function logModerationCheck(
     category_taxonomy_hint: entry.categoryTaxonomyHint
       ? truncatePreview(entry.categoryTaxonomyHint, 120)
       : null,
+    prompt_version: entry.promptVersion?.trim() || null,
+    ai_provider: entry.aiProvider?.trim() || null,
+    ai_model: entry.aiModel?.trim() || null,
+    used_fallback: entry.usedFallback ?? null,
+    policy_hash: entry.policyHash?.trim() || null,
+    input_fingerprint: entry.inputFingerprint?.trim() || null,
+    image_hashes: entry.imageHashes ?? [],
   });
 
   if (error) {
     console.error("log-moderation-check:", error);
+    return false;
   }
+  return true;
 }

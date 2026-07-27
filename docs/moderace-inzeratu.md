@@ -16,17 +16,21 @@ Formulář (create / edit)
             → hard-hit text pre-filter (bez Gemini)
             → Sightengine NSFW gate na fotky (bez Gemini)
             → Gemini / GPT
-            → APPROVED / NEEDS_QUESTIONS → approvalToken v odpovědi
+            → APPROVED / NEEDS_QUESTIONS → modal s náhledem (bez tokenu)
             → REJECTED → popup ModerationRejectedDialog
             → technická chyba (503) / chyba sítě → červený alert ve formuláři (retry)
+    → uživatel potvrdí finální text
+    → moderate-listing(issueApproval: true)
+        → kontrola přesného textu + bajtů fotek
+        → approvalToken (content fingerprint + SHA-256 fotek)
     → Server Action createListing / updateListing
         → uložení jako draft + fotky
-        → publish_approved_post(approvalToken) → active
+        → service-role publish_approved_post(token, image bindings) → active
 ```
 
 - **Pre-Gemini brána:** hard-hit text + Sightengine nudity — viz [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md). Evidence `moderation_hard_reject_evidence` (**054**). Hard stop: `account_blacklist` (**055**), UI `/mod/blacklist`, stop stránka `/ucet-pozastaven`. Není to `/mod/karantena`.
 - AI se **nevolá přes Next.js API** (riziko timeoutu na Vercel) — jen přes Supabase Edge Function z klienta.
-- **Publikaci na `active` nelze obejít** bez approval tokenu z Edge Function (migrace `027`, viz níže).
+- **Publikaci na `active` nelze obejít** — migrace `063` omezuje `publish_approved_post` na `service_role` a vyžaduje shodu fingerprintu i hashů fotek; `066` omezuje staff bypass na God Mode cizího inzerátu (viz níže).
 - Seznam zakázaného obsahu je v **konfiguračních souborech**; AI prompt se z něj **generuje automaticky** (pro Gemini zkrácená varianta bez explicitních `criteria`).
 
 ### Technické chyby (P8/U1, P9, P11)
@@ -257,17 +261,19 @@ supabase functions deploy moderate-listing
 
 ---
 
-## Server-side vynucení publikace (migrace `027`)
+## Server-side vynucení publikace (migrace `027` + `062`–`066`)
 
 | Komponenta | Účel |
 |------------|------|
-| `moderation_approvals` | Tabulka approval tokenů (píše jen `service_role` z Edge Function) |
-| `issue_moderation_approval` | RPC pro vydání tokenu (TTL 30 min, váže user + počet fotek) |
-| `publish_approved_post` | Jediná cesta z `draft` na `active` / `hidden` pro vlastníka |
-| `enforce_post_publish_gate` | Trigger — blokuje přímý přechod na viditelný stav; editace obsahu → `draft` |
+| `moderation_approvals` | Approval tokeny: `content_fingerprint`, `new_image_hashes` (píše jen `service_role`) |
+| `issue_moderation_approval` | RPC vydání tokenu (TTL 30 min, fingerprint + hashe fotek) |
+| `publish_approved_post` | Jediná cesta `draft` → `active`/`hidden` — **jen `service_role`**; porovná fingerprint z `posts` + vazby `post_images` |
+| `enforce_post_publish_gate` | Trigger — blokuje přímý publish; změna publish-sensitive polí → `draft`; staff bypass jen cizí inzerát (`066`) |
 | `revert_post_on_image_change` | Trigger — změna fotek → `draft` |
+| `increment_rate_limit` | Atomická inkrementace AI limitu; `rate_limits` bez grantů pro klient (`062`) |
 | `check_report_threshold` | Trigger — 3× nahlášení inzerátu → `blocked` + `status_reason_code` |
 | `prohibited-scan.ts` | Rychlý keyword scan v Server Action před uložením |
+| `content-fingerprint.ts` | SHA-256 kanonických polí (Next + Deno, sync) |
 
 **Gemini:** System prompt pro Gemini používá `geminiSafe: true` (jen ID + label kategorií), aby Google nevypnul vstup filtrem `PROHIBITED_CONTENT` u nevinných fotek. OpenAI fallback dostává plný prompt s `criteria`. Volitelně nastav `OPENAI_API_KEY` jako záložní provider.
 

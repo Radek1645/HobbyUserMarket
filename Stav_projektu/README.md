@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-28 | [2026-07-28.md](./2026-07-28.md) — publish gate fingerprint 062–066, Next 15.5.22, SEO v1.9, PRD v3.47 *(bez push)* |
 | 2026-07-27 | [2026-07-27.md](./2026-07-27.md) — kvalita UX, parser Parametrů, moderace FP, SEO title v1.8, PRD v3.46 |
 | 2026-07-26 | [2026-07-26.md](./2026-07-26.md) — FAQ `/faq`, audit 059/060, poznámky 061, categorySuggestion 058, PRD v3.45 |
 | 2026-07-22 | [2026-07-22.md](./2026-07-22.md) — fix hide/restore 057, SoR `info@`, Sightengine JSONB 056, PRD v3.43 |

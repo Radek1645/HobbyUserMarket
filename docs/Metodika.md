@@ -221,7 +221,7 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 |---------|-----|----------|
 | Zobrazit své inzeráty | `/moje-inzeraty` | Včetně expirovaných, pozastavených a zablokovaných |
 | Založit nový inzerát | `/inzerat/novy` | 3krokový formulář + AI flow |
-| Upravit vlastní inzerát | `/inzerat/[slug]/upravit` | Podle typu změny s/bez AI |
+| Upravit vlastní inzerát | `/inzerat/[slug]/upravit` | Změna publikovaného obsahu nebo fotek vyžaduje finální AI kontrolu |
 | Obnovit expirovaný inzerát | `/moje-inzeraty` | Prodloužení platnosti |
 | Smazat inzerát | `/moje-inzeraty` | S povinným exit polem (důvod) |
 | Zobrazit kontakt inzerenta | Detail cizího inzerátu | Max. 20× denně |
@@ -296,8 +296,9 @@ Po kliknutí na **„Publikovat inzerát“** (pokud má uživatel **zbývajíc�
 
 1. Zobrazí se celoobrazovkové načítání (AI běží).
 2. Proběhne [AI moderace a hydratace](#6-ai-moderace-a-hydratace) (viz detailní popis níže).
-3. Po schválení Server Action uloží inzerát nejprve jako **`draft`**, nahraje fotky a přes RPC **`publish_approved_post`** (s approval tokenem z AI) přepne na **`active`**.
-4. URL má tvar `/inzerat/[slug]` — slug se generuje při první publikaci a **nemění se** při editaci.
+3. Po potvrzení AI náhledu proběhne finální kontrola přesného obsahu a fotografií a Edge vydá jednorázový approval token.
+4. Server Action uloží inzerát nejprve jako **`draft`**, nahraje fotky a přes service-role RPC **`publish_approved_post`** přepne na **`active`** jen při shodě tokenu s uloženým obsahem.
+5. URL má tvar `/inzerat/[slug]` — slug se generuje při první publikaci a **nemění se** při editaci.
 
 Pokud publikace selže (chybí/neplatný token), inzerát zůstane ve stavu **Koncept** (`draft`) — majitel ho najde v `/moje-inzeraty` a může doupravit.
 
@@ -319,8 +320,8 @@ Toto je klíčový proces při založení i úpravě inzerátu. Uživatel ho vn�
 | Akce | Spouští AI? |
 |------|-------------|
 | Nový inzerát — publikace | Ano |
-| Změna názvu, popisu, kategorie nebo fotek | Ano |
-| Změna jen ceny, lokality, stavu nebo platnosti | Ne — uloží se přímo |
+| Změna publikovaného obsahu nebo fotek | Ano |
+| Změna ceny, lokality, stavu, data/platnosti či kontaktních voleb | Ano — jde o publish-sensitive obsah |
 
 ### 6.3 Průběh krok za krokem
 
@@ -336,18 +337,22 @@ Formulář → klik „Publikovat“ / „Uložit“
         → REJECTED     → popup „Inzerát nesplňuje pravidla“, nic se neuloží
            (včetně HARD_HIT_TEXT / NSFW_IMAGE z pre-brány)
         → NEEDS_QUESTIONS → modal s náhledem textu + doplňující otázky
-        → APPROVED     → modal s náhledem upraveného textu (+ approvalToken)
+        → APPROVED     → modal s náhledem upraveného textu
     → uživatel volí v modalu
         → Doplnit, upravit a publikovat
         → Ignorovat AI a publikovat původní
         → Zrušit (návrat do formuláře)
+    → finální moderate-listing(issueApproval: true)
+        → kontrola přesného finálního textu a bajtů všech fotek
+        → approvalToken svázaný s content fingerprintem + SHA-256 fotek
     → Server Action createListing / updateListing
         → insert/update jako draft
         → upload fotek (při chybě soft-delete draftu — žádný orphan)
-        → publish_approved_post(token) → active (nebo hidden u pauznutého)
+        → service-role publish_approved_post(token, image bindings)
+        → DB porovná autoritativní posts + post_images → active/hidden
 ```
 
-**Důležité:** AI se volá přímo z prohlížeče do Supabase (ne přes Next.js), aby nedocházelo k timeoutům. Klíče k AI a Sightengine jsou jen na serveru Edge Function (Supabase secrets). **Publikaci na `active` nelze obejít** — vyžaduje platný approval token z Edge Function (migrace `027`). Před odesláním formulář ukáže **„Chybí: …“**, pokud není lokalita / název / popis / cena.
+**Důležité:** AI se volá přímo z prohlížeče do Supabase (ne přes Next.js), aby nedocházelo k timeoutům. Klíče k AI a Sightengine jsou jen na serveru Edge Function (Supabase secrets). **Publikaci na `active` nelze obejít** — migrace `063` dovoluje publish RPC jen `service_role` a vyžaduje platný token pro přesný finální obsah i přesné soubory fotografií. Migrace `066` zajišťuje, že stejným bezpečným tokem procházejí také vlastní inzeráty moderátorů/adminů; staff bypass platí jen pro God Mode úpravu cizího inzerátu. Edge počítá hashe z bajtů, které AI skutečně kontrolovala; Server Action před publikací stáhne aktuální Storage objekty a DB atomicky porovná jejich identitu, pořadí, hlavní obrázek a hashe. Před odesláním formulář ukáže **„Chybí: …“**, pokud není lokalita / název / popis / cena.
 
 ### 6.4 Pre-Gemini brána (hard-hit text + NSFW fotky)
 
@@ -451,7 +456,8 @@ Hydratace vychází z:
 - textu, který uživatel napsal,
 - kategorie a podkategorie (každá má vlastní AI pokyny v `categories.ts`),
 - metadat z formuláře (cena, stav, datum akce, **lokalita** — na cenu/stav/datum se AI znovu neptá, pokud už jsou vyplněná),
-- **všech** nahraných fotografií (vizuální kontext; hlavní fotka navíc pro shodu text ↔ náhled).
+- **všech** nahraných fotografií (vizuální kontext; hlavní fotka navíc pro shodu text ↔ náhled),
+- u jasně identifikovaného výrobku (značka + model / typ / motorizace) v **jakékoli** kategorii zboží i **katalogových vlastností** s jistotou. Kusové údaje (nájezd, vady, příslušenství v balení) jen z textu/fotek.
 
 ### 6.7 Stav NEEDS_QUESTIONS — doplňující dotazník
 
@@ -527,10 +533,12 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 
 | Tabulka | Co obsahuje | Migrace | Inkrementální ID |
 |---------|-------------|---------|------------------|
-| `moderation_checks` | Každé volání `moderate-listing` + volitelně `sightengine_responses` | `028` / `056` | **`log_no`** (PK) |
+| `moderation_checks` | Každé volání `moderate-listing` + volitelně `sightengine_responses` + AI audit metadata | `028` / `056` / `064` | **`log_no`** (PK) |
+| `moderation_approvals` | Jednorázové tokeny: fingerprint obsahu + SHA-256 fotek | `027` / `062`–`065` | — |
 | `moderation_hard_reject_evidence` | Hard-hit / NSFW / Sightengine výpadek / threshold; `sightengine_responses` | `054` / `056` | **`evidence_no`** (+ UUID `id`) |
 | `account_blacklist` | Hard stop podle e-mailu (auto/manual), soft unban | `055` | **`blacklist_no`** (+ UUID `id`) |
 | *(grants)* `posts` UPDATE pro `service_role` | Hide/restore při hard stopu | `057` | — |
+| *(fn)* `publish_approved_post` / `enforce_post_publish_gate` | Service-role publish + staff bypass jen cizí inzerát | `063` / `066` | — |
 | Storage bucket `moderation-evidence` | Snapshoty NSFW fotek (privátní, jen service_role) | `054` | — |
 
 **Inkrementální ID:** stejně jako u `reports.report_no` — v Table Editoru / SQL hledej podle `log_no` / `evidence_no` (1, 2, 3…), ne podle UUID. UUID zůstává technický identifikátor.
@@ -734,8 +742,9 @@ Stejný 3krokový formulář jako při založení, předvyplněný aktuálními 
 
 ### 7.2 Kdy znovu proběhne AI
 
-- Změna **názvu, popisu, kategorie nebo fotek** → plná AI kontrola (včetně modalu); DB trigger dočasně degraduje inzerát na `draft`, po uložení s tokenem se obnoví na `active` (nebo `hidden`, pokud byl pauznutý).
-- Změna **jen ceny, stavu, lokality nebo platnosti** → uložení bez AI.
+- Změna kteréhokoli **publish-sensitive pole** → plná AI kontrola. Patří sem název, popis, kategorie/podkategorie, stav zboží, cena/výměna, lokalita a souřadnice, datum akce, délka inzerce, kontaktní volby, telefon a požadavek na CV.
+- Změna **fotografií, jejich pořadí nebo hlavní fotografie** → plná AI kontrola přesných souborů.
+- DB trigger dočasně degraduje viditelný inzerát na `draft`; po finální kontrole a shodě fingerprintu/hashů se s novým tokenem obnoví na `active` (nebo `hidden`, pokud byl pauznutý).
 - Inzerát ve stavu **Zablokováno** (`blocked`) → úprava obsahu/fotek je jediná cesta ven; po uložení s AI tokenem → `active`. Bez tlačítka „Zveřejnit“.
 - Inzerát ve stavu **Koncept** (`draft`) → AI kontrola proběhne vždy (i beze změny textu), aby vznikl nový approval token.
 
@@ -1012,7 +1021,7 @@ Role se **nastavuje v databázi**, ne v aplikaci. Postup je v [`supabase-prikazy
 | `/mod/karantena` | Zablokované inzeráty (`blocked`) — obnovit nebo smazat | **ano** |
 | `/mod/inzeraty` | Přehled inzerátů s filtry stavu | **ano** |
 | `/mod/uzivatele` | Jen admin — správa uživatelů, smazání účtu, balíčky | **ano** |
-| Detail cizího inzerátu | Lišta: Zablokovat, Smazat, Obnovit, Upravit | **ano** (Historie, Poznámka — zatím ne) |
+| Detail cizího inzerátu | Lišta: Zablokovat, Smazat, Obnovit, Upravit, Poznámky | **ano** (Poznámky — ano, viz §11.4.1; sjednocená Historie/timeline — zatím ne, viz §11.4) |
 
 Hard-hit / NSFW evidence z pre-Gemini brány (§6.4) je v `moderation_hard_reject_evidence` (+ bucket `moderation-evidence`). Hard stop účtů: `account_blacklist` + UI `/mod/blacklist` (neplést s `/mod/karantena`). Stop stránka: `/ucet-pozastaven`. SQL: [§6.12](#612-sql--přehled-kontrol-v-supabase).
 

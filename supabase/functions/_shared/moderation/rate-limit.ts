@@ -8,7 +8,15 @@ function currentHourWindowStart(): string {
   return now.toISOString();
 }
 
-/** Fail closed: chybějící config nebo DB chyba = odmítnout request (M6). */
+/**
+ * Fail closed: chybějící config nebo DB chyba = odmítnout request (M6).
+ *
+ * SEC-H03: přihlášený uživatel dřív mohl číst/psát vlastní `rate_limits`
+ * přímo přes Supabase API (grant + RLS „own row“) a limit obejít nebo
+ * paralelizovat select+update. `rate_limits` je teď bez grantů/policy pro
+ * anon/authenticated; inkrementace jde přes atomický `increment_rate_limit`
+ * (INSERT … ON CONFLICT), takže nehrozí race mezi čtením a zápisem počtu.
+ */
 export async function assertAiModerationRateLimit(
   userId: string,
 ): Promise<void> {
@@ -21,48 +29,19 @@ export async function assertAiModerationRateLimit(
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
-  const windowStart = currentHourWindowStart();
 
-  const { data: existing, error: selectError } = await admin
-    .from("rate_limits")
-    .select("id, count")
-    .eq("user_id", userId)
-    .eq("action_type", "ai_check")
-    .eq("window_start", windowStart)
-    .maybeSingle();
-
-  if (selectError) {
-    console.error("rate-limit select:", selectError);
-    throw new Error("RATE_LIMIT_UNAVAILABLE");
-  }
-
-  if (existing && existing.count >= AI_RATE_LIMIT_PER_HOUR) {
-    throw new Error("RATE_LIMIT");
-  }
-
-  if (existing) {
-    const { error: updateError } = await admin
-      .from("rate_limits")
-      .update({ count: existing.count + 1 })
-      .eq("id", existing.id);
-
-    if (updateError) {
-      console.error("rate-limit update:", updateError);
-      throw new Error("RATE_LIMIT_UNAVAILABLE");
-    }
-    return;
-  }
-
-  const { error: insertError } = await admin.from("rate_limits").insert({
-    user_id: userId,
-    action_type: "ai_check",
-    count: 1,
-    window_start: windowStart,
+  const { data: count, error } = await admin.rpc("increment_rate_limit", {
+    p_user_id: userId,
+    p_action_type: "ai_check",
+    p_window_start: currentHourWindowStart(),
   });
 
-  if (insertError) {
-    console.error("rate-limit insert:", insertError);
-    // Race: unikátní okno už existuje — fail closed (bezpečnější než přeskočit).
+  if (error || typeof count !== "number") {
+    console.error("rate-limit rpc:", error);
     throw new Error("RATE_LIMIT_UNAVAILABLE");
+  }
+
+  if (count > AI_RATE_LIMIT_PER_HOUR) {
+    throw new Error("RATE_LIMIT");
   }
 }

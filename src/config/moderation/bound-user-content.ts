@@ -4,6 +4,7 @@ export const LISTING_PROMPT_TAGS = {
   description: "listing_description",
   condition: "listing_condition",
   eventDate: "listing_event_date",
+  exchangeFor: "listing_exchange_for",
   location: "listing_location",
 } as const;
 

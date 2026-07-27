@@ -123,12 +123,21 @@ export const CATEGORIES: CategoryConfig[] = [
         label: "Kola a sport",
         titlePlaceholder: "např. Dětské kolo Velo 20″",
         descriptionPlaceholder: "Značka, velikost, stav, příslušenství…",
+        aiPrompt:
+          "Úvod + Parametry (značka, model/typ, velikost, materiál, výbava, stav). " +
+          "Je-li značka a model/typ jasné, doplň katalogové vlastnosti s jistotou (např. odpružení, brzdy, materiál rámu u známého kola). " +
+          "Velikost rámu/kol, stav a příslušenství konkrétního kusu jen z textu/fotek nebo se zeptej. " +
+          "Dotazník jen na chybějící kusové údaje — ne na katalog už identifikovaného modelu.",
       },
       {
         slug: "nabytek-domacnost",
         label: "Nábytek a domácnost",
         titlePlaceholder: "např. Jídelní stůl z masivu",
         descriptionPlaceholder: "Rozměry, materiál, stav, možnost odvozu…",
+        aiPrompt:
+          "Úvod + Parametry (typ, materiál, rozměry, stav). " +
+          "Je-li typ výrobku jasně identifikovaný (značka/model nebo jednoznačný typ), doplň katalogové vlastnosti s jistotou. " +
+          "Přesné rozměry konkrétního kusu, vady a odvoz jen z textu/fotek nebo se zeptej.",
       },
       {
         slug: "elektronika",
@@ -136,7 +145,10 @@ export const CATEGORIES: CategoryConfig[] = [
         titlePlaceholder: "např. iPhone 13, 128 GB",
         descriptionPlaceholder: "Model, stav, výbava, baterie, příslušenství…",
         aiPrompt:
-          "Úvod + Parametry (model, stav, výbava, baterie u mobilů…). Dotazník jen pokud chybí klíčové parametry.",
+          "Úvod + Parametry (značka, model, stav, výbava…). " +
+          "Je-li model jasný (Amazfit GTR/GTS, iPhone, notebook…), MUSÍŠ doplnit katalog — nestačí jen Stav/Vady/Popis. " +
+          "U smartwatch vždy: GPS, bio (tep/SpO₂), voděodolnost, Bluetooth volání (pokud model má) — zvlášť nebo pod Výbava. " +
+          "Příslušenství v balení a vady kusu jen z textu/fotek. Label „Popis:“ nepoužívej — piš Značka + Model.",
       },
       {
         slug: "auta-moto",
@@ -146,14 +158,16 @@ export const CATEGORIES: CategoryConfig[] = [
           "Rok, nájezd, motorizace, STK, poslední servis, výbava, stav…",
         aiPrompt:
           "Úvod + Parametry (rok, nájezd, motorizace, STK, datum poslední servisní prohlídky, výbava, stav). " +
-          "Chybí-li datum poslední servisní prohlídky, zeptej se (paramLabel: „Poslední servis“). " +
-          "Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu. Dotazník jen na chybějící údaje.",
+          "Je-li značka + model (+ motorizace) jasné, doplň katalogové vlastnosti s jistotou (palivo/pohon, typ karoserie, výkon kW pokud z motorizace jednoznačně plyne, běžná výbava modelu). " +
+          "Výbavový stupeň (Ambition/Style…) nehádej. Rok, nájezd, STK, poslední servis a vady jsou kusové — chybí-li, zeptej se (paramLabel např. „Poslední servis“, „Nájezd“, „Rok“). " +
+          "Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu.",
       },
       {
         slug: "moda-obleceni",
         label: "Móda a oblečení",
         titlePlaceholder: "např. Dívčí bunda Nike, vel. 128",
-        descriptionPlaceholder: "Značka, velikost, stav, materiál…",
+        descriptionPlaceholder:
+          "Značka, velikost, stav… u bot stélka, u hodinek šířka pásku, u šperků délka v mm…",
         aiPrompt:
           "Uživatel prodává módu a oblečení.\n\n" +
           "SPODNÍ A INTIMNÍ PRÁDLO — povinná pravidla:\n" +
@@ -161,13 +175,29 @@ export const CATEGORIES: CategoryConfig[] = [
           "- V popisu nebo Parametrech musí být velikost; doporuč značku a stav.\n" +
           "- Zamítnout (REJECTED, sexual_services), pokud foto sexualizuje osobu nebo inzerát působí jako nabídka sexuální služby místo prodeje věci.\n" +
           "- Pro předání piš „osobní předání po domluvě“ nebo „vyzvednutí po domluvě“, NIKDY „osobní prohlídka“ (to platí jen u nemovitostí).\n\n" +
-          "Obecně: pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj maximálně 2 stručné otázky. Na volitelné parametry (materiál, sezóna) se ptej jen pokud text neobsahuje téměř nic.",
+          "BOTY A OBUV (včetně bot na chození) — pokud text/fotky ukazují boty:\n" +
+          "- Chybí-li info o vyndávací stélce (vložce), zeptej se (paramLabel: „Vyndávací stélka“; label např. „Mají boty vyndávací stélku / vložku?“).\n" +
+          "- U dětských bot chybí-li délka stélky v mm, zeptej se (paramLabel: „Délka stélky“; label např. „Jaká je délka stélky v mm?“). Jednotka mm je povinná.\n" +
+          "- Je-li údaj známý, zapiš do Parametrů (např. • Vyndávací stélka: ano; • Délka stélky: 165 mm) a neptej se.\n\n" +
+          "HODINKY — pokud text/fotky ukazují hodinky:\n" +
+          "- Chybí-li šířka pásku v mm, zeptej se (paramLabel: „Šířka pásku“; label např. „Jaká je šířka pásku v mm?“).\n" +
+          "- Jednotka mm je povinná. Známou hodnotu zapiš do Parametrů a neptej se. Na délku pásku se neptej — je standardní.\n" +
+          "- Je-li značka a model jasné (i u módních/smart hodinek), doplň katalogové vlastnosti s jistotou (materiál pouzdra, typ strojku / GPS / voděodolnost…).\n\n" +
+          "NÁRAMKY A NÁHRDELNÍKY — pokud text/fotky ukazují náramek nebo náhrdelník:\n" +
+          "- Chybí-li délka (v mm), zeptej se (paramLabel: „Délka“; label např. „Jaká je délka náramku / náhrdelníku v mm?“).\n" +
+          "- Jednotka mm je povinná. Známou délku zapiš do Parametrů a neptej se.\n\n" +
+          "Obecně: pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj stručné otázky. " +
+          "Celkem max 5 otázek. Na volitelné parametry (materiál, sezóna) se ptej jen pokud text neobsahuje téměř nic.",
       },
       {
         slug: "ostatni",
         label: "Ostatní",
         titlePlaceholder: "např. Nabízím zahradní sekačku",
         descriptionPlaceholder: "Co nabízíte, stav, rozměry, způsob předání…",
+        aiPrompt:
+          "Úvod + Parametry podle typu zboží. " +
+          "Je-li výrobek jasně identifikovaný (značka + model / jednoznačný typ, např. sekačka Bosch AdvancedRotak 650), doplň katalogové vlastnosti s jistotou. " +
+          "Kusové údaje (stav, vady, příslušenství) jen z textu/fotek nebo se zeptej.",
       },
     ],
     conditionLabels: ZBOZI_CONDITIONS,
@@ -175,7 +205,10 @@ export const CATEGORIES: CategoryConfig[] = [
     titlePlaceholder: "např. Nabízím použité zboží",
     descriptionPlaceholder: "Popis zboží, stav, rozměry, způsob předání…",
     aiPrompt:
-      "Analyzuj nabízené zboží. cleanedDescription: úvod (co prodáváš + cena v textu) a sekce Parametry s odrážkami (nájezd, rozměry, materiál, výbava, stav…). Ve formuláři dostaneš stav — u „Poškozené / na díly“ bez rozsahu vady se ptej. Doplňující otázky jen na chybějící zásadní parametry. Na cenu se neptej, pokud je ve formuláři.",
+      "Analyzuj nabízené zboží. cleanedDescription: úvod (co prodáváš + cena v textu) a sekce Parametry. " +
+      "Je-li typ výrobku spolehlivě identifikovaný (značka + model / motorizace / jednoznačný produkt) v jakékoli podkategorii, POVINNĚ doplň katalogové vlastnosti s jistotou — nečekej, až je napíše inzerent. " +
+      "Kusové údaje (stav kusu, nájezd, vady, balení) jen z textu/fotek/formuláře. Ve formuláři dostaneš stav — u „Poškozené / na díly“ bez rozsahu vady se ptej. " +
+      "Doplňující otázky jen na chybějící kusové / variantní údaje, ne na katalog identifikovaného výrobku. Na cenu se neptej, pokud je ve formuláři.",
   },
   {
     type: "sluzby",

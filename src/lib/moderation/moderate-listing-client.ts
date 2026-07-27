@@ -161,6 +161,7 @@ async function invokeModerateListingOnce(
     {
       body: {
         intent: input.intent,
+        issueApproval: input.issueApproval === true,
         title: input.title,
         description: input.description,
         categoryType: input.categoryType,
@@ -180,12 +181,27 @@ async function invokeModerateListingOnce(
           ? { priceTypeLabel: input.priceTypeLabel }
           : {}),
         ...(input.priceAmount != null ? { priceAmount: input.priceAmount } : {}),
+        ...(input.exchangeFor?.trim()
+          ? { exchangeFor: input.exchangeFor.trim() }
+          : {}),
         ...(input.locationText?.trim()
           ? { locationText: input.locationText.trim() }
           : {}),
+        ...(input.latitude != null ? { latitude: input.latitude } : {}),
+        ...(input.longitude != null ? { longitude: input.longitude } : {}),
+        ...(input.listingDurationDays != null
+          ? { listingDurationDays: input.listingDurationDays }
+          : {}),
+        showContactEmail: input.showContactEmail === true,
+        showContactPhone: input.showContactPhone === true,
+        ...(input.contactPhone?.trim()
+          ? { contactPhone: input.contactPhone.trim() }
+          : {}),
+        jobCvRequired: input.jobCvRequired === true,
         ...(input.images
           ? {
               imagesBase64: input.images.imagesBase64,
+              imageMimeTypes: input.images.imageMimeTypes,
               mainImageIndex: input.images.mainImageIndex,
             }
           : {}),

@@ -26,6 +26,7 @@ import {
   normalizeModerationResult,
   parseModerationResponse,
 } from "../_shared/moderation/parse-response.ts";
+import { ensureRequiredCategoryQuestions } from "../_shared/moderation/required-category-questions.ts";
 import {
   applyPostModerationSafetyChecks,
   containsPromptInjection,
@@ -33,8 +34,17 @@ import {
 } from "../_shared/moderation/prompt-injection-guard.ts";
 import { findProhibitedKeyword, checkHardHitText } from "../_shared/moderation/prohibited-scan.ts";
 import { assertAiModerationRateLimit } from "../_shared/moderation/rate-limit.ts";
-import { assertModerationImagesWithinLimits } from "../_shared/moderation/assert-image-limits.ts";
+import {
+  assertModerationImagesWithinLimits,
+  computeModerationImageHashes,
+  decodeBase64Bytes,
+  detectImageMimeType,
+} from "../_shared/moderation/assert-image-limits.ts";
 import { issueModerationApproval } from "../_shared/moderation/issue-approval.ts";
+import {
+  computeListingContentFingerprint,
+  computeTextSha256,
+} from "../_shared/moderation/content-fingerprint.ts";
 import { logModerationCheck } from "../_shared/moderation/log-moderation-check.ts";
 import type { ModerationResult } from "../_shared/moderation/parse-response.ts";
 import {
@@ -61,6 +71,7 @@ const SIGHTENGINE_UNAVAILABLE_MESSAGE =
   "Kontrola fotografií teď není dostupná. Zkuste to prosím za chvíli znovu.";
 const ACCOUNT_BLACKLISTED_MESSAGE =
   "Účet je pozastaven kvůli porušení obchodních podmínek.";
+const MODERATION_PROMPT_VERSION = "moderation-v1.8-2026-07-27";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,6 +92,13 @@ type ModerationLogContext = {
   imageCount?: number;
   /** Až 6 Sightengine odpovědí — ukládá se do moderation_checks. */
   sightengineResponses?: unknown;
+  promptVersion?: string;
+  aiProvider?: "gemini" | "openai";
+  aiModel?: string;
+  usedFallback?: boolean;
+  policyHash?: string;
+  inputFingerprint?: string;
+  imageHashes?: string[];
 };
 
 type SightengineResponseEntry = {
@@ -119,18 +137,19 @@ function technicalErrorResponse(
   return jsonResponse({ error: "TECHNICAL_ERROR", message, errorCode }, httpStatus);
 }
 
-async function respondWithLog(
+type ModerationResponseBody = ModerationResult & {
+  approvalToken?: string | null;
+  errorCode?: string;
+  accountBlocked?: boolean;
+};
+
+function logModerationResult(
   userId: string,
   logCtx: ModerationLogContext,
-  body: ModerationResult & {
-    approvalToken?: string | null;
-    errorCode?: string;
-    accountBlocked?: boolean;
-  },
-  options?: { errorCode?: string; httpStatus?: number },
-): Promise<Response> {
-  const errorCode = options?.errorCode ?? body.errorCode;
-  await logModerationCheck({
+  body: ModerationResponseBody,
+  errorCode?: string,
+): Promise<boolean> {
+  return logModerationCheck({
     userId,
     intent: logCtx.intent,
     status: body.status,
@@ -147,10 +166,35 @@ async function respondWithLog(
     suggestedCategoryType: body.categorySuggestion?.categoryType,
     suggestedSubcategorySlug: body.categorySuggestion?.subcategorySlug,
     categoryTaxonomyHint: body.categorySuggestion?.hint,
+    promptVersion: logCtx.promptVersion,
+    aiProvider: logCtx.aiProvider,
+    aiModel: logCtx.aiModel,
+    usedFallback: logCtx.usedFallback,
+    policyHash: logCtx.policyHash,
+    inputFingerprint: logCtx.inputFingerprint,
+    imageHashes: logCtx.imageHashes,
   });
+}
+
+async function respondWithLog(
+  userId: string,
+  logCtx: ModerationLogContext,
+  body: ModerationResponseBody,
+  options?: {
+    errorCode?: string;
+    httpStatus?: number;
+    alreadyLogged?: boolean;
+  },
+): Promise<Response> {
+  const errorCode = options?.errorCode ?? body.errorCode;
+  if (!options?.alreadyLogged) {
+    await logModerationResult(userId, logCtx, body, errorCode);
+  }
 
   // Telemetrie kategorií zůstává jen v DB — klientovi neposíláme.
-  const { errorCode: _omit, categorySuggestion: _hint, ...rest } = body;
+  const rest = { ...body };
+  delete rest.errorCode;
+  delete rest.categorySuggestion;
   return jsonResponse(
     errorCode ? { ...rest, errorCode } : rest,
     options?.httpStatus ?? 200,
@@ -162,7 +206,7 @@ function logRejectedFromContext(
   logCtx: ModerationLogContext,
   rejectionReason: string,
   errorCode?: string,
-): Promise<void> {
+): Promise<boolean> {
   return logModerationCheck({
     userId,
     intent: logCtx.intent,
@@ -174,6 +218,13 @@ function logRejectedFromContext(
     errorCode,
     titlePreview: logCtx.title,
     sightengineResponses: logCtx.sightengineResponses,
+    promptVersion: logCtx.promptVersion,
+    aiProvider: logCtx.aiProvider,
+    aiModel: logCtx.aiModel,
+    usedFallback: logCtx.usedFallback,
+    policyHash: logCtx.policyHash,
+    inputFingerprint: logCtx.inputFingerprint,
+    imageHashes: logCtx.imageHashes,
   });
 }
 
@@ -230,7 +281,14 @@ function logModerationAiProvider(
 async function callModerationAi(params: {
   userPrompt: string;
   imagesBase64: string[];
-}): Promise<string> {
+  imageMimeTypes: string[];
+}): Promise<{
+  rawResponse: string;
+  provider: "gemini" | "openai";
+  model: string;
+  fallback: boolean;
+  policyHash: string;
+}> {
   const hasGemini = Boolean(Deno.env.get("GEMINI_API_KEY"));
   const hasOpenAi = Boolean(Deno.env.get("OPENAI_API_KEY"));
 
@@ -240,37 +298,61 @@ async function callModerationAi(params: {
 
   if (hasGemini) {
     try {
+      const model = resolveGeminiModerationModel();
       logModerationAiProvider(
         "gemini",
-        resolveGeminiModerationModel(),
+        model,
         false,
       );
-      return await callGeminiModeration({
+      const rawResponse = await callGeminiModeration({
         ...params,
         systemPrompt: moderationSystemPromptGemini,
       });
+      return {
+        rawResponse,
+        provider: "gemini",
+        model,
+        fallback: false,
+        policyHash: await computeTextSha256(moderationSystemPromptGemini),
+      };
     } catch (geminiError) {
       console.error("Gemini failed:", geminiError);
       if (hasOpenAi) {
+        const model = resolveOpenAiModerationModel();
         logModerationAiProvider(
           "openai",
-          resolveOpenAiModerationModel(),
+          model,
           true,
         );
-        return await callOpenAiModeration({
+        const rawResponse = await callOpenAiModeration({
           ...params,
           systemPrompt: moderationSystemPromptFull,
         });
+        return {
+          rawResponse,
+          provider: "openai",
+          model,
+          fallback: true,
+          policyHash: await computeTextSha256(moderationSystemPromptFull),
+        };
       }
       throw geminiError;
     }
   }
 
-  logModerationAiProvider("openai", resolveOpenAiModerationModel(), false);
-  return await callOpenAiModeration({
+  const model = resolveOpenAiModerationModel();
+  logModerationAiProvider("openai", model, false);
+  const rawResponse = await callOpenAiModeration({
     ...params,
     systemPrompt: moderationSystemPromptFull,
   });
+  return {
+    rawResponse,
+    provider: "openai",
+    model,
+    fallback: false,
+    policyHash: await computeTextSha256(moderationSystemPromptFull),
+  };
 }
 
 serve(async (req) => {
@@ -323,7 +405,7 @@ serve(async (req) => {
     } catch (rateError) {
       if (rateError instanceof Error && rateError.message === "RATE_LIMIT") {
         const reason =
-          "Příliš mnoho AI kontrol za hodinu. Zkuste to prosím znovu později, nebo upravte inzerát bez další kontroly.";
+          "Dosáhli jste hodinového limitu AI kontrol (max. 20). Další kontrolu bude možné spustit v následující hodině.";
         await logModerationCheck({
           userId,
           status: "REJECTED",
@@ -364,7 +446,6 @@ serve(async (req) => {
     const mainImageIndex =
       typeof body?.mainImageIndex === "number" ? body.mainImageIndex : 0;
     logCtx.imageCount = imagesBase64.length;
-
     try {
       assertModerationImagesWithinLimits(imagesBase64);
     } catch (imageError) {
@@ -381,6 +462,15 @@ serve(async (req) => {
         { errorCode: code, httpStatus: 400 },
       );
     }
+
+    const imageMimeTypes = imagesBase64.map((encoded) => {
+      const mimeType = detectImageMimeType(decodeBase64Bytes(encoded));
+      if (!mimeType) {
+        throw new Error("IMAGE_INVALID");
+      }
+      return mimeType;
+    });
+    const imageHashes = await computeModerationImageHashes(imagesBase64);
 
     if (!title || !description) {
       const reason = "Chybí název nebo popis inzerátu.";
@@ -473,6 +563,7 @@ serve(async (req) => {
               userId,
               imageBase64,
               imageIndex,
+              imageMimeTypes[imageIndex],
             );
             await recordHardRejectEvidence({
               userId,
@@ -541,6 +632,37 @@ serve(async (req) => {
     const priceTypeLabel =
       String(body?.priceTypeLabel ?? "").trim() || undefined;
     const priceAmount = parseModerationPriceAmount(body?.priceAmount);
+    const inputFingerprint = await computeListingContentFingerprint({
+      title,
+      description,
+      categoryType,
+      subcategorySlug,
+      conditionLabel: String(body?.conditionLabel ?? ""),
+      priceType: priceType ?? "",
+      priceAmount: priceAmount ?? null,
+      exchangeFor:
+        priceType === "exchange"
+          ? String(body?.exchangeFor ?? "").trim()
+          : "",
+      locationText: String(body?.locationText ?? "").trim(),
+      latitude: typeof body?.latitude === "number" ? body.latitude : null,
+      longitude: typeof body?.longitude === "number" ? body.longitude : null,
+      eventDate: String(body?.eventDate ?? "").trim() || null,
+      listingDurationDays:
+        typeof body?.listingDurationDays === "number"
+          ? body.listingDurationDays
+          : 0,
+      showContactEmail: body?.showContactEmail === true,
+      showContactPhone: body?.showContactPhone === true,
+      contactPhone:
+        body?.showContactPhone === true
+          ? String(body?.contactPhone ?? "").trim().replace(/\s+/g, " ")
+          : "",
+      jobCvRequired: body?.jobCvRequired === true,
+    });
+    logCtx.promptVersion = MODERATION_PROMPT_VERSION;
+    logCtx.inputFingerprint = inputFingerprint;
+    logCtx.imageHashes = imageHashes;
 
     const userPrompt = buildModerationUserPrompt(
       {
@@ -565,12 +687,20 @@ serve(async (req) => {
       categoryAiPrompt,
     );
 
-    const rawAiResponse = await callModerationAi({
+    const aiResult = await callModerationAi({
       userPrompt,
       imagesBase64,
+      imageMimeTypes,
     });
+    logCtx.aiProvider = aiResult.provider;
+    logCtx.aiModel = aiResult.model;
+    logCtx.usedFallback = aiResult.fallback;
+    logCtx.policyHash = aiResult.policyHash;
 
-    const parsed = parseModerationResponse(rawAiResponse);
+    const parsed = parseModerationResponse(
+      aiResult.rawResponse,
+      imagesBase64.length,
+    );
     const withoutPriceQuestions = filterRedundantPriceQuestions(
       parsed,
       priceType,
@@ -584,19 +714,54 @@ serve(async (req) => {
       priceAmount,
       categoryType,
     );
+    const withRequiredQuestions = ensureRequiredCategoryQuestions(normalized, {
+      categoryType,
+      subcategorySlug,
+      sourceTitle: title,
+      sourceDescription: description,
+    });
     const result = applyPostModerationSafetyChecks(
-      normalized,
+      withRequiredQuestions,
       { title, description },
       findProhibitedKeyword,
     );
 
-    // H1: po průchodu bezpečnostním filtrem vydej approval token pro publikaci.
-    if (result.status !== "REJECTED") {
+    // NEEDS_QUESTIONS znamená bezpečný, ale kvalitativně neúplný inzerát.
+    // Otázky jsou podle UI nepovinné, proto finální bezpečnostní kontrola smí
+    // vydat token pro oba nezamítnuté statusy. Token stále váže přesný text.
+    if (result.status !== "REJECTED" && body.issueApproval === true) {
+      const auditLogged = await logModerationResult(
+        userId,
+        logCtx,
+        result,
+      );
+      if (!auditLogged) {
+        return technicalErrorResponse(
+          "Výsledek AI kontroly se nepodařilo bezpečně zaznamenat. Zkuste to prosím znovu.",
+          503,
+          "MODERATION_AUDIT_FAILED",
+        );
+      }
+
       const approvalToken = await issueModerationApproval(
         userId,
         imagesBase64.length,
+        inputFingerprint,
+        imageHashes,
       );
-      return respondWithLog(userId, logCtx, { ...result, approvalToken });
+      if (!approvalToken) {
+        return technicalErrorResponse(
+          "AI kontrola nevydala potvrzení pro publikaci. Zkuste to prosím znovu.",
+          503,
+          "APPROVAL_ISSUE_FAILED",
+        );
+      }
+      return respondWithLog(
+        userId,
+        logCtx,
+        { ...result, approvalToken },
+        { alreadyLogged: true },
+      );
     }
 
     return respondWithLog(userId, logCtx, result);

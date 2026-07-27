@@ -48,11 +48,12 @@ export const LISTING_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
 export const LISTING_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"] as const;
 
 /**
- * Limity base64 fotek v Edge Function moderate-listing (M7).
- * Klient posílá JPEG 512×512; limity chrání před DoS přes přímé volání API.
+ * Limity přesných uložených souborů v Edge Function moderate-listing (M7).
+ * SEC-H02 vyžaduje stejné bajty pro AI, approval hash i Storage.
  */
-export const MODERATION_IMAGE_MAX_BYTES = 500 * 1024;
-export const MODERATION_IMAGES_MAX_TOTAL_BYTES = 2 * 1024 * 1024;
+export const MODERATION_IMAGE_MAX_BYTES = LISTING_IMAGE_MAX_FILE_BYTES;
+export const MODERATION_IMAGES_MAX_TOTAL_BYTES =
+  LISTING_IMAGE_MAX_FILES * LISTING_IMAGE_MAX_FILE_BYTES;
 
 /** Minimální délka hesla — registrace i nastavení hesla. */
 export const PASSWORD_MIN_LENGTH = 8;

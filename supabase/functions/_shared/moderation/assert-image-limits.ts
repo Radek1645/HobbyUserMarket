@@ -13,7 +13,7 @@ function stripDataUrlPrefix(input: string): string {
   return input;
 }
 
-function decodeBase64Bytes(input: string): Uint8Array {
+export function decodeBase64Bytes(input: string): Uint8Array {
   const raw = stripDataUrlPrefix(input).replace(/\s/g, "");
   const binary = atob(raw);
   const bytes = new Uint8Array(binary.length);
@@ -62,6 +62,29 @@ function isWebpMagic(bytes: Uint8Array): boolean {
 
 function isAllowedImageMagic(bytes: Uint8Array): boolean {
   return isJpegMagic(bytes) || isPngMagic(bytes) || isWebpMagic(bytes);
+}
+
+export function detectImageMimeType(bytes: Uint8Array): string | null {
+  if (isJpegMagic(bytes)) return "image/jpeg";
+  if (isPngMagic(bytes)) return "image/png";
+  if (isWebpMagic(bytes)) return "image/webp";
+  return null;
+}
+
+export async function computeModerationImageHashes(
+  imagesBase64: string[],
+): Promise<string[]> {
+  const hashes: string[] = [];
+  for (const encoded of imagesBase64) {
+    const bytes = decodeBase64Bytes(encoded);
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    hashes.push(
+      Array.from(new Uint8Array(digest))
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+    );
+  }
+  return hashes;
 }
 
 /**

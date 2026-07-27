@@ -57,6 +57,17 @@ writeFileSync(
 );
 console.log("Synced listing-cta:", listingCtaTarget);
 
+const requiredQuestionsSource = join(
+  root,
+  "src/config/moderation/required-category-questions.ts",
+);
+const requiredQuestionsTarget = join(
+  root,
+  "supabase/functions/_shared/moderation/required-category-questions.ts",
+);
+copyFileSync(requiredQuestionsSource, requiredQuestionsTarget);
+console.log("Synced required category questions:", requiredQuestionsTarget);
+
 const prohibitedScanSource = join(root, "src/lib/moderation/prohibited-scan.ts");
 const prohibitedScanTarget = join(
   root,

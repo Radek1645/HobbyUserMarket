@@ -2,6 +2,7 @@ import {
   fetchWithTimeout,
   isFetchTimeoutError,
 } from "./fetch-with-timeout.ts";
+import { GEMINI_MODERATION_RESPONSE_SCHEMA } from "./response-schema.ts";
 
 type GeminiPart =
   | { text: string }
@@ -15,6 +16,7 @@ export async function callGeminiModeration(params: {
   systemPrompt: string;
   userPrompt: string;
   imagesBase64: string[];
+  imageMimeTypes: string[];
 }): Promise<string> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
@@ -26,11 +28,11 @@ export async function callGeminiModeration(params: {
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const parts: GeminiPart[] = [{ text: params.userPrompt }];
-  for (const data of params.imagesBase64) {
+  for (const [index, data] of params.imagesBase64.entries()) {
     if (data) {
       parts.push({
         inline_data: {
-          mime_type: "image/jpeg",
+          mime_type: params.imageMimeTypes[index] ?? "image/jpeg",
           data,
         },
       });
@@ -65,6 +67,7 @@ export async function callGeminiModeration(params: {
         generationConfig: {
           temperature: 0.2,
           responseMimeType: "application/json",
+          responseSchema: GEMINI_MODERATION_RESPONSE_SCHEMA,
         },
       }),
     });

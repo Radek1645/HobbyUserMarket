@@ -14,7 +14,7 @@ Dokumentace k AI **hydrataci** (úprava a strukturování popisu) podle PRD §5.
 | Přepsání hrubého nástřelu do srozumitelného textu | Chat s uživatelem po publikaci |
 | Struktura **Úvod** + `---` + **Parametry** | Samostatné sloupce v DB pro každý parametr |
 | Doplňující otázky (`NEEDS_QUESTIONS`), když chybí kritická data | Povinné vyplnění všech polí ve formuláři před odesláním |
-| Využití kategorie, formuláře a **všech** fotografií jako kontextu | Překlad do jiných jazyků |
+| Využití kategorie, formuláře, fotek a **katalogu u identifikovaného modelu** | Překlad do jiných jazyků |
 
 **Moderace** rozhoduje, zda obsah smí na web (REJECTED). **Hydratace** se spouští jen pokud obsah **není** REJECTED — vrací `APPROVED` nebo `NEEDS_QUESTIONS` s `cleanedTitle` / `cleanedDescription`.
 
@@ -91,11 +91,11 @@ Parametry
 | **Úvod** | Až 6 vět, věcně, bez prázdných klišé („Hledáte…?“). **Cena z formuláře** patří sem (např. „Cena 2 000 Kč.“), ne do Parametrů. |
 | **Oddělovač** | Prázdný řádek, `---`, prázdný řádek — konstanta `MODERATION_QA_SECTION_SEPARATOR` v kódu |
 | **Parametry** | Nadpis `Parametry` (případně legacy `Technické údaje`), odrážky `• Popisek: hodnota` |
-| **Zdroje faktů** | Text uživatele, **všechny fotografie**, metadata formuláře — vše zapracovat do úvodu nebo Parametrů, pokud je známo |
+| **Zdroje faktů** | Text, fotky, formulář — a u identifikovaného výrobku (**všechny** kategorie zboží) i katalogové vlastnosti s jistotou |
 
 ### Synonyma a hledané výrazy (SEO)
 
-Kanonická pravidla: [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) (v1.6).
+Kanonická pravidla: [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) (v1.9).
 
 Google ignoruje hashtagy (`#baterka`). AI:
 
@@ -106,7 +106,8 @@ Google ignoruje hashtagy (`#baterka`). AI:
 | Smí | Nesmí |
 |-----|--------|
 | Střídat názvy téže věci v běžných větách | Hashtagy, seznamy klíčových slov, keyword stuffing |
-| Čeština + běžné anglicismy, pokud dávají smysl | Vymýšlet výbavu / příslušenství jen kvůli klíčovým slovům |
+| Čeština + běžné anglicismy, pokud dávají smysl | Vymýšlet příslušenství v balení / kusové vady jen kvůli klíčovým slovům |
+| Katalogové parametry u známého modelu (GPS, WR…) | Hádání nejistých variant (barva, kapacita) |
 
 Pravidla jsou v system promptu (`src/config/moderation/build-prompt.ts`); do Edge: `node scripts/sync-build-prompt.mjs`, pak `npx supabase functions deploy moderate-listing`.
 
@@ -153,7 +154,7 @@ User prompt sestavuje `buildModerationUserPrompt()` — sekce oddělené prázdn
 | Status | Význam | `cleanedDescription` | Dotazník |
 |--------|--------|----------------------|----------|
 | `APPROVED` | Text je dostatečný | Finální návrh k publikaci | žádný |
-| `NEEDS_QUESTIONS` | Chybí kritická data pro kategorii | Úvod + Parametry **jen z known facts** | 1–5 otázek |
+| `NEEDS_QUESTIONS` | Chybí kritická kusová data pro kategorii | Úvod + Parametry z known facts **včetně katalogu u identifikovaného modelu** | 1–5 otázek |
 | `REJECTED` | Zakázaný obsah / neshoda text↔foto | — | — (hydratace nenastane) |
 
 ### NEEDS_QUESTIONS — kdy a proč

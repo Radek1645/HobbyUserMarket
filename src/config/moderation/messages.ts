@@ -111,4 +111,4 @@ export const MODERATION_GEMINI_QUOTA_ERROR =
   "Limit AI dotazů u Google je dočasně vyčerpaný. Zkuste to prosím za minutu znovu.";
 
 export const MODERATION_RATE_LIMIT_MESSAGE = (limit: number) =>
-  `Příliš mnoho AI kontrol. Zkuste to prosím znovu za chvíli (max. ${limit} za hodinu).`;
+  `Dosáhli jste hodinového limitu AI kontrol (max. ${limit}). Další kontrolu bude možné spustit v následující hodině.`;

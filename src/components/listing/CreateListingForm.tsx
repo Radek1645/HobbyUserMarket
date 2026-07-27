@@ -26,6 +26,7 @@ import {
 } from "@/lib/posts/expiry";
 import { LISTING_QUOTA_EXCEEDED_MESSAGE } from "@/lib/listings/quota-shared";
 import { listingNeedsModeration } from "@/lib/moderation/needs-moderation";
+import { invokeModerateListing } from "@/lib/moderation/moderate-listing-client";
 import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
 import { appendQuestionAnswersToDescription } from "@/lib/moderation/append-question-answers";
@@ -141,7 +142,6 @@ export function CreateListingForm({
   const [moderationApprovedOpen, setModerationApprovedOpen] = useState(false);
   const pendingPublishFormRef = useRef<HTMLFormElement | null>(null);
   const formElementRef = useRef<HTMLFormElement | null>(null);
-  const pendingApprovalTokenRef = useRef<string | undefined>(undefined);
   const [isCheckingAi, setIsCheckingAi] = useState(false);
   const [step, setStep] = useState(isEdit ? 2 : 1);
 
@@ -330,6 +330,7 @@ export function CreateListingForm({
     form: HTMLFormElement,
     titleValue: string,
     descriptionValue: string,
+    approvalToken?: string,
     originalSnapshot?: { title: string; description: string },
     options?: {
       descriptionAiAssisted?: boolean;
@@ -358,8 +359,8 @@ export function CreateListingForm({
       );
       formData.set("imageAlt", options.seoFields.imageAlt ?? "");
     }
-    if (pendingApprovalTokenRef.current) {
-      formData.set("moderationToken", pendingApprovalTokenRef.current);
+    if (approvalToken) {
+      formData.set("moderationToken", approvalToken);
     }
     setTitle(titleValue);
     setDescription(descriptionValue);
@@ -381,15 +382,106 @@ export function CreateListingForm({
     setModerationApprovedOpen(false);
   }
 
-  function handlePublishOriginalFromPreview() {
+  async function requestFinalApproval(
+    titleValue: string,
+    descriptionValue: string,
+  ): Promise<string | null> {
+    let moderationImages;
+    try {
+      setIsCheckingAi(true);
+      moderationImages =
+        (await imageUploadRef.current?.getModerationImages()) ?? undefined;
+    } catch (imagePrepError) {
+      setModerationError(
+        imagePrepError instanceof Error
+          ? imagePrepError.message
+          : "Fotky se nepodařilo připravit pro AI kontrolu.",
+      );
+      return null;
+    }
+
+    try {
+      const result = await invokeModerateListing({
+        intent: isEdit ? "update" : "create",
+        issueApproval: true,
+        title: stripContactInfo(titleValue),
+        description: stripContactInfo(descriptionValue),
+        categoryType,
+        subcategorySlug,
+        conditionLabel,
+        conditionLabelText: getConditionLabel(categoryType, conditionLabel),
+        conditionFieldLabel: getConditionFieldLabel(categoryType),
+        eventDate: isEvent && eventDate ? eventDate : undefined,
+        priceType,
+        priceTypeLabel: getPriceTypeLabel(categoryType, priceType),
+        priceAmount:
+          parsedPriceAmount != null &&
+          (priceType === "fixed" || priceType === "negotiable")
+            ? parsedPriceAmount
+            : undefined,
+        exchangeFor:
+          priceType === "exchange" && exchangeFor.trim()
+            ? stripContactInfo(exchangeFor.trim())
+            : undefined,
+        locationText: locationText.trim() || undefined,
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
+        listingDurationDays,
+        showContactEmail,
+        showContactPhone,
+        contactPhone:
+          showContactPhone && contactPhone.trim()
+            ? contactPhone.trim().replace(/\s+/g, " ")
+            : undefined,
+        jobCvRequired: categoryType === "prace" && jobCvRequired,
+        images: moderationImages,
+      });
+
+      if (!result.ok) {
+        if (result.accountBlocked) {
+          window.location.assign(ACCOUNT_SUSPENDED_PATH);
+          return null;
+        }
+        const rejection = moderationFailureToRejection(result);
+        if (rejection) {
+          setModerationRejection(rejection);
+        } else {
+          setModerationError(result.kind === "error" ? result.error : null);
+        }
+        return null;
+      }
+
+      if (!result.approvalToken) {
+        setModerationError(
+          "AI kontrola nevydala potvrzení pro publikaci. Zkuste to prosím znovu.",
+        );
+        return null;
+      }
+
+      return result.approvalToken;
+    } finally {
+      setIsCheckingAi(false);
+    }
+  }
+
+  async function handlePublishOriginalFromPreview() {
     const form = pendingPublishFormRef.current;
     const preview = moderationPreview;
     if (!form || !preview) return;
 
+    const finalTitle = stripContactInfo(preview.originalTitle);
+    const finalDescription = stripContactInfo(preview.originalDescription);
+    const approvalToken = await requestFinalApproval(
+      finalTitle,
+      finalDescription,
+    );
+    if (!approvalToken) return;
+
     publishListing(
       form,
-      preview.originalTitle,
-      stripContactInfo(preview.originalDescription),
+      finalTitle,
+      finalDescription,
+      approvalToken,
       {
         title: preview.originalTitle,
         description: preview.originalDescription,
@@ -403,7 +495,7 @@ export function CreateListingForm({
     pendingPublishFormRef.current = null;
   }
 
-  function handlePublishAiFromPreview(payload: {
+  async function handlePublishAiFromPreview(payload: {
     title: string;
     description: string;
     metaDescription?: string;
@@ -414,16 +506,25 @@ export function CreateListingForm({
     const preview = moderationPreview;
     if (!form || !preview) return;
 
-    const finalDescription = appendQuestionAnswersToDescription(
-      payload.description,
-      preview.questions.slice(0, MODERATION_MAX_QUESTIONS),
-      payload.questionAnswers,
+    const finalTitle = stripContactInfo(payload.title);
+    const finalDescription = stripContactInfo(
+      appendQuestionAnswersToDescription(
+        payload.description,
+        preview.questions.slice(0, MODERATION_MAX_QUESTIONS),
+        payload.questionAnswers,
+      ),
     );
+    const approvalToken = await requestFinalApproval(
+      finalTitle,
+      finalDescription,
+    );
+    if (!approvalToken) return;
 
     publishListing(
       form,
-      payload.title,
+      finalTitle,
       finalDescription,
+      approvalToken,
       {
         title: preview.originalTitle,
         description: preview.originalDescription,
@@ -501,7 +602,21 @@ export function CreateListingForm({
           (priceType === "fixed" || priceType === "negotiable")
             ? parsedPriceAmount
             : undefined,
+        exchangeFor:
+          priceType === "exchange" && exchangeFor.trim()
+            ? stripContactInfo(exchangeFor.trim())
+            : undefined,
         locationText: locationText.trim() || undefined,
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
+        listingDurationDays,
+        showContactEmail,
+        showContactPhone,
+        contactPhone:
+          showContactPhone && contactPhone.trim()
+            ? contactPhone.trim().replace(/\s+/g, " ")
+            : undefined,
+        jobCvRequired: categoryType === "prace" && jobCvRequired,
         // Bez initialValues se u draftu nevyhodnotí „beze změny → přeskočit AI“
         // a moderace (→ approval token) proběhne vždy.
         initialValues: isEdit && !forceModeration ? initialValues : undefined,
@@ -543,8 +658,6 @@ export function CreateListingForm({
       return;
     }
 
-    pendingApprovalTokenRef.current = moderation.approvalToken;
-
     if (moderation.skipped || !MODERATION_ENABLED) {
       const imagesChanged =
         isEdit && (imageUploadRef.current?.hasImageChanges() ?? false);
@@ -557,6 +670,19 @@ export function CreateListingForm({
             description: descriptionTrimmed,
             categoryType,
             subcategorySlug,
+            conditionLabel,
+            priceType,
+            priceAmount,
+            exchangeFor: priceType === "exchange" ? exchangeFor : "",
+            locationText,
+            latitude,
+            longitude,
+            eventDate: isEvent ? eventDate : null,
+            listingDurationDays,
+            showContactEmail,
+            showContactPhone,
+            contactPhone: showContactPhone ? contactPhone : "",
+            jobCvRequired: categoryType === "prace" && jobCvRequired,
           },
           initialValues,
         ) ||
@@ -566,6 +692,7 @@ export function CreateListingForm({
         form,
         moderation.cleanedTitle ?? titleTrimmed,
         moderation.cleanedDescription ?? descriptionTrimmed,
+        undefined,
         shouldPersistOriginals
           ? {
               title: titleTrimmed,

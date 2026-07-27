@@ -136,6 +136,13 @@ export function formatAnswerForDisplay(
     if (amount != null) return `${formatCzkAmount(amount)} m²`;
   }
 
+  if (/\bmm\b/i.test(q) && !/\bmm\b/i.test(trimmed)) {
+    const normalized = trimmed
+      .replace(/\s*[x×]\s*/gi, " × ")
+      .replace(/\s*\/\s*/g, " / ");
+    if (/^\d/.test(normalized)) return `${normalized} mm`;
+  }
+
   if (
     (/rozměr|velikost|\bcm\b/i.test(q) || label === "rozměry" || label === "velikost") &&
     !/\bcm\b/i.test(trimmed)

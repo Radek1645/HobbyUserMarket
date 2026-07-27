@@ -18,6 +18,8 @@ import {
   LISTING_QUOTA_EXCEEDED_MESSAGE,
 } from "@/lib/listings/quota";
 import { syncListingImagesFromForm } from "@/lib/posts/listing-images";
+import { buildStoredListingImageBindings } from "@/lib/posts/listing-image-hashes";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
@@ -36,14 +38,24 @@ const PROHIBITED_CONTENT_ERROR =
 
 const MODERATION_TOKEN_MISSING_ERROR =
   "Chybí potvrzení AI kontroly. Vraťte se prosím o krok zpět a odešlete inzerát znovu.";
+const CONTENT_CHANGED_AFTER_APPROVAL_ERROR =
+  "Obsah inzerátu se po AI kontrole změnil. Odešlete ho prosím znovu.";
+const IMAGE_CONTENT_MISMATCH_ERROR =
+  "Fotky neodpovídají verzi schválené AI kontrolou. Odešlete inzerát znovu.";
+const POST_NOT_DRAFT_ERROR =
+  "Inzerát se nepodařilo připravit k bezpečné publikaci. Obnovte stránku a zkuste změny uložit znovu.";
 
 /**
  * H1: publikace (status='active') jde výhradně přes publish_approved_post RPC,
  * který spotřebuje approval token vydaný Edge Function po bezpečnostním filtru.
  * Bez platného tokenu zůstane inzerát ve stavu 'draft' (neviditelný).
+ *
+ * SEC-H01/H02: RPC je volatelné jen service_role Server Action. V DB ověří
+ * fingerprint přesného uloženého obsahu a SHA-256 všech Storage objektů.
  */
 async function publishWithApprovalToken(
   supabase: SupabaseClient,
+  userId: string,
   postId: number,
   formData: FormData,
   target: "active" | "hidden" = "active",
@@ -53,10 +65,26 @@ async function publishWithApprovalToken(
     return MODERATION_TOKEN_MISSING_ERROR;
   }
 
-  const { error } = await supabase.rpc("publish_approved_post", {
+  const imageBindingResult = await buildStoredListingImageBindings(
+    supabase,
+    postId,
+  );
+  if ("error" in imageBindingResult) {
+    return imageBindingResult.error;
+  }
+
+  const adminResult = createAdminClient();
+  if (!adminResult.ok) {
+    console.error("publishWithApprovalToken admin:", adminResult.error);
+    return "Publikaci se nepodařilo bezpečně ověřit. Zkuste to prosím znovu.";
+  }
+
+  const { error } = await adminResult.client.rpc("publish_approved_post", {
     p_post_id: postId,
     p_token: token,
+    p_user_id: userId,
     p_target: target,
+    p_image_bindings: imageBindingResult.bindings,
   });
 
   if (error) {
@@ -64,8 +92,17 @@ async function publishWithApprovalToken(
     if (isListingQuotaExceededError(error.message)) {
       return LISTING_QUOTA_EXCEEDED_MESSAGE;
     }
-    if (error.message?.includes("image_set_mismatch")) {
-      return "Fotky neodpovídají verzi schválené AI kontrolou. Odešlete inzerát znovu.";
+    if (error.message?.includes("content_mismatch")) {
+      return CONTENT_CHANGED_AFTER_APPROVAL_ERROR;
+    }
+    if (
+      error.message?.includes("image_set_mismatch") ||
+      error.message?.includes("image_content_mismatch")
+    ) {
+      return IMAGE_CONTENT_MISMATCH_ERROR;
+    }
+    if (error.message?.includes("post_not_draft")) {
+      return POST_NOT_DRAFT_ERROR;
     }
     return MODERATION_TOKEN_MISSING_ERROR;
   }
@@ -196,7 +233,12 @@ export async function createListing(
     return { error: imageResult.error };
   }
 
-  const publishError = await publishWithApprovalToken(supabase, row.id, formData);
+  const publishError = await publishWithApprovalToken(
+    supabase,
+    user.id,
+    row.id,
+    formData,
+  );
   if (publishError) {
     return { error: publishError };
   }
@@ -310,6 +352,7 @@ export async function updateListing(
 
     const publishError = await publishWithApprovalToken(
       supabase,
+      user.id,
       postId,
       formData,
       existing.status === "hidden" ? "hidden" : "active",

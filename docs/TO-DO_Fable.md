@@ -175,7 +175,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 - Bootstrap admina/moderátora zdokumentován; God Mode `/mod/uzivatele` nasazeno.
 - Ochrana PII kontaktů: migrace 025, RPC `reveal_listing_contact`, column-level REVOKE.
 - Validace poptávky: limity, magic bytes, honeypot, rate limit, blok self-inquiry.
-- Žádný `dangerouslySetInnerHTML`; plain-text popis (bez XSS).
+- Popis inzerátu plain-text (bez XSS). `dangerouslySetInnerHTML` jen pro JSON-LD a GTM; listing JSON-LD escapuje `<` (`serializeListingJsonLd`). Statické JSON-LD (homepage, FAQ…) zatím `JSON.stringify` bez společného serializeru.
 - Edge Function: JWT, rate limit fail closed, limity velikosti fotek.
 - Upload fotek ověřuje magic bytes; hesla min. 8 znaků (záměrně bez tvrdého 12).
 - Reset hesla vrací generickou hlášku (bez e-mail enumerace).
@@ -226,7 +226,7 @@ V SQL Editoru jako **běžný authenticated** uživatel (ne `service_role`), na 
 |----|--------|---------|-------|
 | ~~**P20**~~ | `persist-registration-consents.ts`, migrace **044** | ~~Marketing souhlas se neukládal.~~ | ✅ `marketing_consent_at` při e-mail signup i Google onboarding. Revoke v profilu ⏳ (zatím e-mail — P22). |
 | ~~**P21**~~ | `OnboardingForm`, `registration-consents.ts` | ~~Google OAuth bez VOP.~~ | ✅ VOP+věk na onboardingu po OAuth (`requiresRegistrationConsentsOnboarding`). |
-| **P31** | ✅ `RegistrationConsentFields.tsx`, `registration-consents.ts`, `auth.ts`, `legal.ts` | ~~Chybí checkbox věku 15+~~ | **Hotovo 2026-07-11.** Povinný checkbox `consent_age`; validace e-mail signup + Google onboarding (`requiresRegistrationConsentsOnboarding`). `age_consent_at` v DB zatím ne. |
+| **P31** | ✅ `RegistrationConsentFields.tsx`, `registration-consents.ts`, `auth.ts`, `legal.ts`, migrace **044** | ~~Chybí checkbox věku 15+~~ | **Hotovo 2026-07-11.** Povinný checkbox `consent_age`; validace e-mail signup + Google onboarding (`requiresRegistrationConsentsOnboarding`). Sloupec `age_confirmed_at` v `profiles` od migrace **044**. |
 | ~~**P22**~~ | `marketingovy-souhlas/page.tsx` | ~~Stub stránka.~~ | ✅ Text o souhlasu, stavu „zatím nezasíláme“, odvolání e-mailem; checkbox copy „až spustíme“. |
 | **P23** | ✅ `account.ts`, `delete-user.ts`, migrace `037` | ~~Chybí flow smazání účtu~~ | **Hotovo 2026-07-11.** Self-delete `/profil/nastaveni` (confirm e-mail + checkbox); admin `/mod/uzivatele` (důvod); RPC + Auth Admin delete; e-mail potvrzení. |
 | ~~**P24**~~ | `map-auth-error.ts`, `auth/callback`, `signInWithGoogle` | ~~Raw angličtina v `?error=`.~~ | ✅ `mapAuthError` + fallback bez propouštění EN. |

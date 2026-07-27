@@ -9,6 +9,7 @@
 -- -----------------------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- -----------------------------------------------------------------------------
 -- 2. ENUM TYPES
@@ -1040,21 +1041,10 @@ CREATE POLICY listing_views_select_moderator ON public.listing_views
   USING (public.is_moderator_or_admin());
 
 -- rate_limits
-DROP POLICY IF EXISTS rate_limits_select_own ON public.rate_limits;
-CREATE POLICY rate_limits_select_own ON public.rate_limits
-  FOR SELECT TO authenticated
-  USING (user_id = auth.uid());
-
-DROP POLICY IF EXISTS rate_limits_insert_own ON public.rate_limits;
-CREATE POLICY rate_limits_insert_own ON public.rate_limits
-  FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
-
-DROP POLICY IF EXISTS rate_limits_update_own ON public.rate_limits;
-CREATE POLICY rate_limits_update_own ON public.rate_limits
-  FOR UPDATE TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+-- SEC-H03 (062): žádná policy pro anon/authenticated — dřívější „own row“
+-- policy dovolovala klientovi číst i přepisovat vlastní počítadlo přímo přes
+-- Supabase API a obejít tak limit. Zápis jde jen přes increment_rate_limit
+-- (SECURITY DEFINER, service_role) — viz sekce 10b.
 
 -- -----------------------------------------------------------------------------
 -- 8. STORAGE BUCKET (post-images)
@@ -1077,12 +1067,7 @@ CREATE POLICY post_images_storage_insert ON storage.objects
   );
 
 DROP POLICY IF EXISTS post_images_storage_update ON storage.objects;
-CREATE POLICY post_images_storage_update ON storage.objects
-  FOR UPDATE TO authenticated
-  USING (
-    bucket_id = 'post-images'
-    AND auth.uid()::text = (storage.foldername(name))[1]
-  );
+-- SEC-H02: objekty jsou immutable (upload používá UUID + upsert:false).
 
 DROP POLICY IF EXISTS post_images_storage_delete ON storage.objects;
 CREATE POLICY post_images_storage_delete ON storage.objects
@@ -1090,8 +1075,15 @@ CREATE POLICY post_images_storage_delete ON storage.objects
   USING (
     bucket_id = 'post-images'
     AND (
-      auth.uid()::text = (storage.foldername(name))[1]
-      OR public.is_moderator_or_admin()
+      public.is_moderator_or_admin()
+      OR (
+        auth.uid()::text = (storage.foldername(name))[1]
+        AND NOT EXISTS (
+          SELECT 1
+          FROM public.post_images pi
+          WHERE pi.storage_path = name
+        )
+      )
     )
   );
 
@@ -1122,7 +1114,7 @@ GRANT SELECT, INSERT, UPDATE ON public.inquiry_events TO service_role;
 GRANT SELECT ON public.listing_views TO authenticated;
 GRANT SELECT, INSERT ON public.listing_views TO service_role;
 GRANT UPDATE (view_count) ON public.posts TO service_role;
-GRANT SELECT, INSERT, UPDATE ON public.rate_limits TO authenticated;
+-- SEC-H03 (062): žádný přímý grant pro authenticated/anon — jen increment_rate_limit.
 
 -- =============================================================================
 -- 9. OCHRANA PII KONTAKTŮ (audit C1 + C2)
@@ -1228,12 +1220,17 @@ GRANT EXECUTE ON FUNCTION public.get_owned_post_contact_phone(BIGINT) TO authent
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS public.moderation_approvals (
-  token        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id      UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
-  image_count  SMALLINT NOT NULL DEFAULT 0,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  expires_at   TIMESTAMPTZ NOT NULL DEFAULT now() + interval '30 minutes',
-  consumed_at  TIMESTAMPTZ,
+  token                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id              UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  image_count          SMALLINT NOT NULL DEFAULT 0,
+  -- SEC-H01/H02 (062) — otisk schválených polí a hashe nově nahraných fotek;
+  -- publish_approved_post je porovná s aktuálním obsahem před publikací.
+  content_fingerprint  TEXT NOT NULL DEFAULT '',
+  new_image_hashes     TEXT[] NOT NULL DEFAULT '{}',
+  image_hashes         TEXT[] NOT NULL DEFAULT '{}',
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at           TIMESTAMPTZ NOT NULL DEFAULT now() + interval '30 minutes',
+  consumed_at          TIMESTAMPTZ,
 
   CONSTRAINT moderation_approvals_image_count_check
     CHECK (image_count BETWEEN 0 AND 6)
@@ -1260,9 +1257,16 @@ AS $$
 DECLARE
   v_gate BOOLEAN := COALESCE(current_setting('app.publish_gate', true) = 'on', false);
   v_privileged BOOLEAN :=
-    COALESCE(auth.role(), '') NOT IN ('anon', 'authenticated')
-    OR public.is_moderator_or_admin();
+    COALESCE(auth.role(), '') NOT IN ('anon', 'authenticated');
 BEGIN
+  -- Staff bypass je jen pro God Mode úpravu cizího inzerátu. Vlastní inzerát
+  -- moderátora/admina musí projít stejným publish gate jako u běžného vlastníka.
+  IF NOT v_privileged
+     AND public.is_moderator_or_admin()
+     AND NEW.user_id IS DISTINCT FROM auth.uid() THEN
+    v_privileged := true;
+  END IF;
+
   IF v_gate OR v_privileged THEN
     RETURN NEW;
   END IF;
@@ -1280,6 +1284,18 @@ BEGIN
        OR NEW.description IS DISTINCT FROM OLD.description
        OR NEW.category_type IS DISTINCT FROM OLD.category_type
        OR NEW.subcategory_slug IS DISTINCT FROM OLD.subcategory_slug
+       OR NEW.condition_label IS DISTINCT FROM OLD.condition_label
+       OR NEW.price_type IS DISTINCT FROM OLD.price_type
+       OR NEW.price_amount IS DISTINCT FROM OLD.price_amount
+       OR NEW.exchange_for IS DISTINCT FROM OLD.exchange_for
+       OR NEW.location_text IS DISTINCT FROM OLD.location_text
+       OR NEW.location IS DISTINCT FROM OLD.location
+       OR NEW.event_date IS DISTINCT FROM OLD.event_date
+       OR NEW.listing_duration_days IS DISTINCT FROM OLD.listing_duration_days
+       OR NEW.show_contact_email IS DISTINCT FROM OLD.show_contact_email
+       OR NEW.show_contact_phone IS DISTINCT FROM OLD.show_contact_phone
+       OR NEW.contact_phone IS DISTINCT FROM OLD.contact_phone
+       OR NEW.job_cv_required IS DISTINCT FROM OLD.job_cv_required
      ) THEN
     NEW.status := 'draft';
     NEW.status_reason_code := NULL;
@@ -1329,15 +1345,46 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS trg_post_images_revert ON public.post_images;
+
+CREATE OR REPLACE FUNCTION public.protect_post_image_identity()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF COALESCE(auth.role(), '') = 'authenticated'
+     AND NOT public.is_moderator_or_admin()
+     AND (
+       NEW.post_id IS DISTINCT FROM OLD.post_id
+       OR NEW.storage_path IS DISTINCT FROM OLD.storage_path
+       OR NEW.url IS DISTINCT FROM OLD.url
+     ) THEN
+    RAISE EXCEPTION 'post_image_identity_immutable'
+      USING errcode = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_post_images_protect_identity ON public.post_images;
+CREATE TRIGGER trg_post_images_protect_identity
+  BEFORE UPDATE ON public.post_images
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_post_image_identity();
+
 CREATE TRIGGER trg_post_images_revert
-  AFTER INSERT OR DELETE ON public.post_images
+  AFTER INSERT OR UPDATE OR DELETE ON public.post_images
   FOR EACH ROW
   EXECUTE FUNCTION public.revert_post_on_image_change();
 
 -- Vydání approval tokenu — volá jen service_role z Edge Function.
 CREATE OR REPLACE FUNCTION public.issue_moderation_approval(
-  p_user_id     UUID,
-  p_image_count INTEGER
+  p_user_id             UUID,
+  p_image_count         INTEGER,
+  p_content_fingerprint TEXT,
+  p_image_hashes        TEXT[] DEFAULT '{}'
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -1347,23 +1394,144 @@ AS $$
 DECLARE
   v_token UUID;
 BEGIN
-  INSERT INTO public.moderation_approvals (user_id, image_count)
-  VALUES (p_user_id, GREATEST(0, LEAST(6, COALESCE(p_image_count, 0))))
+  IF cardinality(COALESCE(p_image_hashes, '{}')) <>
+     GREATEST(0, LEAST(6, COALESCE(p_image_count, 0))) THEN
+    RAISE EXCEPTION 'image_hash_set_invalid' USING errcode = '22023';
+  END IF;
+
+  INSERT INTO public.moderation_approvals (
+    user_id, image_count, content_fingerprint, image_hashes
+  )
+  VALUES (
+    p_user_id,
+    GREATEST(0, LEAST(6, COALESCE(p_image_count, 0))),
+    COALESCE(p_content_fingerprint, ''),
+    COALESCE(p_image_hashes, '{}')
+  )
   RETURNING token INTO v_token;
   RETURN v_token;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.issue_moderation_approval(UUID, INTEGER) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.issue_moderation_approval(UUID, INTEGER) TO service_role;
+REVOKE ALL ON FUNCTION public.issue_moderation_approval(UUID, INTEGER, TEXT, TEXT[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.issue_moderation_approval(UUID, INTEGER, TEXT, TEXT[]) TO service_role;
 
--- Publikace přes spotřebování tokenu — jediná cesta z 'draft' ven.
--- p_target: 'active' (create, edit aktivního) nebo 'hidden' (edit pauznutého —
--- schválený obsah, ale zůstává pauznutý). Jiný stav než 'draft' se nemění.
+-- SEC-H01 (063): přesný finální obsah z řádku posts (shodný s Edge/TS).
+CREATE OR REPLACE FUNCTION public.listing_content_fingerprint_from_post(
+  p_post_id BIGINT
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_row RECORD;
+  v_price TEXT;
+  v_event TEXT;
+  v_latitude TEXT;
+  v_longitude TEXT;
+  v_payload TEXT;
+BEGIN
+  SELECT
+    title,
+    description,
+    category_type,
+    subcategory_slug,
+    condition_label,
+    price_type,
+    price_amount,
+    exchange_for,
+    location_text,
+    location,
+    event_date,
+    listing_duration_days,
+    show_contact_email,
+    show_contact_phone,
+    contact_phone,
+    job_cv_required
+  INTO v_row
+  FROM public.posts
+  WHERE id = p_post_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'post_not_found' USING errcode = 'P0002';
+  END IF;
+
+  v_price := CASE
+    WHEN v_row.price_amount IS NULL THEN ''
+    ELSE v_row.price_amount::text
+  END;
+
+  v_event := CASE
+    WHEN v_row.event_date IS NULL THEN ''
+    ELSE to_char(
+      v_row.event_date AT TIME ZONE 'UTC',
+      'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+    )
+  END;
+
+  v_latitude := CASE
+    WHEN v_row.location IS NULL THEN ''
+    ELSE to_char(
+      extensions.ST_Y(v_row.location::extensions.geometry),
+      'FM999990.000000'
+    )
+  END;
+
+  v_longitude := CASE
+    WHEN v_row.location IS NULL THEN ''
+    ELSE to_char(
+      extensions.ST_X(v_row.location::extensions.geometry),
+      'FM999990.000000'
+    )
+  END;
+
+  v_payload :=
+    '{"title":' || to_json(btrim(COALESCE(v_row.title, ''))) ||
+    ',"description":' || to_json(btrim(COALESCE(v_row.description, ''))) ||
+    ',"categoryType":' || to_json(btrim(COALESCE(v_row.category_type::text, ''))) ||
+    ',"subcategorySlug":' || to_json(btrim(COALESCE(v_row.subcategory_slug, ''))) ||
+    ',"conditionLabel":' || to_json(btrim(COALESCE(v_row.condition_label, ''))) ||
+    ',"priceType":' || to_json(btrim(COALESCE(v_row.price_type, ''))) ||
+    ',"priceAmount":' || to_json(v_price) ||
+    ',"exchangeFor":' || to_json(
+      CASE
+        WHEN v_row.price_type = 'exchange' THEN btrim(COALESCE(v_row.exchange_for, ''))
+        ELSE ''
+      END
+    ) ||
+    ',"locationText":' || to_json(btrim(COALESCE(v_row.location_text, ''))) ||
+    ',"latitude":' || to_json(v_latitude) ||
+    ',"longitude":' || to_json(v_longitude) ||
+    ',"eventDate":' || to_json(v_event) ||
+    ',"listingDurationDays":' || to_json(COALESCE(v_row.listing_duration_days, 0)) ||
+    ',"showContactEmail":' || to_json(COALESCE(v_row.show_contact_email, false)) ||
+    ',"showContactPhone":' || to_json(COALESCE(v_row.show_contact_phone, false)) ||
+    ',"contactPhone":' || to_json(
+      CASE
+        WHEN COALESCE(v_row.show_contact_phone, false)
+          THEN regexp_replace(btrim(COALESCE(v_row.contact_phone, '')), '\s+', ' ', 'g')
+        ELSE ''
+      END
+    ) ||
+    ',"jobCvRequired":' || to_json(COALESCE(v_row.job_cv_required, false)) ||
+    '}';
+
+  RETURN encode(digest(v_payload, 'sha256'), 'hex');
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.listing_content_fingerprint_from_post(BIGINT) FROM PUBLIC;
+
+-- Publikace jen ze service-role Server Action.
 CREATE OR REPLACE FUNCTION public.publish_approved_post(
-  p_post_id BIGINT,
-  p_token   UUID,
-  p_target  TEXT DEFAULT 'active'
+  p_post_id        BIGINT,
+  p_token          UUID,
+  p_user_id        UUID,
+  p_target         TEXT DEFAULT 'active',
+  p_image_bindings JSONB DEFAULT '[]'::jsonb
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -1371,43 +1539,94 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_uid         UUID := auth.uid();
-  v_approval    RECORD;
-  v_post_owner  UUID;
-  v_image_count INTEGER;
+  v_approval          RECORD;
+  v_post_owner        UUID;
+  v_post_status       public.post_status;
+  v_main_image_url    TEXT;
+  v_image_count       INTEGER;
+  v_post_fingerprint  TEXT;
+  v_db_bindings       JSONB;
+  v_supplied_identity JSONB;
+  v_supplied_hashes   TEXT[];
+  v_expected_main_url TEXT;
 BEGIN
-  IF v_uid IS NULL THEN
-    RAISE EXCEPTION 'Authentication required' USING errcode = '28000';
+  IF jsonb_typeof(COALESCE(p_image_bindings, '[]'::jsonb)) <> 'array' THEN
+    RAISE EXCEPTION 'image_bindings_invalid' USING errcode = '22023';
   END IF;
 
   IF p_target NOT IN ('active', 'hidden') THEN
     RAISE EXCEPTION 'invalid_publish_target' USING errcode = '22023';
   END IF;
 
-  SELECT user_id INTO v_post_owner FROM public.posts WHERE id = p_post_id;
-  IF NOT FOUND OR v_post_owner <> v_uid THEN
+  SELECT user_id, status, main_image_url
+  INTO v_post_owner, v_post_status, v_main_image_url
+  FROM public.posts
+  WHERE id = p_post_id
+  FOR UPDATE;
+
+  IF NOT FOUND OR v_post_owner <> p_user_id THEN
     RAISE EXCEPTION 'post_not_owned' USING errcode = '42501';
   END IF;
 
-  SELECT * INTO v_approval
+  IF v_post_status <> 'draft' THEN
+    RAISE EXCEPTION 'post_not_draft' USING errcode = '42501';
+  END IF;
+
+  SELECT *
+  INTO v_approval
   FROM public.moderation_approvals
   WHERE token = p_token
   FOR UPDATE;
 
   IF NOT FOUND
-     OR v_approval.user_id <> v_uid
+     OR v_approval.user_id <> p_user_id
      OR v_approval.consumed_at IS NOT NULL
      OR v_approval.expires_at < now() THEN
     RAISE EXCEPTION 'invalid_or_expired_approval' USING errcode = '42501';
   END IF;
 
-  -- Image binding: nelze publikovat víc fotek, než prošlo bezpečnostním filtrem.
-  SELECT count(*) INTO v_image_count
+  -- SEC-H01 (063): otisk musí sedět s uloženým obsahem inzerátu.
+  v_post_fingerprint := public.listing_content_fingerprint_from_post(p_post_id);
+  IF v_approval.content_fingerprint IS DISTINCT FROM v_post_fingerprint THEN
+    RAISE EXCEPTION 'content_mismatch' USING errcode = '42501';
+  END IF;
+
+  PERFORM 1
+  FROM public.post_images
+  WHERE post_id = p_post_id
+  FOR UPDATE;
+
+  SELECT
+    count(*),
+    COALESCE(
+      jsonb_agg(
+        jsonb_build_object(
+          'id', id::text,
+          'storagePath', storage_path,
+          'url', url,
+          'sortOrder', sort_order,
+          'isMain', is_main
+        )
+        ORDER BY sort_order, id
+      ),
+      '[]'::jsonb
+    ),
+    max(url) FILTER (WHERE is_main)
+  INTO v_image_count, v_db_bindings, v_expected_main_url
   FROM public.post_images
   WHERE post_id = p_post_id;
 
-  IF v_image_count > v_approval.image_count THEN
-    RAISE EXCEPTION 'image_set_mismatch' USING errcode = '42501';
+  SELECT
+    COALESCE(jsonb_agg(item - 'sha256'), '[]'::jsonb),
+    COALESCE(array_agg(item->>'sha256'), '{}')
+  INTO v_supplied_identity, v_supplied_hashes
+  FROM jsonb_array_elements(COALESCE(p_image_bindings, '[]'::jsonb)) AS item;
+
+  IF v_image_count <> v_approval.image_count
+     OR v_db_bindings IS DISTINCT FROM v_supplied_identity
+     OR v_approval.image_hashes IS DISTINCT FROM v_supplied_hashes
+     OR v_main_image_url IS DISTINCT FROM v_expected_main_url THEN
+    RAISE EXCEPTION 'image_content_mismatch' USING errcode = '42501';
   END IF;
 
   UPDATE public.moderation_approvals
@@ -1422,8 +1641,38 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.publish_approved_post(BIGINT, UUID, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.publish_approved_post(BIGINT, UUID, TEXT) TO authenticated;
+REVOKE ALL ON FUNCTION public.publish_approved_post(BIGINT, UUID, UUID, TEXT, JSONB) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.publish_approved_post(BIGINT, UUID, UUID, TEXT, JSONB) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.publish_approved_post(BIGINT, UUID, UUID, TEXT, JSONB) TO service_role;
+
+-- SEC-H03 (062) — atomický upsert počítadla rate limitu (nahrazuje dřívější
+-- SELECT + UPDATE z Edge Function, které umožňovalo race mezi paralelními
+-- požadavky). Volá jen service_role; authenticated/anon bez grantu na tabulku.
+CREATE OR REPLACE FUNCTION public.increment_rate_limit(
+  p_user_id      UUID,
+  p_action_type  TEXT,
+  p_window_start TIMESTAMPTZ
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  INSERT INTO public.rate_limits (user_id, action_type, window_start, count)
+  VALUES (p_user_id, p_action_type::public.rate_limit_action, p_window_start, 1)
+  ON CONFLICT (user_id, action_type, window_start)
+  DO UPDATE SET count = public.rate_limits.count + 1
+  RETURNING count INTO v_count;
+
+  RETURN v_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.increment_rate_limit(UUID, TEXT, TIMESTAMPTZ) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.increment_rate_limit(UUID, TEXT, TIMESTAMPTZ) TO service_role;
 
 -- =============================================================================
 -- 11. LOG AI MODERACE (028)

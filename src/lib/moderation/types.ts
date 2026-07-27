@@ -24,12 +24,24 @@ export type ModerateListingRequest = {
   priceTypeLabel?: string;
   /** Částka v Kč z formuláře (u fixed / negotiable). */
   priceAmount?: number;
+  /** Popis výměny (jen priceType=exchange). */
+  exchangeFor?: string;
   /** Lokalita z formuláře — lokální SEO. */
   locationText?: string;
+  latitude?: number;
+  longitude?: number;
+  listingDurationDays?: number;
+  showContactEmail?: boolean;
+  showContactPhone?: boolean;
+  contactPhone?: string;
+  jobCvRequired?: boolean;
   /** Všechny nahrané fotky (max. 6) — bezpečnostní filtr. */
   imagesBase64?: string[];
+  imageMimeTypes?: string[];
   /** Index hlavní fotky v `imagesBase64` — cross-validace textu s náhledem; hydratace z všech fotek. */
   mainImageIndex?: number;
+  /** Token vydat jen při finální kontrole bezprostředně před publikací. */
+  issueApproval?: boolean;
 };
 
 export type ModerationQuestion = {
@@ -77,11 +89,22 @@ export type ListingModerationInput = {
   priceType?: PriceType;
   priceTypeLabel?: string;
   priceAmount?: number;
+  exchangeFor?: string;
   locationText?: string;
+  latitude?: number;
+  longitude?: number;
+  listingDurationDays?: number;
+  showContactEmail?: boolean;
+  showContactPhone?: boolean;
+  contactPhone?: string;
+  jobCvRequired?: boolean;
   images?: {
     imagesBase64: string[];
+    imageMimeTypes: string[];
     mainImageIndex: number;
   };
+  /** Token vydat jen při finální kontrole bezprostředně před publikací. */
+  issueApproval?: boolean;
 };
 
 export type ListingModerationSuccess = {

@@ -38,8 +38,18 @@ Necommituj bez odpovědi; neověřené migrace zapiš do `Stav_projektu` jako **
 | Produktové rozhodnutí, DB, API | [`docs/PRD_v3.md`](../../docs/PRD_v3.md) — nový řádek historie + bump verze |
 | Doména, GSC, GTM | [`docs/branding-a-domeny.md`](../../docs/branding-a-domeny.md) |
 | AI moderace (deploy) | [`docs/moderace-inzeratu.md`](../../docs/moderace-inzeratu.md) |
+| Bezpečnostní nález nebo oprava | [`docs/SECURITY_AND_UX_AUDIT_20260727.md`](../../docs/SECURITY_AND_UX_AUDIT_20260727.md) |
 
 **Pravidlo:** Kód bez dokumentace není hotový.
+
+U bezpečnostního auditu vždy explicitně rozliš:
+
+- **opraveno v kódu** — změna existuje pouze v repozitáři,
+- **nasazeno** — migrace, Edge Function a aplikace jsou v cílovém prostředí,
+- **ověřeno** — proběhl popsaný manuální nebo automatický bezpečnostní test.
+
+Pokud uživatel nepotvrdil infrastrukturu z kroku 2, audit nesmí tvrdit
+„nasazeno“ ani „ověřeno“; uveď konkrétní zbývající deploy/test kroky.
 
 ## 4. Snapshot — `Stav_projektu/`
 
