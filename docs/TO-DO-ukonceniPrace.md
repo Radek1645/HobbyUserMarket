@@ -52,8 +52,8 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 5. Git — příprava a commity
 
-- [ ] `git status` — bez `.env`
-- [ ] Commit (kód + docs)
+- [x] `git status` — bez `.env`
+- [x] Commit `f430aae` (kód + docs)
 - [ ] Push — **ne** (uživatel: ne vše otestováno)
 
 ---
@@ -77,5 +77,5 @@ git push -u origin HEAD
 | Migrace + EF nasazené | ☐ |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit | ☐ |
+| Commit | ✅ `f430aae` |
 | Push | ❌ odloženo |
