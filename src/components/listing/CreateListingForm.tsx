@@ -25,6 +25,7 @@ import {
   parseMentionedDatesFromText,
 } from "@/lib/posts/expiry";
 import { LISTING_QUOTA_EXCEEDED_MESSAGE } from "@/lib/listings/quota-shared";
+import { toModerationEventDateIso } from "@/lib/posts/listing-form";
 import { listingNeedsModeration } from "@/lib/moderation/needs-moderation";
 import { invokeModerateListing } from "@/lib/moderation/moderate-listing-client";
 import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
@@ -411,7 +412,7 @@ export function CreateListingForm({
         conditionLabel,
         conditionLabelText: getConditionLabel(categoryType, conditionLabel),
         conditionFieldLabel: getConditionFieldLabel(categoryType),
-        eventDate: isEvent && eventDate ? eventDate : undefined,
+        eventDate: isEvent ? toModerationEventDateIso(eventDate) : undefined,
         priceType,
         priceTypeLabel: getPriceTypeLabel(categoryType, priceType),
         priceAmount:
@@ -426,7 +427,9 @@ export function CreateListingForm({
         locationText: locationText.trim() || undefined,
         latitude: latitude ?? undefined,
         longitude: longitude ?? undefined,
-        listingDurationDays,
+        listingDurationDays: isEvent
+          ? LISTING_DURATION_DEFAULT_DAYS
+          : listingDurationDays,
         showContactEmail,
         showContactPhone,
         contactPhone:
@@ -594,7 +597,7 @@ export function CreateListingForm({
         conditionLabel,
         conditionLabelText: getConditionLabel(categoryType, conditionLabel),
         conditionFieldLabel: getConditionFieldLabel(categoryType),
-        eventDate: isEvent && eventDate ? eventDate : undefined,
+        eventDate: isEvent ? toModerationEventDateIso(eventDate) : undefined,
         priceType,
         priceTypeLabel: getPriceTypeLabel(categoryType, priceType),
         priceAmount:
@@ -609,7 +612,9 @@ export function CreateListingForm({
         locationText: locationText.trim() || undefined,
         latitude: latitude ?? undefined,
         longitude: longitude ?? undefined,
-        listingDurationDays,
+        listingDurationDays: isEvent
+          ? LISTING_DURATION_DEFAULT_DAYS
+          : listingDurationDays,
         showContactEmail,
         showContactPhone,
         contactPhone:

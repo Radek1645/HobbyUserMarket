@@ -47,7 +47,7 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 1. Návštěvník otevře úvodní stránku `/`.
 2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); subline s **vykáním** („z vašeho okolí“); značka **zaPikolou.cz** a tagline v hlavičce.
 3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání).
-4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou, názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo). Výchozí počet karet je 9; pokud je ve filtrovaném poolu víc, tlačítko **„Zobrazit další“** doplní další dávku (až do načtených 36).
+4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo). Výchozí počet karet je 9; pokud je ve filtrovaném poolu víc, tlačítko **„Zobrazit další“** doplní další dávku (až do načtených 36).
 5. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
 
 ### 2.1.1 Časté dotazy (`/faq`)
@@ -56,6 +56,20 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 2. Stránka `/faq` ukáže accordion — po kliknutí na otázku se odklopí odpověď (najednou jedna otevřená).
 3. Texty jsou v [`src/config/faq.ts`](../src/config/faq.ts) (lidsky, ne kopie VOP). Aktuálně ~10 položek (kontakt, rozdíl oproti inzertním webům, Kvalita, „Vytvořeno s pomocí AI“, moderace, účet…). Zmínky VOP / Podmínek inzerce / GDPR / Nahlásit linkuje `LegalLinkedText` (viz root README).
 4. Pro SEO: JSON-LD `FAQPage` + záznam v `sitemap.xml`. Právní dokumenty jsou v patičce — na `/faq` se neduplikují.
+
+### 2.1.2 Výchozí ilustrace bez fotky
+
+Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazují šedé „Bez fotky“, ale **jemnou výchozí ilustraci** podle kategorie a podkategorie (pastelové pozadí + ikona Lucide + krátký label).
+
+| Soubor | Účel |
+|--------|------|
+| [`src/config/listing-default-covers.ts`](../src/config/listing-default-covers.ts) | Mapování `categoryType` + `subcategorySlug` → ikona, barvy, label |
+| [`src/components/listing/ListingDefaultCover.tsx`](../src/components/listing/ListingDefaultCover.tsx) | UI komponenta |
+| `ListingCard` / detail `/inzerat/[slug]` | Použití místo prázdného placeholderu |
+
+**Styl:** jednoduché, nevýrazné, sjednocené (stejná váha ikony, pastelové gradienty, bez fotorealistických stock obrázků).
+
+**Při přidání nové kategorie nebo podkategorie** vždy doplň záznam do `listing-default-covers.ts` (podkategorie v `SUBCATEGORY_COVERS`, jinak spadne na fallback kategorie). Bez toho nová podkategorie dostane jen obecnou ikonu kategorie — vizuální styl přestane sedět.
 
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
 
@@ -295,12 +309,15 @@ Mapa příkladů: `src/config/listing-form-tips.ts` (`getListingFormTipExample`)
 Po kliknutí na **„Publikovat inzerát“** (pokud má uživatel **zbývající kredit**):
 
 1. Zobrazí se celoobrazovkové načítání (AI běží).
-2. Proběhne [AI moderace a hydratace](#6-ai-moderace-a-hydratace) (viz detailní popis níže).
-3. Po potvrzení AI náhledu proběhne finální kontrola přesného obsahu a fotografií a Edge vydá jednorázový approval token.
-4. Server Action uloží inzerát nejprve jako **`draft`**, nahraje fotky a přes service-role RPC **`publish_approved_post`** přepne na **`active`** jen při shodě tokenu s uloženým obsahem.
-5. URL má tvar `/inzerat/[slug]` — slug se generuje při první publikaci a **nemění se** při editaci.
+2. Proběhne [AI moderace a hydratace](#6-ai-moderace-a-hydratace) (viz detailní popis níže) — **první kontrola**: náhled / úprava textu. Approval token ještě **nevzniká**.
+3. Uživatel v modalu potvrdí finální text (může ho i celý přepsat, nebo zvolit původní bez AI úprav).
+4. Proběhne **druhá kontrola** přesného textu a fotografií, které se opravdu odesílají. Teprve pak Edge vydá jednorázový approval token.
+5. Server Action uloží inzerát nejprve jako **`draft`**, nahraje fotky a přes service-role RPC **`publish_approved_post`** přepne na **`active`** jen při shodě tokenu s uloženým obsahem.
+6. URL má tvar `/inzerat/[slug]` — slug se generuje při první publikaci a **nemění se** při editaci.
 
-Pokud publikace selže (chybí/neplatný token), inzerát zůstane ve stavu **Koncept** (`draft`) — majitel ho najde v `/moje-inzeraty` a může doupravit.
+**Proč dvě kontroly:** první slouží k hydrataci a náhledu. Token ale musí patřit k textu, který uživatel **skutečně publikuje** — ne k prvnímu AI návrhu. Když po náhledu text přepíše (i na závadný obsah), druhá kontrola to znovu posoudí; při zamítnutí token nedostane a na web se nedostane. „Token sedí“ znamená: DB při publikaci ověří, že uložený inzerát (a fotky) jsou totéž, co druhá kontrola schválila — jinak zůstane **Koncept** (`draft`).
+
+Pokud publikace selže (chybí/neplatný token / neshoda obsahu), inzerát zůstane ve stavu **Koncept** (`draft`) — majitel ho najde v `/moje-inzeraty` a může doupravit.
 
 ---
 
@@ -343,14 +360,19 @@ Formulář → klik „Publikovat“ / „Uložit“
         → Ignorovat AI a publikovat původní
         → Zrušit (návrat do formuláře)
     → finální moderate-listing(issueApproval: true)
-        → kontrola přesného finálního textu a bajtů všech fotek
-        → approvalToken svázaný s content fingerprintem + SHA-256 fotek
+        → kontroluje text/fotky, které uživatel právě odesílá
+          (i když je po náhledu celý přepsal)
+        → při REJECTED token nevzniká → publikace na active nejde
+        → při OK: approvalToken = fingerprint + SHA-256 fotek
     → Server Action createListing / updateListing
         → insert/update jako draft
         → upload fotek (při chybě soft-delete draftu — žádný orphan)
         → service-role publish_approved_post(token, image bindings)
         → DB porovná autoritativní posts + post_images → active/hidden
+          (neshoda s tokenem = zůstane draft)
 ```
+
+**Proč `issueApproval` až po modalu:** první volání jen připraví náhled. Token se vydá až z druhé kontroly finálního obsahu — jinak by šlo po schválení vyměnit text/fotky a publikovat něco jiného. Přepsání textu v modalu token „nerozbíjí“ omylem: druhé volání kontroluje právě to, co uživatel odesílá.
 
 **Důležité:** AI se volá přímo z prohlížeče do Supabase (ne přes Next.js), aby nedocházelo k timeoutům. Klíče k AI a Sightengine jsou jen na serveru Edge Function (Supabase secrets). **Publikaci na `active` nelze obejít** — migrace `063` dovoluje publish RPC jen `service_role` a vyžaduje platný token pro přesný finální obsah i přesné soubory fotografií. Migrace `066` zajišťuje, že stejným bezpečným tokem procházejí také vlastní inzeráty moderátorů/adminů; staff bypass platí jen pro God Mode úpravu cizího inzerátu. Edge počítá hashe z bajtů, které AI skutečně kontrolovala; Server Action před publikací stáhne aktuální Storage objekty a DB atomicky porovná jejich identitu, pořadí, hlavní obrázek a hashe. Před odesláním formulář ukáže **„Chybí: …“**, pokud není lokalita / název / popis / cena.
 
@@ -468,9 +490,13 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 | Kategorie | Co AI typicky doplní / na co se zeptá |
 |-----------|--------------------------------------|
 | Zboží (auto, elektronika) | Rok, nájezd, kapacita, záruka… |
+| Zboží (móda — boty/hodinky) | Deterministicky i stélka / mm rozměry (`required-category-questions.ts`) |
 | Služby | Dojezd, materiál, rozsah práce; typ ceny (hodina vs. zakázka) respektuje formulář |
 | Události | Kapacita, přesná lokalita (datum už je ve formuláři) |
+| Události → Sport | Deterministicky výbava/speciální vybavení s sebou, pokud text nic neříká |
 | Nemovitosti | Dispozice, výměra, vybavení |
+
+Povinné/deterministické otázky: [`src/config/moderation/required-category-questions.ts`](../src/config/moderation/required-category-questions.ts) (+ sync do Edge). Při nové podkategorii se specifickým doptáváním doplň i sem.
 
 **Průběh pro uživatele:**
 

@@ -62,6 +62,43 @@ function hasRemovableInsoleAnswer(text: string): boolean {
   );
 }
 
+function hasSportEquipmentAnswer(text: string): boolean {
+  return (
+    /(?:výbav|vybaven[ií]|s\s+sebou|vlastn[ií]\s+vybav)/iu.test(text) ||
+    /(?:nic|žádn\w*|nen[ií]\s+třeba|není\s+potřeba).{0,40}(?:s\s+sebou|výbav|vybaven)/iu.test(
+      text,
+    ) ||
+    /(?:přilb|helma|chránič|tretr|kopačk|sálovk|raket|lyž|brusl|neopren|spacák|karimat|stan\b|hole\b|dres|rukavic)/iu.test(
+      text,
+    )
+  );
+}
+
+function resolveSportEventQuestions(
+  context: RequiredCategoryQuestionContext,
+  text: string,
+): ModerationQuestion[] {
+  if (
+    context.categoryType !== "udalost" ||
+    context.subcategorySlug !== "sport"
+  ) {
+    return [];
+  }
+
+  if (hasSportEquipmentAnswer(text)) {
+    return [];
+  }
+
+  return [
+    {
+      id: "required-sport-equipment",
+      label:
+        "Potřebují účastníci nějakou výbavu nebo speciální vybavení s sebou?",
+      paramLabel: "Výbava / vybavení",
+    },
+  ];
+}
+
 function resolveFashionQuestions(text: string): ModerationQuestion[] {
   const questions: ModerationQuestion[] = [];
   const isShoes =
@@ -132,10 +169,7 @@ export function ensureRequiredCategoryQuestions<T extends ModerationResultLike>(
   result: T,
   context: RequiredCategoryQuestionContext,
 ): T {
-  if (
-    result.status === "REJECTED" ||
-    context.categoryType !== "zbozi"
-  ) {
+  if (result.status === "REJECTED") {
     return result;
   }
 
@@ -147,7 +181,12 @@ export function ensureRequiredCategoryQuestions<T extends ModerationResultLike>(
   ]
     .filter((value): value is string => typeof value === "string")
     .join("\n");
-  const requiredQuestions = resolveFashionQuestions(searchableText);
+
+  const requiredQuestions =
+    context.categoryType === "zbozi"
+      ? resolveFashionQuestions(searchableText)
+      : resolveSportEventQuestions(context, searchableText);
+
   if (requiredQuestions.length === 0) return result;
 
   const merged: ModerationQuestion[] = [];

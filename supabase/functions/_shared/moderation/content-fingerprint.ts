@@ -37,6 +37,8 @@ function canonicalPriceAmount(value: number | null | undefined): string {
 function canonicalEventDate(value: string | null | undefined): string {
   const trimmed = canonicalText(value);
   if (!trimmed) return "";
+  // Očekává ISO UTC z prohlížeče (`toModerationEventDateIso`). Naive
+  // datetime-local by na Edge (UTC) posunul čas oproti Server Action.
   const parsed = new Date(trimmed);
   return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
 }

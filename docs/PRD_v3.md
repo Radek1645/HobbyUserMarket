@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.47  
+> **Verze dokumentu:** v3.48  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
@@ -523,13 +523,18 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
     * Počítadlo znaků v modalu zahrnuje **projekovaný finální popis** včetně odpovědí (limit 2000).
     * Během volání AI: **full-screen overlay** se spinnerem (ne banner dole).
     * **Akce uživatele:**
-      1. **Doplnit, upravit a publikovat (Doporučeno):** Uživatel potvrdí finální text → **druhé** volání `moderate-listing` s `issueApproval: true` (přesný text + bajty fotek) → Edge vydá token → Server Action uloží `draft`, nahraje fotky a service-role `publish_approved_post` → `active`.
+      1. **Doplnit, upravit a publikovat (Doporučeno):** Uživatel potvrdí finální text (smí ho v modalu upravit nebo přepsat) → **druhé** volání `moderate-listing` s `issueApproval: true` na **přesný odesílaný** text + bajty fotek → Edge vydá token → Server Action uloží `draft`, nahraje fotky a service-role `publish_approved_post` → `active`.
       2. **Publikovat bez vylepšení:** Zahodí AI korektury textu, ale **vždy platí:**
          - Bezpečnostní filtr (zbraně, drogy, porno, orgány) — neprůstřelný; bez approval tokenu zůstane inzerát `draft`.
-         - Finální `issueApproval` kontrola přesného odesílaného obsahu (stejný token flow).
+         - Finální `issueApproval` kontrola přesného odesílaného obsahu (stejný token flow) — přepsání po 1. kontrole se znovu posoudí; závadný text token nedostane.
          - **Server-side strip kontaktů** v popisu (DB trigger + regex) — nahrazení `[SKRYTO – použij chráněné pole]`.
          - **Server-side keyword scan** (`prohibited-scan.ts`) — rychlý filtr zjevných zakázaných výrazů před uložením.
       3. **Zrušit:** Koncept zahozen, v DB nevzniká zápis (nebo zůstane `draft` při selhání publish).
+
+* **Dvě AI kontroly (proč):**
+  1. **První** (`issueApproval` vypnuto) — hydratace a náhled. Token **nevzniká**.
+  2. **Druhá** (`issueApproval: true`) — po potvrzení modalu kontroluje text a fotky, které uživatel **skutečně publikuje**. Teprve ta vydá token.
+  * Důvod: uživatel smí po náhledu text změnit. Token musí patřit k finálnímu obsahu, ne k prvnímu AI návrhu. „Token sedí“ = DB při `publish_approved_post` ověří fingerprint/hashe uloženého řádku proti tokenu; neshoda → zůstane `draft`.
 
 * **Server-side vynucení publikace *(migrace `027` + `062`–`066`)*:**
   * Po potvrzení AI náhledu Edge znovu zkontroluje **přesný** finální text a bajty fotek (`issueApproval: true`), spočítá SHA-256 content fingerprint + image hashes, vloží řádek do `moderation_approvals` (TTL 30 min, jednorázový) a vrátí `approvalToken`.
@@ -730,6 +735,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.45 | 2026-07-26 | **v0.5 DoD:** FAQ `/faq` + patička; `audit_events` (**059/060**); `moderator_notes` (**061**); AI `categorySuggestion` (**058**); CTA dle kategorie; UI copy „web“ místo „platforma“ (mimo VOP/GDPR); Metodika §2.1.1 / §11.4 |
 | v3.46 | 2026-07-27 | **Kvalita + moderace + SEO title:** skóre bez SEO (tužka volitelná); tipy do 100 %; tolerantní parser Parametrů + normalizace odřádkování; kompaktní AI preview footer; false positive opravy (práce vs služby, fotka s výjimkou v textu); META_TITLE obec/město + zkracování H1 na slovech (SEO bible **v1.8**) |
 | v3.47 | 2026-07-28 | **Bezpečnostní harden publish gate:** content fingerprint + SHA-256 fotek (`062`–`065`); service-role-only `publish_approved_post`; finální `issueApproval` po AI náhledu; publish-sensitive editace vždy re-moderace; staff bypass jen cizí inzerát (`066`); rate limit atomický; Next.js 15.5.22; SEO bible **v1.9** (katalog u identifikovaného modelu); audit [`SECURITY_AND_UX_AUDIT_20260727.md`](./SECURITY_AND_UX_AUDIT_20260727.md) |
+| v3.48 | 2026-07-28 | **Default covers + sport hydratace + ověření publish gate:** výchozí ilustrace bez fotky dle kategorie/podkategorie (`listing-default-covers.ts`); u `udalost/sport` doptání na výbavu; ISO UTC pro `eventDate` do Edge; manuální smoke SEC-H01/H02 OK; migrace 062–066 + EF nasazeny |
 
 ---
 

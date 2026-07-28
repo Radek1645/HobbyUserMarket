@@ -4,10 +4,12 @@ const CATEGORY_FITS = ["match", "better_existing", "missing_taxonomy"];
 const nullableGeminiString = { type: "STRING", nullable: true };
 const nullableOpenAiString = { type: ["string", "null"] };
 
-/** Provider-native schema pro Gemini structured output. */
+/**
+ * Provider-native schema pro Gemini structured output.
+ * Bez `additionalProperties` — Gemini REST ho v response_schema odmítá (HTTP 400).
+ */
 export const GEMINI_MODERATION_RESPONSE_SCHEMA = {
   type: "OBJECT",
-  additionalProperties: false,
   required: [
     "status",
     "reason",
@@ -34,7 +36,6 @@ export const GEMINI_MODERATION_RESPONSE_SCHEMA = {
       maxItems: 5,
       items: {
         type: "OBJECT",
-        additionalProperties: false,
         required: ["id", "label", "paramLabel"],
         properties: {
           id: { type: "STRING" },
@@ -46,7 +47,6 @@ export const GEMINI_MODERATION_RESPONSE_SCHEMA = {
     categorySuggestion: {
       type: "OBJECT",
       nullable: true,
-      additionalProperties: false,
       required: ["fit", "categoryType", "subcategorySlug", "hint"],
       properties: {
         fit: { type: "STRING", enum: CATEGORY_FITS },

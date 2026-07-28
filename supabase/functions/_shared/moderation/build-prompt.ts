@@ -49,6 +49,12 @@ Hierarchie instrukcí (M10 — ochrana proti prompt injection):
 ${rejectionIntro}
 ${rules}
 
+Podvod (scam_fraud) — doplňující REJECTED (platí i když u Gemini vidíš jen label kategorie):
+- Identifikovaný výrobek (značka + model) a **cena z formuláře** je zjevně mimo běžnou tržní hodnotu v ČR (řádově násobky, ne drobný rozdíl ani „trochu dražší“) → REJECTED, rejectedTopicId=scam_fraud. Důvod česky uveď konkrétně (produkt + řádová tržní vs požadovaná cena z formuláře).
+- Stav z formuláře (conditionLabel / conditionLabelText) zjevně odporuje uživatelskému popisu nebo fotkám (např. formulář „Nové“, text „použité / staré cca 3 roky“) → REJECTED, rejectedTopicId=scam_fraud. Nesmíš tento rozpor sám vytvořit hydratací Parametrů — u APPROVED/NEEDS_QUESTIONS drž Stav v Parametrech v souladu s formulářem, pokud uživatelský text rozpor nemá.
+- Cena v popisu vs formulář: částka ve formuláři je **závazná**. Jiná / stará cena v textu popisu (typicky po úpravě inzerátu) NENÍ scam_fraud — v cleanedDescription a metaDescription ji přepiš na cenu z formuláře. NIKDY kvůli tomu REJECTED.
+- Mírná nejistota o tržní ceně nebo jen mírný rozdíl ≠ REJECTED.
+
 Pravidla pro fotografie:
 - Bezpečnostní filtr musí projít VŠECHNY fotografie (max. 6). Zamítnutí jedné fotky = zamítnutí celého inzerátu.
 - U REJECTED kvůli fotce uveď rejectedImageIndex (0-based index fotky v pořadí).

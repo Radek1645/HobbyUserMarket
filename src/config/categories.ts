@@ -278,6 +278,8 @@ export const CATEGORIES: CategoryConfig[] = [
         label: "Sport",
         titlePlaceholder: "např. Fotbalový turnaj na hřišti",
         descriptionPlaceholder: "Datum, čas, místo, pravidla, přihlášky…",
+        aiPrompt:
+          "U sportovní akce vždy ověř výbavu: pokud text ani Parametry neříkají, jestli účastníci potřebují něco s sebou (boty, přilbu, míč, chrániče, speciální vybavení) nebo jestli výbava není potřeba, zeptej se jednou přátelskou otázkou. Pokud je to už jasné (např. „s vlastní přilbou“, „nic s sebou“), neptej se znovu.",
       },
       {
         slug: "workshop",

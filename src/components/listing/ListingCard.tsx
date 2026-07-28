@@ -9,6 +9,7 @@ import {
   listingIntentDemandBadgeClass,
   listingIntentOfferBadgeClass,
 } from "@/config/ui-primitives";
+import { ListingDefaultCover } from "@/components/listing/ListingDefaultCover";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingPath } from "@/lib/posts/listing-path";
@@ -79,10 +80,11 @@ export function ListingCard({
               className="object-cover transition duration-300 group-hover:scale-[1.02]"
             />
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-1 text-gray-400">
-              <span className="text-3xl font-light text-gray-300">◇</span>
-              <span className="text-xs">Bez fotky</span>
-            </div>
+            <ListingDefaultCover
+              categoryType={listing.category_type}
+              subcategorySlug={listing.subcategory_slug}
+              size="lg"
+            />
           )}
 
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-3 pb-3 pt-10">
@@ -138,7 +140,7 @@ export function ListingCard({
       })}
       className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:border-gray-300 hover:shadow-sm"
     >
-      <div className="relative flex aspect-[16/10] items-center justify-center bg-gray-100 text-gray-400">
+      <div className="relative flex aspect-[16/10] items-center justify-center overflow-hidden bg-gray-100 text-gray-400">
         {listing.main_image_url ? (
           <Image
             src={listing.main_image_url}
@@ -148,7 +150,11 @@ export function ListingCard({
             className="object-cover"
           />
         ) : (
-          <span className="text-xs">Bez fotky</span>
+          <ListingDefaultCover
+            categoryType={listing.category_type}
+            subcategorySlug={listing.subcategory_slug}
+            size="md"
+          />
         )}
       </div>
 

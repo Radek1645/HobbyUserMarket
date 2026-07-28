@@ -27,8 +27,8 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 2. Nasazení infrastruktury
 
-- [ ] Migrace **062–066** — potvrdit uživatelem
-- [ ] Edge Functions — `npm run sync:moderation` + deploy `moderate-listing`
+- [x] Migrace **062–066** — potvrzeno uživatelem
+- [x] Edge Functions — `npm run sync:moderation` + deploy `moderate-listing`
 - [ ] Vercel build po pushi *(až po pushi)*
 
 ---
@@ -74,7 +74,7 @@ git push -u origin HEAD
 | Kritérium | Splněno |
 |-----------|:-------:|
 | Změna ověřená v UI / API | ☐ |
-| Migrace + EF nasazené | ☐ |
+| Migrace + EF nasazené | ✅ |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
 | Commit | ✅ `f430aae` |

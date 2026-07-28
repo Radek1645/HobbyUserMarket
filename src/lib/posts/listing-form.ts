@@ -43,6 +43,20 @@ export function toDatetimeLocalValue(iso: string | null): string {
   return dateToDatetimeLocalValue(date);
 }
 
+/**
+ * Převod `datetime-local` z prohlížeče na ISO UTC před odesláním do Edge.
+ * Edge běží v UTC a naive `2026-07-31T09:05` by hashoval jinak než Server Action/DB.
+ */
+export function toModerationEventDateIso(
+  value: string | null | undefined,
+): string | undefined {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return undefined;
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed.toISOString();
+}
+
 export function postToListingFormInitialValues(
   post: PostRow,
   location: unknown,

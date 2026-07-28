@@ -1,5 +1,6 @@
 import {
   getCategoryLabel,
+  getConditionFieldLabel,
   getConditionLabel,
   getPriceTypeLabel,
   getSubcategoryLabel,
@@ -7,6 +8,7 @@ import {
 import { SITE_DISPLAY_NAME } from "@/config/site";
 import { AdvertiserBadges } from "@/components/listing/AdvertiserBadges";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
+import { ListingDefaultCover } from "@/components/listing/ListingDefaultCover";
 import { ListingDescription } from "@/components/listing/ListingDescription";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
 import { ListingViewBeacon } from "@/components/listing/ListingViewBeacon";
@@ -185,12 +187,12 @@ export default async function ListingDetailPage({
 
   const createdLabel = new Date(post.created_at).toLocaleDateString("cs-CZ");
 
-  const conditionText =
-    post.category_type === "udalost" ||
-    post.category_type === "nemovitost" ||
-    post.category_type === "prace"
-      ? getConditionLabel(post.category_type, post.condition_label)
-      : null;
+  // Stav / typ z formuláře — u všech kategorií (u zboží dřív chyběl, ukazoval se jen AI text).
+  const conditionFieldLabel = getConditionFieldLabel(post.category_type);
+  const conditionText = getConditionLabel(
+    post.category_type,
+    post.condition_label,
+  );
 
   const eventHeading =
     post.condition_label === "long_term" && post.category_type === "udalost"
@@ -339,7 +341,15 @@ export default async function ListingDetailPage({
             imageAlt={post.image_alt}
           />
         </div>
-      ) : null}
+      ) : (
+        <div className="relative mt-6 aspect-[16/10] overflow-hidden rounded-2xl border border-gray-200 sm:aspect-[21/9]">
+          <ListingDefaultCover
+            categoryType={post.category_type}
+            subcategorySlug={post.subcategory_slug}
+            size="lg"
+          />
+        </div>
+      )}
 
       <div className="mt-6 space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
         {eventLabel ? (
@@ -359,37 +369,32 @@ export default async function ListingDetailPage({
 
         <dl className="grid gap-2 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2">
           {advertiser ? (
-            <>
-              <div>
-                <dt className="text-gray-500">
-                  {getAdvertiserPrimaryLabelTitle(advertiser)}
-                </dt>
-                <dd className="font-medium text-gray-900">
-                  <Link
-                    href={getAdvertiserListingsPath(advertiser.nickname)}
-                    className="font-semibold underline-offset-2 hover:underline"
-                  >
-                    {getAdvertiserPrimaryLabel(advertiser)}
-                  </Link>
-                  <AdvertiserBadges
-                    isCompany={advertiser.is_company}
-                    lifetimePublishedCount={
-                      advertiser.lifetime_published_count
-                    }
-                  />
-                </dd>
-              </div>
-              {getAdvertiserIcoDisplay(advertiser) ? (
-                <div>
-                  <dt className="text-gray-500">IČO</dt>
-                  <dd className="font-medium text-gray-900">
-                    {getAdvertiserIcoDisplay(advertiser)}
-                  </dd>
-                </div>
-              ) : null}
-            </>
+            <div>
+              <dt className="text-gray-500">
+                {getAdvertiserPrimaryLabelTitle(advertiser)}
+              </dt>
+              <dd className="font-medium text-gray-900">
+                <Link
+                  href={getAdvertiserListingsPath(advertiser.nickname)}
+                  className="font-semibold underline-offset-2 hover:underline"
+                >
+                  {getAdvertiserPrimaryLabel(advertiser)}
+                </Link>
+                <AdvertiserBadges
+                  isCompany={advertiser.is_company}
+                  lifetimePublishedCount={
+                    advertiser.lifetime_published_count
+                  }
+                />
+                {getAdvertiserIcoDisplay(advertiser) ? (
+                  <p className="mt-1 text-xs font-normal text-gray-500">
+                    IČO {getAdvertiserIcoDisplay(advertiser)!}
+                  </p>
+                ) : null}
+              </dd>
+            </div>
           ) : null}
-          <div className="min-w-0 sm:col-span-2">
+          <div className="min-w-0">
             <dt className="text-gray-500">Lokalita</dt>
             <dd className="break-words font-medium text-gray-900">
               {formatPublicListingLocation(post.location_text)}
@@ -400,9 +405,15 @@ export default async function ListingDetailPage({
             <dd className="font-medium text-gray-900">{createdLabel}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">Typ ceny</dt>
-            <dd className="font-medium text-gray-900">{priceTypeLabel}</dd>
+            <dt className="text-gray-500">{conditionFieldLabel}</dt>
+            <dd className="font-medium text-gray-900">{conditionText}</dd>
           </div>
+          {expiresLabel ? (
+            <div>
+              <dt className="text-gray-500">Platí do</dt>
+              <dd className="font-medium text-gray-900">{expiresLabel}</dd>
+            </div>
+          ) : null}
           {post.price_amount != null ? (
             <div>
               <dt className="text-gray-500">{priceAmountLabel}</dt>
@@ -413,19 +424,21 @@ export default async function ListingDetailPage({
                   post.price_amount,
                   post.exchange_for,
                 )}
+                <span className="mt-0.5 block text-xs font-normal text-gray-500">
+                  {priceTypeLabel}
+                </span>
               </dd>
             </div>
-          ) : null}
-          {post.price_type === "exchange" && post.exchange_for ? (
+          ) : (
             <div>
+              <dt className="text-gray-500">Typ ceny</dt>
+              <dd className="font-medium text-gray-900">{priceTypeLabel}</dd>
+            </div>
+          )}
+          {post.price_type === "exchange" && post.exchange_for ? (
+            <div className="sm:col-span-2">
               <dt className="text-gray-500">Ideálně za co</dt>
               <dd className="font-medium text-gray-900">{post.exchange_for}</dd>
-            </div>
-          ) : null}
-          {expiresLabel ? (
-            <div>
-              <dt className="text-gray-500">Platí do</dt>
-              <dd className="font-medium text-gray-900">{expiresLabel}</dd>
             </div>
           ) : null}
         </dl>

@@ -24,9 +24,9 @@ Aktuální stav ale nelze označit za bezpečný pro ostrý provoz bez dalších
 
 > **Dodatek 2026-07-27:** Nálezy 1–3 (SEC-H01–H04) mají implementovanou opravu — detaily a residua u jednotlivých nálezů v [§3](#3-detailní-bezpečnostní-nálezy).
 
-1. **Původní nález: approval token nebyl svázán s moderovaným obsahem.** Oprava je implementovaná v migracích 062–063 a navazujícím aplikačním kódu; produkční nasazení zatím nebylo potvrzeno.
-2. **Původní nález: AI rate limit šlo obejít přes Supabase API.** Oprava oprávnění a atomické inkrementace je implementovaná v migraci 062.
-3. **Původní nález: produkční závislosti obsahovaly známé High zranitelnosti.** Next.js je aktualizovaný na 15.5.22 a zranitelné transitivní verze mají overrides; znovu ověřit při finálním `npm audit`.
+1. **Původní nález: approval token nebyl svázán s moderovaným obsahem.** Oprava implementovaná a **nasazená** (migrace 062–066 + Edge + Next.js po pushi 2026-07-28 večer); manuální smoke ověřen.
+2. **Původní nález: AI rate limit šlo obejít přes Supabase API.** Oprava oprávnění a atomické inkrementace je implementovaná v migraci 062 (nasazeno) + EF deploy.
+3. **Původní nález: produkční závislosti obsahovaly známé High zranitelnosti.** Next.js 15.5.22 + overrides; `npm audit --omit=dev` → 0.
 
 ### Ověření
 
@@ -35,7 +35,7 @@ Aktuální stav ale nelze označit za bezpečný pro ostrý provoz bez dalších
 - `npm run lint`: **prošlo bez chyb**; zůstává jeden starší unused-variable warning v detailu inzerátu.
 - Bez automatizovaných bezpečnostních testů nelze potvrdit, že migrace v produkční DB odpovídají snapshotu.
 
-> **Stav nasazení 2026-07-27 23:00:** opravy SEC-H01/H02 a AI governance v migracích `063`–`064` jsou hotové v kódu, ale nasazení migrací, aktuální Edge Function `moderate-listing` a navazující verze Next.js aplikace zatím nebylo potvrzeno. Do té doby je nelze označit jako provozně ověřené.
+> **Stav nasazení 2026-07-28 večer:** migrace `062`–`066` a Edge Function `moderate-listing` **nasazeny**. Manuální smoke SEC-H01/H02 **ověřen** (create, edit, cena/lokalita/datum/kontakty → AI, fotka → AI, pauza → `hidden`, zrušení bez uložení nepersistuje). Push Next.js aplikace součástí uzavření session (default covers, ISO `eventDate`, sport výbava).
 
 ---
 
@@ -118,6 +118,8 @@ Nebyl potvrzen žádný aktuálně zneužitelný kritický nález. Toto hodnocen
 **Stav 2026-07-27 večer (063) — opraveno v kódu.** Původní oprava 062 nestačila: test se změnou ceny prošel, protože věřila klientskému fingerprintu a nepokrývala všechna pole. Finální kontrola nyní znovu moderuje přesný text, Edge token váže na title, description i všechna publish-sensitive pole a service-role-only `publish_approved_post` porovnává hash s autoritativním řádkem `posts`. `listingNeedsModeration` a DB trigger pokrývají také cenu, lokalitu/souřadnice, stav, datum, délku, kontaktní volby a job CV.
 
 **Follow-up 2026-07-28 (066):** manuální test admin účtem odhalil, že staff bypass v publish gate platil i pro vlastní inzerát. Aktualizace ceny proto zůstala `active` a následné RPC skončilo `post_not_draft`. Migrace `066_publish_gate_staff_owner.sql` omezuje staff bypass pouze na God Mode úpravu cizího inzerátu; vlastní inzeráty moderátora/admina procházejí stejným `draft` → approval → publish tokem jako u běžného uživatele.
+
+**Follow-up 2026-07-28 večer:** create události končil `content_mismatch`, protože Edge (UTC) hashoval `datetime-local` (`2026-07-31T09:05`) jako 09:05Z, zatímco Server Action/DB ukládaly lokální CEST → 07:05Z. Klient nyní posílá do moderace ISO UTC (`toModerationEventDateIso`).
 
 #### SEC-H02 — Moderované náhledy nejsou svázány s uloženými fotografiemi
 
