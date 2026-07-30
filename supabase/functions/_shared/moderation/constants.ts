@@ -7,10 +7,10 @@ export const LISTING_DESCRIPTION_MAX_LENGTH = 2000;
 export const MODERATION_DESCRIPTION_QA_RESERVE = 400;
 
 /** Max. velikost jedné fotky po dekódování base64 (M7). */
-export const MODERATION_IMAGE_MAX_BYTES = 512000;
+export const MODERATION_IMAGE_MAX_BYTES = 1048576;
 
 /** Max. součet velikostí fotek po dekódování (M7). */
-export const MODERATION_IMAGES_MAX_TOTAL_BYTES = 2097152;
+export const MODERATION_IMAGES_MAX_TOTAL_BYTES = 6291456;
 
 export const NSFW_NUDITY_RAW_THRESHOLD = 0.6;
 

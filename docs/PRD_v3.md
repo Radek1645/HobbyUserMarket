@@ -1,12 +1,12 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.48  
+> **Verze dokumentu:** v3.50  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`061_moderator_notes.sql`](../supabase/061_moderator_notes.sql) · [`062_security_hardening_approval_binding.sql`](../supabase/062_security_hardening_approval_binding.sql) · [`063_security_fingerprint_from_post.sql`](../supabase/063_security_fingerprint_from_post.sql) · [`064_moderation_ai_audit_metadata.sql`](../supabase/064_moderation_ai_audit_metadata.sql) · [`065_fingerprint_newline_canonicalization.sql`](../supabase/065_fingerprint_newline_canonicalization.sql) · [`066_publish_gate_staff_owner.sql`](../supabase/066_publish_gate_staff_owner.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-28
+> **Datum:** 2026-07-30
 
 ---
 
@@ -212,6 +212,49 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2 / `nemovitost` od v0.3) a `subcategory_slug`.
 * **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1, **max délka popisu**) v `src/config/app.ts` (`LISTING_DESCRIPTION_MAX_LENGTH = 2000`, `MODERATION_DESCRIPTION_QA_RESERVE = 400`). Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace v `src/config/moderation/index.ts` (`MODERATION_ENABLED`, `MODERATION_RATE_LIMIT_PER_HOUR = 20`, `MODERATION_MAX_QUESTIONS = 5`, `MODERATION_IMAGE_MAX_DIMENSION = 512`). Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max). Prompty kategorií sync: `npm run sync:moderation`.
 * **Data v EU / EHP:** Primární DB **Supabase** = West EU Ireland (`eu-west-1`); **Vercel Functions** = Dublin (`dub1` / `eu-west-1`); **Resend** sending = Ireland (`eu-west-1`, doména `zapikolou.cz`) — zapsáno v GDPR §5.1 (2026-07-19). AI moderace stále posílá text a fotky ke **Gemini/OpenAI** (typicky mimo EHP) — DPA/SCC + informace v GDPR. Checklist / backlog **P33** v [`TO-DO_Fable.md`](./TO-DO_Fable.md), [`docs/pravni/README.md`](./pravni/README.md).
+
+### 3.1 Proč Vercel + Supabase (rozhodnutí stacku)
+
+Jde o **dělení rolí**, ne o jednoho vendora na všechno: **Vercel = web (Next.js)**; **Supabase = data, auth, storage a AI Edge Functions**. Volba odpovídá MVP / hobby startu — rychlost vývoje, nízký provozní overhead, Postgres + mapa, EU regiony.
+
+| Potřeba platformy | Co dodává |
+|-------------------|-----------|
+| Next.js App Router | **Vercel** — nativní deploy, preview PR, cron, Edge/Serverless |
+| Postgres + PostGIS (mapa) | **Supabase** — DB + geolokace |
+| Auth (e-mail, OAuth) | Supabase Auth |
+| Fotky inzerátů | Supabase Storage |
+| Dlouhá AI moderace (~15–30 s) | Supabase Edge Functions (Vercel Hobby má krátké limity → AI **nesmí** jít přes Next.js API; viz výše „Volání AI“) |
+| EU / GDPR | Regiony `eu-west-1` / Dublin (`dub1`) |
+| Rychlý start, nízký náklad | Free / Hobby → Pro při ostrém startu (zálohy, neusínání DB) |
+
+#### Bezpečnost — model důvěry
+
+Obě platformy jsou velké B2B SaaS (SOC 2, šifrování at rest / in transit, DPA). Pro produkt je důležitější **jak je stack nastavený**, ne marketingový checklist:
+
+| Vrstva | Silné stránky | Riziko / odpovědnost provozu |
+|--------|---------------|------------------------------|
+| **Vercel** | Izolace funkcí, secrets, HTTPS, DDoS na edge | SSR / Server Actions musí správně řešit auth; env nesmí uniknout do klienta |
+| **Supabase** | RLS na Postgresu, JWT, service role jen na serveru | Špatné RLS = únik dat přes REST; `anon` / `authenticated` klíče jsou ve frontendu **záměrně** (ochrana = RLS) |
+| **Kombinace** | AI klíče jen v Edge secrets; publish gate v DB | Klient volá Edge přímo — JWT + rate limit + content fingerprint / image hashes (migrace `027`, `062`–`066`) |
+| **GDPR** | Data v EU (DB, hosting, mail) | AI (Gemini / OpenAI) typicky mimo EHP → DPA / SCC + informace v GDPR |
+
+Bezpečnost tedy **není** „Supabase je ze své podstaty bezpečnější než AWS“ — je to kvalita RLS, rolí a publish gate. U zaPikolou.cz to řeší approval token + fingerprint, service-role-only `publish_approved_post` a bezpečnostní audity ([`SECURITY_AND_UX_AUDIT_20260727.md`](./SECURITY_AND_UX_AUDIT_20260727.md)).
+
+#### Konkurenční / podobné platformy
+
+**Místo Vercelu** (Next hosting): Cloudflare Pages / Workers, Netlify, AWS Amplify, Railway, Fly.io, self-hosted Node.
+
+**Místo Supabase** (BaaS / data vrstva):
+
+* **Firebase** — Auth + Firestore (ne Postgres / PostGIS; SQL migrace a geolokace by bolely)
+* **Appwrite / PocketBase** — self-host BaaS
+* **Neon / PlanetScale / RDS** + **Clerk / Auth0** + **S3 / R2** — skládačka „best of breed“ (víc lepení a ops)
+* **AWS Amplify + Cognito + RDS** — enterprise, vyšší provozní náklad
+* **Hasura / PostgREST** nad vlastním Postgresem
+
+**Celý balík podobný Supabase:** nejblíž Firebase (jiný DB model) nebo „Neon + Clerk + R2 + Edge runtime“.
+
+**Verdikt pro zaPikolou.cz:** Vercel + Supabase dává smysl pro rychlost vývoje, Postgres + PostGIS, Auth + Storage v jednom, EU regiony a AI mimo krátké limity Vercel Hobby. Alternativa „AWS od nuly“ by byla srovnatelně bezpečná jen při větším ops budgetu.
 
 ---
 
@@ -736,6 +779,8 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.46 | 2026-07-27 | **Kvalita + moderace + SEO title:** skóre bez SEO (tužka volitelná); tipy do 100 %; tolerantní parser Parametrů + normalizace odřádkování; kompaktní AI preview footer; false positive opravy (práce vs služby, fotka s výjimkou v textu); META_TITLE obec/město + zkracování H1 na slovech (SEO bible **v1.8**) |
 | v3.47 | 2026-07-28 | **Bezpečnostní harden publish gate:** content fingerprint + SHA-256 fotek (`062`–`065`); service-role-only `publish_approved_post`; finální `issueApproval` po AI náhledu; publish-sensitive editace vždy re-moderace; staff bypass jen cizí inzerát (`066`); rate limit atomický; Next.js 15.5.22; SEO bible **v1.9** (katalog u identifikovaného modelu); audit [`SECURITY_AND_UX_AUDIT_20260727.md`](./SECURITY_AND_UX_AUDIT_20260727.md) |
 | v3.48 | 2026-07-28 | **Default covers + sport hydratace + ověření publish gate:** výchozí ilustrace bez fotky dle kategorie/podkategorie (`listing-default-covers.ts`); u `udalost/sport` doptání na výbavu; ISO UTC pro `eventDate` do Edge; manuální smoke SEC-H01/H02 OK; migrace 062–066 + EF nasazeny |
+| v3.49 | 2026-07-30 | **Sync limity fotek + Gemini model notes:** `sync:moderation` správně vyhodnocuje `LISTING_IMAGE_*` → Edge `MODERATION_IMAGE_MAX_BYTES` = 1 MB / total 6 MB (dřív chybný fallback 500 KB/2 MB blokoval editaci); dokumentace volby Gemini (`gemini-2.5-flash`, Flash-Lite odloženo); backlog TO-DO (formulář SoR, dětské zboží, poptávky, Půjčovna) |
+| v3.50 | 2026-07-30 | **§3.1 Proč Vercel + Supabase:** rozhodnutí stacku (dělení rolí web vs data/auth/AI), model důvěry a bezpečnost (RLS, Edge secrets, publish gate), konkurenční platformy (Firebase, Neon+Clerk, AWS…) |
 
 ---
 

@@ -94,29 +94,59 @@ const qaReserveMatch = appConfig.match(
   /export const MODERATION_DESCRIPTION_QA_RESERVE = (\d+)/,
 );
 const qaReserve = qaReserveMatch?.[1] ?? "400";
+const listingImageMaxFilesMatch = appConfig.match(
+  /export const LISTING_IMAGE_MAX_FILES = (\d+)/,
+);
+const listingImageMaxFileBytesMatch = appConfig.match(
+  /export const LISTING_IMAGE_MAX_FILE_BYTES = (.+);/,
+);
 const moderationImageMaxMatch = appConfig.match(
   /export const MODERATION_IMAGE_MAX_BYTES = (.+);/,
 );
 const moderationImagesTotalMatch = appConfig.match(
-  /export const MODERATION_IMAGES_MAX_TOTAL_BYTES = (.+);/,
+  /export const MODERATION_IMAGES_MAX_TOTAL_BYTES =\s*([\s\S]+?);/,
 );
 
+/** Vyhodnotí výraz z app.ts — včetně odkazů na LISTING_IMAGE_* konstanty. */
 function evalBytesExpr(expr, fallback) {
   if (!expr) return fallback;
+  const listingImageMaxFiles = Number(listingImageMaxFilesMatch?.[1] ?? 6);
+  let listingImageMaxFileBytes;
   try {
-    return Number(Function(`"use strict"; return (${expr})`)());
+    listingImageMaxFileBytes = Number(
+      Function(
+        `"use strict"; return (${listingImageMaxFileBytesMatch?.[1] ?? "1048576"})`,
+      )(),
+    );
   } catch {
+    listingImageMaxFileBytes = 1 * 1024 * 1024;
+  }
+  try {
+    const value = Number(
+      Function(
+        "LISTING_IMAGE_MAX_FILES",
+        "LISTING_IMAGE_MAX_FILE_BYTES",
+        `"use strict"; return (${expr})`,
+      )(listingImageMaxFiles, listingImageMaxFileBytes),
+    );
+    if (!Number.isFinite(value) || value <= 0) return fallback;
+    return value;
+  } catch (error) {
+    console.warn(
+      "sync:moderation: failed to eval image bytes expr, using fallback:",
+      String(error),
+    );
     return fallback;
   }
 }
 
 const moderationImageMaxBytes = evalBytesExpr(
   moderationImageMaxMatch?.[1],
-  500 * 1024,
+  1 * 1024 * 1024,
 );
 const moderationImagesTotalBytes = evalBytesExpr(
   moderationImagesTotalMatch?.[1],
-  2 * 1024 * 1024,
+  6 * 1024 * 1024,
 );
 
 const moderationIndex = readFileSync(

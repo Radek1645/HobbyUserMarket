@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-07-30 | [2026-07-30.md](./2026-07-30.md) — fix sync limitů fotek AI (1 MB/6 MB), Gemini model notes, PRD v3.49, push |
 | 2026-07-28 (večer) | [2026-07-28-vecer.md](./2026-07-28-vecer.md) — smoke SEC-H01/H02 ✅, default covers, sport výbava, eventDate ISO, PRD v3.48, push |
 | 2026-07-28 | [2026-07-28.md](./2026-07-28.md) — publish gate fingerprint 062–066, Next 15.5.22, SEO v1.9, PRD v3.47 |
 | 2026-07-27 | [2026-07-27.md](./2026-07-27.md) — kvalita UX, parser Parametrů, moderace FP, SEO title v1.8, PRD v3.46 |

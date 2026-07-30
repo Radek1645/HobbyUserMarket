@@ -18,53 +18,52 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 1. Ověření funkčnosti
 
-- [ ] Publish gate: create + edit (fingerprint, fotky)
-- [ ] Admin vlastní inzerát — změna ceny (066, draft → AI → publish)
-- [ ] God Mode úprava cizího inzerátu (staff bypass)
-- [ ] Produkční smoke *(až po push + deploy)*
+- [x] Edit publikovaného inzerátu s fotkami (limit Edge vs. upload) — OK po deployi
+- [ ] Publish gate create + edit (regresní smoke) — mimo rozsah této session
+- [ ] Produkční smoke dalších flow *(volitelně)*
 
 ---
 
 ## 2. Nasazení infrastruktury
 
-- [x] Migrace **062–066** — potvrzeno uživatelem
-- [x] Edge Functions — `npm run sync:moderation` + deploy `moderate-listing`
+- [x] Nové SQL migrace — žádné v této session
+- [x] Edge Functions — `npm run sync:moderation` + deploy `moderate-listing` (limity 1 MB / 6 MB)
 - [ ] Vercel build po pushi *(až po pushi)*
 
 ---
 
 ## 3. Dokumentace
 
-- [x] **Metodika** — §5–7 publish/fingerprint, §6.12 migrace 062–066, §11.4 Poznámky
-- [x] **PRD** — v3.47
-- [x] **moderace-inzeratu.md** — issueApproval + service-role publish
-- [x] **SECURITY_AND_UX_AUDIT_20260727.md** — stav oprav (nasazení neověřeno)
-- [x] **Stav_projektu/2026-07-28.md**
+- [x] **Metodika** — odkaz na volbu Gemini modelu
+- [x] **PRD** — v3.49
+- [x] **moderace-inzeratu.md** — limity fotek + Volba Gemini modelu
+- [x] **hydratace-inzeratu.md** — přesné bajty / issueApproval tok
+- [x] **Stav_projektu/2026-07-30.md**
 
 ---
 
 ## 4. Snapshot session — `Stav_projektu/`
 
-- [x] Soubor `Stav_projektu/2026-07-28.md`
+- [x] Soubor `Stav_projektu/2026-07-30.md`
 - [x] Řádek v [`Stav_projektu/README.md`](../Stav_projektu/README.md)
 
 ---
 
 ## 5. Git — příprava a commity
 
-- [x] `git status` — bez `.env`
-- [x] Commit `f430aae` (kód + docs)
-- [ ] Push — **ne** (uživatel: ne vše otestováno)
+- [ ] `git status` — bez `.env`
+- [ ] Commit
+- [ ] Push
 
 ---
 
-## 6. Push do gitu *(poslední krok — tentokrát přeskočeno)*
+## 6. Push do gitu *(poslední krok)*
 
 ```powershell
 git push -u origin HEAD
 ```
 
-- [ ] Push — odloženo na po manuálních testech
+- [ ] Push
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -73,9 +72,9 @@ git push -u origin HEAD
 
 | Kritérium | Splněno |
 |-----------|:-------:|
-| Změna ověřená v UI / API | ☐ |
-| Migrace + EF nasazené | ✅ |
+| Změna ověřená v UI / API | ✅ |
+| Migrace + EF nasazené | ✅ EF (migrace N/A) |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit | ✅ `f430aae` |
-| Push | ❌ odloženo |
+| Commit | ☐ |
+| Push | ☐ |

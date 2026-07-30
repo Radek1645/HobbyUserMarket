@@ -28,6 +28,8 @@ Formulář (create / edit)
         → service-role publish_approved_post(token, image bindings) → active
 ```
 
+**Proč `issueApproval` až po modalu:** první volání jen připraví náhled (bez tokenu). Token se vydá z druhé kontroly **přesného** odesílaného textu a bajtů fotek — jinak by šlo po schválení vyměnit obsah.
+
 - **Pre-Gemini brána:** hard-hit text + Sightengine nudity — viz [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md). Evidence `moderation_hard_reject_evidence` (**054**). Hard stop: `account_blacklist` (**055**), UI `/mod/blacklist`, stop stránka `/ucet-pozastaven`. Není to `/mod/karantena`.
 - AI se **nevolá přes Next.js API** (riziko timeoutu na Vercel) — jen přes Supabase Edge Function z klienta.
 - **Publikaci na `active` nelze obejít** — migrace `063` omezuje `publish_approved_post` na `service_role` a vyžaduje shodu fingerprintu i hashů fotek; `066` omezuje staff bypass na God Mode cizího inzerátu (viz níže).
@@ -157,12 +159,13 @@ Plný text pravidel doplníš později na stránku `src/app/podminky-inzerce/pag
 
 | Akce | Moderace |
 |------|----------|
-| Nový inzerát | Před publikací (až po zapnutí AI) |
+| Nový inzerát | Ano — před publikací |
 | Editace — změna názvu, popisu, kategorie | Ano |
 | Editace — změna fotek (přidání, smazání, pořadí, hlavní náhled) | Ano — **všechny** aktuální fotky |
-| Editace — jen cena, lokalita, stav, platnost | Ne (přeskočí se) |
+| Editace — publish-sensitive pole (cena, výměna, lokalita/souřadnice, stav, datum akce, délka inzerce, kontaktní volby, telefon, CV u práce) | Ano — stejný fingerprint jako u approval tokenu |
 
-Logika: `src/lib/moderation/needs-moderation.ts` + `ListingImageUpload.hasImageChanges()`.
+Logika: `src/lib/moderation/needs-moderation.ts` + `ListingImageUpload.hasImageChanges()`.  
+**Proč i cena/lokalita:** token a DB trigger vážou všechna publish-sensitive pole — změna bez re-moderace by obešla gate (SEC-H01).
 
 ---
 
@@ -220,7 +223,9 @@ Moderace rozlišuje **dvě úrovně** — nesmí se zaměňovat:
 | **Cross-validace text ↔ foto** | Hlavní fotka (`mainImageIndex`) | Nabízená věc musí být na náhledu; doplňky na fotce OK, pokud popis výslovně vylučuje („židličky nejsou součástí“ → ne REJECTED) |
 | **AI hydratace / dotazník** | **Všechny** fotografie | Vizuální kontext a doplňující otázky; hlavní fotka jen pro cross-validaci |
 
-Klient připraví snímky v `src/lib/moderation/prepare-moderation-images.ts` (resize na `MODERATION_IMAGE_MAX_DIMENSION`, default 512 px) a pošle je v jednom payloadu `imagesBase64` + `mainImageIndex`. Hvězdička u miniatury = **náhled na homepage**, ne „jediná kontrolovaná fotka“.
+Klient připraví snímky v `src/lib/moderation/prepare-moderation-images.ts` — **přesné bajty** uložených / nových souborů (SEC-H02 hash shoda se Storage), ne zmenšený canvas náhled. Payload: `imagesBase64` + `mainImageIndex`. Limity po dekódování musí sedět s `LISTING_IMAGE_MAX_FILE_BYTES` (1 MB) a max. 6 fotek (`src/config/app.ts` → sync do Edge `constants.ts`). Hvězdička u miniatury = **náhled na homepage**, ne „jediná kontrolovaná fotka“.
+
+> **Oprava 2026-07-30:** `sync:moderation` dříve nevyhodnotil výrazy `LISTING_IMAGE_*` a zapsal fallback **500 KB / 2 MB**. Editace už publikovaného inzerátu pak padala na „Fotky pro AI kontrolu jsou příliš velké“, i když fotky byly ≤ 1 MB. Sync teď správně injektuje konstanty → **1 MB / 6 MB**; po opravě nutný re-deploy `moderate-listing`.
 
 ---
 
@@ -228,7 +233,7 @@ Klient připraví snímky v `src/lib/moderation/prepare-moderation-images.ts` (r
 
 **Pořadí je důležité** — nejdřív sync (vygeneruje `_shared`), pak deploy (přibalí čerstvý kód). Deploy před syncem = staré nebo prázdné prompty v cloudu.
 
-1. Nastav secret v Supabase: `GEMINI_API_KEY` (příp. `OPENAI_API_KEY`). Model: **`gemini-2.5-flash`** (default v kódu; override secretem `GEMINI_MODEL`).
+1. Nastav secret v Supabase: `GEMINI_API_KEY` (příp. `OPENAI_API_KEY`). Model: **`gemini-2.5-flash`** (default v kódu; override secretem `GEMINI_MODEL`). Historie volby modelu → sekce níže.
 2. **Synchronizuj a deploy** (v tomto pořadí):
 
 ```bash
@@ -258,6 +263,34 @@ supabase functions deploy moderate-listing
 ```
 
 > **Po změně `categories.ts` nebo `prohibited-topics.ts`:** znovu `npm run sync:moderation` → `supabase functions deploy moderate-listing`. Sync **po** deployi nedává smysl — cloud už běží se starým balíkem; oprava vyžaduje **nový** deploy hned po syncu.
+
+---
+
+## Volba Gemini modelu (rozhodnutí 2026-07-30)
+
+**Aktuálně:** `gemini-2.5-flash` (default v `_shared/moderation/gemini.ts`). Přepnutí bez změny kódu: Supabase secret `GEMINI_MODEL`.
+
+### Projednáno: `gemini-3.5-flash-lite`
+
+| | |
+|--|--|
+| **Motiv** | Latence — Flash 2.5 je u moderace + hydratace pomalý (Edge timeout ~30 s). |
+| **Verdikt** | **Zatím ne.** Kandidát na pozdější A/B, ne slepý hot-swap defaultu. |
+| **Pipeline** | Mechanicky kompatibilní (obrázky, JSON schema, system prompt, fallback OpenAI). Rozbití kódu neočekáváme. |
+| **Riziko** | Kvalita — workload není jen klasifikace, ale moderace + SEO hydratace + katalogové Parametry + `NEEDS_QUESTIONS`. Lite může ztenčit Parametry, zhoršit hraniční moderaci (escort, scam cena) a zvýšit počet dotazníků. |
+| **API nuance** | U 3.5 Flash-Lite Google **ignoruje** custom `temperature` / top-K / top-P (náš `0.2` → default ~1.0 → větší variabilita textů). Frequency/presence penalty u nás nepoužíváme. |
+
+**Jak vyzkoušet později (bez deploye kódu):**
+
+```bash
+npx supabase secrets set GEMINI_MODEL=gemini-3.5-flash-lite
+# návrat:
+npx supabase secrets set GEMINI_MODEL=gemini-2.5-flash
+```
+
+**QA před trvalou změnou (~10–15 inzerátů):** auto, elektronika s modelem, móda, hraniční NSFW, podvodná cena, málo textu + fotky — latence vs. kvalita Parametrů / false reject-approve.
+
+**Alternativa při slabé Lite kvalitě:** plnější Flash řady 3.x (např. `gemini-3.6-flash` / 3.5 Flash) místo Lite. Default v kódu + docs (`ai-moderation.mdc`, PRD) měnit až po ověření.
 
 ---
 

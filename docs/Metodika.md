@@ -347,7 +347,7 @@ Formulář → klik „Publikovat“ / „Uložit“
     → Edge Function moderate-listing
         → 1) hard-hit text (CSAM fráze) — bez Gemini
         → 2) Sightengine NSFW na fotky — bez Gemini
-        → 3) AI: Gemini / GPT (timeout 25 s)
+        → 3) AI: Gemini / GPT (timeout 25 s; model `gemini-2.5-flash`, viz moderace-inzeratu.md → Volba Gemini modelu)
         → TECHNICAL_ERROR → amber panel „Technická chyba“ + „Zkusit znovu“
            (klient až 3 pokusy; není to obsahové zamítnutí)
            včetně výpadku Sightengine (`SIGHTENGINE_UNAVAILABLE`)
@@ -1608,7 +1608,7 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 |----------|-------|
 | [`PRD_v3.md`](./PRD_v3.md) | Produktová a technická specifikace |
 | [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) | SEO bible inzerátů (H1, meta, alt, schema) — verzovaná |
-| [`moderace-inzeratu.md`](./moderace-inzeratu.md) | Konfigurace AI pravidel, deploy, sync |
+| [`moderace-inzeratu.md`](./moderace-inzeratu.md) | Konfigurace AI pravidel, deploy, sync; **volba Gemini modelu** (Flash-Lite odloženo 2026-07-30) |
 | [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) | Hydratace textu, dotazník, skóre kvality inzerátu |
 | [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) | NSFW / hard-hit brána před Gemini (Sightengine, evidence) |
 | [`riziko-gemini-api-zakazany-obsah.md`](./riziko-gemini-api-zakazany-obsah.md) | Riziko Gemini ToS / CSAM — problém a návrh řešení |

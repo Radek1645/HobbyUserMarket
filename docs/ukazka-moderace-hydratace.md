@@ -2,7 +2,7 @@
 
 Konkrétní walkthrough: uživatel zakládá inzerát na **Škodu Rapid Spaceback** (fotka s SPZ `1TL 9939`), vyplní minimum textu a klikne **Publikovat**.
 
-> **Důležité:** Moderace (bezpečnost) a hydratace (úprava textu) nejsou dva samostatné AI requesty. Probíhají v **jednom volání** Edge Function `moderate-listing`. System prompt obsahuje obě části; user prompt dodá kontext formuláře a kategorie.
+> **Důležité:** Moderace (bezpečnost) a hydratace (úprava textu) nejsou dva samostatné AI requesty v rámci jednoho kroku — probíhají v **jednom volání** Edge Function `moderate-listing`. Celý publish flow ale volá Edge Function **dvakrát**: (1) náhled bez tokenu, (2) finální kontrola s `issueApproval: true`.
 
 ---
 
@@ -16,7 +16,7 @@ Konkrétní walkthrough: uživatel zakládá inzerát na **Škodu Rapid Spacebac
 | Stav | Použité |
 | Typ ceny | Pevná cena |
 | Cena | 95 000 Kč |
-| Lokalita | Brno (do AI promptu **ne**jde — použije se až při uložení) |
+| Lokalita | Brno — do AI promptu **jde** (`locationText`) pro SEO / spádové město |
 | Fotky | 1× hlavní fotka (bílá Škoda Rapid Spaceback) |
 | Kontakt | Chráněné pole (telefon/e-mail) — do AI promptu **ne** |
 
@@ -38,23 +38,27 @@ sequenceDiagram
     U->>CF: Klik „Publikovat“
     CF->>PM: resize fotek → base64 (max 512 px)
     PM-->>CF: imagesBase64[], mainImageIndex: 0
-    CF->>RL: title, description, kategorie, cena, fotky…
-    RL->>CL: MODERATION_ENABLED = true
+    CF->>RL: title, description, kategorie, cena, lokalita, fotky…
+    RL->>CL: 1. volání (bez issueApproval)
     CL->>EF: POST supabase.functions.invoke()
     EF->>EF: auth, rate limit, validace
+    EF->>EF: hard-hit text + Sightengine NSFW
     EF->>EF: buildModerationSystemPrompt()
     EF->>EF: resolveCategoryAiPrompt(zbozi/auta-moto)
-    EF->>EF: buildModerationUserPrompt()
+    EF->>EF: buildModerationUserPrompt() (+ locationText)
     EF->>AI: systemInstruction + userPrompt + fotky
-    AI-->>EF: JSON (status, cleanedTitle, cleanedDescription, questions)
-    EF->>EF: parseModerationResponse()
-    EF->>EF: filterRedundantPriceQuestions()
-    EF->>EF: issueModerationApproval() → approvalToken
-    EF-->>CL: výsledek + token
+    AI-->>EF: JSON (status, cleanedTitle, cleanedDescription, questions, meta, alt)
+    EF->>EF: parse + filtr ceny + required questions + safety checks
+    Note over EF: Token se NEvydává (issueApproval vypnuto)
+    EF-->>CL: výsledek bez approvalToken
     CL-->>CF: ok / rejected / needs_questions
     CF->>U: ModerationApprovedDialog → ModerationPreviewDialog
     U->>CF: „Doplnit, upravit a publikovat“ (+ odpovědi na dotazník)
     CF->>CF: appendQuestionAnswersToDescription()
+    CF->>CL: 2. volání (issueApproval: true, finální text + fotky)
+    CL->>EF: znovu hard-hit / Sightengine / AI na přesný obsah
+    EF->>EF: issueModerationApproval() → approvalToken
+    EF-->>CL: výsledek + token
     CF->>SA: createListing(approvalToken, title, description…)
     SA->>SA: stripContactInfo(), prohibited-scan, publish_approved_post()
 ```
@@ -62,12 +66,15 @@ sequenceDiagram
 | Krok | Kde | Co se posílá |
 |------|-----|--------------|
 | 1 | `prepareModerationImages()` | Fotky zmenšené na JPEG base64 (bez prefixu `data:`) |
-| 2 | `invokeModerateListing()` | JSON body → Edge Function (text + metadata, **ne** aiPrompt z klienta) |
-| 3 | Edge Function | Sestaví system + user prompt, přidá fotky k user části |
+| 2 | `invokeModerateListing()` — 1. volání | JSON body → Edge Function (text + metadata vč. `locationText`, **ne** aiPrompt z klienta). Bez `issueApproval`. |
+| 3 | Edge Function | Pre-brána → system + user prompt → fotky → AI |
 | 4 | Gemini API | `systemInstruction` + `contents[0].parts` = text + inline_data obrázky |
-| 5 | Edge Function | Parsuje JSON, filtruje otázky o ceně, vydá `approvalToken` |
-| 6 | Modal | Uživatel vidí `cleanedTitle` / `cleanedDescription` / dotazník |
-| 7 | `createListing` | Finální text + `approvalToken` → DB, stav `active` |
+| 5 | Edge Function | Parsuje JSON, filtruje otázky o ceně, doplní povinné otázky kategorie, safety checks. **Bez tokenu.** |
+| 6 | Modal | Uživatel vidí `cleanedTitle` / `cleanedDescription` / SEO / dotazník |
+| 7 | `invokeModerateListing({ issueApproval: true })` | Finální text + fotky — znovu plná kontrola → `approvalToken` |
+| 8 | `createListing` | Finální text + `approvalToken` → DB, stav `active` |
+
+**Proč dvě volání:** první jen připraví náhled. Token se váže na přesný odesílaný obsah — kdyby vznikl už po 1. kontrole, šlo by po schválení vyměnit text/fotky.
 
 ---
 
@@ -81,6 +88,7 @@ sequenceDiagram
 | `prepareModerationImages()` | `src/lib/moderation/prepare-moderation-images.ts` |
 | `runListingModeration()` | `src/lib/moderation/run-listing-moderation.ts` |
 | `invokeModerateListing()` | `src/lib/moderation/moderate-listing-client.ts` |
+| `requestFinalApproval()` | `CreateListingForm.tsx` — 2. volání s `issueApproval: true` |
 | `appendQuestionAnswersToDescription()` | `src/lib/moderation/append-question-answers.ts` |
 | `ModerationApprovedDialog` | `src/components/moderation/ModerationApprovedDialog.tsx` |
 | `ModerationPreviewDialog` | `src/components/moderation/ModerationPreviewDialog.tsx` |
@@ -91,15 +99,19 @@ sequenceDiagram
 | Funkce | Soubor |
 |--------|--------|
 | HTTP handler | `supabase/functions/moderate-listing/index.ts` |
-| `buildModerationSystemPrompt()` | `supabase/functions/_shared/moderation/build-prompt.ts` |
-| `buildModerationUserPrompt()` | `supabase/functions/_shared/moderation/build-user-prompt.ts` |
-| `resolveCategoryAiPrompt()` | `supabase/functions/_shared/moderation/category-prompts.ts` |
-| `callGeminiModeration()` | `supabase/functions/_shared/moderation/gemini.ts` |
-| `parseModerationResponse()` | `supabase/functions/_shared/moderation/parse-response.ts` |
-| `filterRedundantPriceQuestions()` | `supabase/functions/_shared/moderation/parse-response.ts` |
-| `issueModerationApproval()` | `supabase/functions/_shared/moderation/issue-approval.ts` |
-| `logModerationCheck()` | `supabase/functions/_shared/moderation/log-moderation-check.ts` |
-| `assertAiModerationRateLimit()` | `supabase/functions/_shared/moderation/rate-limit.ts` |
+| Hard-hit text | `_shared/moderation/prohibited-scan.ts` + `hard-hit-terms.ts` |
+| Sightengine NSFW | `_shared/moderation/sightengine.ts` |
+| `buildModerationSystemPrompt()` | `_shared/moderation/build-prompt.ts` |
+| `buildModerationUserPrompt()` | `_shared/moderation/build-user-prompt.ts` |
+| `resolveCategoryAiPrompt()` | `_shared/moderation/category-prompts.ts` |
+| `callGeminiModeration()` | `_shared/moderation/gemini.ts` |
+| `parseModerationResponse()` | `_shared/moderation/parse-response.ts` |
+| `filterRedundantPriceQuestions()` | `_shared/moderation/parse-response.ts` |
+| `ensureRequiredCategoryQuestions()` | `_shared/moderation/required-category-questions.ts` |
+| `applyPostModerationSafetyChecks()` | `_shared/moderation/prompt-injection-guard.ts` |
+| `issueModerationApproval()` | `_shared/moderation/issue-approval.ts` (jen při `issueApproval: true`) |
+| `logModerationCheck()` | `_shared/moderation/log-moderation-check.ts` |
+| `assertAiModerationRateLimit()` | `_shared/moderation/rate-limit.ts` |
 
 ### Konfigurace (zdroj pravdy)
 
@@ -115,7 +127,9 @@ sequenceDiagram
 
 ## Payload z klienta do Edge Function
 
-Co `invokeModerateListing()` pošle v `body` (zkráceno — base64 fotky jsou dlouhé):
+Co `invokeModerateListing()` pošle v `body` (zkráceno — base64 fotky jsou dlouhé).
+
+### 1. volání (náhled)
 
 ```json
 {
@@ -130,10 +144,15 @@ Co `invokeModerateListing()` pošle v `body` (zkráceno — base64 fotky jsou dl
   "priceType": "fixed",
   "priceTypeLabel": "Pevná cena",
   "priceAmount": 95000,
+  "locationText": "Brno",
   "imagesBase64": ["<JPEG base64, max 512 px na delší straně>"],
   "mainImageIndex": 0
 }
 ```
+
+### 2. volání (po potvrzení modalu)
+
+Stejná struktura + `"issueApproval": true` a **finální** `title` / `description` (po hydrataci a odpovědích z dotazníku, nebo původní text při „Ignorovat AI“).
 
 Klient **nikdy neposílá** `aiPrompt` — ten si Edge Function načte ze `category-prompts.ts` podle `categoryType` + `subcategorySlug`.
 
@@ -162,7 +181,8 @@ ZAMÍTNI (status REJECTED), pokud text nebo fotografie zjevně porušuje kategor
 10. [medical_prescription] Léky na předpis
 11. [tobacco_alcohol_minors] Alkohol a tabák pro nezletilé
 12. [minor_photos] Fotografie dětí a adolescentů
-13. [gambling_illegal] Nelegální hazard
+13. [gambling_illegal] Hazard a sázkové produkty
+14. [financial_products] Finanční produkty a služby
 
 Pravidla pro fotografie:
 - Bezpečnostní filtr musí projít VŠECHNY fotografie (max. 6). Zamítnutí jedné fotky = zamítnutí celého inzerátu.
@@ -173,11 +193,11 @@ Pravidla pro fotografie:
 Kontakty (e-mail, telefon) v textu nejsou důvod k zamítnutí — pouze je v cleanedDescription nahraď [SKRYTO – použij chráněné pole].
 ```
 
-**U našeho příkladu:** Text „Prodám použité auto“ + fotka auta = **konzistentní** → moderace nezamítne. SPZ na fotce není důvod k REJECTED (není v zakázaných kategoriích).
+**U našeho příkladu:** Text „Prodám použité auto“ + fotka auta = **konzistentní** → moderace nezamítne. SPZ na fotce není důvod k REJECTED (není v zakázaných kategoriích). Hard-hit a Sightengine také projdou (běžné auto).
 
-### Část B — hydratace (text)
+### Část B — hydratace (text) + SEO
 
-Stejný system prompt pokračuje pravidly pro `cleanedDescription`:
+Stejný system prompt pokračuje pravidly pro `cleanedDescription`, `metaDescription` a `imageAlt`:
 
 ```
 Hydratace a kvalita textu (pokud obsah NENÍ REJECTED):
@@ -186,6 +206,7 @@ Hydratace a kvalita textu (pokud obsah NENÍ REJECTED):
   1) ÚVOD: až 6 vět — co nabízíš, hlavní výhody z textu, všech fotek a formuláře, cena v úvodu
   2) PARAMETRY: po „---“ a nadpisu „Parametry“ odrážky „• Popisek: hodnota“
 - Do cleanedDescription zapracuj fakta z popisu, formuláře, fotek — a u jasně identifikovaného modelu i katalogové vlastnosti výrobku.
+- metaDescription / imageAlt dle SEO bible (lokalita v meta, ne v alt).
 - Kusové údaje (vady, příslušenství v balení) jen z textu/fotek.
 - Pokud chybí kritická kusová data dle kontextu kategorie, vrať NEEDS_QUESTIONS s 1–5 otázkami.
 - Pokud user prompt uvádí pevnou cenu z formuláře, NIKDY se na cenu neptej.
@@ -202,6 +223,8 @@ Odpověz výhradně validním JSON:
   "rejectedImageIndex": 0,
   "cleanedTitle": "string",
   "cleanedDescription": "string",
+  "metaDescription": "string",
+  "imageAlt": "string",
   "questions": [{ "id": "string", "label": "string", "paramLabel": "string" }]
 }
 ```
@@ -230,7 +253,10 @@ Analyzuj nabízené zboží. cleanedDescription: úvod (co prodáváš + cena v 
 
 Stav z formuláře: Použité
 
-Typ ceny z formuláře: Pevná cena, 95 000 Kč. Do cleanedDescription vlož přímo „Cena 95 000 Kč.“ (nebo přirozeně zapracovanou do věty). Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.
+Typ ceny z formuláře: Pevná cena, 95 000 Kč. Do cleanedDescription vlož přímo „Cena 95 000 Kč.“ (nebo přirozeně zapracovanou do věty). Do metaDescription „za 95 000 Kč“. Nikdy nepoužívej zástupný text [SKRYTO – použij chráněné pole] — ten je výhradně pro e-mail a telefon. Na cenu se znovu neptej.
+
+Lokalita z formuláře:
+Brno
 
 mainImageIndex (hlavní fotka — jen cross-validace textu s náhledem): 0
 
@@ -255,7 +281,9 @@ U minimálního textu, ale srozumitelné fotky auta, očekáváme **`NEEDS_QUEST
 {
   "status": "NEEDS_QUESTIONS",
   "cleanedTitle": "Prodám Škodu Rapid Spaceback",
-  "cleanedDescription": "Prodávám použitou Škodu Rapid Spaceback v bílé barvě. Auto je v dobrém vizuálním stavu, vhodné pro každodenní provoz. Cena 95 000 Kč, osobní předání po domluvě.\n\n---\n\nParametry\n• Značka a model: Škoda Rapid Spaceback\n• Barva: bílá\n• Stav: použité",
+  "cleanedDescription": "Prodávám použitou Škodu Rapid Spaceback v bílé barvě. Auto je v dobrém vizuálním stavu, vhodné pro každodenní provoz. Cena 95 000 Kč, osobní předání v Brně.\n\n---\n\nParametry\n• Značka a model: Škoda Rapid Spaceback\n• Barva: bílá\n• Stav: použité",
+  "metaDescription": "Škoda Rapid Spaceback v Brně za 95 000 Kč. Použité auto v dobrém vizuálním stavu.",
+  "imageAlt": "Bílá Škoda Rapid Spaceback, boční pohled",
   "questions": [
     {
       "id": "q1",
@@ -283,24 +311,27 @@ U minimálního textu, ale srozumitelné fotky auta, očekáváme **`NEEDS_QUEST
 
 > Skutečná odpověď se může lišit — jde o ilustraci chování, ne garantovaný výstup modelu.
 
-### Post-processing na Edge Function
+### Post-processing na Edge Function (1. i 2. volání)
 
 | Funkce | Co udělá |
 |--------|----------|
 | `parseModerationResponse()` | Extrahuje JSON, normalizuje uvozovky, strip kontaktů v popisu |
 | `filterRedundantPriceQuestions()` | Odstraní otázky typu „Jaká je cena?“ — u nás nic neodstraní (cena je ve formuláři) |
 | `normalizeModerationResult()` | Doplní fallbacky pro prázdný title/description |
-| `issueModerationApproval()` | Vydá `approvalToken` (TTL 30 min, váže user + počet fotek) |
+| `ensureRequiredCategoryQuestions()` | Doplní povinné otázky dle kategorie, pokud AI nějakou vynechala |
+| `applyPostModerationSafetyChecks()` | Prompt-injection / keyword pojistka na výstupu AI |
+| `issueModerationApproval()` | **Jen 2. volání** (`issueApproval: true`) — TTL 30 min, fingerprint + hashe fotek |
 
-Edge Function vrátí klientovi stejný JSON + `approvalToken`.
+1. volání vrátí klientovi JSON **bez** `approvalToken`.  
+2. volání vrátí stejný typ výsledku + `approvalToken` (nebo `REJECTED`, pokud finální text neprojde).
 
 ---
 
 ## Co vidí uživatel po AI
 
-1. **Overlay** — „Probíhá AI kontrola inzerátu“ (~5–15 s)
+1. **Overlay** — „Probíhá AI kontrola inzerátu“ (~5–15 s) — 1. volání
 2. **ModerationApprovedDialog** — „Inzerát je v pořádku“ → Pokračovat
-3. **ModerationPreviewDialog** — editovatelný název/popis + dotazník (4 otázky)
+3. **ModerationPreviewDialog** — editovatelný název/popis + SEO + dotazník (4 otázky) + skóre kvality
 
 Uživatel doplní např.:
 
@@ -314,13 +345,16 @@ Uživatel doplní např.:
 Po kliknutí **„Doplnit, upravit a publikovat“**:
 
 - `appendQuestionAnswersToDescription()` připojí odpovědi do sekce Parametry
+- **2. volání** `moderate-listing(issueApproval: true)` na finální text + fotky → `approvalToken`
 - `createListing()` uloží finální text, `original_title` / `original_description` = původní „Prodam auto“ / „Prodám použité auto“
 - `publish_approved_post(approvalToken)` → stav `active`
+
+Při publikaci se overlay znovu krátce zobrazí (finální kontrola).
 
 ### Finální popis v DB (po sloučení odpovědí)
 
 ```
-Prodávám použitou Škodu Rapid Spaceback v bílé barvě. Auto je v dobrém vizuálním stavu, vhodné pro každodenní provoz. Cena 95 000 Kč, osobní předání po domluvě.
+Prodávám použitou Škodu Rapid Spaceback v bílé barvě. Auto je v dobrém vizuálním stavu, vhodné pro každodenní provoz. Cena 95 000 Kč, osobní předání v Brně.
 
 ---
 
@@ -342,8 +376,9 @@ Parametry
 |---------|--------|-------|
 | Text „Prodám kolo“, fotka auta | `REJECTED` | Neshoda text ↔ hlavní fotka |
 | Fotka se zbraní | `REJECTED` | `rejectedTopicId: "weapons"` |
-| Text „Prodám kokain“ | `REJECTED` | `rejectedTopicId: "illegal_drugs"` |
+| Text „Prodám kokain“ | `REJECTED` | `rejectedTopicId: "illegal_drugs"` (nebo hard-hit před Gemini) |
 | Fotka s rozpoznatelným dítětem | `REJECTED` | `rejectedTopicId: "minor_photos"` |
+| Finální text v modalu přepsaný na zakázaný obsah | `REJECTED` ve **2. volání** | Token nevznikne → nepublikuje se |
 
 ---
 
@@ -352,16 +387,16 @@ Parametry
 | Aspekt | Moderace | Hydratace |
 |--------|----------|-----------|
 | **Účel** | Smí obsah na web? | Jak má vypadat finální text? |
-| **Výstup při úspěchu** | `APPROVED` nebo `NEEDS_QUESTIONS` | `cleanedTitle`, `cleanedDescription`, `questions` |
+| **Výstup při úspěchu** | `APPROVED` nebo `NEEDS_QUESTIONS` | `cleanedTitle`, `cleanedDescription`, `questions`, SEO |
 | **Výstup při neúspěchu** | `REJECTED` + `reason` | Nespouští se (hydratace je podmíněná „není REJECTED“) |
-| **Kde v promptu** | System prompt — zakázané kategorie, fotky, cross-validace | System prompt — struktura textu; user prompt — `aiPrompt` kategorie |
+| **Kde v promptu** | System prompt — zakázané kategorie, fotky, cross-validace | System prompt — struktura textu; user prompt — `aiPrompt` kategorie + lokalita |
 | **UI** | `ModerationRejectedDialog` | `ModerationPreviewDialog` |
-| **Kdy se přeskočí** | Nikdy při obsahové změně | Stejně jako moderace — jedno volání |
+| **Token** | Vydá se až ve 2. volání (`issueApproval`) po potvrzení modalu | Stejné volání — hydratace z 1. volání, finální text znovu zkontrolován ve 2. |
 
 ---
 
 ## Související dokumentace
 
-- [`moderace-inzeratu.md`](./moderace-inzeratu.md) — pravidla, deploy, strip kontaktů
+- [`moderace-inzeratu.md`](./moderace-inzeratu.md) — pravidla, deploy, strip kontaktů, publish-sensitive pole
 - [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) — struktura popisu, dotazník, limity
 - [`Metodika.md`](./Metodika.md) §6 — uživatelský popis flow

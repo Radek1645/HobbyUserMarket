@@ -23,27 +23,31 @@ Dokumentace k AI **hydrataci** (úprava a strukturování popisu) podle PRD §5.
 ## Architektura (stručně)
 
 ```
-Formulář (název, popis, kategorie, cena, fotky…)
-    → prepareModerationImages()     … resize na 512 px, base64
-    → runListingModeration()
+Formulář (název, popis, kategorie, cena, lokalita, fotky…)
+    → prepareModerationImages()     … přesné bajty souborů → base64 (SEC-H02)
+    → runListingModeration()        … 1. volání (bez issueApproval)
         → Edge Function moderate-listing
-            → system prompt (struktura textu + pravidla hydratace)
-            → user prompt (metadata formuláře + category aiPrompt)
+            → hard-hit + Sightengine (před Gemini)
+            → system prompt (struktura textu + pravidla hydratace + SEO)
+            → user prompt (metadata formuláře vč. locationText + category aiPrompt)
             → multimodální AI (text + všechny fotky)
-            → parseModerationResponse() + filterRedundantPriceQuestions()
+            → parse + filtr ceny + required questions + safety checks
         → REJECTED          → ModerationRejectedDialog (viz moderace-inzeratu.md)
-        → APPROVED / NEEDS_QUESTIONS
+        → APPROVED / NEEDS_QUESTIONS  (bez approvalToken)
             → ModerationApprovedDialog („Inzerát je v pořádku“)
             → ModerationPreviewDialog („AI náhled a doplnění“)
                 → Doplnit, upravit a publikovat
                     → appendQuestionAnswersToDescription()
-                    → createListing / updateListing (+ original_title/description)
                 → Ignorovat AI a publikovat původní
                 → Zrušit
+            → 2. volání: moderate-listing(issueApproval: true)
+                → znovu kontrola přesného odesílaného textu + fotek
+                → approvalToken (fingerprint + SHA-256 fotek)
+            → createListing / updateListing → publish_approved_post
 ```
 
 - Hydratace probíhá **v prohlížeči** přes Supabase SDK — ne přes Next.js API (riziko timeoutu na Vercel).
-- Jedno volání AI = bezpečnostní filtr fotek + cross-validace text↔foto + hydratace textu + případný dotazník.
+- První AI volání = bezpečnostní filtr + cross-validace + hydratace + dotazník (náhled). Token vzniká až ve **druhém** volání po potvrzení modalu.
 
 ---
 
@@ -59,6 +63,7 @@ Formulář (název, popis, kategorie, cena, fotky…)
 | `supabase/functions/_shared/moderation/build-user-prompt.ts` | Sestavení user promptu (formulář + kategorie) |
 | `supabase/functions/_shared/moderation/category-prompts.ts` | **Auto-generovaný** z `categories.ts` (sync skriptem) |
 | `supabase/functions/_shared/moderation/parse-response.ts` | Parsování JSON, strip kontaktů, filtr otázek o ceně |
+| `supabase/functions/_shared/moderation/required-category-questions.ts` | Doplnění povinných otázek dle kategorie po AI |
 | `src/lib/moderation/parse-listing-description.ts` | Parsování uloženého popisu na úvod + Parametry |
 | `src/lib/moderation/append-question-answers.ts` | Sloučení odpovědí z dotazníku do popisu |
 | `src/lib/moderation/format-question-answers.ts` | `paramLabel`, zkrácení otázek, formát km/Kč/m² |
@@ -260,11 +265,13 @@ AI nesmí vymýšlet fakta. Chybí-li kritická data → `NEEDS_QUESTIONS`. Meta
 
 | Tlačítko | Co se uloží |
 |----------|-------------|
-| **Doplnit, upravit a publikovat** | `title` + `description` z modalu (včetně sloučených odpovědí). Do `original_title` / `original_description` jde text z formuláře před AI. |
-| **Ignorovat AI a publikovat původní** | Původní název a popis z formuláře (+ server-side strip kontaktů). Bezpečnostní filtr už proběhl. |
+| **Doplnit, upravit a publikovat** | Po 2. kontrole (`issueApproval: true`): `title` + `description` z modalu (včetně sloučených odpovědí). Do `original_title` / `original_description` jde text z formuláře před AI. |
+| **Ignorovat AI a publikovat původní** | Po 2. kontrole: původní název a popis z formuláře (+ server-side strip kontaktů). Bezpečnostní filtr už proběhl v 1. volání a znovu ve 2. |
 | **Zrušit** | Návrat do formuláře, nic se neukládá |
 
 Texty tlačítek a hintů: `MODERATION_PREVIEW_UI` v `src/config/moderation/messages.ts` (tón PRD §1.6).
+
+**Proč druhé volání:** první jen připraví náhled (bez tokenu). Token se vydá až z kontroly **přesného** odesílaného textu a bajtů fotek — jinak by šlo po schválení vyměnit obsah. Detail: [`moderace-inzeratu.md`](./moderace-inzeratu.md).
 
 ---
 
@@ -388,9 +395,9 @@ Stejná pravidla jako u moderace (`needs-moderation.ts`):
 |------|-----------|
 | Nový inzerát — Publikovat | Ano |
 | Editace — název, popis, kategorie, fotky | Ano |
-| Editace — jen cena, lokalita, stav, platnost | Ne — přímé uložení bez AI |
+| Editace — publish-sensitive pole (cena, lokalita, stav, datum/platnost, kontakty, CV…) | Ano — stejný fingerprint jako approval token |
 
-Při `MODERATION_ENABLED = false` klient vrátí okamžitě approved se `stripContactInfo()` — bez hydratace.
+Při `MODERATION_ENABLED = false` klient vrátí okamžitě approved se `stripContactInfo()` — bez hydratace (publikace na `active` bez tokenu stejně neprojde DB gate).
 
 ---
 
