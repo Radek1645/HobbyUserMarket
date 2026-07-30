@@ -51,9 +51,9 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 5. Git — příprava a commity
 
-- [ ] `git status` — bez `.env`
-- [ ] Commit
-- [ ] Push
+- [x] `git status` — bez `.env`
+- [x] Commit `cfb842c` (+ `c3a0260` hash ve snapshotu)
+- [x] Push
 
 ---
 
@@ -63,7 +63,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [ ] Push
+- [x] Push — `main` → `origin/main`
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -76,5 +76,5 @@ git push -u origin HEAD
 | Migrace + EF nasazené | ✅ EF (migrace N/A) |
 | Dokumentace srovnaná s kódem | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit | ☐ |
-| Push | ☐ |
+| Commit | ✅ `cfb842c` |
+| Push | ✅ |
