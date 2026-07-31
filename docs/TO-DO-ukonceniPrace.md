@@ -54,9 +54,9 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 5. Git — příprava a commity
 
-- [ ] `git status` — bez `.env`
-- [ ] Commit
-- [ ] Push
+- [x] `git status` — bez `.env`
+- [x] Commit `fad456c` (+ `6ef9a50` hash ve snapshotu)
+- [x] Push
 
 ---
 
@@ -66,7 +66,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [ ] Push — `main` → `origin/main`
+- [x] Push — `main` → `origin/main`
 - [ ] Vercel build po pushi zelený *(uživatel)*
 - [ ] Deploy Edge `moderate-listing` *(uživatel)*
 
@@ -81,6 +81,6 @@ git push -u origin HEAD
 | Dokumentace srovnaná s kódem | ✅ |
 | DB schéma v `supabase-prikazy.md` | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit na `main` | ⬜ |
-| Push na `origin` | ⬜ |
+| Commit na `main` | ✅ |
+| Push na `origin` | ✅ |
 )
