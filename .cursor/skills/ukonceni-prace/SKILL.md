@@ -38,9 +38,10 @@ Necommituj bez odpovědi; neověřené migrace zapiš do `Stav_projektu` jako **
 | Produktové rozhodnutí, DB, API | [`docs/PRD_v3.md`](../../docs/PRD_v3.md) — nový řádek historie + bump verze |
 | Doména, GSC, GTM | [`docs/branding-a-domeny.md`](../../docs/branding-a-domeny.md) |
 | AI moderace (deploy) | [`docs/moderace-inzeratu.md`](../../docs/moderace-inzeratu.md) |
+| **Nová / změněná DB tabulka, sloupec, enum, bucket** | [`docs/supabase-prikazy.md`](../../docs/supabase-prikazy.md) — sekce **Schéma databáze** (lidský popis + atributy). Zároveň stručně PRD §4, pokud jde o produktový model. |
 | Bezpečnostní nález nebo oprava | [`docs/SECURITY_AND_UX_AUDIT_20260727.md`](../../docs/SECURITY_AND_UX_AUDIT_20260727.md) |
 
-**Pravidlo:** Kód bez dokumentace není hotový.
+**Pravidlo:** Kód bez dokumentace není hotový. Migrace SQL bez aktualizace § Schéma = nedokončená session.
 
 U bezpečnostního auditu vždy explicitně rozliš:
 
@@ -83,6 +84,7 @@ Po pushi připomeň: Vercel build, případně manuální test na produkci.
 | Změna ověřená v UI / API | ☐ |
 | Migrace + EF nasazené (je-li třeba) | ☐ |
 | Dokumentace srovnaná s kódem | ☐ |
+| DB schéma v `supabase-prikazy.md` aktuální *(pokud změna DB)* | ☐ |
 | `Stav_projektu` aktualizován | ☐ |
 | Commit na `main` | ☐ |
 | Push na `origin` | ☐ |
@@ -91,4 +93,5 @@ Po pushi připomeň: Vercel build, případně manuální test na produkci.
 
 - [`docs/PRD_v3.md`](../../docs/PRD_v3.md) — kanon
 - [`docs/Metodika.md`](../../docs/Metodika.md) — uživatelské flow
+- [`docs/supabase-prikazy.md`](../../docs/supabase-prikazy.md) — CLI + **Schéma databáze**
 - [`docs/TO-DO-ukonceniPrace.md`](../../docs/TO-DO-ukonceniPrace.md) — plný checklist

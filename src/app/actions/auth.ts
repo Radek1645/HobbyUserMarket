@@ -21,12 +21,15 @@ import {
   readRegistrationConsentPayload,
   buildPendingConsentMetadata,
 } from "@/lib/auth/persist-registration-consents";
+import { parseEmailOtpType } from "@/lib/auth/email-otp-types";
+import { resolvePostAuthNextPath } from "@/lib/auth/finish-auth-redirect";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import {
   DUPLICATE_EMAIL_MESSAGE,
   mapAuthError,
 } from "@/lib/auth/map-auth-error";
 import { PASSWORD_MIN_LENGTH } from "@/config/app";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export type AuthFormState = {
@@ -67,6 +70,9 @@ async function redirectAfterAuth(nextPath: string) {
     .select("nickname")
     .eq("id", user.id)
     .maybeSingle<{ nickname: string }>();
+
+  revalidatePath("/", "layout");
+  revalidatePath("/inzerat/novy");
 
   if (!profile || isPlaceholderNickname(profile.nickname)) {
     redirect(`/onboarding?next=${encodeURIComponent(nextPath)}`);
@@ -157,7 +163,8 @@ export async function signUpWithEmail(
     email,
     password,
     options: {
-      emailRedirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent("/onboarding")}`,
+      // Klientská stránka — zvládne ?code= i #access_token= (serverový callback hash nevidí).
+      emailRedirectTo: `${getSiteUrl()}/auth/dokoncit`,
       data: buildPendingConsentMetadata(consentPayload),
     },
   });
@@ -180,7 +187,7 @@ export async function signUpWithEmail(
 
   return {
     success:
-      "Účet je vytvořený. Ověřte e-mail kliknutím na odkaz v doručené poště — bez toho se nepřihlásíte.",
+      "Účet je vytvořený. Ověřte e-mail kliknutím na odkaz v doručené poště — bez toho se nepřihlásíte. Zkontrolujte i spam.",
     email,
   };
 }
@@ -195,22 +202,110 @@ export async function resendSignupVerificationEmail(
   }
 
   const supabase = await createClient();
+  // Stejný cíl jako signUp — /auth/dokoncit čte PKCE code i implicit hash.
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: normalized,
     options: {
-      emailRedirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent("/onboarding")}`,
+      emailRedirectTo: `${getSiteUrl()}/auth/dokoncit`,
     },
   });
+
+  if (error) {
+    // Bez logu nešlo zpětně rozlišit cooldown/rate-limit od skutečného výpadku SMTP.
+    console.error("resendSignupVerificationEmail failed:", {
+      email: normalized,
+      status: error.status,
+      message: error.message,
+    });
+    return { error: mapAuthError(error.message) };
+  }
+
+  return {
+    success:
+      "Nový ověřovací e-mail je odeslaný. Otevřete ten nejnovější (starší odkaz už nefunguje) a zkontrolujte i spam.",
+    email: normalized,
+  };
+}
+
+export type ConfirmEmailResult = {
+  error?: string;
+  redirectTo?: string;
+};
+
+/** Vymění PKCE `code` za session — pro klientskou stránku `/auth/dokoncit`. */
+export async function exchangeAuthCodeForSession(
+  code: string,
+  nextPath?: string,
+): Promise<ConfirmEmailResult> {
+  const trimmed = code.trim();
+  if (!trimmed) {
+    return { error: "Chybí autorizační kód." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.exchangeCodeForSession(trimmed);
 
   if (error) {
     return { error: mapAuthError(error.message) };
   }
 
-  return {
-    success: "Ověřovací e-mail jsme znovu odeslali. Zkontrolujte schránku.",
-    email: normalized,
-  };
+  const resolved = await resolvePostAuthNextPath(supabase, nextPath);
+  revalidatePath("/", "layout");
+  revalidatePath("/inzerat/novy");
+  return { redirectTo: resolved };
+}
+
+/** Po klientském `setSession` (implicit hash) vrátí správný landing path. */
+export async function resolveClientAuthLandingPath(
+  nextPath?: string,
+): Promise<string> {
+  const supabase = await createClient();
+  const resolved = await resolvePostAuthNextPath(supabase, nextPath);
+  revalidatePath("/", "layout");
+  revalidatePath("/inzerat/novy");
+  return resolved;
+}
+
+/**
+ * Potvrzení e-mailu až po kliknutí uživatele (POST) — odolá prefetch odkazů
+ * e-mailovými klienty, které by jinak spotřebovaly GET verify token.
+ */
+export async function confirmEmailWithTokenHash(input: {
+  tokenHash: string;
+  otpType: string;
+  nextPath?: string;
+}): Promise<ConfirmEmailResult> {
+  const tokenHash = input.tokenHash.trim();
+  const otpType = parseEmailOtpType(input.otpType);
+  if (!tokenHash || !otpType) {
+    return { error: "Odkaz pro potvrzení e-mailu je neúplný nebo neplatný." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    type: otpType,
+    token_hash: tokenHash,
+  });
+
+  if (error) {
+    return {
+      error:
+        "Odkaz je neplatný nebo už byl použit. Požádejte o nový ověřovací e-mail (Poslat znovu).",
+    };
+  }
+
+  const preferredNext =
+    otpType === "recovery"
+      ? "/auth/nastavit-heslo"
+      : (input.nextPath ?? "/");
+
+  const nextPath = await resolvePostAuthNextPath(supabase, preferredNext);
+
+  revalidatePath("/", "layout");
+  revalidatePath("/inzerat/novy");
+
+  return { redirectTo: nextPath };
 }
 
 export async function requestPasswordReset(
@@ -225,7 +320,7 @@ export async function requestPasswordReset(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent("/auth/nastavit-heslo")}`,
+    redirectTo: `${getSiteUrl()}/auth/dokoncit?next=${encodeURIComponent("/auth/nastavit-heslo")}`,
   });
 
   if (error) {
@@ -358,6 +453,12 @@ export async function completeOnboarding(
     return { error: "Nepodařilo se uložit přezdívku. Zkuste to prosím znovu." };
   }
 
+  // Layout drží user (needsNicknameSetup); bez revalidate zůstane stale FAB/CTA
+  // a Router Cache může mít prefetch redirectu /inzerat/novy → /onboarding.
+  revalidatePath("/", "layout");
+  revalidatePath("/inzerat/novy");
+  revalidatePath("/onboarding");
+
   redirect(nextPath);
   return { error: "Přesměrování selhalo." };
 }
@@ -365,5 +466,6 @@ export async function completeOnboarding(
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  revalidatePath("/", "layout");
   redirect("/");
 }

@@ -6,14 +6,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
  * Vrací null při chybě/chybějícím service role klíči (fail safe — bez tokenu
  * server publikaci nepovolí, takže se nic „nepropustí“).
  *
- * SEC-H01/H02: token se váže na přesný finální text + strukturovaná pole
- * (`contentFingerprint`) a na SHA-256 všech moderovaných fotografií.
+ * SEC-H01/H02: token se váže na přesný finální obsah, SHA-256 všech
+ * moderovaných fotografií, jejich pořadí a index hlavní fotografie.
  */
 export async function issueModerationApproval(
   userId: string,
   imageCount: number,
   contentFingerprint: string,
   imageHashes: string[],
+  mainImageIndex: number,
 ): Promise<string | null> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -29,6 +30,7 @@ export async function issueModerationApproval(
     p_image_count: imageCount,
     p_content_fingerprint: contentFingerprint,
     p_image_hashes: imageHashes,
+    p_main_image_index: mainImageIndex,
   });
 
   if (error) {

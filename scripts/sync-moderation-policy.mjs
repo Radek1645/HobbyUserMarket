@@ -149,6 +149,13 @@ const moderationImagesTotalBytes = evalBytesExpr(
   6 * 1024 * 1024,
 );
 
+function readAppStringConst(name, fallback) {
+  const match = appConfig.match(
+    new RegExp(`export const ${name} = ["']([^"']+)["'];`),
+  );
+  return match?.[1] ?? fallback;
+}
+
 const moderationIndex = readFileSync(
   join(root, "src/config/moderation/index.ts"),
   "utf8",
@@ -186,6 +193,30 @@ const evidenceBucket = readModerationConst(
   "MODERATION_EVIDENCE_BUCKET",
   "moderation-evidence",
 );
+const geminiImageMaxDimension = readModerationConst(
+  "MODERATION_GEMINI_IMAGE_MAX_DIMENSION",
+  1024,
+);
+const sightengineImageMaxDimension = readModerationConst(
+  "MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION",
+  512,
+);
+const imageRenditionQuality = readModerationConst(
+  "MODERATION_IMAGE_RENDITION_QUALITY",
+  80,
+);
+const listingImageBucket = readAppStringConst(
+  "LISTING_IMAGE_BUCKET",
+  "post-images",
+);
+const moderationImageStagingBucket = readAppStringConst(
+  "MODERATION_IMAGE_STAGING_BUCKET",
+  "moderation-image-staging",
+);
+const moderationImageRenditionBucket = readAppStringConst(
+  "MODERATION_IMAGE_RENDITION_BUCKET",
+  "moderation-image-renditions",
+);
 
 const constantsTarget = join(
   root,
@@ -206,6 +237,18 @@ export const MODERATION_IMAGE_MAX_BYTES = ${moderationImageMaxBytes};
 
 /** Max. součet velikostí fotek po dekódování (M7). */
 export const MODERATION_IMAGES_MAX_TOTAL_BYTES = ${moderationImagesTotalBytes};
+
+export const MODERATION_GEMINI_IMAGE_MAX_DIMENSION = ${geminiImageMaxDimension};
+
+export const MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION = ${sightengineImageMaxDimension};
+
+export const MODERATION_IMAGE_RENDITION_QUALITY = ${imageRenditionQuality};
+
+export const LISTING_IMAGE_BUCKET = ${JSON.stringify(listingImageBucket)};
+
+export const MODERATION_IMAGE_STAGING_BUCKET = ${JSON.stringify(moderationImageStagingBucket)};
+
+export const MODERATION_IMAGE_RENDITION_BUCKET = ${JSON.stringify(moderationImageRenditionBucket)};
 
 export const NSFW_NUDITY_RAW_THRESHOLD = ${nsfwRawThreshold};
 

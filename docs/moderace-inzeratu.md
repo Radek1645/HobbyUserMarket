@@ -10,6 +10,7 @@ Dokumentace k AI guardrailu podle PRD §5.4. Platí pro **založení** i **úpra
 
 ```
 Formulář (create / edit)
+    → nové fotky jednou do privátního moderation-image-staging
     → runListingModeration()          … jednotný vstup v prohlížeči
         → [vypnuto] strip kontaktů, uložení (bez tokenu → draft, nepublikuje)
         → [zapnuto] Edge Function moderate-listing
@@ -21,14 +22,14 @@ Formulář (create / edit)
             → technická chyba (503) / chyba sítě → červený alert ve formuláři (retry)
     → uživatel potvrdí finální text
     → moderate-listing(issueApproval: true)
-        → kontrola přesného textu + bajtů fotek
+        → kontrola přesného textu + stejných immutable Storage objektů
         → approvalToken (content fingerprint + SHA-256 fotek)
     → Server Action createListing / updateListing
-        → uložení jako draft + fotky
+        → uložení jako draft + kopie staging originálů do post-images
         → service-role publish_approved_post(token, image bindings) → active
 ```
 
-**Proč `issueApproval` až po modalu:** první volání jen připraví náhled (bez tokenu). Token se vydá z druhé kontroly **přesného** odesílaného textu a bajtů fotek — jinak by šlo po schválení vyměnit obsah.
+**Proč `issueApproval` až po modalu:** první volání jen připraví náhled (bez tokenu). Token se vydá z druhé kontroly **přesného** odesílaného textu, SHA-256 plných Storage objektů, jejich pořadí a `mainImageIndex` — jinak by šlo po schválení vyměnit obsah nebo hlavní fotku.
 
 - **Pre-Gemini brána:** hard-hit text + Sightengine nudity — viz [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md). Evidence `moderation_hard_reject_evidence` (**054**). Hard stop: `account_blacklist` (**055**), UI `/mod/blacklist`, stop stránka `/ucet-pozastaven`. Není to `/mod/karantena`.
 - AI se **nevolá přes Next.js API** (riziko timeoutu na Vercel) — jen přes Supabase Edge Function z klienta.
@@ -59,11 +60,31 @@ Pokud AI dočasně nefunguje (kvóta, výpadek poskytovatele, chybné klíče, t
 | `src/components/moderation/ModerationRejectedDialog.tsx` | Popup při zamítnutí |
 | `src/app/podminky-inzerce/page.tsx` | Stub stránky Podmínky inzerce (odkaz z patičky) |
 | `supabase/functions/moderate-listing/` | Edge Function (Gemini / OpenAI fallback) |
+| `supabase/functions/_shared/moderation/response-schema.ts` | Provider schema pro striktní JSON výstup AI |
+| `supabase/functions/_shared/moderation/gemini.ts` | Volání Gemini (`responseMimeType` + `responseSchema`) |
+| `supabase/functions/_shared/moderation/openai.ts` | OpenAI fallback (`response_format: json_schema`) |
 | `supabase/functions/_shared/moderation/issue-approval.ts` | Vydání approval tokenu po AI schválení |
 | `supabase/functions/_shared/moderation/` | Kopie pravidel pro deploy (sync skriptem) |
 | `src/lib/moderation/prohibited-scan.ts` | Server-side keyword scan před uložením |
 | `src/config/moderation/category-fit.ts` | Enum `match` / `better_existing` / `missing_taxonomy` (telemetrie) |
 | migrace `058` | Sloupce AI návrhu kategorie v `moderation_checks` (bez auto-create) |
+
+### Strukturovaný JSON výstup (Gemini / OpenAI)
+
+Komunikace s AI providery je **JSON na vstupu i výstupu**. Tvar odpovědi nevynucujeme jen textem v promptu — provider dostane **native structured output**:
+
+| Vrstva | Kde | Co dělá |
+|--------|-----|---------|
+| **Request HTTP** | `gemini.ts` / `openai.ts` | `Content-Type: application/json`, tělo `JSON.stringify(...)` |
+| **Gemini — formát odpovědi** | `generationConfig` v `gemini.ts` | `responseMimeType: "application/json"` + `responseSchema: GEMINI_MODERATION_RESPONSE_SCHEMA` |
+| **OpenAI — formát odpovědi** | `response_format` v `openai.ts` | `type: "json_schema"`, `strict: true`, schema `OPENAI_MODERATION_RESPONSE_SCHEMA` |
+| **Definice polí** | `response-schema.ts` | `status`, `reason`, `cleanedTitle`, `cleanedDescription`, `metaDescription`, `imageAlt`, `questions[]`, `categorySuggestion`, … |
+| **Sémantika (co kam napsat)** | System prompt `build-prompt.ts` | Pravidla hydratace, REJECTED, SEO; věta „Výstup musí odpovídat provider JSON schema“ |
+| **Pojistka po odpovědi** | `parse-response.ts` | Parse, strip kontaktů, filtr cenových otázek, clamp SEO |
+
+**Proč:** bez `responseSchema` / `json_schema` by model mohl vracet markdown kolem JSON nebo vynechat pole. Schema = tvrdý tvar; prompt = obsah; parser = normalizace.
+
+Schéma je součástí Edge Function (deploy s `moderate-listing`) — **není** v Next.js ani v DB.
 
 ### AI návrh kategorie (telemetrie)
 
@@ -223,7 +244,9 @@ Moderace rozlišuje **dvě úrovně** — nesmí se zaměňovat:
 | **Cross-validace text ↔ foto** | Hlavní fotka (`mainImageIndex`) | Nabízená věc musí být na náhledu; doplňky na fotce OK, pokud popis výslovně vylučuje („židličky nejsou součástí“ → ne REJECTED) |
 | **AI hydratace / dotazník** | **Všechny** fotografie | Vizuální kontext a doplňující otázky; hlavní fotka jen pro cross-validaci |
 
-Klient připraví snímky v `src/lib/moderation/prepare-moderation-images.ts` — **přesné bajty** uložených / nových souborů (SEC-H02 hash shoda se Storage), ne zmenšený canvas náhled. Payload: `imagesBase64` + `mainImageIndex`. Limity po dekódování musí sedět s `LISTING_IMAGE_MAX_FILE_BYTES` (1 MB) a max. 6 fotek (`src/config/app.ts` → sync do Edge `constants.ts`). Hvězdička u miniatury = **náhled na homepage**, ne „jediná kontrolovaná fotka“.
+Klient nové soubory jednou nahraje do privátního immutable bucketu `moderation-image-staging`. Autentizovaná Next.js Server Action přes Sharp vytvoří WebP varianty všech fotek (Gemini 1024 px, Sightengine 512 px, kvalita 80) a uloží je pod SHA-256 originálu do privátního `moderation-image-renditions`. Do Edge klient posílá jen `imageReferences` + `mainImageIndex`; Edge sama stáhne plné objekty, spočítá SHA-256 pro SEC-H02 a podle něj načte důvěryhodné varianty. Při publikaci Server Action zkopíruje stejné bajty do `post-images` a publish gate je znovu zahashuje. Hvězdička u miniatury = **náhled na homepage**, ne „jediná kontrolovaná fotka“.
+
+Řešení vyžaduje migrace `067_moderation_image_staging.sql` a `068_moderation_image_renditions.sql`; Supabase Storage Image Transformations nepoužívá. Uživatel nemá UPDATE ani DELETE ve stagingu a k rendition bucketu nemá žádnou policy. Úspěšné originály uklidí Server Action přes service role, opuštěné originály a varianty denní cron po 24 hodinách.
 
 > **Oprava 2026-07-30:** `sync:moderation` dříve nevyhodnotil výrazy `LISTING_IMAGE_*` a zapsal fallback **500 KB / 2 MB**. Editace už publikovaného inzerátu pak padala na „Fotky pro AI kontrolu jsou příliš velké“, i když fotky byly ≤ 1 MB. Sync teď správně injektuje konstanty → **1 MB / 6 MB**; po opravě nutný re-deploy `moderate-listing`.
 

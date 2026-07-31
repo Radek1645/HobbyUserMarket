@@ -86,9 +86,10 @@ function evaluateNudityScores(nudity: Record<string, unknown>): {
   return { rejected: false };
 }
 
-/** Zkontroluje jednu fotku (JPEG base64 z prepare-moderation-images). */
+/** Zkontroluje jednu důvěryhodnou WebP variantu vytvořenou přes Sharp. */
 export async function checkImageNudity(
   imageBase64: string,
+  mimeType = "image/jpeg",
 ): Promise<ImageNudityCheckResult> {
   const apiUser = Deno.env.get("SIGHTENGINE_API_USER")?.trim();
   const apiSecret = Deno.env.get("SIGHTENGINE_API_SECRET")?.trim();
@@ -105,14 +106,16 @@ export async function checkImageNudity(
   }
 
   const form = new FormData();
-  const mediaBytes = bytes.buffer.slice(
-    bytes.byteOffset,
-    bytes.byteOffset + bytes.byteLength,
-  );
+  const mediaBytes = Uint8Array.from(bytes);
+  const extension = mimeType === "image/webp"
+    ? "webp"
+    : mimeType === "image/png"
+    ? "png"
+    : "jpg";
   form.append(
     "media",
-    new Blob([mediaBytes], { type: "image/jpeg" }),
-    "moderation.jpg",
+    new Blob([mediaBytes], { type: mimeType }),
+    `moderation.${extension}`,
   );
   form.append("models", SIGHTENGINE_MODEL);
   form.append("api_user", apiUser);

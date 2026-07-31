@@ -56,6 +56,7 @@ export type PostImageRow = {
 export type ListingImagePreview = {
   id: string;
   url: string;
+  storagePath: string;
   isMain: boolean;
   sortOrder: number;
 };

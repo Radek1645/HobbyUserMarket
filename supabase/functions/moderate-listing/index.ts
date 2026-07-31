@@ -35,6 +35,11 @@ import {
 import { findProhibitedKeyword, checkHardHitText } from "../_shared/moderation/prohibited-scan.ts";
 import { assertAiModerationRateLimit } from "../_shared/moderation/rate-limit.ts";
 import {
+  loadModerationImagesFromStorage,
+  type LoadedModerationImages,
+  type StorageImageReference,
+} from "../_shared/moderation/load-storage-images.ts";
+import {
   assertModerationImagesWithinLimits,
   computeModerationImageHashes,
   decodeBase64Bytes,
@@ -437,23 +442,72 @@ serve(async (req) => {
     const description = String(body?.description ?? "").trim();
     logCtx.intent = String(body?.intent ?? "").trim() || undefined;
     logCtx.title = title;
-    const imagesBase64 = Array.isArray(body?.imagesBase64)
-      ? body.imagesBase64
-          .map((item: unknown) => String(item ?? "").trim())
-          .filter(Boolean)
+    const imageReferences: StorageImageReference[] = Array.isArray(
+      body?.imageReferences,
+    )
+      ? body.imageReferences
+          .map((item: unknown) => {
+            const value = item as Partial<StorageImageReference>;
+            return {
+              bucket: String(value?.bucket ?? "").trim(),
+              storagePath: String(value?.storagePath ?? "").trim(),
+            };
+          })
+          .filter((item) => item.bucket && item.storagePath)
           .slice(0, 6)
       : [];
-    const mainImageIndex =
+    const legacyImagesBase64 =
+      imageReferences.length === 0 && Array.isArray(body?.imagesBase64)
+        ? body.imagesBase64
+            .map((item: unknown) => String(item ?? "").trim())
+            .filter(Boolean)
+            .slice(0, 6)
+        : [];
+    const requestedMainImageIndex =
       typeof body?.mainImageIndex === "number" ? body.mainImageIndex : 0;
-    logCtx.imageCount = imagesBase64.length;
+    let loadedImages: LoadedModerationImages;
     try {
-      assertModerationImagesWithinLimits(imagesBase64);
+      if (imageReferences.length > 0) {
+        loadedImages = await loadModerationImagesFromStorage(
+          imageReferences,
+          userId,
+        );
+      } else {
+        assertModerationImagesWithinLimits(legacyImagesBase64);
+        const legacyMimeTypes = legacyImagesBase64.map((encoded) => {
+          const mimeType = detectImageMimeType(decodeBase64Bytes(encoded));
+          if (!mimeType) throw new Error("IMAGE_INVALID");
+          return mimeType;
+        });
+        loadedImages = {
+          imageHashes:
+            await computeModerationImageHashes(legacyImagesBase64),
+          geminiImagesBase64: legacyImagesBase64,
+          geminiImageMimeTypes: legacyMimeTypes,
+          sightengineImagesBase64: legacyImagesBase64,
+          sightengineImageMimeTypes: legacyMimeTypes,
+        };
+      }
     } catch (imageError) {
       const code =
         imageError instanceof Error ? imageError.message : "IMAGE_INVALID";
+      if (
+        code === "STORAGE_CONFIG_MISSING" ||
+        code === "IMAGE_RENDITION_MISSING" ||
+        code === "IMAGE_RENDITION_INVALID"
+      ) {
+        console.error("moderation image rendition:", imageError);
+        return technicalErrorResponse(
+          "Fotky se teď nepodařilo připravit pro AI kontrolu. Zkuste to prosím znovu.",
+          503,
+          code,
+        );
+      }
       const reason =
         code === "IMAGE_TOO_LARGE" || code === "IMAGES_TOTAL_TOO_LARGE"
           ? "Fotky pro AI kontrolu jsou příliš velké. Zmenšete je a zkuste to znovu."
+          : code === "IMAGE_REFERENCE_FORBIDDEN"
+            ? "Fotka nemá platnou vazbu na přihlášený účet."
           : "Neplatný formát fotky pro AI kontrolu.";
       return respondWithLog(
         userId,
@@ -462,15 +516,22 @@ serve(async (req) => {
         { errorCode: code, httpStatus: 400 },
       );
     }
-
-    const imageMimeTypes = imagesBase64.map((encoded) => {
-      const mimeType = detectImageMimeType(decodeBase64Bytes(encoded));
-      if (!mimeType) {
-        throw new Error("IMAGE_INVALID");
-      }
-      return mimeType;
-    });
-    const imageHashes = await computeModerationImageHashes(imagesBase64);
+    const {
+      imageHashes,
+      geminiImagesBase64,
+      geminiImageMimeTypes,
+      sightengineImagesBase64,
+      sightengineImageMimeTypes,
+    } = loadedImages;
+    const moderationImageCount = imageHashes.length;
+    const mainImageIndex =
+      moderationImageCount > 0
+        ? Math.min(
+            Math.max(Math.trunc(requestedMainImageIndex), 0),
+            moderationImageCount - 1,
+          )
+        : -1;
+    logCtx.imageCount = moderationImageCount;
 
     if (!title || !description) {
       const reason = "Chybí název nebo popis inzerátu.";
@@ -546,12 +607,19 @@ serve(async (req) => {
       );
     }
 
-    if (imagesBase64.length > 0) {
+    if (sightengineImagesBase64.length > 0) {
       const sightengineResponses: SightengineResponseEntry[] = [];
-      for (let imageIndex = 0; imageIndex < imagesBase64.length; imageIndex++) {
-        const imageBase64 = imagesBase64[imageIndex];
+      for (
+        let imageIndex = 0;
+        imageIndex < sightengineImagesBase64.length;
+        imageIndex++
+      ) {
+        const imageBase64 = sightengineImagesBase64[imageIndex];
         try {
-          const nudity = await checkImageNudity(imageBase64);
+          const nudity = await checkImageNudity(
+            imageBase64,
+            sightengineImageMimeTypes[imageIndex],
+          );
           sightengineResponses.push({
             imageIndex,
             response: nudity.response,
@@ -563,7 +631,7 @@ serve(async (req) => {
               userId,
               imageBase64,
               imageIndex,
-              imageMimeTypes[imageIndex],
+              sightengineImageMimeTypes[imageIndex],
             );
             await recordHardRejectEvidence({
               userId,
@@ -682,15 +750,17 @@ serve(async (req) => {
         priceAmount,
         locationText: String(body?.locationText ?? "").trim() || undefined,
         mainImageIndex,
-        imagesBase64,
+        ...(imageReferences.length > 0
+          ? { imageReferences }
+          : { imagesBase64: legacyImagesBase64 }),
       },
       categoryAiPrompt,
     );
 
     const aiResult = await callModerationAi({
       userPrompt,
-      imagesBase64,
-      imageMimeTypes,
+      imagesBase64: geminiImagesBase64,
+      imageMimeTypes: geminiImageMimeTypes,
     });
     logCtx.aiProvider = aiResult.provider;
     logCtx.aiModel = aiResult.model;
@@ -699,7 +769,7 @@ serve(async (req) => {
 
     const parsed = parseModerationResponse(
       aiResult.rawResponse,
-      imagesBase64.length,
+      geminiImagesBase64.length,
     );
     const withoutPriceQuestions = filterRedundantPriceQuestions(
       parsed,
@@ -745,9 +815,10 @@ serve(async (req) => {
 
       const approvalToken = await issueModerationApproval(
         userId,
-        imagesBase64.length,
+        moderationImageCount,
         inputFingerprint,
         imageHashes,
+        mainImageIndex,
       );
       if (!approvalToken) {
         return technicalErrorResponse(

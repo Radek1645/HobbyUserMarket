@@ -75,6 +75,7 @@ export async function getListingForEdit(
   const images: ListingImagePreview[] = rows.map((row) => ({
     id: row.id,
     url: row.url,
+    storagePath: row.storage_path,
     isMain: row.is_main,
     sortOrder: row.sort_order,
   }));

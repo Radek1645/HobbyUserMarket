@@ -1,4 +1,5 @@
 import { OnboardingForm } from "@/components/auth/OnboardingForm";
+import { SITE_DISPLAY_NAME, SITE_SHORT_NAME } from "@/config/site";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { userRequiresRegistrationConsentsOnboarding } from "@/lib/auth/registration-consents";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
@@ -7,7 +8,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Nastavení přezdívky | HobbyUserMarket",
+  title: `Nastavení přezdívky | ${SITE_DISPLAY_NAME}`,
 };
 
 type OnboardingPageProps = {
@@ -40,7 +41,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
         <h1 className="text-center text-2xl font-semibold text-gray-900">
-          Vítejte na HobbyUserMarket
+          Vítejte na {SITE_SHORT_NAME}
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
           {requiresRegistrationConsents

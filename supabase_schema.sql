@@ -1087,6 +1087,65 @@ CREATE POLICY post_images_storage_delete ON storage.objects
     )
   );
 
+INSERT INTO storage.buckets (
+  id, name, public, file_size_limit, allowed_mime_types
+)
+VALUES (
+  'moderation-image-staging',
+  'moderation-image-staging',
+  false,
+  1048576,
+  ARRAY['image/jpeg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE
+SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS moderation_image_staging_select_own ON storage.objects;
+CREATE POLICY moderation_image_staging_select_own ON storage.objects
+  FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'moderation-image-staging'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+DROP POLICY IF EXISTS moderation_image_staging_insert_own ON storage.objects;
+CREATE POLICY moderation_image_staging_insert_own ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'moderation-image-staging'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Bez UPDATE/DELETE pro authenticated: brání výměně objektu mezi hashem
+-- originálu a načtením jeho AI transformace. Úklid provádí service_role.
+DROP POLICY IF EXISTS moderation_image_staging_update_own ON storage.objects;
+DROP POLICY IF EXISTS moderation_image_staging_delete_own ON storage.objects;
+
+INSERT INTO storage.buckets (
+  id, name, public, file_size_limit, allowed_mime_types
+)
+VALUES (
+  'moderation-image-renditions',
+  'moderation-image-renditions',
+  false,
+  1048576,
+  ARRAY['image/webp']
+)
+ON CONFLICT (id) DO UPDATE
+SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+-- AI varianty zapisuje a čte výhradně service_role.
+DROP POLICY IF EXISTS moderation_image_renditions_select ON storage.objects;
+DROP POLICY IF EXISTS moderation_image_renditions_insert ON storage.objects;
+DROP POLICY IF EXISTS moderation_image_renditions_update ON storage.objects;
+DROP POLICY IF EXISTS moderation_image_renditions_delete ON storage.objects;
+
 -- =============================================================================
 -- Table grants (RLS alone is not enough — authenticated role needs GRANT)
 -- =============================================================================
@@ -1228,6 +1287,7 @@ CREATE TABLE IF NOT EXISTS public.moderation_approvals (
   content_fingerprint  TEXT NOT NULL DEFAULT '',
   new_image_hashes     TEXT[] NOT NULL DEFAULT '{}',
   image_hashes         TEXT[] NOT NULL DEFAULT '{}',
+  main_image_index     SMALLINT NOT NULL DEFAULT -1,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at           TIMESTAMPTZ NOT NULL DEFAULT now() + interval '30 minutes',
   consumed_at          TIMESTAMPTZ,
@@ -1384,7 +1444,8 @@ CREATE OR REPLACE FUNCTION public.issue_moderation_approval(
   p_user_id             UUID,
   p_image_count         INTEGER,
   p_content_fingerprint TEXT,
-  p_image_hashes        TEXT[] DEFAULT '{}'
+  p_image_hashes        TEXT[],
+  p_main_image_index    INTEGER
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -1392,29 +1453,39 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
+  v_image_count INTEGER :=
+    GREATEST(0, LEAST(6, COALESCE(p_image_count, 0)));
+  v_main_image_index INTEGER := COALESCE(p_main_image_index, -1);
   v_token UUID;
 BEGIN
-  IF cardinality(COALESCE(p_image_hashes, '{}')) <>
-     GREATEST(0, LEAST(6, COALESCE(p_image_count, 0))) THEN
+  IF cardinality(COALESCE(p_image_hashes, '{}')) <> v_image_count THEN
     RAISE EXCEPTION 'image_hash_set_invalid' USING errcode = '22023';
   END IF;
 
+  IF (v_image_count = 0 AND v_main_image_index <> -1)
+     OR (v_image_count > 0 AND (
+       v_main_image_index < 0 OR v_main_image_index >= v_image_count
+     )) THEN
+    RAISE EXCEPTION 'main_image_index_invalid' USING errcode = '22023';
+  END IF;
+
   INSERT INTO public.moderation_approvals (
-    user_id, image_count, content_fingerprint, image_hashes
+    user_id, image_count, content_fingerprint, image_hashes, main_image_index
   )
   VALUES (
     p_user_id,
-    GREATEST(0, LEAST(6, COALESCE(p_image_count, 0))),
+    v_image_count,
     COALESCE(p_content_fingerprint, ''),
-    COALESCE(p_image_hashes, '{}')
+    COALESCE(p_image_hashes, '{}'),
+    v_main_image_index
   )
   RETURNING token INTO v_token;
   RETURN v_token;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.issue_moderation_approval(UUID, INTEGER, TEXT, TEXT[]) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.issue_moderation_approval(UUID, INTEGER, TEXT, TEXT[]) TO service_role;
+REVOKE ALL ON FUNCTION public.issue_moderation_approval(UUID, INTEGER, TEXT, TEXT[], INTEGER) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.issue_moderation_approval(UUID, INTEGER, TEXT, TEXT[], INTEGER) TO service_role;
 
 -- SEC-H01 (063): přesný finální obsah z řádku posts (shodný s Edge/TS).
 CREATE OR REPLACE FUNCTION public.listing_content_fingerprint_from_post(
@@ -1549,6 +1620,7 @@ DECLARE
   v_supplied_identity JSONB;
   v_supplied_hashes   TEXT[];
   v_expected_main_url TEXT;
+  v_main_image_index  INTEGER;
 BEGIN
   IF jsonb_typeof(COALESCE(p_image_bindings, '[]'::jsonb)) <> 'array' THEN
     RAISE EXCEPTION 'image_bindings_invalid' USING errcode = '22023';
@@ -1611,8 +1683,13 @@ BEGIN
       ),
       '[]'::jsonb
     ),
-    max(url) FILTER (WHERE is_main)
-  INTO v_image_count, v_db_bindings, v_expected_main_url
+    max(url) FILTER (WHERE is_main),
+    max(sort_order) FILTER (WHERE is_main)
+  INTO
+    v_image_count,
+    v_db_bindings,
+    v_expected_main_url,
+    v_main_image_index
   FROM public.post_images
   WHERE post_id = p_post_id;
 
@@ -1625,7 +1702,11 @@ BEGIN
   IF v_image_count <> v_approval.image_count
      OR v_db_bindings IS DISTINCT FROM v_supplied_identity
      OR v_approval.image_hashes IS DISTINCT FROM v_supplied_hashes
-     OR v_main_image_url IS DISTINCT FROM v_expected_main_url THEN
+     OR v_main_image_url IS DISTINCT FROM v_expected_main_url
+     OR (
+       v_approval.main_image_index >= 0
+       AND v_approval.main_image_index IS DISTINCT FROM v_main_image_index
+     ) THEN
     RAISE EXCEPTION 'image_content_mismatch' USING errcode = '42501';
   END IF;
 

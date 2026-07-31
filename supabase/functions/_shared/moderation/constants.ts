@@ -12,6 +12,18 @@ export const MODERATION_IMAGE_MAX_BYTES = 1048576;
 /** Max. součet velikostí fotek po dekódování (M7). */
 export const MODERATION_IMAGES_MAX_TOTAL_BYTES = 6291456;
 
+export const MODERATION_GEMINI_IMAGE_MAX_DIMENSION = 1024;
+
+export const MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION = 512;
+
+export const MODERATION_IMAGE_RENDITION_QUALITY = 80;
+
+export const LISTING_IMAGE_BUCKET = "post-images";
+
+export const MODERATION_IMAGE_STAGING_BUCKET = "moderation-image-staging";
+
+export const MODERATION_IMAGE_RENDITION_BUCKET = "moderation-image-renditions";
+
 export const NSFW_NUDITY_RAW_THRESHOLD = 0.6;
 
 export const NSFW_NUDITY_PARTIAL_THRESHOLD = 0.8;

@@ -77,7 +77,10 @@ export async function computeModerationImageHashes(
   const hashes: string[] = [];
   for (const encoded of imagesBase64) {
     const bytes = decodeBase64Bytes(encoded);
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      Uint8Array.from(bytes).buffer,
+    );
     hashes.push(
       Array.from(new Uint8Array(digest))
         .map((byte) => byte.toString(16).padStart(2, "0"))

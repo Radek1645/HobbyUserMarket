@@ -44,12 +44,15 @@ export const LISTING_IMAGE_COMPRESS_QUALITY = 0.82;
 export const LISTING_IMAGE_MAX_UPLOAD_BYTES =
   LISTING_IMAGE_MAX_FILES * LISTING_IMAGE_MAX_FILE_BYTES + 512 * 1024;
 export const LISTING_IMAGE_BUCKET = "post-images";
+export const MODERATION_IMAGE_STAGING_BUCKET = "moderation-image-staging";
+export const MODERATION_IMAGE_RENDITION_BUCKET = "moderation-image-renditions";
+export const MODERATION_IMAGE_STAGING_RETENTION_HOURS = 24;
 export const LISTING_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
 export const LISTING_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"] as const;
 
 /**
- * Limity přesných uložených souborů v Edge Function moderate-listing (M7).
- * SEC-H02 vyžaduje stejné bajty pro AI, approval hash i Storage.
+ * Limity přesných Storage objektů, které Edge hashuje pro SEC-H02.
+ * AI dostává menší varianty odvozené důvěryhodnou Server Action přes Sharp.
  */
 export const MODERATION_IMAGE_MAX_BYTES = LISTING_IMAGE_MAX_FILE_BYTES;
 export const MODERATION_IMAGES_MAX_TOTAL_BYTES =

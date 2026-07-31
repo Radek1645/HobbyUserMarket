@@ -29,6 +29,7 @@ sequenceDiagram
     participant U as Uživatel (prohlížeč)
     participant CF as CreateListingForm
     participant PM as prepareModerationImages()
+    participant SR as Sharp Server Action
     participant RL as runListingModeration()
     participant CL as invokeModerateListing()
     participant EF as Edge Function moderate-listing
@@ -36,8 +37,11 @@ sequenceDiagram
     participant SA as Server Action createListing
 
     U->>CF: Klik „Publikovat“
-    CF->>PM: resize fotek → base64 (max 512 px)
-    PM-->>CF: imagesBase64[], mainImageIndex: 0
+    CF->>PM: upload originálu jednou do privátního stagingu
+    PM->>SR: imageReferences[]
+    SR->>SR: SHA-256 originálu + WebP 1024/512 px
+    SR-->>PM: varianty uloženy pod hashem
+    PM-->>CF: imageReferences[], mainImageIndex: 0
     CF->>RL: title, description, kategorie, cena, lokalita, fotky…
     RL->>CL: 1. volání (bez issueApproval)
     CL->>EF: POST supabase.functions.invoke()
@@ -65,14 +69,14 @@ sequenceDiagram
 
 | Krok | Kde | Co se posílá |
 |------|-----|--------------|
-| 1 | `prepareModerationImages()` | Fotky zmenšené na JPEG base64 (bez prefixu `data:`) |
-| 2 | `invokeModerateListing()` — 1. volání | JSON body → Edge Function (text + metadata vč. `locationText`, **ne** aiPrompt z klienta). Bez `issueApproval`. |
-| 3 | Edge Function | Pre-brána → system + user prompt → fotky → AI |
+| 1 | `prepareModerationImages()` + Sharp Server Action | Nové originály jednou do privátního immutable stagingu; Sharp uloží 1024/512px varianty pod SHA-256 do service-role-only bucketu |
+| 2 | `invokeModerateListing()` — 1. volání | JSON body → Edge Function (text + metadata vč. `locationText` + `imageReferences`, **ne** aiPrompt z klienta). Bez `issueApproval`. |
+| 3 | Edge Function | Stáhne originály, spočítá SHA-256 a podle něj načte Gemini 1024 px / Sightengine 512 px varianty → pre-brána → AI |
 | 4 | Gemini API | `systemInstruction` + `contents[0].parts` = text + inline_data obrázky |
 | 5 | Edge Function | Parsuje JSON, filtruje otázky o ceně, doplní povinné otázky kategorie, safety checks. **Bez tokenu.** |
 | 6 | Modal | Uživatel vidí `cleanedTitle` / `cleanedDescription` / SEO / dotazník |
-| 7 | `invokeModerateListing({ issueApproval: true })` | Finální text + fotky — znovu plná kontrola → `approvalToken` |
-| 8 | `createListing` | Finální text + `approvalToken` → DB, stav `active` |
+| 7 | `invokeModerateListing({ issueApproval: true })` | Finální text + stejné Storage reference — znovu plná kontrola → `approvalToken` |
+| 8 | `createListing` | Finální text + `approvalToken`; staging originály se zkopírují do finálního Storage a re-hashují → DB, stav `active` |
 
 **Proč dvě volání:** první jen připraví náhled. Token se váže na přesný odesílaný obsah — kdyby vznikl už po 1. kontrole, šlo by po schválení vyměnit text/fotky.
 
@@ -127,9 +131,16 @@ sequenceDiagram
 
 ## Payload z klienta do Edge Function
 
-Co `invokeModerateListing()` pošle v `body` (zkráceno — base64 fotky jsou dlouhé).
+Co `invokeModerateListing()` pošle v `body` (zkráceno).
 
-### 1. volání (náhled)
+> **Pozor — tři různé „JSON“:**
+> 1. **Klient → Edge** (tato sekce) — formulářová data + fotky.
+> 2. **Edge → Gemini** (sekce níže „Request na Gemini API“) — `systemInstruction` + user text + obrázky + `responseSchema`.
+> 3. **Gemini → Edge** (sekce „Co AI typicky vrátí“) — výsledek moderace/hydratace.
+>
+> „1. volání (náhled)“ = bod 1, **ne** request do Google API.
+
+### 1. volání (náhled) — klient → Edge
 
 ```json
 {
@@ -145,12 +156,17 @@ Co `invokeModerateListing()` pošle v `body` (zkráceno — base64 fotky jsou dl
   "priceTypeLabel": "Pevná cena",
   "priceAmount": 95000,
   "locationText": "Brno",
-  "imagesBase64": ["<JPEG base64, max 512 px na delší straně>"],
+  "imageReferences": [
+    {
+      "bucket": "moderation-image-staging",
+      "storagePath": "<user-id>/<session-id>/<image-id>.webp"
+    }
+  ],
   "mainImageIndex": 0
 }
 ```
 
-### 2. volání (po potvrzení modalu)
+### 2. volání (po potvrzení modalu) — klient → Edge
 
 Stejná struktura + `"issueApproval": true` a **finální** `title` / `description` (po hydrataci a odpovědích z dotazníku, nebo původní text při „Ignorovat AI“).
 
@@ -269,13 +285,105 @@ Popis inzerátu:
 Prodám použité auto
 ```
 
-K user promptu Gemini přidá **1× inline obrázek** (JPEG base64) — stejná fotka Škody Rapid.
+K user promptu Gemini Edge přidá inline WebP varianty **všech fotek**, vytvořené Sharpem z příslušných Storage originálů (max. 1024 px, kvalita 80). Cestu každé varianty Edge odvodí z vlastního SHA-256 plného originálu; approval token se váže na tento hash, ne na AI variantu.
+
+---
+
+## Request na Gemini API (Edge → Google)
+
+Edge (`callGeminiModeration` v `gemini.ts`) **nepřeposílá** client payload 1:1. Sestaví HTTP POST na  
+`…/models/gemini-2.5-flash:generateContent` s tělem ve tvaru:
+
+```json
+{
+  "systemInstruction": {
+    "parts": [{ "text": "<system prompt z buildModerationSystemPrompt(geminiSafe: true)>" }]
+  },
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        { "text": "<user prompt z buildModerationUserPrompt — viz sekce výše>" },
+        {
+          "inline_data": {
+            "mime_type": "image/jpeg",
+            "data": "<JPEG base64 fotky Škody Rapid>"
+          }
+        }
+      ]
+    }
+  ],
+  "safetySettings": [
+    { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE" },
+    { "category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE" },
+    { "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE" },
+    { "category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE" }
+  ],
+  "generationConfig": {
+    "temperature": 0.2,
+    "responseMimeType": "application/json",
+    "responseSchema": {
+      "type": "OBJECT",
+      "required": [
+        "status",
+        "reason",
+        "rejectedTopicId",
+        "rejectedImageIndex",
+        "cleanedTitle",
+        "metaDescription",
+        "imageAlt",
+        "cleanedDescription",
+        "questions",
+        "categorySuggestion"
+      ],
+      "properties": {
+        "status": { "type": "STRING", "enum": ["APPROVED", "REJECTED", "NEEDS_QUESTIONS"] },
+        "reason": { "type": "STRING", "nullable": true },
+        "rejectedTopicId": { "type": "STRING", "nullable": true },
+        "rejectedImageIndex": { "type": "INTEGER", "nullable": true, "minimum": 0 },
+        "cleanedTitle": { "type": "STRING", "nullable": true },
+        "metaDescription": { "type": "STRING", "nullable": true },
+        "imageAlt": { "type": "STRING", "nullable": true },
+        "cleanedDescription": { "type": "STRING", "nullable": true },
+        "questions": {
+          "type": "ARRAY",
+          "maxItems": 5,
+          "items": {
+            "type": "OBJECT",
+            "required": ["id", "label", "paramLabel"],
+            "properties": {
+              "id": { "type": "STRING" },
+              "label": { "type": "STRING" },
+              "paramLabel": { "type": "STRING", "nullable": true }
+            }
+          }
+        },
+        "categorySuggestion": { "type": "OBJECT", "nullable": true }
+      }
+    }
+  }
+}
+```
+
+`responseSchema` = plná konstanta `GEMINI_MODERATION_RESPONSE_SCHEMA` z `response-schema.ts` (výše zkráceno u `categorySuggestion`).  
+OpenAI fallback posílá analogicky `messages[]` + `response_format: { type: "json_schema", … }` — viz `openai.ts`.
+
+**Mapování našeho scénáře do requestu:**
+
+| Část Gemini body | Odkud |
+|------------------|--------|
+| `systemInstruction.parts[0].text` | System prompt (sekce výše) |
+| `contents[0].parts[0].text` | User prompt (sekce výše) |
+| `contents[0].parts[1].inline_data` | Fotka z `imagesBase64[0]` |
+| `generationConfig.responseSchema` | `response-schema.ts` — vynucuje tvar odpovědi níže |
 
 ---
 
 ## Co AI typicky vrátí (ukázková odpověď)
 
 U minimálního textu, ale srozumitelné fotky auta, očekáváme **`NEEDS_QUESTIONS`** — z fotky lze odvodit značku/model/barvu, ale chybí nájezd, rok, motorizace, STK.
+
+> Toto je **bod 3** (Gemini → Edge): obsah `candidates[0].content.parts[].text` po `responseMimeType: application/json`. Edge ho parsuje v `parseModerationResponse()`.
 
 ```json
 {

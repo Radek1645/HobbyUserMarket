@@ -2,7 +2,7 @@
 
 Rychlá reference pro práci s databází, Edge Functions a secrety projektu HobbyUserMarket.
 
-> **Související:** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · [`git-prikazy.md`](./git-prikazy.md) · migrace v `supabase/` · kanonické schéma `supabase_schema.sql`
+> **Související:** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · [`git-prikazy.md`](./git-prikazy.md) · migrace v `supabase/` · lidský přehled tabulek níže (§ Schéma databáze) · SQL snapshot `supabase_schema.sql` (nemusí být 100 % aktuální — pravda = migrace)
 
 ---
 
@@ -47,6 +47,240 @@ npx supabase functions deploy moderate-listing
 **Kdy:** po změně `prohibited-topics.ts`, `bound-user-content.ts`, `categories.ts` (AI prompty), `build-prompt.ts` nebo souborů v `supabase/functions/moderate-listing/`.
 
 **Před prvním deployem:** jednorázově `npx supabase login` a `npx supabase link --project-ref <PROJECT_REF>` (viz níže).
+
+**Fotky pro AI od 067/068:** spusť v SQL Editoru `supabase/067_moderation_image_staging.sql` a následně `supabase/068_moderation_image_renditions.sql`. Po `npm run sync:moderation` nasaď **nejdřív Next.js/Vercel** (vytváří nové varianty) a až potom Edge Function (začne je vyžadovat). Resize zajišťuje Sharp ve Vercel Server Action; placené Supabase Storage Image Transformations nejsou potřeba. Rendition bucket nesmí mít policy pro `authenticated`.
+
+---
+
+## Schéma databáze — co máme za tabulky
+
+Lidský přehled tabulek v `public` (produkční Postgres na Supabase).  
+**Jak udržovat:** při nové migraci (`CREATE TABLE` / `ADD COLUMN`) aktualizuj **tuto sekci** — viz skill ukončení práce a checklist níže.  
+Kanon produktového modelu zůstává v [`PRD_v3.md`](./PRD_v3.md) §4; tady je provozní „co kde hledat v Table Editoru“.
+
+Účty samy o sobě žijí v **`auth.users`** (Supabase Auth). V `public` na ně odkazuje `profiles.id` a další FK.
+
+### Rychlý přehled
+
+| Tabulka | K čemu je (jednou větou) |
+|---------|--------------------------|
+| `profiles` | Profil uživatele: přezdívka, role, firma, souhlasy |
+| `posts` | Inzerát — text, kategorie, cena, lokalita, stav, SEO |
+| `post_images` | Fotky inzerátu (cesta ve Storage + pořadí) |
+| `comments` | **Legacy** — stará diskuse pod inzerátem (v UI ne) |
+| `reports` | Nahlášení inzerátu |
+| `contact_reveals` | Kdo kdy odhalil kontakt |
+| `inquiry_events` | Metadata odeslané poptávky (bez těla zprávy) |
+| `listing_views` | Zobrazení detailu (+ podklad pro `view_count`) |
+| `rate_limits` | Počítadla limitů (AI, kontakt…) |
+| `moderation_approvals` | Jednorázový token pro publikaci po AI |
+| `moderation_checks` | Log každého volání AI moderace |
+| `moderation_hard_reject_evidence` | Evidence hard-rejectu (NSFW / hard-hit) před Gemini |
+| `audit_events` | Systémový audit (změny stavů, moderace…) |
+| `moderator_note_kinds` | Číselník typů poznámek |
+| `moderator_notes` | Interní poznámky staff u inzerátu/profilu |
+| `account_blacklist` | Hard-stop účtu podle e-mailu |
+| `account_deletion_events` | Audit smazání účtu |
+| `listing_packages` | Balíčky kreditů na inzeráty |
+| `user_listing_entitlements` | Přidělené kvóty uživateli |
+| `gdpr_retention_warnings` | Záznam, že šel e-mail před smazáním neaktivity |
+| `bank_payments` | **Plánováno** (PRD monetizace) — v DB zatím není |
+
+**Storage buckety:** `post-images` (veřejné fotky inzerátů) · `moderation-evidence` (privátní NSFW / hard-reject snímky) · `moderation-image-staging` (privátní immutable originály před AI / publikací) · `moderation-image-renditions` (privátní Sharp WebP varianty 1024/512 px, jen service_role).
+
+---
+
+### `profiles` — kdo jsi na webu
+
+Jeden řádek = jeden účet. `id` = stejné UUID jako v Auth.
+
+| Atribut | Co v něm najdeš |
+|---------|-----------------|
+| `id` | UUID uživatele (= `auth.users.id`) |
+| `profile_no` | Lidské číslo profilu (pořadí) |
+| `nickname` | Přezdívka (unikátní) |
+| `name`, `surname`, `email`, `phone`, `avatar_url` | Základní údaje |
+| `is_company`, `company_name`, `company_ico`, `company_ico_verified` | Firemní profil / IČO |
+| `age_confirmed_at`, `vop_accepted_at`, `vop_version`, `marketing_consent_at` | Souhlasy při registraci |
+| `role` | `user` / `moderator` / `admin` |
+| `created_at`, `updated_at` | Časové značky |
+
+---
+
+### `posts` — samotný inzerát
+
+Hlavní tabulka. Kategorie (`zbozi`, `sluzby`, `udalost`, `nemovitost`, `prace`) žijí jako textové sloupce — taxonomie je v kódu (`categories.ts`), ne v DB.
+
+| Skupina | Atributy | Co v nich najdeš |
+|---------|----------|------------------|
+| Identita | `id`, `user_id`, `slug` | ID inzerátu, majitel, URL slug |
+| Text | `title`, `description` | Publikovaný název a popis (max 80 / 2000) |
+| AI originál | `original_title`, `original_description`, `description_ai_assisted` | Text před AI / jestli uživatel vzal AI verzi |
+| SEO | `meta_description`, `image_alt`, `main_image_url`, `search_vector` | Meta, alt, náhledová URL, fulltext |
+| Zařazení | `category_type`, `subcategory_slug`, `condition_label` | Typ, podkategorie, stav/typ nabídky |
+| Cena | `price_type`, `price_amount`, `exchange_for` | Typ ceny, částka, text výměny |
+| Místo | `location_text`, `location` | Text lokality + PostGIS bod |
+| Kontakt | `show_contact_email`, `show_contact_phone`, `contact_phone` | Co smí odhalit „Zobrazit kontakt“ |
+| Práce | `job_cv_required` | Zda inzerát práce chce CV |
+| Životní cyklus | `status`, `status_reason_code`, `expires_at`, `listing_duration_days`, `event_date`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, proč blocked, expirace, událost |
+| Ostatní | `payment_status`, `view_count`, `created_at`, `updated_at` | Platba (free/paid), zobrazení |
+
+**`status`:** `draft` · `active` · `archived` · `hidden` · `blocked` · `deleted`  
+**`status_reason_code` (typicky u blocked):** `reports_threshold` · `moderation` · `lifetime_max` · `account_blacklist`
+
+---
+
+### `post_images` — fotky
+
+| Atribut | Co v něm najdeš |
+|---------|-----------------|
+| `id`, `post_id` | Vazba na inzerát |
+| `storage_path`, `url` | Cesta v bucketu `post-images` + veřejná URL |
+| `sort_order`, `is_main` | Pořadí (0–5), která je hlavní (náhled) |
+| `created_at` | Kdy nahráno |
+
+---
+
+### `comments` — legacy
+
+Diskuse pod inzerátem se **nepoužívá**. Tabulka může zůstat; nové UI na ni nestav.
+
+| Atribut | Poznámka |
+|---------|----------|
+| `id`, `post_id`, `user_id`, `author_nickname`, `body`, `status`, `created_at` | `status`: `active` / `hidden` |
+
+---
+
+### Engagement a limity
+
+#### `reports` — nahlášení
+
+| Atribut | Co v něm najdeš |
+|---------|-----------------|
+| `id`, `report_no` | ID + pořadové číslo |
+| `target_type`, `target_post_id`, `target_comment_id` | Cíl (`post` / legacy `comment`) |
+| `reporter_user_id`, `reporter_email`, `source` | Kdo hlásí; `inline` vs standalone formulář |
+| `reason`, `detail_text` | Důvod + volitelný popis |
+| `created_at` | Kdy |
+
+#### `contact_reveals`
+
+`id`, `post_id`, `viewer_user_id`, `revealed_at` — audit kliku „Zobrazit kontakt“.
+
+#### `inquiry_events`
+
+`id`, `inquiry_no`, `post_id`, `viewer_user_id`, `ip_address` (po čase anonymizováno), `delivered`, `created_at` — **bez textu poptávky**.
+
+#### `listing_views`
+
+`id`, `view_no`, `post_id`, `viewer_user_id`, `viewer_key`, `ip_hash`, `viewed_at` — zobrazení detailu (dedup).
+
+#### `rate_limits`
+
+`id`, `user_id`, `action_type` (`ai_check` / `contact_reveal` / `comment`), `count`, `window_start` — hodinová okna limitů.
+
+---
+
+### Moderace a publikace
+
+#### `moderation_approvals` — token na `active`
+
+Bez platného tokenu inzerát zůstane `draft`.
+
+| Atribut | Co v něm najdeš |
+|---------|-----------------|
+| `token` | UUID tokenu (klient → Server Action) |
+| `user_id`, `image_count` | Kdo + kolik fotek |
+| `content_fingerprint`, `image_hashes` / `new_image_hashes` | Vazba na přesný text a fotky |
+| `main_image_index` | Index hlavní fotky při schválení (−1 = bez fotek; migrace `067`) |
+| `created_at`, `expires_at`, `consumed_at` | TTL ~30 min, jednorázové spotřebování |
+
+#### Storage — AI fotky (067 / 068)
+
+| Bucket | Účel | Kdo smí |
+|--------|------|---------|
+| `moderation-image-staging` | Immutable originál (≤ 1 MB) před AI a publikací | `authenticated` INSERT/SELECT jen vlastní `userId/…`; bez UPDATE/DELETE |
+| `moderation-image-renditions` | Sharp WebP pod `{userId}/{sha256}/gemini.webp` a `sightengine.webp` | jen `service_role` |
+
+Úklid: cron `/api/cron/purge-moderation-image-staging` (24 h). Publish zkopíruje staging → `post-images`.
+
+#### `moderation_checks` — log AI
+
+Každé volání Edge Function (náhled i `issueApproval`).
+
+| Skupina | Atributy |
+|---------|----------|
+| Identita | `log_no`, `user_id`, `created_at`, `intent` |
+| Výsledek | `status` (`APPROVED` / `REJECTED` / `NEEDS_QUESTIONS`), `category_type`, `subcategory_slug`, `image_count` |
+| Zamítnutí | `rejected_topic_id`, `rejection_reason`, `error_code`, `title_preview`, `rejected_image_index` |
+| Návrh kategorie | `category_fit`, `suggested_category_type`, `suggested_subcategory_slug`, `category_taxonomy_hint` |
+| Audit AI | `sightengine_responses`, `prompt_version`, `ai_provider`, `ai_model`, `used_fallback`, `policy_hash`, `input_fingerprint`, `image_hashes` |
+
+#### `moderation_hard_reject_evidence` — před Gemini
+
+| Atribut | Co v něm najdeš |
+|---------|-----------------|
+| `id`, `evidence_no`, `user_id`, `created_at` | Kdo / kdy |
+| `kind` | `hard_hit_text` / `nsfw_image` / `sightengine_unavailable` / `hard_reject_threshold_reached` |
+| `matched_category`, `matched_term`, `reason`, `title_snippet` | Proč |
+| `storage_path`, `image_index`, `sightengine_responses` | Fotka v `moderation-evidence` + JSON Sightengine |
+
+---
+
+### God Mode a compliance
+
+#### `audit_events`
+
+Append-only systémový log (ne engagement).
+
+| Atribut | Co v něm najdeš |
+|---------|-----------------|
+| `event_no`, `created_at` | Pořadí + čas |
+| `entity_type`, `entity_id` | `post` / `profile` + ID |
+| `event_type`, `actor_user_id`, `actor_role` | Co se stalo a kdo (nebo systém) |
+| `payload` | JSONB detail (from/to status, reason…) |
+
+#### `moderator_note_kinds` / `moderator_notes`
+
+Číselník typů (`code`, `label`, …) a poznámky staff: `note_no`, `entity_type`, `entity_id`, `kind_code`, `body`, `author_user_id`, `created_at`, `updated_at`.
+
+#### `account_blacklist`
+
+Hard-stop podle e-mailu: `email`, `reason`, `source` (`automatic` / `manual`), `created_by`, soft unban přes `removed_at` / `removed_by` / `removed_reason`.
+
+#### `account_deletion_events`
+
+Audit smazání: `target_profile_no`, `target_user_id`, `actor_id`, `source` (`self` / `admin`), `reason_code`, `reason_note`.
+
+#### `gdpr_retention_warnings`
+
+Že už šel varovný e-mail před smazáním neaktivity: PK `(user_id, last_sign_in_at_snapshot)`, `warned_at`.
+
+---
+
+### Kvóty inzerátů
+
+#### `listing_packages`
+
+Katalog balíčků: `slug`, `display_name`, `listing_quota`, `price_cents`, `is_active`, `is_purchasable`, `is_signup_grant`, …
+
+#### `user_listing_entitlements`
+
+Přidělené kredity: `user_id`, `package_id`, `listing_quota`, `granted_at`, `granted_by`, `note`, `expires_at`.
+
+#### `bank_payments` *(plán)*
+
+Intent bankovní platby + párování Fio — popsáno v PRD §12; migrace v repo zatím není.
+
+---
+
+### Co v DB záměrně není
+
+| Nehledej | Proč |
+|----------|------|
+| Tabulku kategorií | Jen `categories.ts` + textové sloupce u `posts` |
+| `login_events` / `last_login_at` v profiles | `auth.users.last_sign_in_at` |
+| Tělo poptávky | Jen e-mail přes Resend; v DB metadata `inquiry_events` |
 
 ---
 
@@ -390,7 +624,8 @@ Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, a
 
 | Změnil jsi… | Udělej |
 |-------------|--------|
-| Nový soubor `supabase/NNN_*.sql` | SQL Editor na produkci + commit + PRD hlavička |
+| Nový soubor `supabase/NNN_*.sql` | SQL Editor na produkci + commit + PRD hlavička + **aktualizuj § Schéma databáze** v tomto souboru |
+| Nová tabulka / sloupec / enum | Stejně — lidský popis atributů v § Schéma databáze (skill ukončení práce) |
 | `prohibited-topics.ts` / AI prompty / `categories.ts` | Viz blok výše — oba příkazy pod sebou: `npm run sync:moderation` a `npx supabase functions deploy moderate-listing` |
 | `.env.local` (jen lokál) | Nic na Supabase — jen restart `npm run dev` |
 | `CRON_SECRET` (Vercel) | Nastavit ve Vercelu, ne v Supabase — viz `vercel.json` |
@@ -416,8 +651,10 @@ Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, a
 
 | Dokument / soubor | Obsah |
 |-------------------|--------|
+| **§ Schéma databáze** (tento soubor) | Lidský přehled tabulek a atributů |
 | [`moderace-inzeratu.md`](./moderace-inzeratu.md) | Deploy moderace, secrets, migrace 025–027 |
 | [`Metodika.md`](./Metodika.md#11-moderátoři-a-administrátoři-god-mode) | God Mode, role admin/moderátor |
+| [`PRD_v3.md`](./PRD_v3.md) §4 | Kanonický datový model produktu |
 | [`supabase/`](./../supabase/) | Číslované migrace |
 | [`supabase/038_listing_quota.sql`](../supabase/038_listing_quota.sql) | Balíčky inzerátů, lifetime limit |
 | [`supabase/039_listing_quota_lifetime.sql`](../supabase/039_listing_quota_lifetime.sql) | Oprava na lifetime model (pokud 038 běžela dřív) |

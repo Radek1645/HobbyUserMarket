@@ -49,6 +49,22 @@ export function mapAuthError(message: string): string {
     return "E-mail ještě není ověřený. Zkontrolujte schránku a klikněte na odkaz v e-mailu.";
   }
 
+  if (lower.includes("security purposes")) {
+    const secondsMatch = trimmed.match(/after\s+(\d+)\s+seconds?/i);
+    const seconds = secondsMatch?.[1];
+    return seconds
+      ? `Ještě chviličku počkejte (asi ${seconds} s) a zkuste odeslání znovu.`
+      : "Ještě chviličku počkejte a zkuste odeslání znovu.";
+  }
+
+  if (
+    lower.includes("rate limit") ||
+    lower.includes("too many requests") ||
+    lower.includes("over_email_send_rate_limit")
+  ) {
+    return "Za poslední hodinu jsme poslali už hodně e-mailů na tuto adresu. Zkuste to prosím později, nebo zkontrolujte i spam u předchozích zpráv.";
+  }
+
   if (
     lower.includes("user already registered") ||
     lower.includes("already registered") ||

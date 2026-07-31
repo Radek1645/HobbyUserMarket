@@ -48,7 +48,8 @@ Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani
 
 - Extended při načtení (plný text `createListingCtaLabel`), po scrollu > 80 px jen ikona
 - `whitespace-nowrap`, horizontální padding `px-6` (24px)
-- Skrytý na `/inzerat/novy` a stránkách úpravy inzerátu
+- Skrytý na `/inzerat/novy`, stránkách úpravy inzerátu, `/onboarding`, `/login` a dokud uživatel nemá dokončený profil (`needsNicknameSetup`) — zabrání stale prefetch redirectu po registraci
+- `prefetch={false}` — auth-gated cíl nesmí zůstat v Router Cache jako redirect na onboarding
 - Safe area: `bottom-[max(1rem,env(safe-area-inset-bottom))]`
 - GTM: `GTM_CTA.FAB_CREATE_LISTING`
 

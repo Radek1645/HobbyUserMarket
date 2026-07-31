@@ -89,9 +89,10 @@ export function Header({ user }: HeaderProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-          {user ? (
+          {user && !user.needsNicknameSetup ? (
             <Link
               href="/inzerat/novy"
+              prefetch={false}
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
               aria-label={createListingCtaLabel}
               className={headerCreateListingButtonClass}
@@ -102,9 +103,10 @@ export function Header({ user }: HeaderProps) {
               />
               {createListingCtaLabel}
             </Link>
-          ) : (
+          ) : !user ? (
             <Link
               href="/login?next=/inzerat/novy&message=create_listing&tab=register"
+              prefetch={false}
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
               aria-label={createListingCtaLabel}
               className={headerCreateListingButtonClass}
@@ -115,7 +117,7 @@ export function Header({ user }: HeaderProps) {
               />
               {createListingCtaLabel}
             </Link>
-          )}
+          ) : null}
 
           <HeaderLocationPanel />
         </div>

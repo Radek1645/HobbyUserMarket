@@ -19,9 +19,15 @@ type CreateListingFabProps = {
   user: AppUser | null;
 };
 
-function shouldHideFab(pathname: string): boolean {
+function shouldHideFab(pathname: string, user: AppUser | null): boolean {
+  // Na onboardingu nesmí prefetchovat /inzerat/novy — Router Cache by po
+  // dokončení profilu vrátil starý redirect a FAB by „nefungoval“ do hard refresh.
   return (
-    pathname === "/inzerat/novy" || pathname.endsWith("/upravit")
+    pathname === "/inzerat/novy" ||
+    pathname.endsWith("/upravit") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/login") ||
+    Boolean(user?.needsNicknameSetup)
   );
 }
 
@@ -40,7 +46,7 @@ export function CreateListingFab({ user }: CreateListingFabProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  if (shouldHideFab(pathname)) {
+  if (shouldHideFab(pathname, user)) {
     return null;
   }
 
@@ -56,6 +62,7 @@ export function CreateListingFab({ user }: CreateListingFabProps) {
   return (
     <Link
       href={href}
+      prefetch={false}
       {...gtmCtaProps(GTM_CTA.FAB_CREATE_LISTING)}
       aria-label={createListingCtaLabel}
       className={[

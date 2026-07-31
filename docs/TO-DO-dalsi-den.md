@@ -5,7 +5,8 @@
 > **PRD:** v3.45 · snapshot [`Stav_projektu/2026-07-26.md`](../Stav_projektu/2026-07-26.md)  
 > **Poznámka:** H4/H6/H7 už ověřeno na localhost; na produkci znovu jen pokud chceš jistotu.  
 > **Aktualizace 2026-07-28:** priorita **„formulář má vždy pravdu“** (§ A).  
-> **Aktualizace 2026-07-30:** § B dětské zboží; § C počet poptávek; § D Půjčovna.
+> **Aktualizace 2026-07-30:** § B dětské zboží; § C počet poptávek; § D Půjčovna; § E downscale fotek pro AI.  
+> **Aktualizace 2026-07-31:** § F přejmenování „Kola a sport“ → „Sport“; § G smazání zboží — prodáno na zaPikolou?.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
 
@@ -88,6 +89,64 @@ Související: `src/app/moje-inzeraty/page.tsx`, `supabase/033_inquiry_events.sq
 | R3 | Implementace taxonomie + create/edit + AI prompt | Až po R1/R2 | ☐ |
 
 Související: `src/config/categories.ts`, listing formulář, SEO Bible / Metodika (až při implementaci).
+
+---
+
+## E. Priorita — staging a menší AI varianty fotek
+
+**Implementace (2026-07-31):** Originály po klientské Storage kompresi (max. 1920 px / 1 MB) se nahrají **jednou** do privátního bucketu `moderation-image-staging`. Autentizovaná Next.js Server Action stáhne originál a přes Sharp uloží hash-addressed WebP varianty do service-role-only bucketu `moderation-image-renditions`:
+
+- Gemini / hydratace: **všechny fotky 1024 px**, kvalita 80 — technické štítky často nejsou na hlavní fotce;
+- Sightengine: všechny fotky 512 px, kvalita 80.
+
+Edge nezávisle stáhne originál, spočítá SHA-256 pro SEC-H02 a varianty načte podle tohoto hashe. Klientské hashe ani klientský downscale nejsou autoritativní a uživatel nemá přístup k rendition bucketu. Staging objekty uživatel nesmí UPDATE ani DELETE. Při publikaci Server Action zkopíruje stejné bajty do `post-images`; publish gate znovu ověří hashe, pořadí i hlavní fotku. Originály i dočasné varianty čistí denní cron po 24 hodinách.
+
+**Před nasazením:** po již aplikované 067 spustit migraci `068_moderation_image_renditions.sql`, potom `npm run sync:moderation`, nasadit **nejdřív Next.js/Vercel** a následně Edge. Supabase Image Transformations nejsou potřeba ani účtovány; resize spotřebuje běžný Vercel Function compute.
+
+| # | Úkol | Očekávání | ✓ |
+|---|------|-----------|---|
+| I1 | Privátní immutable staging + přímý upload z klienta | Originál se z prohlížeče přenese jen jednou; bez base64 JSON | ☑ kód |
+| I2 | Sharp Server Action + Edge: hash-addressed varianty 1024/512 px | Edge odvodí cestu varianty z vlastního hashe originálu; SEC-H02 zůstává nad plnými bajty | ☑ kód |
+| I3 | Publish: staging → finální Storage + autoritativní re-hash | Jiný obsah, pořadí nebo hlavní fotka → publish selže | ☑ kód |
+| I4 | Retence stagingu | Úspěšně použité objekty ihned smazat; opuštěné po 24 h cronem | ☑ kód |
+| I5 | Deploy + manuální smoke: 6 fotek ~1 MB; edit bez změny fotek | Obě AI volání bez opakovaného uploadu; hydratace přečte štítek na vedlejší fotce; publish OK | ☐ |
+| I6 | Negativní security smoke | Cizí path / výměna objektu / změna pořadí nebo hlavní fotky neprojde | ☐ |
+
+Související: `067_moderation_image_staging.sql`, `068_moderation_image_renditions.sql`, `moderation-images.ts`, `prepare-moderation-images.ts`, `load-storage-images.ts`, `listing-images.ts`, `moderate-listing`, `publish_approved_post`.
+
+---
+
+## F. Priorita — přejmenovat „Kola a sport“ → „Sport“
+
+**Požadavek (2026-07-31):** Label podkategorie `kola-sport` dnes zní **„Kola a sport“** a evokuje hlavně kola, ne celou sportovní doménu. Přepsat na **„Sport“**.
+
+| # | Úkol | Očekávání | ✓ |
+|---|------|-----------|---|
+| S1 | UI label v `categories.ts` (+ tipy / placeholdery, pokud zmiňují „Kola a sport“) | Všude viditelné jméno **Sport** | ☐ |
+| S2 | Rozhodnout slug: nechat `kola-sport`, nebo migrace na `sport` | Bez rozbití existujících inzerátů / filtrů / SEO | ☐ |
+| S3 | Sync AI promptů (`npm run sync:moderation`) + Metodika / FAQ, pokud label citují | Konzistence UI ↔ AI ↔ docs | ☐ |
+
+Související: `src/config/categories.ts` (`slug: "kola-sport"`), případně `listing-form-tips.ts`, `create-listing-guide.ts`.
+
+---
+
+## G. Priorita — při smazání zboží: „Prodáno na zaPikolou?“
+
+**Požadavek (2026-07-31):** Teď je jen nativní `confirm` („Opravdu smazat…“). U kategorie **zboží** nahradit vlastním pop-upem s volbou důvodu smazání — hlavně jestli věc **prodal na platformě** (užitečné pro metriky / úspěšnost). U služeb, práce, událostí, nemovitostí to dává malý smysl → nechat jednoduché potvrzení.
+
+**Návrh UX:**
+- Zelené tlačítko: **Prodáno na zaPikolou**
+- Druhé tlačítko: **Jiné** (neprodáno / prodáno jinde / už nechci inzerovat…)
+- Volitelně později: krátký výběr u „Jiné“, teď stačí 2 cesty
+- Po výběru smazat jako dnes (`status = deleted`); důvod uložit (nový sloupec / `status_reason_code` / audit)
+
+| # | Úkol | Očekávání | ✓ |
+|---|------|-----------|---|
+| X1 | Custom dialog místo `window.confirm` u zboží | 2 tlačítka: Prodáno na zaPikolou / Jiné | ☐ |
+| X2 | Ostatní kategorie | Stávající jednoduché potvrzení (nebo stejný dialog bez „prodáno“) | ☐ |
+| X3 | Persistovat důvod smazání | Lze spočítat „prodeje přes platformu“ | ☐ |
+
+Související: `MyListingActions.tsx`, `deleteListing` v `listing-management.ts`.
 
 ---
 

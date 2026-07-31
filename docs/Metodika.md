@@ -104,6 +104,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 - Na mobilu (`md` breakpoint) je vpravo dole plovoucí zelené tlačítko (FAB).
 - Když je otevřená **cookie lišta**, FAB se posune **nad lištu** (výška banneru se měří dynamicky), aby nebylo utopené a zůstalo klikatelné.
 - Po souhlasu / odmítnutí cookies se FAB vrátí na standardní pozici u spodního okraje.
+- FAB (a desktop header CTA) se **nezobrazuje** na `/onboarding`, `/login` a dokud profil nemá přezdívku — jinak by Next.js prefetch `/inzerat/novy` nakešoval redirect na onboarding a po dokončení registrace by tlačítko „nefungovalo“ do obnovení stránky. Po `completeOnboarding` / přihlášení se volá `revalidatePath("/", "layout")`.
 
 ### 2.4 Filtrování podle kategorie
 
@@ -168,7 +169,7 @@ Stránky jsou veřejné, indexovatelné a v `sitemap.xml` (včetně `/gdpr`).
 ### 3.1 Způsoby přihlášení
 
 1. **Google** — jedním kliknutím (preferovaná cesta).
-2. **E-mail a heslo** — po registraci musí uživatel potvrdit e-mail odkazem; bez potvrzení není účet plně aktivní. Na success obrazovce může **znovu odeslat ověřovací e-mail** (cooldown 60 s).
+2. **E-mail a heslo** — po registraci musí uživatel potvrdit e-mail odkazem; bez potvrzení není účet plně aktivní. Na success obrazovce může **znovu odeslat ověřovací e-mail** (cooldown 60 s). „Poslat znovu“ **zneplatní** předchozí odkaz — platí jen nejnovější mail (Resend SMTP log je zdroj pravdy o doručení). Cíl odkazu je `/auth/dokoncit` (klient zvládne PKCE `?code=` i implicit `#access_token=`); volitelně šablona s `token_hash` → `/auth/potvrdit` + tlačítko.
 
 **Povinné souhlasy při registraci (e-mail i Google):**
 
@@ -286,7 +287,8 @@ Konfigurace: `src/config/listing-form-ui.ts` (`listingFormRequiredMarkClass`, `L
 ### Krok 3 — Fotografie
 
 - Max. **6 fotek** (JPEG, PNG, WebP).
-- Každá se před nahráním zkomprimuje na max. **1 MB**.
+- Každá se před nahráním zkomprimuje na max. **1 MB** (nejdelší strana max. 1920 px).
+- Originál se při AI kontrole nahraje **jednou** do privátního stagingu; Server Action přes Sharp připraví menší WebP varianty (Gemini 1024 px, Sightengine 512 px). Uživatel to nevidí — v UI zůstává stejný upload.
 - Uživatel označí **hlavní fotku** (hvězdička) — ta je náhled na HP a referenční snímek pro cross-validaci text ↔ foto. AI hydratace vychází ze **všech** nahraných fotek.
 - **Všechny** fotky procházejí bezpečnostní kontrolou, nejen hlavní.
 

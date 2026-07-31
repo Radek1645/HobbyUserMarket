@@ -109,9 +109,22 @@ Projdi body **shora dolů v tomto pořadí**. Zaškrtni, až je máš hotové.
   http://localhost:3000/**
   ```
 
-  Wildcard `/**` povolí návrat na `/auth/callback?next=…` po Google loginu, ověření e-mailu i resetu hesla.
+  Wildcard `/**` povolí návrat na `/auth/callback` (Google OAuth), `/auth/dokoncit`
+  (ověření e-mailu / reset hesla) i `/auth/potvrdit`.
 
 - [ ] **3.4** **Save**
+
+- [ ] **3.5** (doporučeno) **Authentication → Email Templates → Confirm sign up** —
+  odkaz ať vede na stránku s tlačítkem (odolá prefetch schránky):
+
+  ```html
+  <h2>Potvrzení e-mailu</h2>
+  <p>Klikněte na odkaz a na webu potvrďte tlačítkem:</p>
+  <p><a href="{{ .SiteURL }}/auth/potvrdit?token_hash={{ .TokenHash }}&type=signup">Potvrdit e-mail</a></p>
+  ```
+
+  Bez této úpravy funguje i výchozí `{{ .ConfirmationURL }}` — po ověření
+  přesměruje na `/auth/dokoncit`, které umí `?code=` i `#access_token=`.
 
 > **Google OAuth:** V Google Cloud Console **nemusíš** měnit redirect — ten zůstává na `https://<projekt>.supabase.co/auth/v1/callback`. Mění se jen Site URL a Redirect URLs v Supabase.
 

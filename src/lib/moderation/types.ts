@@ -1,4 +1,5 @@
 import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
+import type { ModerationImageReference } from "@/lib/moderation/prepare-moderation-images";
 
 export type ModerationIntent = "create" | "update";
 
@@ -35,10 +36,9 @@ export type ModerateListingRequest = {
   showContactPhone?: boolean;
   contactPhone?: string;
   jobCvRequired?: boolean;
-  /** Všechny nahrané fotky (max. 6) — bezpečnostní filtr. */
-  imagesBase64?: string[];
-  imageMimeTypes?: string[];
-  /** Index hlavní fotky v `imagesBase64` — cross-validace textu s náhledem; hydratace z všech fotek. */
+  /** Důvěryhodné Storage objekty všech fotek (max. 6). */
+  imageReferences?: ModerationImageReference[];
+  /** Index hlavní fotky — cross-validace textu; hydratace běží ze všech fotek. */
   mainImageIndex?: number;
   /** Token vydat jen při finální kontrole bezprostředně před publikací. */
   issueApproval?: boolean;
@@ -99,8 +99,7 @@ export type ListingModerationInput = {
   contactPhone?: string;
   jobCvRequired?: boolean;
   images?: {
-    imagesBase64: string[];
-    imageMimeTypes: string[];
+    imageReferences: ModerationImageReference[];
     mainImageIndex: number;
   };
   /** Token vydat jen při finální kontrole bezprostředně před publikací. */

@@ -212,11 +212,13 @@ export async function createListing(
     return { error: "Inzerát se nepodařilo uložit. Zkuste to prosím znovu." };
   }
 
+  const stagingAdminResult = createAdminClient();
   const imageResult = await syncListingImagesFromForm(
     supabase,
     user.id,
     row.id,
     formData,
+    stagingAdminResult.ok ? stagingAdminResult.client : undefined,
   );
 
   // P2: při chybě uploadu nesmí zůstat orphan draft (kvóta / „Koncept“ bez fotek).
@@ -321,11 +323,13 @@ export async function updateListing(
   // Fotky: insert/update post_images má RLS jen pro vlastníka. God Mode zatím
   // mění text; sync fotek u cizího inzerátu by selhal.
   if (isOwner) {
+    const stagingAdminResult = createAdminClient();
     const imageResult = await syncListingImagesFromForm(
       supabase,
       user.id,
       postId,
       formData,
+      stagingAdminResult.ok ? stagingAdminResult.client : undefined,
     );
 
     if (imageResult.error) {

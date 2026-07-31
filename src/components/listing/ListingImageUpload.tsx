@@ -49,6 +49,7 @@ type ImageItem =
       kind: "existing";
       id: string;
       url: string;
+      storagePath: string;
     }
   | {
       key: string;
@@ -80,6 +81,7 @@ export const ListingImageUpload = forwardRef<
         kind: "existing" as const,
         id: image.id,
         url: image.url,
+        storagePath: image.storagePath,
       })),
   );
   const [mainKey, setMainKey] = useState(() => {
@@ -91,6 +93,8 @@ export const ListingImageUpload = forwardRef<
   const [isCompressing, setIsCompressing] = useState(false);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
   const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  const stagedPathsRef = useRef<Map<string, string>>(new Map());
+  const renditionSignatureRef = useRef<string | undefined>(undefined);
 
   const highlightRejectedImage = useCallback((index: number) => {
     const target = items[index];
@@ -115,7 +119,10 @@ export const ListingImageUpload = forwardRef<
       }
       for (const item of items) {
         if (item.kind === "new") {
-          formData.append("listingImages", item.file);
+          const stagingPath = stagedPathsRef.current.get(item.key);
+          if (stagingPath) {
+            formData.append("stagedImagePath", stagingPath);
+          }
         }
       }
     },
@@ -156,15 +163,34 @@ export const ListingImageUpload = forwardRef<
 
     const sources: ModerationImageSource[] = items.map((item) =>
       item.kind === "new"
-        ? { kind: "file", file: item.file }
-        : { kind: "url", url: item.url },
+        ? {
+            kind: "file",
+            key: item.key,
+            file: item.file,
+            stagingPath: stagedPathsRef.current.get(item.key),
+          }
+        : { kind: "stored", storagePath: item.storagePath },
     );
     const mainIndex = Math.max(
       0,
       items.findIndex((item) => item.key === (mainKey || items[0]?.key)),
     );
 
-    return prepareModerationImages(sources, mainIndex);
+    const prepared = await prepareModerationImages(
+      sources,
+      mainIndex,
+      renditionSignatureRef.current,
+    );
+    if (!prepared) return null;
+
+    for (const [key, storagePath] of Object.entries(
+      prepared.stagedPathsByKey,
+    )) {
+      stagedPathsRef.current.set(key, storagePath);
+    }
+    renditionSignatureRef.current = prepared.renditionSignature;
+
+    return prepared.payload;
   }, [items, mainKey]);
 
   useImperativeHandle(
@@ -254,7 +280,9 @@ export const ListingImageUpload = forwardRef<
       );
     } else {
       URL.revokeObjectURL(target.previewUrl);
+      stagedPathsRef.current.delete(target.key);
     }
+    renditionSignatureRef.current = undefined;
 
     const nextItems = items.filter((item) => item.key !== key);
     setItems(nextItems);

@@ -170,6 +170,7 @@ export default async function ListingDetailPage({
   const galleryImages: ListingImagePreview[] = imageRows.map((row) => ({
     id: row.id,
     url: row.url,
+    storagePath: row.storage_path,
     isMain: row.is_main,
     sortOrder: row.sort_order,
   }));

@@ -64,7 +64,7 @@ function AuthSuccessNotice({
   onResendVerification?: () => void;
   resendPending?: boolean;
   resendCooldownDownSec?: number;
-  resendFeedback?: string | null;
+  resendFeedback?: { type: "success" | "error"; message: string } | null;
 }) {
   const resendDisabled =
     resendPending || resendCooldownDownSec > 0 || !onResendVerification;
@@ -97,8 +97,15 @@ function AuthSuccessNotice({
             {message}
           </p>
           {resendFeedback ? (
-            <p className="mt-2 text-sm text-emerald-800" role="status">
-              {resendFeedback}
+            <p
+              role={resendFeedback.type === "error" ? "alert" : "status"}
+              className={`mt-2 text-sm ${
+                resendFeedback.type === "error"
+                  ? "font-medium text-red-700"
+                  : "text-emerald-800"
+              }`}
+            >
+              {resendFeedback.message}
             </p>
           ) : null}
         </div>
@@ -154,7 +161,9 @@ export function EmailAuthPanel({
   );
   const [resendPending, startResendTransition] = useTransition();
   const [resendCooldownDownSec, setResendCooldownDownSec] = useState(0);
-  const [resendFeedback, setResendFeedback] = useState<string | null>(null);
+  const [resendFeedback, setResendFeedback] = useState<
+    { type: "success" | "error"; message: string } | null
+  >(null);
 
   const state =
     tab === "login" ? loginState : tab === "register" ? registerState : resetState;
@@ -190,10 +199,13 @@ export function EmailAuthPanel({
     startResendTransition(async () => {
       const result = await resendSignupVerificationEmail(email);
       if (result.error) {
-        setResendFeedback(result.error);
+        setResendFeedback({ type: "error", message: result.error });
         return;
       }
-      setResendFeedback(result.success ?? "Ověřovací e-mail odeslán.");
+      setResendFeedback({
+        type: "success",
+        message: result.success ?? "Ověřovací e-mail odeslán.",
+      });
       setResendCooldownDownSec(
         Math.ceil(VERIFICATION_RESEND_COOLDOWN_MS / 1000),
       );

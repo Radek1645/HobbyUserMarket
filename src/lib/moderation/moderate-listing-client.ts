@@ -200,8 +200,7 @@ async function invokeModerateListingOnce(
         jobCvRequired: input.jobCvRequired === true,
         ...(input.images
           ? {
-              imagesBase64: input.images.imagesBase64,
-              imageMimeTypes: input.images.imageMimeTypes,
+              imageReferences: input.images.imageReferences,
               mainImageIndex: input.images.mainImageIndex,
             }
           : {}),

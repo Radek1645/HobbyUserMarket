@@ -33,8 +33,12 @@ export type ModerationRequestBody = {
   contactPhone?: string;
   jobCvRequired?: boolean;
   mainImageIndex?: number;
+  imageReferences?: Array<{
+    bucket: string;
+    storagePath: string;
+  }>;
+  /** Dočasná kompatibilita se starým klientem během koordinovaného deploye. */
   imagesBase64?: string[];
-  imageMimeTypes?: string[];
 };
 
 function formatCzkAmount(amount: number): string {
@@ -111,7 +115,8 @@ export function buildModerationUserPrompt(
   body: ModerationRequestBody,
   categoryAiPrompt?: string,
 ): string {
-  const imageCount = body.imagesBase64?.length ?? 0;
+  const imageCount =
+    body.imageReferences?.length ?? body.imagesBase64?.length ?? 0;
   const mainIndex =
     typeof body.mainImageIndex === "number" ? body.mainImageIndex : 0;
 

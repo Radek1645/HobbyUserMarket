@@ -4,6 +4,7 @@ import {
   LISTING_IMAGE_MAX_FILE_BYTES,
   LISTING_IMAGE_MAX_FILES,
   LISTING_IMAGE_MAX_SOURCE_BYTES,
+  MODERATION_IMAGE_STAGING_BUCKET,
 } from "@/config/app";
 import {
   detectFileKindFromBytes,
@@ -24,7 +25,7 @@ export type ParsedListingImagesForm = {
   imageOrder: string[];
   mainImageKey: string;
   removedIds: string[];
-  newFiles: File[];
+  stagedImagePaths: string[];
 };
 
 export function validateListingImageSourceFile(file: File): string | null {
@@ -78,11 +79,13 @@ export function parseListingImagesFormData(
     .filter(Boolean);
   const mainImageKey = String(formData.get("mainImageKey") ?? "").trim();
   const removedIds = formData.getAll("removedImageId").map(String);
-  const newFiles = formData
-    .getAll("listingImages")
-    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+  const stagedImagePaths = formData
+    .getAll("stagedImagePath")
+    .map(String)
+    .map((path) => path.trim())
+    .filter(Boolean);
 
-  return { imageOrder, mainImageKey, removedIds, newFiles };
+  return { imageOrder, mainImageKey, removedIds, stagedImagePaths };
 }
 
 function getPublicUrl(
@@ -95,18 +98,17 @@ function getPublicUrl(
   return data.publicUrl;
 }
 
-async function uploadListingImageFile(
+async function uploadListingImageBytes(
   supabase: SupabaseClient,
   userId: string,
   postId: number,
-  file: File,
+  bytes: ArrayBuffer,
 ): Promise<{ storage_path: string; url: string }> {
-  const validationError = validateListingImageFile(file);
-  if (validationError) {
-    throw new Error(validationError);
+  if (bytes.byteLength > LISTING_IMAGE_MAX_FILE_BYTES) {
+    throw new Error("Fotka po zmenšení nesmí přesáhnout 1 MB.");
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const buffer = Buffer.from(bytes);
   const kind = detectFileKindFromBytes(buffer);
   if (!kind || !IMAGE_KINDS.has(kind)) {
     throw new Error("Soubor není platný obrázek (JPG, PNG nebo WebP).");
@@ -140,12 +142,15 @@ export async function syncListingImagesFromForm(
   userId: string,
   postId: number,
   formData: FormData,
+  stagingAdmin?: SupabaseClient,
 ): Promise<SyncResult> {
-  const { imageOrder, mainImageKey, removedIds, newFiles } =
+  const { imageOrder, mainImageKey, removedIds, stagedImagePaths } =
     parseListingImagesFormData(formData);
 
   const hasWork =
-    imageOrder.length > 0 || newFiles.length > 0 || removedIds.length > 0;
+    imageOrder.length > 0 ||
+    stagedImagePaths.length > 0 ||
+    removedIds.length > 0;
 
   if (!hasWork) {
     return {};
@@ -156,14 +161,13 @@ export async function syncListingImagesFromForm(
   }
 
   const newKeysInOrder = imageOrder.filter((key) => key.startsWith("n:"));
-  if (newKeysInOrder.length !== newFiles.length) {
+  if (newKeysInOrder.length !== stagedImagePaths.length) {
     return { error: "Nepodařilo se zpracovat nahrané fotky. Zkuste to prosím znovu." };
   }
 
-  for (const file of newFiles) {
-    const validationError = validateListingImageFile(file);
-    if (validationError) {
-      return { error: validationError };
+  for (const storagePath of stagedImagePaths) {
+    if (!storagePath.startsWith(`${userId}/`)) {
+      return { error: "Fotka nemá platnou vazbu na přihlášený účet." };
     }
   }
 
@@ -213,20 +217,29 @@ export async function syncListingImagesFromForm(
   }
 
   const uploadedByKey = new Map<string, { storage_path: string; url: string }>();
+  const consumedStagingPaths: string[] = [];
   let newFileIndex = 0;
 
   for (const key of newKeysInOrder) {
-    const file = newFiles[newFileIndex];
-    if (!file) break;
+    const stagingPath = stagedImagePaths[newFileIndex];
+    if (!stagingPath) break;
 
     try {
-      const uploaded = await uploadListingImageFile(
+      const { data: stagedFile, error: downloadError } = await supabase.storage
+        .from(MODERATION_IMAGE_STAGING_BUCKET)
+        .download(stagingPath);
+      if (downloadError || !stagedFile) {
+        throw new Error("Fotku se nepodařilo načíst z bezpečného úložiště.");
+      }
+
+      const uploaded = await uploadListingImageBytes(
         supabase,
         userId,
         postId,
-        file,
+        await stagedFile.arrayBuffer(),
       );
       uploadedByKey.set(key, uploaded);
+      consumedStagingPaths.push(stagingPath);
     } catch (uploadError) {
       return {
         error:
@@ -351,6 +364,15 @@ export async function syncListingImagesFromForm(
     .update({ main_image_url: mainUrl })
     .eq("id", postId);
 
+  if (stagingAdmin && consumedStagingPaths.length > 0) {
+    const { error: cleanupError } = await stagingAdmin.storage
+      .from(MODERATION_IMAGE_STAGING_BUCKET)
+      .remove(consumedStagingPaths);
+    if (cleanupError) {
+      console.error("syncListingImages staging cleanup:", cleanupError);
+    }
+  }
+
   return {};
 }
 
@@ -358,11 +380,17 @@ export async function getListingImages(
   supabase: SupabaseClient,
   postId: number,
 ): Promise<
-  Array<{ id: string; url: string; is_main: boolean; sort_order: number }>
+  Array<{
+    id: string;
+    url: string;
+    storage_path: string;
+    is_main: boolean;
+    sort_order: number;
+  }>
 > {
   const { data, error } = await supabase
     .from("post_images")
-    .select("id, url, is_main, sort_order")
+    .select("id, url, storage_path, is_main, sort_order")
     .eq("post_id", postId)
     .order("sort_order", { ascending: true });
 
