@@ -53,7 +53,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 - [x] `git status` — bez `.env`
 - [x] Commit — `c630f11`
-- [ ] Push
+- [x] Push
 
 ---
 
@@ -63,7 +63,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [ ] Push — `main` → `origin/main`
+- [x] Push — `main` → `origin/main` (`ee177d4`)
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -78,4 +78,4 @@ git push -u origin HEAD
 | DB schéma v `supabase-prikazy.md` aktuální *(pokud změna DB)* | N/A |
 | `Stav_projektu` aktualizován | ✅ |
 | Commit na `main` | ✅ `c630f11` |
-| Push na `origin` | ⬜ |
+| Push na `origin` | ✅ |
