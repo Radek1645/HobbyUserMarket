@@ -51,8 +51,8 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 5. Git — příprava a commity
 
-- [ ] `git status` — bez `.env`
-- [ ] Commit
+- [x] `git status` — bez `.env`
+- [x] Commit — `c630f11`
 - [ ] Push
 
 ---
@@ -77,5 +77,5 @@ git push -u origin HEAD
 | Dokumentace srovnaná s kódem | ✅ |
 | DB schéma v `supabase-prikazy.md` aktuální *(pokud změna DB)* | N/A |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit na `main` | ⬜ |
+| Commit na `main` | ✅ `c630f11` |
 | Push na `origin` | ⬜ |
