@@ -24,10 +24,57 @@ export type RequiredCategoryQuestionContext = {
 const MILLIMETER_VALUE_PATTERN =
   String.raw`\d+(?:[.,]\d+)?(?:\s*[/+x×-]\s*\d+(?:[.,]\d+)?)?\s*mm\b`;
 
+/** Typické EU dětské velikosti oblečení (cm výšky / pásmo). */
+const KIDS_CLOTHING_SIZE_PATTERN =
+  String.raw`(?:56|62|68|74|80|86|92|98|104|110|116|122|128|134|140|146|152|158|164)`;
+
+const SHOES_PRODUCT_PATTERN =
+  /\b(?:bot[ay]?|boty|obuv|tenisk\w*|sand[aá]l\w*|kozačk\w*|polobot\w*|bačkor\w*)\b/iu;
+
 function normalizeQuestionKey(question: ModerationQuestion): string {
   return (question.paramLabel ?? question.label)
     .trim()
     .toLocaleLowerCase("cs");
+}
+
+/** Zjevně dětské zboží — ne „dětský styl“ pro dospělé bez těchto slov. */
+function isChildrensProduct(text: string): boolean {
+  return /\b(?:d[eě]tsk\w*|d[ií]vč[ií]\w*|chlapeck\w*|pro\s+d[ií]t[eě])\b/iu.test(
+    text,
+  );
+}
+
+function isShoesProduct(text: string): boolean {
+  return SHOES_PRODUCT_PATTERN.test(text);
+}
+
+/** Věk, výška nebo EU dětská velikost už v textu — otázku Věk/výška nepřidávat. */
+function hasChildAgeOrHeightAnswer(text: string): boolean {
+  return (
+    /\d+\s*(?:[-–]\s*\d+\s*)?let\b/iu.test(text) ||
+    /\bv[eě]k\b/iu.test(text) ||
+    /(?:v[yý]šk\w*|vysok\w*).{0,20}\d+(?:[.,]\d+)?\s*cm\b/iu.test(text) ||
+    /\d+(?:[.,]\d+)?\s*cm.{0,20}(?:v[yý]šk\w*|vysok\w*)/iu.test(text) ||
+    new RegExp(
+      `(?:vel(?:ikost)?\\.?\\s*|vel\\.?\\s+)${KIDS_CLOTHING_SIZE_PATTERN}\\b`,
+      "iu",
+    ).test(text) ||
+    new RegExp(
+      `\\b${KIDS_CLOTHING_SIZE_PATTERN}\\s*(?:cm\\b|(?:[-–/]\\s*)?vel)`,
+      "iu",
+    ).test(text)
+  );
+}
+
+function hasChildShoeSizeOrInsole(text: string): boolean {
+  return (
+    hasMillimeterMeasurement(text, String.raw`d[eé]lk[ay]\s+st[eé]lk[ay]`) ||
+    new RegExp(
+      `(?:vel(?:ikost)?\\.?\\s*|EU\\s*|č\\.?\\s*)${KIDS_CLOTHING_SIZE_PATTERN}\\b`,
+      "iu",
+    ).test(text) ||
+    /(?:vel(?:ikost)?\.?\s*|EU\s*|č\.?\s*)\d{2}\b/iu.test(text)
+  );
 }
 
 function hasMillimeterMeasurement(
@@ -101,14 +148,8 @@ function resolveSportEventQuestions(
 
 function resolveFashionQuestions(text: string): ModerationQuestion[] {
   const questions: ModerationQuestion[] = [];
-  const isShoes =
-    /\b(?:bot[ay]?|boty|obuv|tenisk\w*|sand[aá]l\w*|kozačk\w*|polobot\w*|bačkor\w*)\b/iu.test(
-      text,
-    );
-  const isChildrens =
-    /\b(?:d[eě]tsk\w*|d[ií]vč[ií]\w*|chlapeck\w*|pro\s+d[ií]t[eě])\b/iu.test(
-      text,
-    );
+  const isShoes = isShoesProduct(text);
+  const isChildrens = isChildrensProduct(text);
 
   if (isShoes && !hasRemovableInsoleAnswer(text)) {
     questions.push({
@@ -162,6 +203,31 @@ function resolveFashionQuestions(text: string): ModerationQuestion[] {
 }
 
 /**
+ * U zjevně dětského zboží bez věku/výšky/vel. pásma — 1 nepovinná otázka.
+ * U dětských bot se stélkou/velikostí se neptá znovu.
+ */
+function resolveChildrensAgeHeightQuestions(text: string): ModerationQuestion[] {
+  if (!isChildrensProduct(text)) return [];
+  if (hasChildAgeOrHeightAnswer(text)) return [];
+  if (isShoesProduct(text) && hasChildShoeSizeOrInsole(text)) return [];
+
+  return [
+    {
+      id: "required-child-age-height",
+      label: "Pro jaký věk / výšku dítěte je věc vhodná?",
+      paramLabel: "Věk / výška",
+    },
+  ];
+}
+
+function resolveZboziRequiredQuestions(text: string): ModerationQuestion[] {
+  return [
+    ...resolveFashionQuestions(text),
+    ...resolveChildrensAgeHeightQuestions(text),
+  ];
+}
+
+/**
  * Doplní relevantní volitelné otázky, jejichž zobrazení nemá záviset jen na AI.
  * Odpovědi zůstávají nepovinné a do Parametrů se přidají pouze po vyplnění.
  */
@@ -184,7 +250,7 @@ export function ensureRequiredCategoryQuestions<T extends ModerationResultLike>(
 
   const requiredQuestions =
     context.categoryType === "zbozi"
-      ? resolveFashionQuestions(searchableText)
+      ? resolveZboziRequiredQuestions(searchableText)
       : resolveSportEventQuestions(context, searchableText);
 
   if (requiredQuestions.length === 0) return result;

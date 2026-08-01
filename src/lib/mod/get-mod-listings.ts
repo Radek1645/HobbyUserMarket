@@ -1,4 +1,5 @@
 import { COMMENT_STATUS, POST_STATUS } from "@/config/post-status";
+import { loadDeliveredInquiryCounts } from "@/lib/inquiry/delivered-counts";
 import { createClient } from "@/lib/supabase/server";
 import type { PostStatusReasonCode } from "@/types/post";
 
@@ -12,6 +13,7 @@ export type ModListingSummary = {
   updatedAt: string;
   reportCount: number;
   viewCount: number;
+  inquiryCount: number;
 };
 
 export type ModHiddenComment = {
@@ -79,7 +81,11 @@ export async function loadBlockedListings(): Promise<ModListingSummary[]> {
 
   if (error || !posts) return [];
 
-  const reportCounts = await loadReportCounts(posts.map((post) => post.id));
+  const postIds = posts.map((post) => post.id);
+  const [reportCounts, inquiryCounts] = await Promise.all([
+    loadReportCounts(postIds),
+    loadDeliveredInquiryCounts(postIds),
+  ]);
 
   return posts.map((post) => ({
     id: post.id,
@@ -91,6 +97,7 @@ export async function loadBlockedListings(): Promise<ModListingSummary[]> {
     updatedAt: post.updated_at,
     reportCount: reportCounts.get(post.id) ?? 0,
     viewCount: post.view_count ?? 0,
+    inquiryCount: inquiryCounts.get(post.id) ?? 0,
   }));
 }
 
@@ -127,7 +134,11 @@ export async function loadModListings(params: {
 
   if (error || !posts) return [];
 
-  const reportCounts = await loadReportCounts(posts.map((post) => post.id));
+  const postIds = posts.map((post) => post.id);
+  const [reportCounts, inquiryCounts] = await Promise.all([
+    loadReportCounts(postIds),
+    loadDeliveredInquiryCounts(postIds),
+  ]);
 
   return posts.map((post) => ({
     id: post.id,
@@ -139,6 +150,7 @@ export async function loadModListings(params: {
     updatedAt: post.updated_at,
     reportCount: reportCounts.get(post.id) ?? 0,
     viewCount: post.view_count ?? 0,
+    inquiryCount: inquiryCounts.get(post.id) ?? 0,
   }));
 }
 

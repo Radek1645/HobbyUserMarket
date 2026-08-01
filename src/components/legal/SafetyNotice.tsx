@@ -1,15 +1,20 @@
-import { SAFETY_UI } from "@/config/legal";
+import { getMeetingSafetyNotice, SAFETY_UI } from "@/config/legal";
+import type { CategoryType } from "@/types/post";
 
 type MeetingSafetyNoticeProps = {
   className?: string;
+  categoryType?: CategoryType | null;
 };
 
-export function MeetingSafetyNotice({ className = "" }: MeetingSafetyNoticeProps) {
+export function MeetingSafetyNotice({
+  className = "",
+  categoryType,
+}: MeetingSafetyNoticeProps) {
   return (
     <p
       className={`rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm leading-relaxed text-blue-950 ${className}`}
     >
-      {SAFETY_UI.meetingSafetyNotice}
+      {getMeetingSafetyNotice(categoryType)}
     </p>
   );
 }

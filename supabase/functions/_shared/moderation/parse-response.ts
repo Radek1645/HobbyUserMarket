@@ -3,6 +3,7 @@ import {
   VALID_SUBCATEGORY_SLUGS,
 } from "./category-prompts.ts";
 import { applyListingPlatformCta } from "./listing-cta.ts";
+import { formatEventDateForDisplay } from "./build-user-prompt.ts";
 
 export type ModerationStatus = "APPROVED" | "REJECTED" | "NEEDS_QUESTIONS";
 
@@ -167,6 +168,21 @@ export function isPriceRelatedQuestion(label: string): boolean {
   );
 }
 
+function promoteApprovedIfNoQuestions(
+  result: ModerationResult,
+  questions: NonNullable<ModerationResult["questions"]>,
+): ModerationResult {
+  if (questions.length === 0) {
+    return {
+      ...result,
+      status: "APPROVED",
+      questions: undefined,
+    };
+  }
+
+  return { ...result, questions };
+}
+
 /** Odstraní otázky o ceně, pokud uživatel vyplnil pevnou/orientační cenu ve formuláři. */
 export function filterRedundantPriceQuestions(
   result: ModerationResult,
@@ -188,15 +204,74 @@ export function filterRedundantPriceQuestions(
     (question) => !isPriceRelatedQuestion(question.label),
   );
 
-  if (questions.length === 0) {
-    return {
-      ...result,
-      status: "APPROVED",
-      questions: undefined,
-    };
+  return promoteApprovedIfNoQuestions(result, questions);
+}
+
+/** Otázka směřuje na datum/čas konání — redundantní, když je eventDate ve formuláři. */
+export function isEventDateRelatedQuestion(label: string): boolean {
+  const normalized = label.toLowerCase();
+
+  // Bez \b u č/í — JS word boundary je jen ASCII.
+  return (
+    /datum|termín/.test(normalized) ||
+    /čas|hodin/.test(normalized) ||
+    /kdy\s+(se\s+)?(koná|probíhá|začíná|start)/.test(normalized) ||
+    /den\s+a\s+čas/.test(normalized)
+  );
+}
+
+/** Odstraní otázky o datu/času, pokud uživatel vyplnil eventDate ve formuláři. */
+export function filterRedundantEventDateQuestions(
+  result: ModerationResult,
+  eventDate?: string,
+): ModerationResult {
+  if (result.status !== "NEEDS_QUESTIONS" || !result.questions?.length) {
+    return result;
   }
 
-  return { ...result, questions };
+  if (!eventDate?.trim()) return result;
+
+  const questions = result.questions.filter(
+    (question) => !isEventDateRelatedQuestion(question.label),
+  );
+
+  return promoteApprovedIfNoQuestions(result, questions);
+}
+
+/**
+ * Otázka směřuje na lokalitu / místo — redundantní, když je locationText ve formuláři.
+ * Úzká heuristika: nefiltruje obecný „dojezd“ u služeb.
+ */
+export function isLocationRelatedQuestion(label: string): boolean {
+  const normalized = label.toLowerCase();
+
+  // Bez \b u č/ě — JS word boundary je jen ASCII.
+  return (
+    /lokalit/.test(normalized) ||
+    /adres/.test(normalized) ||
+    /místo\s+konání/.test(normalized) ||
+    /kde\s+(se\s+)?(koná|probíhá|schází|potká|předá)/.test(normalized) ||
+    /v\s+jakém\s+(městě|obci|místě)/.test(normalized) ||
+    /(město|obec)(?![a-zá-ž])/.test(normalized)
+  );
+}
+
+/** Odstraní otázky o lokalitě, pokud uživatel vyplnil locationText ve formuláři. */
+export function filterRedundantLocationQuestions(
+  result: ModerationResult,
+  locationText?: string,
+): ModerationResult {
+  if (result.status !== "NEEDS_QUESTIONS" || !result.questions?.length) {
+    return result;
+  }
+
+  if (!locationText?.trim()) return result;
+
+  const questions = result.questions.filter(
+    (question) => !isLocationRelatedQuestion(question.label),
+  );
+
+  return promoteApprovedIfNoQuestions(result, questions);
 }
 
 export function parseModerationResponse(
@@ -306,15 +381,26 @@ export function applyFormPriceToCleanedDescription(
   }
 
   const formatted = formatCzkAmount(priceAmount);
+  const formPriceSentence =
+    priceType === "fixed"
+      ? `Cena ${formatted} Kč.`
+      : `Cena ${formatted} Kč, dohodou.`;
+
   let result = text.replace(
     new RegExp(
       `\\b[Cc]ena\\s*${escapeRegExp(CONTACT_PLACEHOLDER)}\\s*Kč\\.?`,
       "gi",
     ),
-    `Cena ${formatted} Kč.`,
+    formPriceSentence,
   );
 
   result = sanitizeCleanedDescription(result);
+
+  // Přepiš „Cena … Kč“ / „Orientační cena … Kč“ na částku z formuláře (i když už nějaké Kč v úvodu jsou).
+  result = result.replace(
+    /\b(?:[Oo]rientační\s+)?[Cc]ena\s+\d[\d\s]*\s*Kč(?:,\s*dohodou)?\.?/g,
+    formPriceSentence,
+  );
 
   const intro = result.split(/\n\n---\n\n/)[0] ?? result;
   const hasPriceInIntro = new RegExp(
@@ -324,17 +410,142 @@ export function applyFormPriceToCleanedDescription(
   if (!hasPriceInIntro && !/\b\d[\d\s]*\s*Kč/.test(intro)) {
     const parts = result.split(/\n\n---\n\n/);
     const introPart = (parts[0] ?? result).trimEnd();
-    const suffix = parts.length > 1 ? `\n\n---\n\n${parts.slice(1).join("\n\n---\n\n")}` : "";
+    const suffix =
+      parts.length > 1
+        ? `\n\n---\n\n${parts.slice(1).join("\n\n---\n\n")}`
+        : "";
     const trimmedIntro = introPart.replace(/\s+$/, "");
     const needsPeriod = trimmedIntro.length > 0 && !/[.!?]$/.test(trimmedIntro);
-    const priceSentence =
-      priceType === "fixed"
-        ? `${needsPeriod ? "." : ""} Cena ${formatted} Kč.`
-        : `${needsPeriod ? "." : ""} Cena ${formatted} Kč, dohodou.`;
+    const priceSentence = `${needsPeriod ? "." : ""} ${formPriceSentence}`;
     result = `${trimmedIntro}${priceSentence}${suffix}`;
   }
 
   return result.trim();
+}
+
+function formatEventDateParts(iso: string): {
+  display: string;
+} | null {
+  const trimmed = iso.trim();
+  if (!trimmed) return null;
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return { display: trimmed };
+  }
+
+  return { display: formatEventDateForDisplay(trimmed) };
+}
+
+function upsertEventDateParameters(
+  parametersBlock: string,
+  display: string,
+): string {
+  const lines = parametersBlock.split("\n");
+  const bulletPattern = /^(\s*•\s*)([^:]+):\s*(.*)$/;
+  let replacedCombined = false;
+  let replacedDatum = false;
+  let replacedCas = false;
+  const nextLines: string[] = [];
+
+  for (const line of lines) {
+    const match = line.match(bulletPattern);
+    if (!match) {
+      nextLines.push(line);
+      continue;
+    }
+
+    const [, prefix, rawLabel] = match;
+    const label = rawLabel.trim();
+
+    if (/^datum\s+a\s+čas$/i.test(label) || /^termín$/i.test(label)) {
+      nextLines.push(`${prefix}${label}: ${display}`);
+      replacedCombined = true;
+      continue;
+    }
+    if (/^datum$/i.test(label)) {
+      // Prefer one combined bullet — drop separate Datum/Čas when rewriting.
+      replacedDatum = true;
+      continue;
+    }
+    if (/^čas$/i.test(label) || /^kdy$/i.test(label)) {
+      replacedCas = true;
+      continue;
+    }
+
+    nextLines.push(line);
+  }
+
+  if (replacedCombined) {
+    return nextLines.join("\n");
+  }
+
+  // Drop leftover empty header-only lines; insert combined bullet after "Parametry".
+  const insertIndex = nextLines.findIndex((line) =>
+    /^parametry$/i.test(line.trim()),
+  );
+  const bullet = `• Datum a čas: ${display}`;
+  if (insertIndex >= 0) {
+    nextLines.splice(insertIndex + 1, 0, bullet);
+  } else if (replacedDatum || replacedCas || nextLines.length > 0) {
+    nextLines.unshift(bullet);
+  } else {
+    nextLines.push(bullet);
+  }
+
+  return nextLines.join("\n");
+}
+
+function insertEventDateSentenceBeforeCta(
+  intro: string,
+  display: string,
+): string {
+  const sentence = `Koná se ${display}.`;
+  const ctaPattern =
+    /Pro více informací napište \S+ zprávu přes (?:platformu|web)\.?/i;
+  const ctaMatch = intro.match(ctaPattern);
+
+  if (ctaMatch && ctaMatch.index != null) {
+    const before = intro.slice(0, ctaMatch.index).trimEnd();
+    const after = intro.slice(ctaMatch.index);
+    const needsSpace = before.length > 0 && !/\s$/.test(before);
+    const needsPeriod = before.length > 0 && !/[.!?]$/.test(before);
+    return `${before}${needsPeriod ? "." : ""}${needsSpace || needsPeriod ? " " : ""}${sentence} ${after}`.replace(
+      /\s{2,}/g,
+      " ",
+    );
+  }
+
+  const trimmed = intro.trimEnd();
+  const needsPeriod = trimmed.length > 0 && !/[.!?]$/.test(trimmed);
+  return `${trimmed}${needsPeriod ? "." : ""} ${sentence}`.trim();
+}
+
+/** Doplní / opraví datum a čas konání z formuláře v Parametrech (a v úvodu, pokud chybí). */
+export function applyFormEventDateToCleanedDescription(
+  text: string,
+  eventDate?: string,
+): string {
+  const parts = formatEventDateParts(eventDate ?? "");
+  if (!parts) return text;
+
+  const { display } = parts;
+  const sections = text.split(/\n\n---\n\n/);
+  let intro = sections[0] ?? text;
+  let parameters =
+    sections.length > 1 ? sections.slice(1).join("\n\n---\n\n") : "";
+
+  if (parameters.trim()) {
+    parameters = upsertEventDateParameters(parameters, display);
+  } else {
+    parameters = `Parametry\n• Datum a čas: ${display}`;
+  }
+
+  if (!intro.includes(display)) {
+    intro = insertEventDateSentenceBeforeCta(intro, display);
+  }
+
+  return `${intro.trim()}\n\n---\n\n${parameters.trim()}`.trim();
 }
 
 /** Jednoduchý strip kontaktů — záloha, když AI něco propustí. */
@@ -459,6 +670,7 @@ export function normalizeModerationResult(
   priceType?: string,
   priceAmount?: number,
   categoryType?: string,
+  eventDate?: string,
 ): ModerationResult {
   if (result.status === "REJECTED") {
     return {
@@ -474,12 +686,15 @@ export function normalizeModerationResult(
 
   const cleanedTitle = (result.cleanedTitle ?? fallbackTitle).trim();
   const cleanedDescription = applyListingPlatformCta(
-    applyFormPriceToCleanedDescription(
-      stripContactInfo(
-        (result.cleanedDescription ?? fallbackDescription).trim(),
+    applyFormEventDateToCleanedDescription(
+      applyFormPriceToCleanedDescription(
+        stripContactInfo(
+          (result.cleanedDescription ?? fallbackDescription).trim(),
+        ),
+        priceType,
+        priceAmount,
       ),
-      priceType,
-      priceAmount,
+      eventDate,
     ),
     categoryType,
   );

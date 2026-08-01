@@ -4,6 +4,7 @@ import { revealListingContact } from "@/app/actions/contact";
 import { MeetingSafetyNotice } from "@/components/legal/SafetyNotice";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { listingFormPrimaryButtonClass, listingInquiryCtaButtonClass } from "@/config/listing-form-ui";
+import type { CategoryType } from "@/types/post";
 import { Loader2, Lock, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
@@ -14,6 +15,7 @@ type ListingContactRevealProps = {
   isLoggedIn: boolean;
   showEmail: boolean;
   showPhone: boolean;
+  categoryType?: CategoryType | null;
   /** Bez vlastní karty — uvnitř společné sekce kontaktu. */
   embedded?: boolean;
   /** Sekundární akce ve stejném sloupci jako primární tlačítko (full-width stack). */
@@ -63,6 +65,7 @@ export function ListingContactReveal({
   isLoggedIn,
   showEmail,
   showPhone,
+  categoryType,
   embedded = false,
   secondaryAction,
   onRevealed,
@@ -148,7 +151,7 @@ export function ListingContactReveal({
 
       <ContactTeaser showEmail={showEmail} showPhone={showPhone} />
 
-      <MeetingSafetyNotice className="mt-3" />
+      <MeetingSafetyNotice className="mt-3" categoryType={categoryType} />
 
       {error ? (
         <p role="alert" className="mt-3 text-sm text-red-700">

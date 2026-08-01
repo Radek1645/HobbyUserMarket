@@ -39,6 +39,8 @@ Podvod (scam_fraud) — doplňující REJECTED (platí i když u Gemini vidíš 
 - Identifikovaný výrobek (značka + model) a **cena z formuláře** je zjevně mimo běžnou tržní hodnotu v ČR (řádově násobky, ne drobný rozdíl ani „trochu dražší“) → REJECTED, rejectedTopicId=scam_fraud. Důvod česky uveď konkrétně (produkt + řádová tržní vs požadovaná cena z formuláře).
 - Stav z formuláře (conditionLabel / conditionLabelText) zjevně odporuje uživatelskému popisu nebo fotkám (např. formulář „Nové“, text „použité / staré cca 3 roky“) → REJECTED, rejectedTopicId=scam_fraud. Nesmíš tento rozpor sám vytvořit hydratací Parametrů — u APPROVED/NEEDS_QUESTIONS drž Stav v Parametrech v souladu s formulářem, pokud uživatelský text rozpor nemá.
 - Cena v popisu vs formulář: částka ve formuláři je **závazná**. Jiná / stará cena v textu popisu (typicky po úpravě inzerátu) NENÍ scam_fraud — v cleanedDescription a metaDescription ji přepiš na cenu z formuláře. NIKDY kvůli tomu REJECTED.
+- Datum a čas konání (eventDate) z formuláře je **závazný** (datum i čas). Jiný / starý čas nebo datum v textu popisu NENÍ důvod k REJECTED — v cleanedDescription (úvod i Parametry) použij údaj z formuláře. NIKDY kvůli tomu REJECTED.
+- Lokalita (locationText) z formuláře je **závazná** pro „kde“. Neshoda města/adresy v textu popisu oproti formuláři NENÍ důvod k REJECTED — v textu použij lokalitu z formuláře; řetězec location_text nepřepisuj. NIKDY kvůli tomu REJECTED.
 - Mírná nejistota o tržní ceně nebo jen mírný rozdíl ≠ REJECTED.
 
 Pravidla pro fotografie:
@@ -99,6 +101,8 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - U každé otázky v poli questions uveď label a paramLabel (max. 4 slova, bez otazníku).
 - U otázek na měřitelné veličiny uveď jednotku v label (cm, ml, m², km, kg) a slad paramLabel.
 - Pokud user prompt uvádí typ ceny a částku z formuláře (pevná nebo dohodou), NIKDY se na cenu neptej — uveď ji v úvodu; v metaDescription jen „za X Kč“.
+- Pokud user prompt uvádí eventDate z formuláře, NIKDY se na datum ani čas konání neptej — uveď je v úvodu/Parametrech.
+- Pokud user prompt uvádí lokalitu z formuláře (locationText), NIKDY se na lokalitu / místo / adresu / kde se koná neptej.
 - APPROVED jen když u identifikovaného výrobku Parametry obsahují i katalog (ne jen stav/vady). Jinak doplň katalog a teprve pak APPROVED, nebo NEEDS_QUESTIONS jen na kusové chybějící údaje. NEEDS_QUESTIONS nezneužívej.
 
 Limit délky popisu:

@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **Hydratace / kvalita inzerátu:** [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) · **NSFW / hard-hit brána:** [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
-> **Datum:** 2026-07-24
+> **Datum:** 2026-08-01 (poslední sync s kódem)
 
 ---
 
@@ -115,7 +115,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
   - **Práce a brigády** — hledám člověka (úkol, záskok, výpomoc).
   - **Události** — akce i novinky (sport, trhy, promo kavárny/restaurace/pekárny).
   - **Nemovitosti** — prodej/pronájem od majitelů i realitek.
-  - **Zboží** — nákup/prodej v okolí (auta, oblečení, hobby, dětské…).
+  - **Zboží** — nákup/prodej v okolí (auta, oblečení, hobby, dětské…). Podkategorie **Sport** (UI label; slug v DB stále `kola-sport`).
 - Pod výpisem vždy SEO blok (`home-seo.ts`) s klíčovými slovy bazar / inzerce.
 - Výběr kategorie omezí výpis na daný typ inzerátu — lokální logika (okruh, fallback) zůstává stejná.
 - URL může obsahovat parametr `?kategorie=…` pro sdílení konkrétního pohledu.
@@ -483,6 +483,8 @@ Hydratace vychází z:
 - **všech** nahraných fotografií (vizuální kontext; hlavní fotka navíc pro shodu text ↔ náhled),
 - u jasně identifikovaného výrobku (značka + model / typ / motorizace) v **jakékoli** kategorii zboží i **katalogových vlastností** s jistotou. Kusové údaje (nájezd, vady, příslušenství v balení) jen z textu/fotek.
 
+**Formulář má při hydrataci přednost** (cena, `eventDate`, lokalita): neshoda volného textu s polem formuláře **není** důvod k `REJECTED`; Edge přepíše údaj do `cleanedDescription` / Parametrů. Technický detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) → *Filtr redundantních otázek (formulář má pravdu)*. Po ruční úpravě textu v modalu už to neplatí stejně — viz §6.8.1.
+
 ### 6.7 Stav NEEDS_QUESTIONS — doplňující dotazník
 
 Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kategorii, nezamítne ho hned — vrátí stav `NEEDS_QUESTIONS` a položí **1–5 otázek**.
@@ -493,8 +495,9 @@ Když AI zjistí, že v inzerátu chybí **kritické informace** pro danou kateg
 |-----------|--------------------------------------|
 | Zboží (auto, elektronika) | Rok, nájezd, kapacita, záruka… |
 | Zboží (móda — boty/hodinky) | Deterministicky i stélka / mm rozměry (`required-category-questions.ts`) |
+| Zboží (zjevně dětské) | Deterministicky 1× „Věk / výška“, pokud chybí věk, výška i velikostní pásmo; u bot se stélkou/velikostí se neptá znovu |
 | Služby | Dojezd, materiál, rozsah práce; typ ceny (hodina vs. zakázka) respektuje formulář |
-| Události | Kapacita, přesná lokalita (datum už je ve formuláři) |
+| Události | Kapacita (datum/čas z formuláře — neptat; lokalita z formuláře — neptat) |
 | Události → Sport | Deterministicky výbava/speciální vybavení s sebou, pokud text nic neříká |
 | Nemovitosti | Dispozice, výměra, vybavení |
 
@@ -522,6 +525,22 @@ Povinné/deterministické otázky: [`src/config/moderation/required-category-que
 | **Publikovat vylepšený inzerát** (doporučeno) | Uloží AI verzi (název, popis, `meta_description`, `image_alt`) i bez vyplněných otázek; vyplněné odpovědi se sloučí do Parametrů. Původní text → `original_title` / `original_description`. Na detailu **„Vytvořeno s pomocí AI: Ano“** (`description_ai_assisted = true`, migrace `043`). V náhledu jsou meta popis a alt jen ke kontrole (readonly). |
 | **Ponechat můj původní text** | Zahodí AI návrh; uloží text z formuláře; SEO pole `meta_description` / `image_alt` vymaže (fallback z popisu / title). `description_ai_assisted = false`. Strip kontaktů platí vždy. |
 | **Zrušit** | Návrat do formuláře, inzerát se neuloží. |
+
+#### 6.8.1 Známá mezera: ruční edit textu v modalu vs. pole formuláře
+
+**Stav (záměrně neřešeno):** pravidlo „formulář má pravdu“ platí pro **AI hydrataci** (1. volání + Edge post-process). V modalu je popis editovatelný; při „Publikovat vylepšený inzerát“ se uloží **text z modalu** a strukturovaná pole (`event_date`, cena, lokalita…) zůstávají z **formuláře**.
+
+Důsledek: uživatel může v úvodu přepsat např. čas z 18:15 na 19:15, zatímco **Konání** / Parametry / sloupec `event_date` zůstanou 18:15. Druhá kontrola (`issueApproval`) ověří bezpečnost finálního textu, **nesrovnává** znovu text s polem formuláře a **nepřepisuje** čas/cenu z formuláře do uživatelem upraveného popisu.
+
+To není bypass publikace — jen možný **rozpor mezi volným textem a strukturovanými údaji** na detailu.
+
+**Navrhované úpravy (backlog — zatím neimplementovat):**
+
+1. **Nechat** — modal = finální lidská úprava textu; změnu času/ceny dělat ve formuláři (a znovu spustit AI).
+2. **Při publikaci znovu aplikovat** form authority na popis (`applyFormEventDate…` / `applyFormPrice…`) — text vždy sedí s formulářem, ruční přepis času v modalu se přepíše zpět.
+3. **Soft warning** v modalu, když detekujeme v textu jiný čas/cenu než ve formuláři (neblokuje, jen upozorní).
+
+Technický popis filtrů: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md).
 
 ### 6.9 Zamítnutí (REJECTED)
 
@@ -816,7 +835,8 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - **Zadavatel** (přezdívka nebo název firmy) — klik vede na **`/uzivatel/[nickname]`** (aktivní inzeráty, 9 na stránku)
 - Štítek **Podnikatel** u firemního profilu (VOP §7.2); milník **Aktivní inzerent · N+** při 5 / 10 / 20 / 40 lifetime publikacích
 - Majitel u svého inzerátu vidí stejné odznaky s vysvětlením, že je vidí zájemci
-- Majitel vidí **počet zobrazení** detailu (`posts.view_count`, migrace `052`) — bez identifikace prohlížečů
+- Majitel vidí **počet zobrazení** detailu (`posts.view_count`, migrace `052`) — bez identifikace prohlížečů.
+- Na **`/moje-inzeraty`** u každé karty: zobrazení + **počet doručených poptávek** (`inquiry_events` kde `delivered = true`); nápověda, že detaily jsou jen v e-mailu. Stejný počet ve sloupci **Poptávky** v God Mode (`/mod/inzeraty`, `/mod/karantena`).
 
 ### 8.2 Zobrazení kontaktu
 
@@ -824,7 +844,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 2. Přihlášený uživatel klikne **„Zobrazit kontakt“**.
 3. Server zavolá RPC **`reveal_listing_contact`** — ověří viditelnost inzerátu, opt-in vlajky, rate limit; zapíše `contact_reveals`; vrátí PII.
 4. Limit: **20 zobrazení za den** na uživatele (unikátní inzeráty; opětovné otevření téhož inzerátu limit nespotřebuje).
-5. Pod kontaktem se zobrazí **bezpečnostní upozornění** k osobnímu setkání (veřejné místo; doporučení doprovodu pro mladší 18 let).
+5. Pod kontaktem se zobrazí **bezpečnostní upozornění** — text podle kategorie (`getMeetingSafetyNotice`: u zboží/služeb „osobní předání“, u události sraz/místo konání, u práce schůzka, u nemovitosti prohlídka).
 
 ### 8.3 Poptávkový formulář
 
@@ -832,8 +852,8 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - E-mail prodejce zůstává skrytý — doručení přes Resend.
 - U **událostí** je tlačítko **„Mám zájem o účast“** — stejný mechanismus, jiný text e-mailu.
 - U **Práce a brigád** může uchazeč přiložit CV/portfolio (PDF, DOCX, JPG, PNG). Zadavatel volí **„Vyžadovat CV nebo portfolio při odpovědi“** (`job_cv_required`, migrace `046`) — pak bez přílohy formulář neodešle.
-- Metadata o odeslání se loguje (bez obsahu zprávy — GDPR).
-- Stejné **bezpečnostní upozornění** k setkání jako u kontaktu.
+- Metadata o odeslání se loguje (bez obsahu zprávy — GDPR); doručené pokusy (`inquiry_events.delivered = true`) se počítají majiteli i v God Mode.
+- Stejné **bezpečnostní upozornění** podle kategorie jako u kontaktu.
 
 ### 8.4 Veřejná diskuse pod inzerátem — mimo scope
 
@@ -1046,8 +1066,8 @@ Role se **nastavuje v databázi**, ne v aplikaci. Postup je v [`supabase-prikazy
 
 | Stránka | Účel | Stav |
 |---------|------|------|
-| `/mod/karantena` | Zablokované inzeráty (`blocked`) — obnovit nebo smazat | **ano** |
-| `/mod/inzeraty` | Přehled inzerátů s filtry stavu | **ano** |
+| `/mod/karantena` | Zablokované inzeráty (`blocked`) — obnovit nebo smazat; sloupec poptávek | **ano** |
+| `/mod/inzeraty` | Přehled inzerátů s filtry stavu; sloupce zobrazení, **poptávky**, nahlášení | **ano** |
 | `/mod/uzivatele` | Jen admin — správa uživatelů, smazání účtu, balíčky | **ano** |
 | Detail cizího inzerátu | Lišta: Zablokovat, Smazat, Obnovit, Upravit, Poznámky | **ano** (Poznámky — ano, viz §11.4.1; sjednocená Historie/timeline — zatím ne, viz §11.4) |
 

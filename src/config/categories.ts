@@ -120,13 +120,14 @@ export const CATEGORIES: CategoryConfig[] = [
       },
       {
         slug: "kola-sport",
-        label: "Kola a sport",
+        label: "Sport",
         titlePlaceholder: "např. Dětské kolo Velo 20″",
         descriptionPlaceholder: "Značka, velikost, stav, příslušenství…",
         aiPrompt:
           "Úvod + Parametry (značka, model/typ, velikost, materiál, výbava, stav). " +
           "Je-li značka a model/typ jasné, doplň katalogové vlastnosti s jistotou (např. odpružení, brzdy, materiál rámu u známého kola). " +
           "Velikost rámu/kol, stav a příslušenství konkrétního kusu jen z textu/fotek nebo se zeptej. " +
+          "DĚTSKÉ ZBOŽÍ (zjevně dětské / pro dítě / dívčí / chlapecké — ne „dětský styl“ pro dospělé): chybí-li věk, výška i velikostní pásmo (např. vel. 98, „pro 6–9 let“), zeptej se jednou (paramLabel: „Věk / výška“; label např. „Pro jaký věk / výšku dítěte je věc vhodná?“). Je-li údaj známý, zapiš do Parametrů a neptej se. " +
           "Dotazník jen na chybějící kusové údaje — ne na katalog už identifikovaného modelu.",
       },
       {
@@ -178,7 +179,11 @@ export const CATEGORIES: CategoryConfig[] = [
           "BOTY A OBUV (včetně bot na chození) — pokud text/fotky ukazují boty:\n" +
           "- Chybí-li info o vyndávací stélce (vložce), zeptej se (paramLabel: „Vyndávací stélka“; label např. „Mají boty vyndávací stélku / vložku?“).\n" +
           "- U dětských bot chybí-li délka stélky v mm, zeptej se (paramLabel: „Délka stélky“; label např. „Jaká je délka stélky v mm?“). Jednotka mm je povinná.\n" +
-          "- Je-li údaj známý, zapiš do Parametrů (např. • Vyndávací stélka: ano; • Délka stélky: 165 mm) a neptej se.\n\n" +
+          "- Je-li údaj známý, zapiš do Parametrů (např. • Vyndávací stélka: ano; • Délka stélky: 165 mm) a neptej se.\n" +
+          "- U dětských bot, pokud už je stélka nebo velikost jasná, na věk/výšku se navíc neptej.\n\n" +
+          "DĚTSKÉ OBLEČENÍ / ZBOŽÍ (zjevně dětské / dívčí / chlapecké / pro dítě — ne „dětský styl“ pro dospělé):\n" +
+          "- Chybí-li věk, výška i velikostní pásmo (např. vel. 98, „pro 4–6 let“, výška 110 cm), zeptej se jednou (paramLabel: „Věk / výška“; label např. „Pro jaký věk / výšku dítěte je věc vhodná?“).\n" +
+          "- Je-li údaj známý, zapiš do Parametrů a neptej se.\n\n" +
           "HODINKY — pokud text/fotky ukazují hodinky:\n" +
           "- Chybí-li šířka pásku v mm, zeptej se (paramLabel: „Šířka pásku“; label např. „Jaká je šířka pásku v mm?“).\n" +
           "- Jednotka mm je povinná. Známou hodnotu zapiš do Parametrů a neptej se. Na délku pásku se neptej — je standardní.\n" +
@@ -208,6 +213,7 @@ export const CATEGORIES: CategoryConfig[] = [
       "Analyzuj nabízené zboží. cleanedDescription: úvod (co prodáváš + cena v textu) a sekce Parametry. " +
       "Je-li typ výrobku spolehlivě identifikovaný (značka + model / motorizace / jednoznačný produkt) v jakékoli podkategorii, POVINNĚ doplň katalogové vlastnosti s jistotou — nečekej, až je napíše inzerent. " +
       "Kusové údaje (stav kusu, nájezd, vady, balení) jen z textu/fotek/formuláře. Ve formuláři dostaneš stav — u „Poškozené / na díly“ bez rozsahu vady se ptej. " +
+      "DĚTSKÉ ZBOŽÍ (kolo, kočárek, hračka, oblečení… — jen když je zjevně dětské / pro dítě, ne „dětský styl“ pro dospělé): chybí-li věk, výška i velikostní pásmo, jedna otázka paramLabel „Věk / výška“; u dětských bot se stélkou/velikostí věk neopakuj. " +
       "Doplňující otázky jen na chybějící kusové / variantní údaje, ne na katalog identifikovaného výrobku. Na cenu se neptej, pokud je ve formuláři.",
   },
   {
@@ -309,7 +315,7 @@ export const CATEGORIES: CategoryConfig[] = [
     descriptionPlaceholderRecurring:
       "Frekvence (každý čtvrtek 18:00…), kapacita, co s sebou, jak se přihlásit…",
     aiPrompt:
-      "Analyzuj akci. Ve formuláři může být datum konání — na to se znovu neptej. Kritické parametry jsou: DATUM (pokud chybí ve formuláři i v textu), ČAS a LOKALITA. Pokud některý chybí, vygeneruj cílené otázky. U opakovaných akcí chtěj upřesnit frekvenci (např. „Které dny v týdnu akce platí?“).",
+      "Analyzuj akci. Datum a čas z formuláře (eventDate) jsou závazné — použij je v úvodu i Parametrech; starý/jiný čas v popisu ignoruj a NIKDY kvůli tomu nezamítej. Pokud je eventDate ve formuláři, na datum ani čas se neptej. Lokalita z formuláře (locationText) je závazná — pokud je vyplněná, na lokalitu/místo se neptej. Kritické parametry ptej jen když chybí ve formuláři i v textu: DATUM/ČAS (bez eventDate), LOKALITA (bez locationText). U opakovaných akcí chtěj upřesnit frekvenci (např. „Které dny v týdnu akce platí?“).",
   },
   {
     type: "nemovitost",

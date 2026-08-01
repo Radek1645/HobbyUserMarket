@@ -93,6 +93,7 @@ export default async function ModKarantenaPage({
                 <th className="px-4 py-3 font-medium">Název</th>
                 <th className="px-4 py-3 font-medium">Důvod</th>
                 <th className="px-4 py-3 font-medium">Zobrazení</th>
+                <th className="px-4 py-3 font-medium">Poptávky</th>
                 <th className="px-4 py-3 font-medium">Nahlášení</th>
                 <th className="px-4 py-3 font-medium">Aktualizováno</th>
                 <th className="px-4 py-3 font-medium">Akce</th>
@@ -107,6 +108,7 @@ export default async function ModKarantenaPage({
                       "—"}
                   </td>
                   <td className="px-4 py-3 tabular-nums">{listing.viewCount}</td>
+                  <td className="px-4 py-3 tabular-nums">{listing.inquiryCount}</td>
                   <td className="px-4 py-3">{listing.reportCount}</td>
                   <td className="px-4 py-3 text-gray-500">
                     {new Date(listing.updatedAt).toLocaleDateString("cs-CZ")}

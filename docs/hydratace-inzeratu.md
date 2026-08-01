@@ -31,7 +31,7 @@ Formulář (název, popis, kategorie, cena, lokalita, fotky…)
             → system prompt (struktura textu + pravidla hydratace + SEO)
             → user prompt (metadata formuláře vč. locationText + category aiPrompt)
             → multimodální AI (text + všechny fotky)
-            → parse + filtr ceny + required questions + safety checks
+            → parse + filtry formuláře (cena/datum/lokalita) + required questions + safety checks
         → REJECTED          → ModerationRejectedDialog (viz moderace-inzeratu.md)
         → APPROVED / NEEDS_QUESTIONS  (bez approvalToken)
             → ModerationApprovedDialog („Inzerát je v pořádku“)
@@ -143,11 +143,11 @@ Edge Function dostane z klienta payload (viz `moderate-listing-client.ts`):
 |-------|------|----------------|
 | Název | `title` | `cleanedTitle` — H1 dle SEO bible (obecný název první, max 45) |
 | Popis | `description` | Surový text k přepsání / doplnění |
-| Lokalita | `locationText` | Lokální SEO / spádové město v úvodu + meta (ne v alt) |
+| Lokalita | `locationText` | Lokální SEO / spádové město v úvodu + meta (ne v alt); na lokalitu se **neptat**, pokud je ve formuláři |
 | Kategorie | `categoryType`, `subcategorySlug` | Výběr `aiPrompt` z `category-prompts.ts` |
 | Stav / typ | `conditionLabel`, `conditionLabelText`, `conditionFieldLabel` | Např. „Použité“, „Prodej“, „Jednorázová akce“ — **neptat se znovu** |
-| Cena | `priceType`, `priceTypeLabel`, `priceAmount` | Pevná/orientační cena → do úvodu; na cenu se **neptat** |
-| Událost | `eventDate` | Datum konání z formuláře — AI se na ně **neptá** |
+| Cena | `priceType`, `priceTypeLabel`, `priceAmount` | Pevná/orientační cena → do úvodu; na cenu se **neptat**; neshoda text↔formulář ≠ REJECTED |
+| Událost | `eventDate` | Datum **i čas** z formuláře jsou závazné — AI se **neptá**; starý čas v popisu se přepíše, ≠ REJECTED; formátování v TZ `Europe/Prague` (ne UTC) |
 | Fotky | `imagesBase64[]`, `mainImageIndex` | Všechny pro bezpečnost a hydrataci; `mainImageIndex` jen pro cross-validaci text ↔ náhled |
 
 User prompt sestavuje `buildModerationUserPrompt()` — sekce oddělené prázdnými řádky: úkol, limity délky, kategorie, `aiPrompt`, stav, datum, cena, index hlavní fotky (cross-validace), počet fotek (hydratace ze všech), název a popis.
@@ -169,9 +169,10 @@ AI vrátí dotazník, když podle **kontextu kategorie** chybí zásadní údaje
 | Kategorie | Typické otázky |
 |-----------|----------------|
 | Zboží (auta, elektronika) | Rok, nájezd, motorizace, STK, výbava |
-| Zboží (móda) | Velikost, značka (max. ~2 otázky) |
+| Zboží (móda) | Velikost, značka; u zjevně dětského bez věku/výšky/vel. pásma → „Věk / výška“ |
+| Zboží (kola/sport, ostatní) | U zjevně dětského (kolo, kočárek…) bez věku/výšky → „Věk / výška“ |
 | Služby | Dojezd / lokalita, materiál v ceně |
-| Události | Čas, místo, kapacita (datum už ve formuláři) |
+| Události | Kapacita, výbava (datum/čas/lokalita už ve formuláři — neptat) |
 | Nemovitosti | Dispozice, plocha m², kauce u pronájmu; **vždy ověřit** zadavatele (majitel vs. RK) a provizi RK — pokud není v textu jednoznačné, zeptat se (u RK zejména: provize v ceně vs. navíc) |
 | Práce | Nástup, požadavky, odměna |
 
@@ -213,14 +214,23 @@ V modalu `ModerationPreviewDialog` počítadlo znaků ukazuje **projekovanou dé
 
 ---
 
-## Filtr redundantních otázek o ceně
+## Filtr redundantních otázek (formulář má pravdu)
 
-Pokud uživatel ve formuláři vyplnil **pevnou** nebo **orientační** cenu (`priceType` = `fixed` / `negotiable` + `priceAmount`), Edge Function po parsování AI odpovědi spustí `filterRedundantPriceQuestions()`:
+Edge Function po parsování AI odpovědi odfiltruje otázky k polím, která uživatel už vyplnil ve formuláři:
 
-1. Odstraní otázky, jejichž `label` vypadá jako dotaz na cenu (regex `isPriceRelatedQuestion`).
-2. Pokud po filtru nezbyde žádná otázka → status se **přepne na `APPROVED`**.
+| Filtr | Kdy | Co odstraní |
+|-------|-----|-------------|
+| `filterRedundantPriceQuestions` | `fixed`/`negotiable` + `priceAmount` | otázky na cenu |
+| `filterRedundantEventDateQuestions` | vyplněný `eventDate` | otázky na datum/čas konání |
+| `filterRedundantLocationQuestions` | vyplněný `locationText` | otázky na lokalitu/místo/adresu |
 
-Tím se zabrání situaci „AI se ptá na cenu“, i když ji uživatel zadal ve formuláři.
+Pokud po filtrech nezbyde žádná otázka → status se **přepne na `APPROVED`**.
+
+Server zároveň v `normalizeModerationResult` přepíše `cleanedDescription`: `applyFormPriceToCleanedDescription` (včetně náhrady jiné částky v úvodu) a `applyFormEventDateToCleanedDescription` (Parametry `• Datum a čas` + věta v úvodu, pokud chybí).
+
+Tím se zabrání REJECTED / NEEDS_QUESTIONS jen kvůli neshodě volného textu s formulářem.
+
+**Mezera (záměrně):** po ruční úpravě popisu v `ModerationPreviewDialog` se form authority **znovu neaplikuje** — text v modalu a pole formuláře (`eventDate`, cena…) se mohou rozjet. Produktový popis + backlog řešení: [`Metodika.md`](./Metodika.md) §6.8.1.
 
 ---
 
@@ -406,6 +416,9 @@ Při `MODERATION_ENABLED = false` klient vrátí okamžitě approved se `stripCo
 | Projev | Kam se dívat |
 |--------|--------------|
 | AI se ptá na cenu, i když je ve formuláři | `filterRedundantPriceQuestions`, user prompt `formatPriceFromForm` |
+| AI se ptá na datum/čas / lokalitu z formuláře | `filterRedundantEventDateQuestions` / `filterRedundantLocationQuestions` |
+| Starý čas v popisu vs. nový `eventDate` → REJECTED | system prompt (no-REJECT) + `applyFormEventDateToCleanedDescription` |
+| Špatná částka v úvodu vs. formulář | `applyFormPriceToCleanedDescription` (replace „Cena … Kč“) |
 | Špatná struktura Parametrů na detailu | AI výstup vs. `parseListingDescription` — oddělovač musí být `\n\n---\n\n` |
 | Příliš dlouhý text po dotazníku | Zkraťte úvod v modalu; AI měla držet 1600 znaků u NEEDS_QUESTIONS |
 | Hydratace ignoruje podkategorii | Sync + deploy; ověř `category-prompts.ts` pro `type/slug` |

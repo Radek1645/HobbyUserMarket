@@ -84,6 +84,7 @@ export default async function ModInzeratyPage({
                 <th className="px-4 py-3 font-medium">Název</th>
                 <th className="px-4 py-3 font-medium">Stav</th>
                 <th className="px-4 py-3 font-medium">Zobrazení</th>
+                <th className="px-4 py-3 font-medium">Poptávky</th>
                 <th className="px-4 py-3 font-medium">Nahlášení</th>
                 <th className="px-4 py-3 font-medium">Aktualizováno</th>
                 <th className="px-4 py-3 font-medium">Akce</th>
@@ -95,6 +96,7 @@ export default async function ModInzeratyPage({
                   <td className="px-4 py-3 font-medium">{listing.title}</td>
                   <td className="px-4 py-3 font-mono text-xs">{listing.status}</td>
                   <td className="px-4 py-3 tabular-nums">{listing.viewCount}</td>
+                  <td className="px-4 py-3 tabular-nums">{listing.inquiryCount}</td>
                   <td className="px-4 py-3">{listing.reportCount}</td>
                   <td className="px-4 py-3 text-gray-500">
                     {new Date(listing.updatedAt).toLocaleDateString("cs-CZ")}

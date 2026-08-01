@@ -207,7 +207,7 @@ export function ListingInquiryForm({
         </p>
       </div>
 
-      <MeetingSafetyNotice />
+      <MeetingSafetyNotice categoryType={categoryType} />
 
       <div>
         <label htmlFor="inquiry-name" className={labelClass}>

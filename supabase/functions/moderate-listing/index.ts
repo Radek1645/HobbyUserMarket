@@ -22,6 +22,8 @@ import {
   resolveOpenAiModerationModel,
 } from "../_shared/moderation/openai.ts";
 import {
+  filterRedundantEventDateQuestions,
+  filterRedundantLocationQuestions,
   filterRedundantPriceQuestions,
   normalizeModerationResult,
   parseModerationResponse,
@@ -771,18 +773,29 @@ serve(async (req) => {
       aiResult.rawResponse,
       geminiImagesBase64.length,
     );
+    const eventDate = String(body?.eventDate ?? "").trim() || undefined;
+    const locationText = String(body?.locationText ?? "").trim() || undefined;
     const withoutPriceQuestions = filterRedundantPriceQuestions(
       parsed,
       priceType,
       priceAmount,
     );
-    const normalized = normalizeModerationResult(
+    const withoutEventDateQuestions = filterRedundantEventDateQuestions(
       withoutPriceQuestions,
+      eventDate,
+    );
+    const withoutLocationQuestions = filterRedundantLocationQuestions(
+      withoutEventDateQuestions,
+      locationText,
+    );
+    const normalized = normalizeModerationResult(
+      withoutLocationQuestions,
       title,
       description,
       priceType,
       priceAmount,
       categoryType,
+      eventDate,
     );
     const withRequiredQuestions = ensureRequiredCategoryQuestions(normalized, {
       categoryType,

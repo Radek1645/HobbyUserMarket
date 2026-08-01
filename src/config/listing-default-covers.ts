@@ -85,7 +85,7 @@ const SUBCATEGORY_COVERS: Partial<
       icon: Bike,
       surfaceClass: "bg-gradient-to-br from-emerald-50 to-stone-100",
       iconClass: "text-emerald-600/55",
-      label: "Kola a sport",
+      label: "Sport",
     },
     "nabytek-domacnost": {
       icon: Sofa,

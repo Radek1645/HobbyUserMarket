@@ -9,6 +9,8 @@ import {
   LISTING_QUOTA_EXCEEDED_MESSAGE,
 } from "@/lib/listings/quota";
 import { LISTING_MAX_LIFETIME_DAYS } from "@/config/listing-lifetime";
+import { formatInquiryCount } from "@/lib/i18n/czech-plural";
+import { loadDeliveredInquiryCounts } from "@/lib/inquiry/delivered-counts";
 import { archiveExpiredPosts } from "@/lib/posts/archive-expired";
 import {
   getOwnerDisplayStatus,
@@ -105,6 +107,9 @@ export default async function MyListingsPage({
     getMyListings(user.id),
     getUserListingQuota(user.id),
   ]);
+  const inquiryCounts = await loadDeliveredInquiryCounts(
+    listings.map((post) => post.id),
+  );
 
   return (
     <div className="px-4 py-8 sm:px-6">
@@ -115,6 +120,10 @@ export default async function MyListingsPage({
       </h1>
       <p className="mt-1 text-sm text-gray-600">
         Vaše publikované inzeráty — upravte lokalitu, cenu nebo text.
+      </p>
+      <p className="mt-1 text-sm text-gray-500">
+        Počet poptávek počítá zprávy odeslané přes web. Detaily jsou jen
+        v e-mailu — v aplikaci se poptávky nearchivují.
       </p>
 
       {quota ? <ListingQuotaSummary quota={quota} /> : null}
@@ -223,6 +232,7 @@ export default async function MyListingsPage({
                           : ` · platí do ${expiresLabel}`
                         : ""}
                       {` · ${post.view_count ?? 0} zobrazení`}
+                      {` · ${formatInquiryCount(inquiryCounts.get(post.id) ?? 0)}`}
                     </p>
                   </div>
 

@@ -28,6 +28,7 @@ import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
+import { formatListingEventDate } from "@/lib/posts/format-event-date";
 import {
   formatMetaTitleLocality,
   formatPublicListingLocation,
@@ -199,12 +200,7 @@ export default async function ListingDetailPage({
     post.condition_label === "long_term" && post.category_type === "udalost"
       ? "Nejbližší termín"
       : "Konání";
-  const eventLabel = post.event_date
-    ? new Date(post.event_date).toLocaleString("cs-CZ", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
-    : null;
+  const eventLabel = formatListingEventDate(post.event_date);
 
   const priceTypeLabel = getPriceTypeLabel(post.category_type, post.price_type);
   const isService = post.category_type === "sluzby";

@@ -14,8 +14,21 @@ export const REPORT_LISTING_PATH = "/nahlasit";
 export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.5-osvc" : "1.5-fo";
 
 export const SAFETY_UI = {
+  /** Fallback / zboží, móda, služby — osobní předání věci. */
   meetingSafetyNotice:
     "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+  meetingSafetyNoticeByCategory: {
+    zbozi:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    sluzby:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    udalost:
+      "Na srazu / místě konání buďte opatrní. Pokud vám je méně než 18 let, doporučujeme účast v doprovodu dospělé osoby.",
+    prace:
+      "Schůzku k brigádě / práci domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme doprovod dospělé osoby.",
+    nemovitost:
+      "Prohlídku domlouvejte za denního světla a ideálně s doprovodem. Pokud vám je méně než 18 let, doporučujeme doprovod dospělé osoby.",
+  },
   realEstateListingNoticeLines: [
     "Jsme jen internetová nástěnka — ne realitka. Z prodeje ani pronájmu nemáme provizi; smlouvu uzavíráte mezi sebou.",
     "Realitní kancelář? V inzerátu uveďte, že jednáte jako firma, a jak je to s provizí.",
@@ -26,6 +39,24 @@ export const SAFETY_UI = {
     "Inzerujete jako firma nebo OSVČ? V popisu uveďte, že jednáte jako podnikatel, typ úvazku a formu odměny.",
   ],
 } as const;
+
+/** Bezpečnostní tip u kontaktu / poptávky — text podle kategorie inzerátu. */
+export function getMeetingSafetyNotice(
+  categoryType?: keyof typeof SAFETY_UI.meetingSafetyNoticeByCategory | string | null,
+): string {
+  if (
+    categoryType &&
+    Object.prototype.hasOwnProperty.call(
+      SAFETY_UI.meetingSafetyNoticeByCategory,
+      categoryType,
+    )
+  ) {
+    return SAFETY_UI.meetingSafetyNoticeByCategory[
+      categoryType as keyof typeof SAFETY_UI.meetingSafetyNoticeByCategory
+    ];
+  }
+  return SAFETY_UI.meetingSafetyNotice;
+}
 
 export const LEGAL_UI = {
   vopLinkLabel: "Všeobecné obchodní podmínky",

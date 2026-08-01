@@ -47,6 +47,7 @@ export function ListingContactSection({
             postId={postId}
             showEmail={showContactEmail}
             showPhone={showContactPhone}
+            categoryType={categoryType}
             loginHref={loginHref}
             isLoggedIn={isLoggedIn}
             onRevealed={() => setContactRevealed(true)}

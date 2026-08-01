@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-08-01 | [2026-08-01.md](./2026-08-01.md) — formulář má pravdu, dětské Věk/výška, poptávky UI, Sport label, PRD v3.55; Edge deploy ✅ |
 | 2026-07-31 | [2026-07-31.md](./2026-07-31.md) — staging + Sharp AI varianty (067/068), auth /auth/dokoncit, PRD v3.52; Edge deploy TODO |
 | 2026-07-30 | [2026-07-30.md](./2026-07-30.md) — fix sync limitů fotek AI (1 MB/6 MB), Gemini model notes, PRD v3.49, push |
 | 2026-07-28 (večer) | [2026-07-28-vecer.md](./2026-07-28-vecer.md) — smoke SEC-H01/H02 ✅, default covers, sport výbava, eventDate ISO, PRD v3.48, push |

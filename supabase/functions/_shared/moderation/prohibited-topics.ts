@@ -72,7 +72,8 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
       "Pyramidové schémata, podvodné nabídky, phishing, falešné investice, požadavek platby předem bez reálného zboží. " +
       "U identifikovaného zboží také: cena z formuláře zjevně mimo reálnou tržní hodnotu (typicky násobky běžné ceny, ne drobný rozdíl) " +
       "nebo zjevný rozpor stavu z formuláře s uživatelským popisem/fotkami (např. formulář „Nové“, text „použité / staré X let“). " +
-      "Rozdíl ceny v textu popisu oproti formuláři není podvod — závazná je cena z formuláře (text se při hydrataci přepíše).",
+      "Rozdíl ceny v textu popisu oproti formuláři není podvod — závazná je cena z formuláře (text se při hydrataci přepíše). " +
+      "Stejně tak rozdíl data/času konání nebo lokality v textu oproti formuláři není podvod — závazné jsou eventDate a locationText z formuláře.",
     keywords: ["investice garant", "rychle zbohat", "western union"],
   },
   {

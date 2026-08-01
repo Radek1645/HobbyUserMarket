@@ -96,7 +96,11 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
   return `Typ ceny z formuláře: ${label}.`;
 }
 
-function formatEventDateForPrompt(value: string): string {
+/** Časová zóna platformy — Edge běží v UTC, formulář je vždy „místní ČR“. */
+export const LISTING_DISPLAY_TIME_ZONE = "Europe/Prague";
+
+/** cs-CZ datum+čas pro prompt i server rewrite — musí sedět s applyFormEventDate. */
+export function formatEventDateForDisplay(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return trimmed;
 
@@ -108,7 +112,17 @@ function formatEventDateForPrompt(value: string): string {
   return parsed.toLocaleString("cs-CZ", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: LISTING_DISPLAY_TIME_ZONE,
   });
+}
+
+function formatEventDateFromForm(eventDate: string): string {
+  const formatted = formatEventDateForDisplay(eventDate);
+  return (
+    `Datum a čas konání z formuláře: ${formatted}. ` +
+    `Údaj je závazný (datum i čas) — v cleanedDescription (úvod i Parametry, např. • Datum a čas: ${formatted}) použij přesně tento čas. ` +
+    `Starý / jiný čas v textu popisu ignoruj. Na datum ani čas se znovu neptej.`
+  );
 }
 
 export function buildModerationUserPrompt(
@@ -145,7 +159,7 @@ export function buildModerationUserPrompt(
         ? `${conditionFieldLabel} z formuláře (kód): ${body.conditionLabel}`
         : null,
     body.eventDate
-      ? `Datum a čas konání z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.eventDate, formatEventDateForPrompt(body.eventDate))}`
+      ? `${formatEventDateFromForm(body.eventDate)}\n${wrapListingUserField(LISTING_PROMPT_TAGS.eventDate, formatEventDateForDisplay(body.eventDate))}`
       : null,
     formatPriceFromForm(body),
     body.priceType === "exchange" && body.exchangeFor?.trim()

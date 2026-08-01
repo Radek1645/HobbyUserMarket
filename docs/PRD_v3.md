@@ -1,12 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.52  
+> **Verze dokumentu:** v3.55  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
+> **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`061_moderator_notes.sql`](../supabase/061_moderator_notes.sql) · [`062_security_hardening_approval_binding.sql`](../supabase/062_security_hardening_approval_binding.sql) · [`063_security_fingerprint_from_post.sql`](../supabase/063_security_fingerprint_from_post.sql) · [`064_moderation_ai_audit_metadata.sql`](../supabase/064_moderation_ai_audit_metadata.sql) · [`065_fingerprint_newline_canonicalization.sql`](../supabase/065_fingerprint_newline_canonicalization.sql) · [`066_publish_gate_staff_owner.sql`](../supabase/066_publish_gate_staff_owner.sql) · [`067_moderation_image_staging.sql`](../supabase/067_moderation_image_staging.sql) · [`068_moderation_image_renditions.sql`](../supabase/068_moderation_image_renditions.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-07-31
+> **Datum:** 2026-08-01
 
 ---
 
@@ -478,6 +479,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * Vyhledávání pouze v `status = 'active'` a neexpirovaných inzerátech.
   * Filtry: Fulltextové výrazy (kategorie zboží/služby/události), lokalita (obec z našeptávače Mapy.cz), profil uživatele, typ ceny, stav/typ nabídky. *(Filtr `udalost` od v0.2.)*
   * Řazení: Kategorie, cena, datum přidání, vzdálenost (pokud je poloha aktivní). *(Události od v0.2: volitelně řazení podle `event_date` — nejbližší konání první.)*
+  * **PLÁN (zatím neimplementováno) — kategoriální SEO výpisy:** Hierarchická URL `/{lokalita}/{kategorie}/{filtr}/` (bez prefixu `/kategorie/`). Indexace kategorií podléhá prahu ≥ 3 aktivní inzeráty a 14denní hysterezi před `noindex`. Popisy kategorií jsou statické, uložené v DB (jednorázově generované AI / ručně u top kategorií), negenerují se per-request. Kanon pravidel: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md); index vrstev: [`seo/README.md`](./seo/README.md).
 * **Header & Footer:**
   * Header: Logo **zaPikolou.cz** (`AppLogo`), vyhledávání, stav přihlášení, dominantní CTA „Vytvořit inzerát s AI“.
   * **Footer — globální dostupnost:** Patička je součástí `AppShell` a zobrazuje se na **všech veřejných i autentizovaných stránkách** (včetně `/mod/*`). Tři sloupce (`src/config/footer.ts`):
@@ -519,7 +521,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * **Inline:** Tlačítko „Nahlásit inzerát“ na detailu (Důvody: Podvod / Nelegální obsah / Sexuální obsah / Drogy / Spam / Nevhodné chování / Jiné). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky **zablokuje** (`blocked`, `status_reason_code = 'reports_threshold'`) — spadne do karantény pro moderátory.
   * **Standalone *(v0.5)*:** Formulář na `/nahlasit` (odkaz v patičce) — pole URL inzerátu (validace domény a slug), důvod (select), volitelný popis (max 500 znaků), e-mail oznamovatele (povinné pro nepřihlášené). Po odeslání: INSERT do `reports`, záznam v `audit_events`, e-mail adminovi (Resend), UI potvrzení „Děkujeme. Prověříme to do 24 hodin a dáme vám vědět.“ (§1.6).
 * **Automatizované On-Page SEO, Rich Snippets & AI crawlery:**
-  * **Dynamická Metadata (Next.js Metadata API):** Formát detailu: `[Název inzerátu] | [Lokalita]`; suffix stránky a `openGraph.siteName`: `zaPikolou.cz` (konstanta `SITE_DISPLAY_NAME`). Příklad title: *„Prodám dětské kolo Velo | Brno-Líšeň“*.
+  * **Dynamická Metadata (Next.js Metadata API):** Formát `<title>` detailu dle [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) §3.2: `{H1} – {Lokalita} | zaPikolou.cz` — skládá kód `buildListingMetaTitle` z AI `cleanedTitle` (`posts.title`) + obec/město (`formatMetaTitleLocality`, **ne ulice**) + `SITE_DISPLAY_NAME`. Příklad: *„Baterie Li-ion 48V 17Ah Samsung – Slavkov u Brna | zaPikolou.cz“*. `openGraph.siteName` = `zaPikolou.cz`.
   * **Strukturovaná data (Schema.org JSON-LD):** Server-renderovaný `<script type="application/ld+json">` na detailu inzerátu — helper `buildListingJsonLd()` v `src/lib/seo/listing-json-ld.ts`, komponenta `ListingJsonLd`. *(✅ implementováno 2026-07-09)* Mapování podle `category_type`:
     * `zbozi` → `Schema.org/Product` (název, popis, `offers` s cenou v CZK, `itemCondition`)
     * `sluzby` → `Schema.org/Service` (lokalita, popis) — preferováno před `LocalBusiness` u jednotlivců
@@ -721,7 +723,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 * **SEO Infrastruktura (Indexace):**
   * **Dynamická Sitemap (`sitemap.xml`):** Pouze `active` inzeráty. Expirované/smazané okamžitě mizí.
   * **SSR / ISR:** Detail inzerátu musí být server-renderovaný — žádný prázdný klientský loader.
-  * **Robots.txt:** Zákaz indexace `/profil/*`, `/mod/*`, admin prvků a vyhledávání s parametry. Indexují se HP, kategorie a detaily inzerátů.
+  * **Robots.txt:** Zákaz indexace `/profil/*`, `/mod/*`, admin prvků a vyhledávání s parametry. Indexují se HP a detaily aktivních inzerátů. Hierarchické kategoriální výpisy (`/{lokalita}/{kategorie}/…`) jsou **plán** — viz §5.1 a [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md); zatím se jako samostatné landing pages neindexují.
 
 ---
 
@@ -784,6 +786,9 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.50 | 2026-07-30 | **§3.1 Proč Vercel + Supabase:** rozhodnutí stacku (dělení rolí web vs data/auth/AI), model důvěry a bezpečnost (RLS, Edge secrets, publish gate), konkurenční platformy (Firebase, Neon+Clerk, AWS…) |
 | v3.51 | 2026-07-31 | **§5.4 structured JSON výstup AI:** Gemini `responseMimeType` + `responseSchema`, OpenAI `json_schema`; schema v `response-schema.ts`; detail v [`moderace-inzeratu.md`](./moderace-inzeratu.md) |
 | v3.52 | 2026-07-31 | **Staging + Sharp AI varianty fotek:** migrace `067`/`068`; privátní staging originálů; hash-addressed WebP 1024/512 px přes Sharp na Vercelu (bez Supabase Image Transformations); Edge hashuje plné bajty (SEC-H02) a načítá varianty; `main_image_index` v approval; cron úklid stagingu/variant; auth flow `/auth/dokoncit` + `/auth/potvrdit` |
+| v3.53 | 2026-08-01 | **Sjednocení SEO dokumentace:** kanon index [`seo/README.md`](./seo/README.md) — `SEO_BIBLE.md` (detail inzerátu) + `CATEGORY_SEO.md` v1.0 (výpisy/kategorie); §5.1 plán hierarchických URL, práh indexace ≥ 3 + hystereze 14 dní, statické popisy kategorií (zatím neimplementováno) |
+| v3.54 | 2026-08-01 | **SEO sync PRD ↔ bible:** §5.3 meta title = `{H1} – {Lokalita} | zaPikolou.cz` (`buildListingMetaTitle`, obec/město); SEO Infrastruktura — indexují se HP + detaily, kategoriální výpisy jen jako plán (§5.1 / CATEGORY_SEO) |
+| v3.55 | 2026-08-01 | **Formulář má pravdu** (eventDate/cena/lokalita — no-REJECT + Edge rewrite, TZ Europe/Prague); dětské zboží otázka Věk/výška; počet doručených poptávek na `/moje-inzeraty` + God Mode; safety tipy podle kategorie; podkategorie label Sport (slug `kola-sport`) |
 
 ---
 
