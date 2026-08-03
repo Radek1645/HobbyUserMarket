@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.55  
+> **Verze dokumentu:** v3.57  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`061_moderator_notes.sql`](../supabase/061_moderator_notes.sql) · [`062_security_hardening_approval_binding.sql`](../supabase/062_security_hardening_approval_binding.sql) · [`063_security_fingerprint_from_post.sql`](../supabase/063_security_fingerprint_from_post.sql) · [`064_moderation_ai_audit_metadata.sql`](../supabase/064_moderation_ai_audit_metadata.sql) · [`065_fingerprint_newline_canonicalization.sql`](../supabase/065_fingerprint_newline_canonicalization.sql) · [`066_publish_gate_staff_owner.sql`](../supabase/066_publish_gate_staff_owner.sql) · [`067_moderation_image_staging.sql`](../supabase/067_moderation_image_staging.sql) · [`068_moderation_image_renditions.sql`](../supabase/068_moderation_image_renditions.sql)  
+> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`068_moderation_image_renditions.sql`](../supabase/068_moderation_image_renditions.sql) · [`069_post_deletion_reason.sql`](../supabase/069_post_deletion_reason.sql) · [`070_flat_goods_categories.sql`](../supabase/070_flat_goods_categories.sql) · [`071_search_unaccent.sql`](../supabase/071_search_unaccent.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-01
+> **Datum:** 2026-08-04
 
 ---
 
@@ -210,7 +210,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **vlastní cookie lištou** (GTM Consent Mode v2) před aktivací měření. *(✅ GTM `GTM-WGLNJRNK`, consent banner, `/cookies` — 2026-07-14)*
-* **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts`. V DB jsou inzeráty kategorizovány pouze pomocí textových polí `category_type` (`zbozi` / `sluzby` / `udalost` od v0.2 / `nemovitost` od v0.3) a `subcategory_slug`.
+* **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts` (+ `categories-goods.ts`). V DB jsou inzeráty kategorizovány textovými poli `category_type` a `subcategory_slug`. Od migrace [`070`](../supabase/070_flat_goods_categories.sql) je **1. patro flat** — zbožové domény `auto` / `detsky` / `dum` / `elektro` / `moda` / `sport` / `hobby` / `ostatni` + `sluzby` / `prace` / `nemovitost` / `udalost` (deštník `zbozi` zrušen). HP: mřížka + bundle „Služby, práce a reality“ (Fáze 2).
 * **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1, **max délka popisu**) v `src/config/app.ts` (`LISTING_DESCRIPTION_MAX_LENGTH = 2000`, `MODERATION_DESCRIPTION_QA_RESERVE = 400`). Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace v `src/config/moderation/index.ts` (`MODERATION_ENABLED`, `MODERATION_RATE_LIMIT_PER_HOUR = 20`, `MODERATION_MAX_QUESTIONS = 5`, Gemini všechny fotky 1024 px, Sightengine 512 px, WebP kvalita 80). Originály se nahrají jednou do privátního immutable stagingu; Next.js Server Action vytvoří přes Sharp hash-addressed AI varianty a Edge z plných bajtů originálů počítá SEC-H02 hashe. Supabase Image Transformations se nepoužívají. Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max). Prompty kategorií sync: `npm run sync:moderation`.
 * **Data v EU / EHP:** Primární DB **Supabase** = West EU Ireland (`eu-west-1`); **Vercel Functions** = Dublin (`dub1` / `eu-west-1`); **Resend** sending = Ireland (`eu-west-1`, doména `zapikolou.cz`) — zapsáno v GDPR §5.1 (2026-07-19). AI moderace stále posílá text a fotky ke **Gemini/OpenAI** (typicky mimo EHP) — DPA/SCC + informace v GDPR. Checklist / backlog **P33** v [`TO-DO_Fable.md`](./TO-DO_Fable.md), [`docs/pravni/README.md`](./pravni/README.md).
 
@@ -275,24 +275,29 @@ posts
   - id, user_id (UUID, FK auth.users ON DELETE RESTRICT)
   - title (TEXT, NOT NULL, max 80 znaků v UI)
   - description (TEXT, max **2000** znaků — CHECK `posts_description_length_check`, migrace [`023_posts_description_2000.sql`](../supabase/023_posts_description_2000.sql))
-  - category_type (VARCHAR(10), NOT NULL, CHECK IN ('zbozi', 'sluzby', 'udalost', 'nemovitost'))
+  - category_type (VARCHAR(10), NOT NULL, CHECK IN (
+      'auto', 'detsky', 'dum', 'elektro', 'moda', 'sport', 'hobby', 'ostatni',
+      'sluzby', 'prace', 'nemovitost', 'udalost'
+    ) — migrace [`070_flat_goods_categories.sql`](../supabase/070_flat_goods_categories.sql); dříve `zbozi`)
   - subcategory_slug (VARCHAR(50), NOT NULL)
   - price_type (VARCHAR(20), NOT NULL, CHECK IN ('fixed', 'free_pickup', 'negotiable', 'exchange', 'offer'))
   - price_amount (INTEGER, nullable — povinné pouze pokud price_type = 'fixed')
   - condition_label (VARCHAR(20), NOT NULL, CHECK IN (
-      'new', 'like_new', 'used', 'damaged', -- zboží
+      'new', 'like_new', 'used', 'damaged', -- zboží (všechny zbožové domény)
       'one_time', 'long_term', 'substitute', -- služby / události
       'sale', 'rent' -- nemovitosti
     ))
   - location_text, location (GEOGRAPHY POINT)
   - status (ENUM: draft | active | archived | hidden | blocked | deleted)
   - status_reason_code (TEXT, nullable — `reports_threshold` | `moderation` | `lifetime_max`; migrace `036` + `049`)
+  - deletion_reason (TEXT, nullable — důvod smazání majitelem, např. `sold_on_zapikolou`; migrace [`069`](../supabase/069_post_deletion_reason.sql))
   - expires_at, renew_count, payment_status (VARCHAR(20), výchozí: 'free')
   - expiry_warning_for_expires_at (TIMESTAMPTZ, nullable — idempotence e-mailu před expirací; migrace `048`)
   - listing_duration_days (INTEGER, NOT NULL, DEFAULT 30 — od v0.1.1; viz §9; u `udalost` se nevyužívá)
   - event_date (TIMESTAMPTZ, NULL — od v0.2; povinné pokud `category_type = 'udalost'`)
   - show_contact_email, show_contact_phone (BOOLEAN), contact_phone (TEXT, nullable — migrace [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql))
   - main_image_url, slug
+  - search_vector (TSVECTOR GENERATED — title+description přes `immutable_unaccent`; migrace [`071`](../supabase/071_search_unaccent.sql))
   - created_at, updated_at
 
 post_images
@@ -475,7 +480,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   3. **Fallback (Odmítnutí polohy / nepřesná IP):** Inzeráty se skryjí. Zobrazí se dominantní vyhledávací pole s integrovaným **adresním našeptávačem přes Mapy.cz API**. Uživatel musí vybrat validní obec/městskou část z nabídky. Vybrané souřadnice (WGS84) se uloží do `localStorage` pro další návštěvy.
   4. **Persistence:** Poloha návštěvníka se ukládá do `localStorage`. Do Supabase jdou souřadnice až u inzerátu (`posts.location`).
 * **Vyhledávání a filtrace:**
-  * Fulltextové vyhledávání: PostgreSQL `tsvector` + GIN index na `posts.title` a `posts.description` (podmínka: minimálně 3 znaky, validace na frontendu i backendu).
+  * Fulltextové vyhledávání: PostgreSQL `tsvector` + GIN index na `posts.title` a `posts.description` (podmínka: minimálně 3 znaky, validace na frontendu i backendu). Prefix match; **bez ohledu na diakritiku** (`unaccent` — migrace [`071_search_unaccent.sql`](../supabase/071_search_unaccent.sql); např. `beh` najde „běh“).
   * Vyhledávání pouze v `status = 'active'` a neexpirovaných inzerátech.
   * Filtry: Fulltextové výrazy (kategorie zboží/služby/události), lokalita (obec z našeptávače Mapy.cz), profil uživatele, typ ceny, stav/typ nabídky. *(Filtr `udalost` od v0.2.)*
   * Řazení: Kategorie, cena, datum přidání, vzdálenost (pokud je poloha aktivní). *(Události od v0.2: volitelně řazení podle `event_date` — nejbližší konání první.)*
@@ -549,7 +554,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
      * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (náhled)“** (radio button/hvězdička). Výchozí je první nahraná. Hlavní fotka určuje náhled na homepage a slouží pro cross-validaci textu a AI hydrataci — **ne** jako jediná kontrolovaná fotka.
 
 * **Multimodální AI Guardrail & Interaktivní doplňování (Text + Foto cross-validace):**
-  * Po kliknutí na **„Publikovat inzerát“** (create) / **„Uložit“** (edit) klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `categoryType`, `subcategory_slug`, metadata z formuláře (`conditionLabel`, `conditionLabelText`, `conditionFieldLabel`, `priceType`, `priceTypeLabel`, `priceAmount`, u událostí `eventDate`), **všechny nahrané fotografie** (max. 6, každá zmenšená na **512×512 px**, base64) a `mainImageIndex`. **Jedno** volání AI — bezpečnostní filtr na všech snímcích, cross-validace text ↔ hlavní fotka, hydratace z **všech** fotek. Edge Function volá Gemini Flash / GPT-4o-mini a vrátí striktní JSON. **Žádná Next.js API Route v tomto flow.**
+  * Po kliknutí na **„Publikovat inzerát“** (create) / **„Uložit“** (edit): klient nejprve nahraje nové originály do privátního immutable stagingu (`moderation-image-staging`); Next.js Server Action přes **Sharp** vytvoří hash-addressed WebP varianty do `moderation-image-renditions` (**Gemini 1024 px**, **Sightengine 512 px**, `fit: inside` — zachovaný poměr stran, WebP kvalita 80). Pak klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `categoryType`, `subcategory_slug`, metadata z formuláře (`conditionLabel`, `conditionLabelText`, `conditionFieldLabel`, `priceType`, `priceTypeLabel`, `priceAmount`, u událostí `eventDate`), **`imageReferences`** (max. 6 odkazů na staging objekty — **ne** base64) a `mainImageIndex`. Edge stáhne originály (SEC-H02 hashe), načte důvěryhodné varianty a provede **jedno** AI kolo — Sightengine NSFW na všech snímcích (512 px), cross-validace text ↔ hlavní fotka + hydratace z **všech** fotek přes Gemini (1024 px) / GPT-4o-mini fallback; výstup je striktní JSON. **Žádná Next.js API Route v AI volání** (Sharp Server Action jen připravuje varianty). Detail: [`moderace-inzeratu.md`](./moderace-inzeratu.md).
   * **Bezpečnostní filtr fotek:** Pokud **jakákoliv** fotografie porušuje pravidla (zbraně, drogy, porno, orgány…), celý inzerát je `REJECTED`. Volitelně `rejectedImageIndex` pro UI. Výběr „čisté“ hlavní fotky nesmí obejít kontrolu zbylých snímků.
   * **Shoda s kategorií:** Kromě validace, že slug podkategorie existuje v taxonomii, AI posuzuje, zda název, popis a fotografie **odpovídají zvolené kategorii/podkategorii**. Zjevný nesoulad (např. elektronika v `potraviny-domaci`) → `REJECTED` s výzvou zvolit správnou podkategorii. Obecné pravidlo v system promptu; podkategorie mohou mít vlastní `aiPrompt` v `categories.ts`. Detail: [`moderace-inzeratu.md`](./moderace-inzeratu.md#kontrola-shody-obsahu-s-kategorií).
   * **Rate limit:** Max **20 AI kontrol / hodinu / uživatel** (`MODERATION_RATE_LIMIT_PER_HOUR`). Při překročení: HTTP 429 + srozumitelná hláška v UI (texty v `src/config/moderation/messages.ts`, tón §1.6).
@@ -789,6 +794,8 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.53 | 2026-08-01 | **Sjednocení SEO dokumentace:** kanon index [`seo/README.md`](./seo/README.md) — `SEO_BIBLE.md` (detail inzerátu) + `CATEGORY_SEO.md` v1.0 (výpisy/kategorie); §5.1 plán hierarchických URL, práh indexace ≥ 3 + hystereze 14 dní, statické popisy kategorií (zatím neimplementováno) |
 | v3.54 | 2026-08-01 | **SEO sync PRD ↔ bible:** §5.3 meta title = `{H1} – {Lokalita} | zaPikolou.cz` (`buildListingMetaTitle`, obec/město); SEO Infrastruktura — indexují se HP + detaily, kategoriální výpisy jen jako plán (§5.1 / CATEGORY_SEO) |
 | v3.55 | 2026-08-01 | **Formulář má pravdu** (eventDate/cena/lokalita — no-REJECT + Edge rewrite, TZ Europe/Prague); dětské zboží otázka Věk/výška; počet doručených poptávek na `/moje-inzeraty` + God Mode; safety tipy podle kategorie; podkategorie label Sport (slug `kola-sport`) |
+| v3.56 | 2026-08-03 | **§5.4 fotky pro AI:** oprava zastaralého „512×512 base64“ — sjednoceno se stagingem `067`/`068`: `imageReferences`, Sharp WebP Gemini **1024 px** / Sightengine **512 px** |
+| v3.57 | 2026-08-04 | **Flat kategorie (IA Fáze 1–2):** `070` bez `zbozi`; mřížka + bundle Služby/Práce/Reality; exit poll smazání `069` (`deletion_reason`); fulltext bez diakritiky `071`; veřejná lokalita bez ulice (výjimka událost/nemovitost); UX HP (search, page size) |
 
 ---
 

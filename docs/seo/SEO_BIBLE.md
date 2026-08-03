@@ -51,7 +51,7 @@ S use-case (když se vejde): `Baterie Samsung 48V na elektrokolo`
 
 Formát ideál: `{H1} – {Lokalita} | zaPikolou.cz`
 
-- **Lokalita** = obec / město (`formatMetaTitleLocality`) — **ne ulice** (ulice zůstává v DB a na detailu).
+- **Lokalita** = obec / město (`formatMetaTitleLocality`) — **ne ulice**. Ve veřejném UI (`formatPublicListingLocation`): u **událostí a nemovitostí** ulice bez čísla popisného + obec; u ostatních kategorií jen obec/město. Ulice v DB a u majitele na `/moje-inzeraty`.
 - Max **60 znaků**. Priorita při přetečení (**lokalita > brand > specifikace H1**):
 
 1. **zkrať H1 zprava** na hranici slov (nesekat uprostřed čísla, např. `60 x 50` → ne `60 x 5`),

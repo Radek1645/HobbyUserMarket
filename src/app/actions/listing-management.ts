@@ -1,5 +1,6 @@
 "use server";
 
+import { isListingDeletionReason } from "@/config/listing-deletion-reasons";
 import { LISTING_EXTEND_DAYS } from "@/config/listing-lifetime";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { isListingQuotaExceededError } from "@/lib/listings/quota";
@@ -7,6 +8,8 @@ import { clampExpiresAtToLifetime } from "@/lib/posts/listing-lifetime";
 import { getListingPath } from "@/lib/posts/listing-path";
 import { isListingExpired } from "@/lib/posts/listing-status";
 import { createClient } from "@/lib/supabase/server";
+import { isGoodsCategoryType } from "@/config/goods-categories";
+import type { CategoryType, ListingDeletionReason } from "@/types/post";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -15,6 +18,7 @@ type OwnedPost = {
   slug: string;
   user_id: string;
   status: string;
+  category_type: CategoryType;
   expires_at: string | null;
   renew_count: number;
   created_at: string;
@@ -27,7 +31,9 @@ async function getOwnedPost(postId: number): Promise<OwnedPost | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("id, slug, user_id, status, expires_at, renew_count, created_at")
+    .select(
+      "id, slug, user_id, status, category_type, expires_at, renew_count, created_at",
+    )
     .eq("id", postId)
     .maybeSingle<OwnedPost>();
 
@@ -48,10 +54,20 @@ export async function deleteListing(formData: FormData): Promise<void> {
   const post = await getOwnedPost(postId);
   if (!post || post.status === "deleted") redirect("/moje-inzeraty");
 
+  const rawReason = String(formData.get("deletionReason") ?? "").trim();
+  let deletionReason: ListingDeletionReason | null = null;
+
+  if (isGoodsCategoryType(post.category_type)) {
+    if (!isListingDeletionReason(rawReason)) {
+      redirect("/moje-inzeraty?deleteError=1");
+    }
+    deletionReason = rawReason;
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
-    .update({ status: "deleted" })
+    .update({ status: "deleted", deletion_reason: deletionReason })
     .eq("id", postId)
     .eq("user_id", post.user_id)
     .select("id, status")

@@ -1,5 +1,22 @@
 const MAX_QUESTIONS = 5;
 
+const GOODS_CATEGORY_TYPES_FOR_QUESTIONS = [
+  "auto",
+  "detsky",
+  "dum",
+  "elektro",
+  "moda",
+  "sport",
+  "hobby",
+  "ostatni",
+] as const;
+
+function isGoodsCategoryType(categoryType: string): boolean {
+  return (GOODS_CATEGORY_TYPES_FOR_QUESTIONS as readonly string[]).includes(
+    categoryType,
+  );
+}
+
 type ModerationQuestion = {
   id: string;
   label: string;
@@ -206,8 +223,13 @@ function resolveFashionQuestions(text: string): ModerationQuestion[] {
  * U zjevně dětského zboží bez věku/výšky/vel. pásma — 1 nepovinná otázka.
  * U dětských bot se stélkou/velikostí se neptá znovu.
  */
-function resolveChildrensAgeHeightQuestions(text: string): ModerationQuestion[] {
-  if (!isChildrensProduct(text)) return [];
+function resolveChildrensAgeHeightQuestions(
+  text: string,
+  categoryType: string,
+): ModerationQuestion[] {
+  const treatAsKids =
+    categoryType === "detsky" || isChildrensProduct(text);
+  if (!treatAsKids) return [];
   if (hasChildAgeOrHeightAnswer(text)) return [];
   if (isShoesProduct(text) && hasChildShoeSizeOrInsole(text)) return [];
 
@@ -220,10 +242,13 @@ function resolveChildrensAgeHeightQuestions(text: string): ModerationQuestion[] 
   ];
 }
 
-function resolveZboziRequiredQuestions(text: string): ModerationQuestion[] {
+function resolveGoodsRequiredQuestions(
+  categoryType: string,
+  text: string,
+): ModerationQuestion[] {
   return [
     ...resolveFashionQuestions(text),
-    ...resolveChildrensAgeHeightQuestions(text),
+    ...resolveChildrensAgeHeightQuestions(text, categoryType),
   ];
 }
 
@@ -248,10 +273,9 @@ export function ensureRequiredCategoryQuestions<T extends ModerationResultLike>(
     .filter((value): value is string => typeof value === "string")
     .join("\n");
 
-  const requiredQuestions =
-    context.categoryType === "zbozi"
-      ? resolveZboziRequiredQuestions(searchableText)
-      : resolveSportEventQuestions(context, searchableText);
+  const requiredQuestions = isGoodsCategoryType(context.categoryType)
+    ? resolveGoodsRequiredQuestions(context.categoryType, searchableText)
+    : resolveSportEventQuestions(context, searchableText);
 
   if (requiredQuestions.length === 0) return result;
 

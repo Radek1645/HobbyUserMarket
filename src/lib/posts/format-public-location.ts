@@ -1,9 +1,46 @@
-/** Odstraní popisné/orientační číslo z ulice — plná adresa zůstává v DB, zobrazí se jen oblast. */
+import type { CategoryType } from "@/types/post";
 
+/**
+ * Veřejná lokalita inzerátu.
+ * - událost / nemovitost: ulice bez popisného čísla + obec
+ * - ostatní (zboží, služby, práce): jen obec / městská část
+ * Plná adresa zůstává v `posts.location_text` (DB, majitel, formulář).
+ */
+
+const CITY_SUFFIX = /\s*-\s*město$/i;
+
+/** Odstraní popisné/orientační číslo z ulice. */
 const CZECH_HOUSE_NUMBER_SUFFIX =
   /\s+(?:č\.?\s*)?\d+[a-zA-Z]?(?:\s*\/\s*\d+[a-zA-Z]?)?$/;
 
-export function formatPublicListingLocation(locationText: string): string {
+const CATEGORIES_WITH_PUBLIC_STREET = new Set<CategoryType>([
+  "udalost",
+  "nemovitost",
+]);
+
+function stripCitySuffix(value: string): string {
+  return value.replace(CITY_SUFFIX, "").trim();
+}
+
+/** Obec / městská část — typicky poslední segment po čárce. */
+function formatMunicipalityLocation(locationText: string): string {
+  const trimmed = locationText.trim();
+  if (!trimmed) return trimmed;
+
+  const parts = trimmed
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) {
+    return stripCitySuffix(parts[parts.length - 1]!);
+  }
+
+  return stripCitySuffix(trimmed);
+}
+
+/** Ulice bez čísla popisného + zbytek (obec…). */
+function formatStreetAreaLocation(locationText: string): string {
   const trimmed = locationText.trim();
   if (!trimmed) return trimmed;
 
@@ -20,27 +57,28 @@ export function formatPublicListingLocation(locationText: string): string {
   return `${street}, ${tail}`;
 }
 
-/** Kompaktní štítek do headeru — typicky jen město/obec, bez ulice. */
-export function formatHeaderLocation(locationText: string): string {
-  const formatted = formatPublicListingLocation(locationText);
-  if (!formatted) return formatted;
-
-  const parts = formatted
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  if (parts.length >= 2) {
-    return parts[parts.length - 1]!.replace(/\s*-\s*město$/i, "").trim();
+/**
+ * Veřejný štítek lokality podle kategorie.
+ * Bez `categoryType` (visitor poloha apod.) = jen obec/město.
+ */
+export function formatPublicListingLocation(
+  locationText: string,
+  categoryType?: CategoryType,
+): string {
+  if (categoryType && CATEGORIES_WITH_PUBLIC_STREET.has(categoryType)) {
+    return formatStreetAreaLocation(locationText);
   }
+  return formatMunicipalityLocation(locationText);
+}
 
-  return formatted.replace(/\s*-\s*město$/i, "").trim();
+/** Kompaktní štítek do headeru — vždy obec/město. */
+export function formatHeaderLocation(locationText: string): string {
+  return formatMunicipalityLocation(locationText);
 }
 
 /**
- * Lokalita do `<title>` / meta — jen obec/město (ne ulice).
- * Ulice je v DB a na detailu; v SERP title je zbytečná a ukrajuje H1.
+ * Lokalita do `<title>` / meta — vždy obec/město (ne ulice).
  */
 export function formatMetaTitleLocality(locationText: string): string {
-  return formatHeaderLocation(locationText);
+  return formatMunicipalityLocation(locationText);
 }

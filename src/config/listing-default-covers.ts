@@ -2,7 +2,9 @@ import type { CategoryType } from "@/types/post";
 import type { LucideIcon } from "lucide-react";
 import {
   Apple,
+  Baby,
   Bike,
+  BookOpen,
   Briefcase,
   Building2,
   CalendarDays,
@@ -39,11 +41,53 @@ export type ListingDefaultCoverStyle = {
 };
 
 const CATEGORY_FALLBACK: Record<CategoryType, ListingDefaultCoverStyle> = {
-  zbozi: {
+  auto: {
+    icon: Car,
+    surfaceClass: "bg-gradient-to-br from-zinc-100 to-zinc-200/70",
+    iconClass: "text-zinc-500/65",
+    label: "Auto",
+  },
+  detsky: {
+    icon: Baby,
+    surfaceClass: "bg-gradient-to-br from-pink-50 to-rose-100/70",
+    iconClass: "text-pink-400/70",
+    label: "Dětské",
+  },
+  dum: {
+    icon: Sofa,
+    surfaceClass: "bg-gradient-to-br from-orange-50/80 to-stone-100",
+    iconClass: "text-orange-700/45",
+    label: "Dům a zahrada",
+  },
+  elektro: {
+    icon: Monitor,
+    surfaceClass: "bg-gradient-to-br from-slate-50 to-slate-200/60",
+    iconClass: "text-slate-500/65",
+    label: "Elektronika",
+  },
+  moda: {
+    icon: Shirt,
+    surfaceClass: "bg-gradient-to-br from-rose-50 to-stone-100",
+    iconClass: "text-rose-400/70",
+    label: "Móda",
+  },
+  sport: {
+    icon: Bike,
+    surfaceClass: "bg-gradient-to-br from-emerald-50 to-stone-100",
+    iconClass: "text-emerald-600/55",
+    label: "Sport",
+  },
+  hobby: {
+    icon: BookOpen,
+    surfaceClass: "bg-gradient-to-br from-indigo-50 to-stone-100",
+    iconClass: "text-indigo-400/65",
+    label: "Hobby",
+  },
+  ostatni: {
     icon: Package,
     surfaceClass: "bg-gradient-to-br from-stone-100 to-stone-200/80",
     iconClass: "text-stone-400",
-    label: "Zboží",
+    label: "Ostatní",
   },
   sluzby: {
     icon: Handshake,
@@ -74,48 +118,182 @@ const CATEGORY_FALLBACK: Record<CategoryType, ListingDefaultCoverStyle> = {
 const SUBCATEGORY_COVERS: Partial<
   Record<CategoryType, Record<string, ListingDefaultCoverStyle>>
 > = {
-  zbozi: {
+  auto: {
+    "osobni-auta": {
+      icon: Car,
+      surfaceClass: "bg-gradient-to-br from-zinc-100 to-zinc-200/70",
+      iconClass: "text-zinc-500/65",
+      label: "Osobní auta",
+    },
+    motorky: {
+      icon: Bike,
+      surfaceClass: "bg-gradient-to-br from-zinc-100 to-stone-100",
+      iconClass: "text-zinc-500/65",
+      label: "Motorky",
+    },
+    "dily-prislusenstvi": {
+      icon: Wrench,
+      surfaceClass: "bg-gradient-to-br from-stone-100 to-zinc-100",
+      iconClass: "text-stone-500/65",
+      label: "Díly",
+    },
+    ostatni: {
+      icon: Car,
+      surfaceClass: "bg-gradient-to-br from-zinc-100 to-zinc-200/70",
+      iconClass: "text-zinc-500/65",
+      label: "Auto",
+    },
+  },
+  detsky: {
+    "detske-obleceni-obuv": {
+      icon: Shirt,
+      surfaceClass: "bg-gradient-to-br from-pink-50 to-rose-50",
+      iconClass: "text-pink-400/70",
+      label: "Dětské oblečení",
+    },
+    "kocarky-sedacky-nabytek": {
+      icon: Sofa,
+      surfaceClass: "bg-gradient-to-br from-pink-50 to-stone-100",
+      iconClass: "text-pink-400/60",
+      label: "Kočárky",
+    },
+    "hracky-miminka": {
+      icon: Baby,
+      surfaceClass: "bg-gradient-to-br from-rose-50 to-pink-50",
+      iconClass: "text-rose-400/65",
+      label: "Hračky",
+    },
+    ostatni: {
+      icon: Baby,
+      surfaceClass: "bg-gradient-to-br from-pink-50 to-rose-100/70",
+      iconClass: "text-pink-400/70",
+      label: "Dětské",
+    },
+  },
+  dum: {
+    "nabytek-doplnky": {
+      icon: Sofa,
+      surfaceClass: "bg-gradient-to-br from-orange-50/80 to-stone-100",
+      iconClass: "text-orange-700/45",
+      label: "Nábytek",
+    },
+    "zahrada-naradi": {
+      icon: Flower2,
+      surfaceClass: "bg-gradient-to-br from-green-50 to-stone-100",
+      iconClass: "text-green-600/55",
+      label: "Zahrada",
+    },
     "potraviny-domaci": {
       icon: Apple,
       surfaceClass: "bg-gradient-to-br from-lime-50 to-stone-100",
       iconClass: "text-lime-700/50",
       label: "Potraviny",
     },
-    "kola-sport": {
-      icon: Bike,
-      surfaceClass: "bg-gradient-to-br from-emerald-50 to-stone-100",
-      iconClass: "text-emerald-600/55",
-      label: "Sport",
-    },
-    "nabytek-domacnost": {
+    ostatni: {
       icon: Sofa,
       surfaceClass: "bg-gradient-to-br from-orange-50/80 to-stone-100",
       iconClass: "text-orange-700/45",
-      label: "Nábytek",
+      label: "Dům a zahrada",
     },
-    elektronika: {
+  },
+  elektro: {
+    mobily: {
+      icon: Monitor,
+      surfaceClass: "bg-gradient-to-br from-slate-50 to-slate-200/60",
+      iconClass: "text-slate-500/65",
+      label: "Mobily",
+    },
+    pc: {
+      icon: Monitor,
+      surfaceClass: "bg-gradient-to-br from-slate-50 to-sky-50",
+      iconClass: "text-slate-500/65",
+      label: "Počítače",
+    },
+    "tv-foto-audio": {
+      icon: Monitor,
+      surfaceClass: "bg-gradient-to-br from-slate-50 to-indigo-50",
+      iconClass: "text-slate-500/65",
+      label: "TV a audio",
+    },
+    spotrebice: {
+      icon: Monitor,
+      surfaceClass: "bg-gradient-to-br from-slate-50 to-stone-100",
+      iconClass: "text-slate-500/65",
+      label: "Spotřebiče",
+    },
+    ostatni: {
       icon: Monitor,
       surfaceClass: "bg-gradient-to-br from-slate-50 to-slate-200/60",
       iconClass: "text-slate-500/65",
       label: "Elektronika",
     },
-    "auta-moto": {
-      icon: Car,
-      surfaceClass: "bg-gradient-to-br from-zinc-100 to-zinc-200/70",
-      iconClass: "text-zinc-500/65",
-      label: "Auta a moto",
+  },
+  moda: {
+    "damske-panske": {
+      icon: Shirt,
+      surfaceClass: "bg-gradient-to-br from-rose-50 to-stone-100",
+      iconClass: "text-rose-400/70",
+      label: "Oblečení",
     },
-    "moda-obleceni": {
+    "boty-doplnky": {
+      icon: Footprints,
+      surfaceClass: "bg-gradient-to-br from-rose-50 to-stone-50",
+      iconClass: "text-rose-400/65",
+      label: "Boty a doplňky",
+    },
+    ostatni: {
       icon: Shirt,
       surfaceClass: "bg-gradient-to-br from-rose-50 to-stone-100",
       iconClass: "text-rose-400/70",
       label: "Móda",
     },
+  },
+  sport: {
+    "kola-kolobezky": {
+      icon: Bike,
+      surfaceClass: "bg-gradient-to-br from-emerald-50 to-stone-100",
+      iconClass: "text-emerald-600/55",
+      label: "Kola",
+    },
+    "zimni-sport": {
+      icon: Footprints,
+      surfaceClass: "bg-gradient-to-br from-sky-50 to-emerald-50",
+      iconClass: "text-sky-500/60",
+      label: "Zimní sport",
+    },
+    ostatni: {
+      icon: Bike,
+      surfaceClass: "bg-gradient-to-br from-emerald-50 to-stone-100",
+      iconClass: "text-emerald-600/55",
+      label: "Sport",
+    },
+  },
+  hobby: {
+    "knihy-hry-hudba": {
+      icon: BookOpen,
+      surfaceClass: "bg-gradient-to-br from-indigo-50 to-stone-100",
+      iconClass: "text-indigo-400/65",
+      label: "Knihy a hry",
+    },
+    "sberatelstvi-umeni": {
+      icon: Paintbrush,
+      surfaceClass: "bg-gradient-to-br from-violet-50 to-stone-100",
+      iconClass: "text-violet-400/65",
+      label: "Sběratelství",
+    },
+    ostatni: {
+      icon: BookOpen,
+      surfaceClass: "bg-gradient-to-br from-indigo-50 to-stone-100",
+      iconClass: "text-indigo-400/65",
+      label: "Hobby",
+    },
+  },
+  ostatni: {
     ostatni: {
       icon: Package,
       surfaceClass: "bg-gradient-to-br from-stone-100 to-stone-200/80",
       iconClass: "text-stone-400",
-      label: "Zboží",
+      label: "Ostatní",
     },
   },
   sluzby: {

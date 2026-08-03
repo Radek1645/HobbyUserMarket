@@ -1,4 +1,5 @@
 import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
+import { GOODS_CATEGORIES } from "@/config/categories-goods";
 
 export type SubcategoryConfig = {
   slug: string;
@@ -30,13 +31,6 @@ export type CategoryConfig = {
   descriptionPlaceholderRecurring?: string;
 };
 
-const ZBOZI_CONDITIONS: CategoryConfig["conditionLabels"] = [
-  { value: "new", label: "Nové" },
-  { value: "like_new", label: "Jako nové" },
-  { value: "used", label: "Použité" },
-  { value: "damaged", label: "Poškozené / na díly" },
-];
-
 const SLUZBY_CONDITIONS: CategoryConfig["conditionLabels"] = [
   { value: "one_time", label: "Jednorázově" },
   { value: "long_term", label: "Dlouhodobě" },
@@ -51,14 +45,6 @@ const UDALOST_CONDITIONS: CategoryConfig["conditionLabels"] = [
 const NEMOVITOST_CONDITIONS: CategoryConfig["conditionLabels"] = [
   { value: "sale", label: "Prodej" },
   { value: "rent", label: "Pronájem" },
-];
-
-const COMMON_PRICE_TYPES: CategoryConfig["priceTypes"] = [
-  { value: "fixed", label: "Pevná cena" },
-  { value: "free_pickup", label: "Za odvoz / zdarma" },
-  { value: "negotiable", label: "Dohodou" },
-  { value: "exchange", label: "Výměnou" },
-  { value: "offer", label: "Nabídni" },
 ];
 
 const UDALOST_PRICE_TYPES: CategoryConfig["priceTypes"] = [
@@ -102,120 +88,7 @@ const ADVERTISER_TYPE_AI_RULES =
   "Je-li Podnikatel, v Parametrech uveď firmu a IČO, pokud jsou v textu nebo na fotkách; chybí-li IČO u zjevného Podnikatele, ptej se (paramLabel: „IČO“; label např. „Jaké je vaše IČO?“).";
 
 export const CATEGORIES: CategoryConfig[] = [
-  {
-    type: "zbozi",
-    label: "Zboží",
-    subcategories: [
-      {
-        slug: "potraviny-domaci",
-        label: "Potraviny a domácí výrobky",
-        titlePlaceholder: "např. Prodám med z vlastní včelny",
-        descriptionPlaceholder:
-          "Druh výrobku, množství, způsob předání, alergeny…",
-        aiPrompt:
-          "Uživatel nabízí potraviny nebo domácí jedlé výrobky.\n\n" +
-          "Očekávej jedlé věci jako med, marmelády, sirupy, pečivo, ovoce, zeleninu, vejce, bylinky, koření, domácí zavařeniny nebo jiné potraviny a nápoje.\n" +
-          "Pokud text nebo fotografie zjevně ukazují nejedlý produkt (např. elektroniku, router, WiFi extender, nábytek, oblečení, autodíl, nářadí), vrať REJECTED s důvodem, že inzerát je zařazený do špatné kategorie a má se přesunout jinam.\n" +
-          "Pokud jde o potravinu, zeptej se jen na zásadní chybějící údaje jako druh, množství, forma balení, trvanlivost nebo alergeny, pokud jsou relevantní.",
-      },
-      {
-        slug: "kola-sport",
-        label: "Sport",
-        titlePlaceholder: "např. Dětské kolo Velo 20″",
-        descriptionPlaceholder: "Značka, velikost, stav, příslušenství…",
-        aiPrompt:
-          "Úvod + Parametry (značka, model/typ, velikost, materiál, výbava, stav). " +
-          "Je-li značka a model/typ jasné, doplň katalogové vlastnosti s jistotou (např. odpružení, brzdy, materiál rámu u známého kola). " +
-          "Velikost rámu/kol, stav a příslušenství konkrétního kusu jen z textu/fotek nebo se zeptej. " +
-          "DĚTSKÉ ZBOŽÍ (zjevně dětské / pro dítě / dívčí / chlapecké — ne „dětský styl“ pro dospělé): chybí-li věk, výška i velikostní pásmo (např. vel. 98, „pro 6–9 let“), zeptej se jednou (paramLabel: „Věk / výška“; label např. „Pro jaký věk / výšku dítěte je věc vhodná?“). Je-li údaj známý, zapiš do Parametrů a neptej se. " +
-          "Dotazník jen na chybějící kusové údaje — ne na katalog už identifikovaného modelu.",
-      },
-      {
-        slug: "nabytek-domacnost",
-        label: "Nábytek a domácnost",
-        titlePlaceholder: "např. Jídelní stůl z masivu",
-        descriptionPlaceholder: "Rozměry, materiál, stav, možnost odvozu…",
-        aiPrompt:
-          "Úvod + Parametry (typ, materiál, rozměry, stav). " +
-          "Je-li typ výrobku jasně identifikovaný (značka/model nebo jednoznačný typ), doplň katalogové vlastnosti s jistotou. " +
-          "Přesné rozměry konkrétního kusu, vady a odvoz jen z textu/fotek nebo se zeptej.",
-      },
-      {
-        slug: "elektronika",
-        label: "Elektronika",
-        titlePlaceholder: "např. iPhone 13, 128 GB",
-        descriptionPlaceholder: "Model, stav, výbava, baterie, příslušenství…",
-        aiPrompt:
-          "Úvod + Parametry (značka, model, stav, výbava…). " +
-          "Je-li model jasný (Amazfit GTR/GTS, iPhone, notebook…), MUSÍŠ doplnit katalog — nestačí jen Stav/Vady/Popis. " +
-          "U smartwatch vždy: GPS, bio (tep/SpO₂), voděodolnost, Bluetooth volání (pokud model má) — zvlášť nebo pod Výbava. " +
-          "Příslušenství v balení a vady kusu jen z textu/fotek. Label „Popis:“ nepoužívej — piš Značka + Model.",
-      },
-      {
-        slug: "auta-moto",
-        label: "Auta a moto",
-        titlePlaceholder: "např. Škoda Octavia 2.0 TDI",
-        descriptionPlaceholder:
-          "Rok, nájezd, motorizace, STK, poslední servis, výbava, stav…",
-        aiPrompt:
-          "Úvod + Parametry (rok, nájezd, motorizace, STK, datum poslední servisní prohlídky, výbava, stav). " +
-          "Je-li značka + model (+ motorizace) jasné, doplň katalogové vlastnosti s jistotou (palivo/pohon, typ karoserie, výkon kW pokud z motorizace jednoznačně plyne, běžná výbava modelu). " +
-          "Výbavový stupeň (Ambition/Style…) nehádej. Rok, nájezd, STK, poslední servis a vady jsou kusové — chybí-li, zeptej se (paramLabel např. „Poslední servis“, „Nájezd“, „Rok“). " +
-          "Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu.",
-      },
-      {
-        slug: "moda-obleceni",
-        label: "Móda a oblečení",
-        titlePlaceholder: "např. Dívčí bunda Nike, vel. 128",
-        descriptionPlaceholder:
-          "Značka, velikost, stav… u bot stélka, u hodinek šířka pásku, u šperků délka v mm…",
-        aiPrompt:
-          "Uživatel prodává módu a oblečení.\n\n" +
-          "SPODNÍ A INTIMNÍ PRÁDLO — povinná pravidla:\n" +
-          "- Fotografie musí ukazovat pouze věc (věšák, flat lay, detail materiálu), ne osobu v prádle, postel ani boudoir styl.\n" +
-          "- V popisu nebo Parametrech musí být velikost; doporuč značku a stav.\n" +
-          "- Zamítnout (REJECTED, sexual_services), pokud foto sexualizuje osobu nebo inzerát působí jako nabídka sexuální služby místo prodeje věci.\n" +
-          "- Pro předání piš „osobní předání po domluvě“ nebo „vyzvednutí po domluvě“, NIKDY „osobní prohlídka“ (to platí jen u nemovitostí).\n\n" +
-          "BOTY A OBUV (včetně bot na chození) — pokud text/fotky ukazují boty:\n" +
-          "- Chybí-li info o vyndávací stélce (vložce), zeptej se (paramLabel: „Vyndávací stélka“; label např. „Mají boty vyndávací stélku / vložku?“).\n" +
-          "- U dětských bot chybí-li délka stélky v mm, zeptej se (paramLabel: „Délka stélky“; label např. „Jaká je délka stélky v mm?“). Jednotka mm je povinná.\n" +
-          "- Je-li údaj známý, zapiš do Parametrů (např. • Vyndávací stélka: ano; • Délka stélky: 165 mm) a neptej se.\n" +
-          "- U dětských bot, pokud už je stélka nebo velikost jasná, na věk/výšku se navíc neptej.\n\n" +
-          "DĚTSKÉ OBLEČENÍ / ZBOŽÍ (zjevně dětské / dívčí / chlapecké / pro dítě — ne „dětský styl“ pro dospělé):\n" +
-          "- Chybí-li věk, výška i velikostní pásmo (např. vel. 98, „pro 4–6 let“, výška 110 cm), zeptej se jednou (paramLabel: „Věk / výška“; label např. „Pro jaký věk / výšku dítěte je věc vhodná?“).\n" +
-          "- Je-li údaj známý, zapiš do Parametrů a neptej se.\n\n" +
-          "HODINKY — pokud text/fotky ukazují hodinky:\n" +
-          "- Chybí-li šířka pásku v mm, zeptej se (paramLabel: „Šířka pásku“; label např. „Jaká je šířka pásku v mm?“).\n" +
-          "- Jednotka mm je povinná. Známou hodnotu zapiš do Parametrů a neptej se. Na délku pásku se neptej — je standardní.\n" +
-          "- Je-li značka a model jasné (i u módních/smart hodinek), doplň katalogové vlastnosti s jistotou (materiál pouzdra, typ strojku / GPS / voděodolnost…).\n\n" +
-          "NÁRAMKY A NÁHRDELNÍKY — pokud text/fotky ukazují náramek nebo náhrdelník:\n" +
-          "- Chybí-li délka (v mm), zeptej se (paramLabel: „Délka“; label např. „Jaká je délka náramku / náhrdelníku v mm?“).\n" +
-          "- Jednotka mm je povinná. Známou délku zapiš do Parametrů a neptej se.\n\n" +
-          "Obecně: pokud z textu či fotek NENÍ jasná VELIKOST nebo ZNAČKA, vygeneruj stručné otázky. " +
-          "Celkem max 5 otázek. Na volitelné parametry (materiál, sezóna) se ptej jen pokud text neobsahuje téměř nic.",
-      },
-      {
-        slug: "ostatni",
-        label: "Ostatní",
-        titlePlaceholder: "např. Nabízím zahradní sekačku",
-        descriptionPlaceholder: "Co nabízíte, stav, rozměry, způsob předání…",
-        aiPrompt:
-          "Úvod + Parametry podle typu zboží. " +
-          "Je-li výrobek jasně identifikovaný (značka + model / jednoznačný typ, např. sekačka Bosch AdvancedRotak 650), doplň katalogové vlastnosti s jistotou. " +
-          "Kusové údaje (stav, vady, příslušenství) jen z textu/fotek nebo se zeptej.",
-      },
-    ],
-    conditionLabels: ZBOZI_CONDITIONS,
-    priceTypes: COMMON_PRICE_TYPES,
-    titlePlaceholder: "např. Nabízím použité zboží",
-    descriptionPlaceholder: "Popis zboží, stav, rozměry, způsob předání…",
-    aiPrompt:
-      "Analyzuj nabízené zboží. cleanedDescription: úvod (co prodáváš + cena v textu) a sekce Parametry. " +
-      "Je-li typ výrobku spolehlivě identifikovaný (značka + model / motorizace / jednoznačný produkt) v jakékoli podkategorii, POVINNĚ doplň katalogové vlastnosti s jistotou — nečekej, až je napíše inzerent. " +
-      "Kusové údaje (stav kusu, nájezd, vady, balení) jen z textu/fotek/formuláře. Ve formuláři dostaneš stav — u „Poškozené / na díly“ bez rozsahu vady se ptej. " +
-      "DĚTSKÉ ZBOŽÍ (kolo, kočárek, hračka, oblečení… — jen když je zjevně dětské / pro dítě, ne „dětský styl“ pro dospělé): chybí-li věk, výška i velikostní pásmo, jedna otázka paramLabel „Věk / výška“; u dětských bot se stélkou/velikostí věk neopakuj. " +
-      "Doplňující otázky jen na chybějící kusové / variantní údaje, ne na katalog identifikovaného výrobku. Na cenu se neptej, pokud je ve formuláři.",
-  },
+  ...(GOODS_CATEGORIES as CategoryConfig[]),
   {
     type: "sluzby",
     label: "Služby",

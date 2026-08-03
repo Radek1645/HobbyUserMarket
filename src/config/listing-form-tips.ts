@@ -6,15 +6,56 @@ type CategoryTipExamples = Readonly<Record<string, string>> & {
 const LISTING_FORM_TIP_EXAMPLES: Readonly<
   Record<string, CategoryTipExamples>
 > = {
-  zbozi: {
-    default: "Prodám použité zboží",
+  auto: {
+    default: "Prodám použité auto",
+    "osobni-auta": "Prodám Škodu Octavia",
+    motorky: "Prodám motorku",
+    "dily-prislusenstvi": "Prodám autodíly",
+    ostatni: "Prodám střešní box",
+  },
+  detsky: {
+    default: "Prodám dětské věci",
+    "detske-obleceni-obuv": "Prodám dívčí bundu ve vel. 128",
+    "kocarky-sedacky-nabytek": "Prodám kočárek",
+    "hracky-miminka": "Prodám hračky pro miminko",
+    ostatni: "Prodám dětskou postýlku",
+  },
+  dum: {
+    default: "Prodám věci do domácnosti",
+    "nabytek-doplnky": "Prodám jídelní stůl z masivu",
+    "zahrada-naradi": "Prodám zahradní sekačku",
     "potraviny-domaci": "Prodám med z vlastní včelny",
-    "kola-sport": "Prodám dětské kolo",
-    "nabytek-domacnost": "Prodám jídelní stůl z masivu",
-    elektronika: "Prodám funkční mobil",
-    "auta-moto": "Prodám použité auto",
-    "moda-obleceni": "Prodám dívčí bundu ve vel. 128",
-    ostatni: "Prodám zahradní sekačku",
+    ostatni: "Prodám zahradní nábytek",
+  },
+  elektro: {
+    default: "Prodám funkční elektroniku",
+    mobily: "Prodám funkční mobil",
+    pc: "Prodám notebook",
+    "tv-foto-audio": "Prodám televizi",
+    spotrebice: "Prodám pračku",
+    ostatni: "Prodám nabíječku",
+  },
+  moda: {
+    default: "Prodám oblečení",
+    "damske-panske": "Prodám bundu ve vel. M",
+    "boty-doplnky": "Prodám tenisky",
+    ostatni: "Prodám kabelku",
+  },
+  sport: {
+    default: "Prodám sportovní výbavu",
+    "kola-kolobezky": "Prodám horské kolo",
+    "zimni-sport": "Prodám lyže",
+    ostatni: "Prodám posilovací lavici",
+  },
+  hobby: {
+    default: "Prodám hobby věc",
+    "knihy-hry-hudba": "Prodám deskovou hru",
+    "sberatelstvi-umeni": "Prodám sběratelský kousek",
+    ostatni: "Prodám modelářskou stavebnici",
+  },
+  ostatni: {
+    default: "Prodám věc k odvozu",
+    ostatni: "Prodám věc k odvozu",
   },
   sluzby: {
     default: "Nabízím službu v okolí",

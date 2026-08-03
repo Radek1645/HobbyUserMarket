@@ -192,7 +192,14 @@ const BUILDERS: Record<
   CategoryType,
   (input: ListingJsonLdInput) => JsonLd
 > = {
-  zbozi: buildProductJsonLd,
+  auto: buildProductJsonLd,
+  detsky: buildProductJsonLd,
+  dum: buildProductJsonLd,
+  elektro: buildProductJsonLd,
+  moda: buildProductJsonLd,
+  sport: buildProductJsonLd,
+  hobby: buildProductJsonLd,
+  ostatni: buildProductJsonLd,
   sluzby: buildServiceJsonLd,
   udalost: buildEventJsonLd,
   nemovitost: buildRealEstateJsonLd,

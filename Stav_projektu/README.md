@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-08-04 | [2026-08-04.md](./2026-08-04.md) — flat kategorie 070, mřížka+bundle, unaccent 071, deletion_reason 069, lokalita, PRD v3.57; infra ✅ |
 | 2026-08-01 | [2026-08-01.md](./2026-08-01.md) — formulář má pravdu, dětské Věk/výška, poptávky UI, Sport label, PRD v3.55; Edge deploy ✅ |
 | 2026-07-31 | [2026-07-31.md](./2026-07-31.md) — staging + Sharp AI varianty (067/068), auth /auth/dokoncit, PRD v3.52; Edge deploy TODO |
 | 2026-07-30 | [2026-07-30.md](./2026-07-30.md) — fix sync limitů fotek AI (1 MB/6 MB), Gemini model notes, PRD v3.49, push |

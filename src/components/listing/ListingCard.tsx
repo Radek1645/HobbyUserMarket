@@ -108,7 +108,10 @@ export function ListingCard({
 
         <div className="flex items-start justify-between gap-2 px-3 py-2 text-xs">
           <p className="min-w-0 flex-1 truncate text-gray-500">
-            {formatPublicListingLocation(listing.location_text)}
+            {formatPublicListingLocation(
+              listing.location_text,
+              listing.category_type,
+            )}
             {eventLabel ? ` · ${eventLabel}` : ""}
           </p>
           <div className="shrink-0 text-right">
@@ -164,7 +167,10 @@ export function ListingCard({
         </h2>
         <div className="mt-1 flex items-start justify-between gap-3">
           <p className="min-w-0 text-sm text-gray-600">
-            {formatPublicListingLocation(listing.location_text)}
+            {formatPublicListingLocation(
+              listing.location_text,
+              listing.category_type,
+            )}
           </p>
           <div className="shrink-0 text-right text-xs">
             <p className="text-gray-500">Vytvořeno</p>

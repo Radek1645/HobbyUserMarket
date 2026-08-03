@@ -1,10 +1,17 @@
 import type { CategoryType } from "@/types/post";
 import {
+  Baby,
+  Bike,
+  BookOpen,
   Briefcase,
   Building,
   Calendar,
+  Car,
+  Home,
   LayoutGrid,
+  Monitor,
   Package,
+  Shirt,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -20,9 +27,16 @@ export type HomeCategoryTabConfig = {
 
 export const CATEGORIES_CONFIG: HomeCategoryTabConfig[] = [
   { id: "all", label: "Vše", icon: LayoutGrid },
-  { id: "zbozi", label: "Zboží", icon: Package },
+  { id: "auto", label: "Auto-moto", icon: Car },
+  { id: "detsky", label: "Dětský bazar", icon: Baby },
+  { id: "dum", label: "Dům a zahrada", icon: Home },
+  { id: "elektro", label: "Elektro", icon: Monitor },
+  { id: "moda", label: "Móda", icon: Shirt },
+  { id: "sport", label: "Sport", icon: Bike },
+  { id: "hobby", label: "Hobby", icon: BookOpen },
+  { id: "ostatni", label: "Ostatní", icon: Package },
   { id: "sluzby", label: "Služby", icon: Wrench },
-  { id: "prace", label: "Práce a brigády", icon: Briefcase },
+  { id: "prace", label: "Práce", icon: Briefcase },
   { id: "nemovitost", label: "Nemovitosti", icon: Building },
   { id: "udalost", label: "Události", icon: Calendar },
 ];
@@ -31,21 +45,39 @@ export type HomeTheme = {
   label: string;
   headline: string;
   subline: string;
-  /** Jemné pozadí celé stránky */
   shellClass: string;
-  /** Hero karta */
   heroClass: string;
   heroBorderClass: string;
   accentClass: string;
   tabActiveClass: string;
   tabInactiveClass: string;
-  /** Primární CTA (Založit inzerát, akce ve formuláři) */
   ctaClass: string;
 };
 
 export const HOME_CATEGORY_ORDER: HomeBrowseCategory[] = CATEGORIES_CONFIG.map(
   (c) => c.id,
 );
+
+function goodsTheme(
+  label: string,
+  headline: string,
+  subline: string,
+): HomeTheme {
+  return {
+    label,
+    headline,
+    subline,
+    shellClass: "bg-emerald-50/40",
+    heroClass: "bg-white/80 backdrop-blur-md",
+    heroBorderClass: "border-emerald-200/60",
+    accentClass: "text-emerald-800",
+    tabActiveClass:
+      "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/10",
+    tabInactiveClass:
+      "bg-white text-emerald-700/80 border-emerald-200/50 hover:border-emerald-300 hover:text-emerald-900",
+    ctaClass: "bg-emerald-600 text-white hover:bg-emerald-700",
+  };
+}
 
 export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
   all: {
@@ -63,21 +95,46 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
       "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:text-zinc-900",
     ctaClass: "bg-zinc-800 text-white hover:bg-zinc-700",
   },
-  zbozi: {
-    label: "Zboží",
-    headline: "Nakupujte a prodávejte v okolí",
-    subline:
-      "Auta, oblečení, hobby i dětské věci — lokálně, bez zbytečné omáčky a provizí.",
-    shellClass: "bg-emerald-50/40",
-    heroClass: "bg-white/80 backdrop-blur-md",
-    heroBorderClass: "border-emerald-200/60",
-    accentClass: "text-emerald-800",
-    tabActiveClass:
-      "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/10",
-    tabInactiveClass:
-      "bg-white text-emerald-700/80 border-emerald-200/50 hover:border-emerald-300 hover:text-emerald-900",
-    ctaClass: "bg-emerald-600 text-white hover:bg-emerald-700",
-  },
+  auto: goodsTheme(
+    "Auto-moto",
+    "Auta a moto v okolí",
+    "Osobní auta, motorky i díly — lokálně, bez zbytečné omáčky.",
+  ),
+  detsky: goodsTheme(
+    "Dětský bazar",
+    "Vše pro děti na jednom místě",
+    "Oblečení, kočárky, hračky i potřeby pro miminka od rodičů z okolí.",
+  ),
+  dum: goodsTheme(
+    "Dům a zahrada",
+    "Nábytek, zahrada a domácnost",
+    "Od stolu po sekačku — věci pro dům a zahradu blízko vás.",
+  ),
+  elektro: goodsTheme(
+    "Elektro",
+    "Mobily, PC i spotřebiče",
+    "Technika z druhé ruky od lidí z okolí.",
+  ),
+  moda: goodsTheme(
+    "Móda",
+    "Oblečení a doplňky",
+    "Dámské i pánské kousky, boty a doplňky lokálně.",
+  ),
+  sport: goodsTheme(
+    "Sport",
+    "Kola, lyže a sportovní výbava",
+    "Sportovní věci od lidí z okolí — bez e-shopových cen.",
+  ),
+  hobby: goodsTheme(
+    "Hobby",
+    "Knihy, hry a sběratelství",
+    "Volný čas, kultura a hobby z okolí.",
+  ),
+  ostatni: goodsTheme(
+    "Ostatní",
+    "Všechno ostatní zboží",
+    "Když to nepasuje jinam — pořád lokálně a bez provizí.",
+  ),
   sluzby: {
     label: "Služby",
     headline: "Nabízíte službu lidem v okolí",
@@ -147,5 +204,7 @@ export function parseHomeBrowseCategory(
   if (HOME_CATEGORY_ORDER.includes(value as HomeBrowseCategory)) {
     return value as HomeBrowseCategory;
   }
+  // Starý deep link ?kategorie=zbozi → Vše (domény už jsou flat)
+  if (value === "zbozi") return "all";
   return "all";
 }

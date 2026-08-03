@@ -18,7 +18,18 @@ import {
   LISTING_DESCRIPTION_MIN_LENGTH,
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
 } from "@/config/app";
-import { CATEGORIES, getCategoryConfig, getConditionFieldLabel, getConditionLabel, getListingCategoryNotice, getListingDescriptionPlaceholder, getListingTitlePlaceholder, getPriceTypeLabel, getSubcategoryLabel } from "@/config/categories";
+import { CategoryGrid } from "@/components/home/CategoryGrid";
+import { CREATE_LISTING_CATEGORY_GRID_TILES } from "@/config/home-category-grid";
+import {
+  getCategoryConfig,
+  getConditionFieldLabel,
+  getConditionLabel,
+  getListingCategoryNotice,
+  getListingDescriptionPlaceholder,
+  getListingTitlePlaceholder,
+  getPriceTypeLabel,
+  getSubcategoryLabel,
+} from "@/config/categories";
 import {
   computeListingExpiresAt,
   getListingExpiryWarning,
@@ -147,7 +158,7 @@ export function CreateListingForm({
   const [step, setStep] = useState(isEdit ? 2 : 1);
 
   const [categoryType, setCategoryType] = useState<CategoryType>(
-    initialValues?.categoryType ?? "zbozi",
+    initialValues?.categoryType ?? "ostatni",
   );
   const [subcategorySlug, setSubcategorySlug] = useState(
     initialValues?.subcategorySlug ?? "",
@@ -843,24 +854,19 @@ export function CreateListingForm({
         <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
           <div>
             <span className={labelClass}>Hlavní kategorie</span>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.type}
-                  type="button"
-                  {...gtmCtaProps(GTM_CTA.CREATE_SELECT_CATEGORY, {
-                    category: cat.type,
-                  })}
-                  onClick={() => handleCategoryChange(cat.type)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    categoryType === cat.type
-                      ? "bg-gray-900 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
+            <div className="mt-2">
+              <CategoryGrid
+                tiles={CREATE_LISTING_CATEGORY_GRID_TILES}
+                selected={categoryType}
+                onSelect={(id) => handleCategoryChange(id as CategoryType)}
+                variant="plain"
+                bundlePrompt="Co nabízíte?"
+                tileProps={(id) =>
+                  gtmCtaProps(GTM_CTA.CREATE_SELECT_CATEGORY, {
+                    category: id,
+                  })
+                }
+              />
             </div>
           </div>
 

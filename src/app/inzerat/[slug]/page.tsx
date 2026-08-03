@@ -110,7 +110,6 @@ export async function generateMetadata({
   const post = await getPostBySlug(slug);
   if (!post) return { title: `Inzerát | ${SITE_DISPLAY_NAME}` };
 
-  const location = formatPublicListingLocation(post.location_text);
   const metaLocality = formatMetaTitleLocality(post.location_text);
   const pageUrl = `${getSiteUrl()}${getListingPath(post.slug)}`;
   const description = resolveListingMetaDescription({
@@ -394,7 +393,10 @@ export default async function ListingDetailPage({
           <div className="min-w-0">
             <dt className="text-gray-500">Lokalita</dt>
             <dd className="break-words font-medium text-gray-900">
-              {formatPublicListingLocation(post.location_text)}
+              {formatPublicListingLocation(
+                post.location_text,
+                post.category_type,
+              )}
             </dd>
           </div>
           <div>

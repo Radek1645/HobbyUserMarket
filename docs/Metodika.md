@@ -47,7 +47,7 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 1. Návštěvník otevře úvodní stránku `/`.
 2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); subline s **vykáním** („z vašeho okolí“); značka **zaPikolou.cz** a tagline v hlavičce.
 3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání).
-4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo). Výchozí počet karet je 9; pokud je ve filtrovaném poolu víc, tlačítko **„Zobrazit další“** doplní další dávku (až do načtených 36).
+4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo). Mřížka: **mobil 2×4** (8 karet), **desktop lg+ 3×3** (9 karet); tlačítko **„Zobrazit další“** doplní stejnou dávku (až do načtených 36).
 5. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
 
 ### 2.1.1 Časté dotazy (`/faq`)
@@ -108,22 +108,18 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 
 ### 2.4 Filtrování podle kategorie
 
-- Na HP jsou záložky kategorií: **Vše**, **Zboží**, **Služby**, **Práce a brigády**, **Nemovitosti**, **Události** (copy a barvy v `home-themes.ts`).
-- Hero text u kategorie má jasný záměr nabídky:
-  - **Vše** — H1 „Online bazar, kde stačí fotka a pár slov.“; v subline odkaz **„doptá na detaily“** → `/jak-vytvorit-inzerat` (GTM `cta_home_create_listing_guide`).
-  - **Služby** — nabízím službu (řemeslo, doučování, úklid…).
-  - **Práce a brigády** — hledám člověka (úkol, záskok, výpomoc).
-  - **Události** — akce i novinky (sport, trhy, promo kavárny/restaurace/pekárny).
-  - **Nemovitosti** — prodej/pronájem od majitelů i realitek.
-  - **Zboží** — nákup/prodej v okolí (auta, oblečení, hobby, dětské…). Podkategorie **Sport** (UI label; slug v DB stále `kola-sport`).
-- Pod výpisem vždy SEO blok (`home-seo.ts`) s klíčovými slovy bazar / inzerce.
-- Výběr kategorie omezí výpis na daný typ inzerátu — lokální logika (okruh, fallback) zůstává stejná.
-- URL může obsahovat parametr `?kategorie=…` pro sdílení konkrétního pohledu.
+- Na HP je **mřížka kategorií** (`CategoryGrid` + `HOME_CATEGORY_GRID_TILES`): **Vše**, zbožové domény, dlaždice **Služby, práce a reality** (bundle → volba typu), **Události**.
+- Bundle nemění `category_type` — po výběru zůstává `sluzby` / `prace` / `nemovitost` (stejné formuláře a RPC).
+- Deštník **Zboží** zrušen (migrace `070`); starý `?kategorie=zbozi` → **Vše**.
+- Hero copy dle aktivní kategorie (`HOME_THEMES`). U **Vše** odkaz **„doptá na detaily“** → `/jak-vytvorit-inzerat`.
+- Stejná mřížka (bez Vše) je v kroku 1 formuláře nového inzerátu.
+- **Další fáze:** progressive disclosure podkategorií, date čipy u Událostí.
 
 ### 2.5 Vyhledávání na HP
 
 - Uživatel může zadat hledaný výraz (min. **3 znaky**).
-- Vyhledávání probíhá v názvu a popisu aktivních inzerátů.
+- Vyhledávání probíhá v názvu a popisu aktivních inzerátů (RPC `search_posts`, prefix match).
+- **Bez ohledu na diakritiku** (migrace `071`): např. `beh` najde „běh“.
 - Lze kombinovat s kategorií a dalšími filtry (cena, stav, vzdálenost — pokud je poloha k dispozici).
 
 ### 2.6 Co návštěvník bez přihlášení vidí a co ne
@@ -972,8 +968,8 @@ Auth: `Authorization: Bearer CRON_SECRET` (stejně jako ostatní crony). Rate-li
 ### 9.3 Smazání inzerátu majitelem
 
 1. Uživatel zvolí smazat.
-2. Systém zobrazí **exit poll** — povinný výběr důvodu (prodal zde / jinde / neprodal / jiné).
-3. Inzerát přejde do stavu `deleted` — zmizí z veřejného webu i z aktivního seznamu majitele.
+2. U kategorie **zboží** systém zobrazí **exit poll** (2 cesty): **Prodáno na zaPikolou** / **Jiné**. Důvod se uloží do `posts.deletion_reason` (`sold_on_platform` | `other`). Ostatní kategorie: jednoduché potvrzení, `deletion_reason` zůstane `NULL`.
+3. Inzerát přejde do stavu `deleted` — zmizí z veřejného webu i z aktivního seznamu majitele. Migrace: `069_post_deletion_reason.sql`.
 
 ---
 

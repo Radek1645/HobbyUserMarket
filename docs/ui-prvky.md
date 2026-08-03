@@ -86,9 +86,14 @@ Panel používá neutrální stín `shadow-xl shadow-gray-900/10` — ne barevn�
 
 | Konstanta | Použití |
 |-----------|---------|
-| `homeCategoryTabActiveClass` | Aktivní kategorie v hero |
-| `homeCategoryTabInactiveClass` | Neaktivní kategorie |
+| `homeCategoryNavClass` | Horizontální řádek kategorií (legacy) — tenký posuvník |
+| `homeCategoryGridTileClass` / `…ActiveClass` | Dlaždice mřížky v hero |
+| `categoryGridTilePlainClass` / `…ActiveClass` | Dlaždice mřížky ve formuláři |
+| `homeCategoryTabActiveClass` | Aktivní pilulka (legacy) |
+| `homeCategoryTabInactiveClass` | Neaktivní pilulka (legacy) |
 | `iconSmClass` | Ikona před textem (`h-4 w-4`, barva z rodiče) |
+
+Mřížka: `CategoryGrid` + `HOME_CATEGORY_GRID_TILES` / `CREATE_LISTING_CATEGORY_GRID_TILES` v `home-category-grid.ts` (bundle Služby/Práce/Reality).
 
 Konfigurace kategorií a ikon: [`categories-docs.md`](./categories-docs.md), `CATEGORIES_CONFIG` v `home-themes.ts`.
 

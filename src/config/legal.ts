@@ -18,7 +18,21 @@ export const SAFETY_UI = {
   meetingSafetyNotice:
     "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
   meetingSafetyNoticeByCategory: {
-    zbozi:
+    auto:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    detsky:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    dum:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    elektro:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    moda:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    sport:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    hobby:
+      "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
+    ostatni:
       "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",
     sluzby:
       "Při osobním předání se domlouvejte na veřejném místě. Pokud vám je méně než 18 let, doporučujeme setkání v doprovodu dospělé osoby.",

@@ -11,9 +11,34 @@
 > **§ A hotovo (2026-08-01):** F1–F3 + TZ `Europe/Prague`; modal vs. formulář záměrně neřešen ([Metodika](./Metodika.md) §6.8.1).  
 > **§ B hotovo (2026-08-01):** D1–D3 — dětské zboží otázka Věk / výška.  
 > **§ C hotovo (2026-08-01):** Q1–Q4 — počet poptávek na `/moje-inzeraty` + God Mode.  
-> **§ F hotovo (2026-08-01):** label „Sport“, slug `kola-sport` beze změny.
+> **§ F hotovo (2026-08-01):** label „Sport“, slug `kola-sport` beze změny.  
+> **§ G hotovo (2026-08-03):** exit poll zboží + `posts.deletion_reason` (069).  
+> **§ I hotovo (2026-08-03):** veřejná lokalita — obec/město (výjimka událost/nemovitost = + ulice).  
+**Aktualizace 2026-08-03:** § J flat kategorie (Fáze 1 IA — bez deštníku Zboží).  
+**§ J hotovo (2026-08-04):** `070` + Edge deploy; `071` unaccent. Další IA = Fáze 3–4.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
+
+---
+
+## J. Priorita — flat kategorie (IA Fáze 1)
+
+> **Hotovo 2026-08-03/04.** Kód + migrace `070` na Supabase + Edge `moderate-listing` deploy. Fulltext bez diakritiky: migrace `071` nasazena.
+
+**Rozhodnutí:** 1. patro = Auto / Dětský / Dům / Elektro / Móda / Sport / Hobby / Ostatní + Služby / Práce / Nemovitosti / Události (+ Vše default). Bez Zvířat. Bundle Služby+Práce+Reality a mřížka = Fáze 2.
+
+| # | Úkol | Očekávání | ✓ |
+|---|------|-----------|---|
+| CAT1 | `CategoryType` + `categories.ts` / `categories-goods.ts` | 8 zbožových domén + stávající 4 | ☑ |
+| CAT2 | Migrace `070` — CHECK + remap `zbozi` → domény | Po apply žádný `category_type = zbozi` | ☑ |
+| CAT3 | HP pills + covers + CTA + JSON-LD + exit poll goods | Filtr a formulář bez Zboží | ☑ |
+| CAT4 | Sync Edge `category-prompts` | `VALID_CATEGORY_TYPES` bez zbozi | ☑ deploy |
+| CAT5 | Mřížka + bundle Služby/Práce/Reality (HP + formulář) | Místo horizontálních pills | ☑ |
+| CAT6 | Fulltext bez diakritiky (`071_search_unaccent`) | `beh` najde „běh“ | ☑ |
+
+Související: plán IA, [`src/config/categories-goods.ts`](../src/config/categories-goods.ts), [`supabase/070_flat_goods_categories.sql`](../supabase/070_flat_goods_categories.sql), [`supabase/071_search_unaccent.sql`](../supabase/071_search_unaccent.sql).
+
+**Další IA:** Fáze 3 (date čipy Událostí) · Fáze 4 (progressive disclosure podkategorií).
 
 ---
 
@@ -161,6 +186,7 @@ Související: `src/config/categories.ts` (`slug: "kola-sport"`), případně `l
 
 ## G. Priorita — při smazání zboží: „Prodáno na zaPikolou?“
 
+> **Vyřešeno (2026-08-03).** Dialog u zboží (Prodáno na zaPikolou / Jiné); ostatní `confirm`; `posts.deletion_reason` (069).
 **Požadavek (2026-07-31):** Teď je jen nativní `confirm` („Opravdu smazat…“). U kategorie **zboží** nahradit vlastním pop-upem s volbou důvodu smazání — hlavně jestli věc **prodal na platformě** (užitečné pro metriky / úspěšnost). U služeb, práce, událostí, nemovitostí to dává malý smysl → nechat jednoduché potvrzení.
 
 **Návrh UX:**
@@ -171,9 +197,9 @@ Související: `src/config/categories.ts` (`slug: "kola-sport"`), případně `l
 
 | # | Úkol | Očekávání | ✓ |
 |---|------|-----------|---|
-| X1 | Custom dialog místo `window.confirm` u zboží | 2 tlačítka: Prodáno na zaPikolou / Jiné | ☐ |
-| X2 | Ostatní kategorie | Stávající jednoduché potvrzení (nebo stejný dialog bez „prodáno“) | ☐ |
-| X3 | Persistovat důvod smazání | Lze spočítat „prodeje přes platformu“ | ☐ |
+| X1 | Custom dialog místo `window.confirm` u zboží | 2 tlačítka: Prodáno na zaPikolou / Jiné | ☑ |
+| X2 | Ostatní kategorie | Stávající jednoduché potvrzení (nebo stejný dialog bez „prodáno“) | ☑ |
+| X3 | Persistovat důvod smazání | Lze spočítat „prodeje přes platformu“ | ☑ kód |
 
 Související: `MyListingActions.tsx`, `deleteListing` v `listing-management.ts`.
 
@@ -205,17 +231,18 @@ Související: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md), [`seo/README.md`]
 
 ## I. Priorita — lokalita na kartách: město / obec, ne ulice
 
+> **Vyřešeno (2026-08-03).** Veřejně: zboží/služby/práce = obec/město; **událost + nemovitost** = ulice (bez čísla) + obec. Meta title vždy obec. Majitel na `/moje-inzeraty` plný `location_text`.
 **Nález (2026-08-01):** Na HP kartě se zobrazuje např. **„Sedláčkova, Brno - Líšeň“**. Ulice je moc velký detail (soukromí + zbytečný clutter). Stačí **město / obec**, případně městská část — tady **„Brno - Líšeň“**.
 
 **Proč to tam je teď:** `ListingCard` volá `formatPublicListingLocation` — ta **záměrně nechá ulici** a jen ořízne číslo popisné. Kompaktní varianta už existuje: `formatHeaderLocation` / `formatMetaTitleLocality` (typicky poslední část po čárce = obec). Meta title už ulici nepoužívá; karta a detail ji pořád ukazují.
 
 | # | Úkol | Očekávání | ✓ |
 |---|------|-----------|---|
-| L1 | Karty HP / výpisy: lokalita bez ulice | `Sedláčkova, Brno - Líšeň` → `Brno - Líšeň` (nebo ekvivalent z Mapy.cz) | ☐ |
-| L2 | Rozhodnout detail inzerátu | Stejná granularita jako karta, nebo na detailu o něco víc? (návrh: stejně bez ulice) | ☐ |
-| L3 | Sjednotit helpery / docs | Jedna funkce pro „veřejná lokalita“; SEO bible §3.2 už obec/město vyžaduje | ☐ |
+| L1 | Karty HP / výpisy: lokalita bez ulice | `Sedláčkova, Brno - Líšeň` → `Brno - Líšeň` (nebo ekvivalent z Mapy.cz) | ☑ (kromě událost/nemovitost) |
+| L2 | Rozhodnout detail inzerátu | Stejná granularita jako karta | ☑; výjimka: událost + nemovitost = ulice bez čísla |
+| L3 | Sjednotit helpery / docs | Jedna funkce pro „veřejná lokalita“; SEO bible §3.2 | ☑ |
 
-Související: `ListingCard.tsx`, `format-public-location.ts`, detail `inzerat/[slug]/page.tsx`, případně `moje-inzeraty` (majitel může vidět plnou adresu — rozhodnout zvlášť).
+Související: `ListingCard.tsx`, `format-public-location.ts`, detail `inzerat/[slug]/page.tsx`; `/moje-inzeraty` ponechává plný `location_text`.
 
 ---
 

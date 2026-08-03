@@ -240,6 +240,7 @@ export default async function MyListingsPage({
                     postId={post.id}
                     slug={post.slug}
                     status={post.status}
+                    categoryType={post.category_type}
                     expiresAt={post.expires_at}
                     createdAt={post.created_at}
                   />

@@ -1,21 +1,17 @@
 "use client";
 
 import { useCurrentUser } from "@/components/auth/UserContext";
+import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { HomeListings } from "@/components/home/HomeListings";
 import { HomeSeoBlurb } from "@/components/home/HomeSeoBlurb";
 import { CREATE_LISTING_GUIDE_PATH } from "@/config/create-listing-guide";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { HOME_CATEGORY_GRID_TILES } from "@/config/home-category-grid";
 import {
-  CATEGORIES_CONFIG,
   HOME_THEMES,
   parseHomeBrowseCategory,
   type HomeBrowseCategory,
 } from "@/config/home-themes";
-import {
-  homeCategoryTabActiveClass,
-  homeCategoryTabInactiveClass,
-  iconSmClass,
-} from "@/config/ui-primitives";
 import { normalizeSearchQuery } from "@/lib/posts/search-query";
 import type { PublicListingPreview } from "@/types/post";
 import Link from "next/link";
@@ -43,7 +39,7 @@ function HeroSubline({
   subline: string;
   highlightAi?: boolean;
 }) {
-  const baseClass = "mt-3 max-w-xl text-gray-700";
+  const baseClass = "mt-3 max-w-none text-gray-700 sm:text-pretty";
 
   if (!highlightAi) {
     return <p className={baseClass}>{subline}</p>;
@@ -143,33 +139,15 @@ export function HomeBrowse({
               </div>
             ) : null}
 
-            <nav
-              aria-label="Kategorie inzerátů"
-              className="mt-6 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {CATEGORIES_CONFIG.map(({ id, label, icon: Icon }) => {
-                const isActive = category === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    {...gtmCtaProps(GTM_CTA.HOME_CATEGORY_TAB, {
-                      category: id,
-                    })}
-                    onClick={() => setCategory(id)}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
-                      isActive
-                        ? homeCategoryTabActiveClass
-                        : homeCategoryTabInactiveClass
-                    }`}
-                  >
-                    <Icon className={iconSmClass} aria-hidden="true" />
-                    {label}
-                  </button>
-                );
-              })}
-            </nav>
+            <CategoryGrid
+              tiles={HOME_CATEGORY_GRID_TILES}
+              selected={category}
+              onSelect={(id) => setCategory(id as HomeBrowseCategory)}
+              variant="hero"
+              tileProps={(id) =>
+                gtmCtaProps(GTM_CTA.HOME_CATEGORY_TAB, { category: id })
+              }
+            />
           </div>
         </section>
 

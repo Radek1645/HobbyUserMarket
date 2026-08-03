@@ -67,6 +67,16 @@ export const modalCancelOutlineButtonClass =
 export const modalDangerButtonClass =
   "rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700";
 
+/** Řádek kategorií na HP — horizontální scroll s viditelným tenkým posuvníkem. */
+export const homeCategoryNavClass =
+  "mt-6 flex gap-2 overflow-x-auto overscroll-x-contain pb-2 touch-pan-x " +
+  "[scrollbar-width:thin] [scrollbar-color:rgb(148_163_184_/_0.9)_transparent] " +
+  "[&::-webkit-scrollbar]:h-1.5 " +
+  "[&::-webkit-scrollbar-track]:bg-transparent " +
+  "[&::-webkit-scrollbar-thumb]:rounded-full " +
+  "[&::-webkit-scrollbar-thumb]:bg-slate-400/80 " +
+  "[&::-webkit-scrollbar-thumb]:hover:bg-slate-500";
+
 /** Pilulka kategorie na homepage — aktivní (fixní gradient hero). */
 export const homeCategoryTabActiveClass =
   "border-slate-900 bg-slate-900 text-white shadow-sm";
@@ -77,6 +87,22 @@ export const homeCategoryTabInactiveClass =
 
 /** Ikona v pilulce / tlačítku — 16px, barvu dědí z rodiče. */
 export const iconSmClass = "h-4 w-4";
+
+/** Dlaždice v mřížce kategorií — neaktivní. */
+export const homeCategoryGridTileClass =
+  "flex min-h-[2.75rem] w-full items-center gap-2 rounded-xl border border-white/25 bg-white/90 px-3 py-2.5 text-left text-sm font-medium text-slate-800 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-slate-900";
+
+/** Dlaždice v mřížce kategorií — aktivní. */
+export const homeCategoryGridTileActiveClass =
+  "flex min-h-[2.75rem] w-full items-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2.5 text-left text-sm font-medium text-white shadow-sm";
+
+/** Varianta mřížky mimo hero (formulář) — neaktivní. */
+export const categoryGridTilePlainClass =
+  "flex min-h-[2.75rem] w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:border-gray-300 hover:bg-gray-50";
+
+/** Varianta mřížky mimo hero — aktivní. */
+export const categoryGridTilePlainActiveClass =
+  "flex min-h-[2.75rem] w-full items-center gap-2 rounded-xl border border-gray-900 bg-gray-900 px-3 py-2.5 text-left text-sm font-medium text-white";
 
 /** Štítek směru na kartě inzerátu — nabízím službu. */
 export const listingIntentOfferBadgeClass =

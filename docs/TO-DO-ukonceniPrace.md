@@ -18,15 +18,15 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 1. Ověření funkčnosti
 
-- [x] Smoke § A / B / C / F + safety tipy (uživatel v session)
+- [x] Flat kategorie / mřížka / search unaccent (uživatel + nasazení `071`)
 - [ ] Vercel produkční build po pushi *(uživatel)*
 
 ---
 
 ## 2. Nasazení infrastruktury
 
-- [x] Nové SQL migrace — žádné v této session
-- [x] Edge Functions — `sync:moderation` + deploy `moderate-listing` (A, B, TZ) v průběhu session
+- [x] SQL `069` / `070` / `071` — nasazeno (uživatel 2026-08-03/04)
+- [x] Edge Functions — `sync:moderation` + deploy `moderate-listing`
 - [ ] Vercel build po pushi *(až po pushi)*
 - [x] Env — beze změny
 
@@ -34,26 +34,26 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 
 ## 3. Dokumentace
 
-- [x] **Metodika** — §6.7 dětské; §6.8.1 modal; §8 poptávky + safety; §11.2 God Mode poptávky
-- [x] **PRD** — v3.55
-- [x] **hydratace-inzeratu.md** — formulář má pravdu / dětské (dříve v session)
-- [x] **TO-DO-dalsi-den.md** — A/B/C/F uzavřeno
-- [x] **Stav_projektu/2026-08-01.md**
+- [x] **Metodika** — §2.4 mřížka; §2.5 unaccent
+- [x] **PRD** — v3.57
+- [x] **supabase-prikazy.md** — `posts` flat typy, `deletion_reason`, `search_vector`
+- [x] **TO-DO-dalsi-den.md** — § J uzavřeno
+- [x] **Stav_projektu/2026-08-04.md**
 
 ---
 
 ## 4. Snapshot session — `Stav_projektu/`
 
-- [x] Soubor `Stav_projektu/2026-08-01.md`
+- [x] Soubor `Stav_projektu/2026-08-04.md`
 - [x] Řádek v [`Stav_projektu/README.md`](../Stav_projektu/README.md)
 
 ---
 
 ## 5. Git — příprava a commity
 
-- [x] `git status` — bez `.env`
-- [x] Commit — `c630f11`
-- [x] Push
+- [ ] `git status` — bez `.env`
+- [ ] Commit
+- [ ] Push
 
 ---
 
@@ -63,7 +63,7 @@ Postupuj **shora dolů**. Zaškrtni `[x]` po dokončení. Kroky označené *(pok
 git push -u origin HEAD
 ```
 
-- [x] Push — `main` → `origin/main` (`ee177d4`)
+- [ ] Push — `main` → `origin/main`
 - [ ] Vercel build po pushi zelený *(uživatel)*
 
 ---
@@ -72,10 +72,10 @@ git push -u origin HEAD
 
 | Kritérium | Splněno |
 |-----------|:-------:|
-| Změna ověřená v UI / API | ✅ smoke |
-| Migrace + EF nasazené | ✅ EF / N/A SQL |
+| Změna ověřená v UI / API | ✅ |
+| Migrace + EF nasazené | ✅ 069–071 + Edge |
 | Dokumentace srovnaná s kódem | ✅ |
-| DB schéma v `supabase-prikazy.md` aktuální *(pokud změna DB)* | N/A |
+| DB schéma v `supabase-prikazy.md` aktuální | ✅ |
 | `Stav_projektu` aktualizován | ✅ |
-| Commit na `main` | ✅ `c630f11` |
-| Push na `origin` | ✅ |
+| Commit na `main` | ☐ |
+| Push na `origin` | ☐ |

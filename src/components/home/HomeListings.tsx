@@ -8,8 +8,10 @@ import {
 import { ListingCard } from "@/components/listing/ListingCard";
 import { useVisitorLocationContext } from "@/components/location/VisitorLocationProvider";
 import {
+  HOME_LISTINGS_DESKTOP_MIN_WIDTH_PX,
   HOME_LISTINGS_FETCH_LIMIT,
-  HOME_LISTINGS_LIMIT,
+  HOME_LISTINGS_LIMIT_DESKTOP,
+  HOME_LISTINGS_LIMIT_MOBILE,
   HOME_LISTINGS_MIN_REQUIRED,
   SEARCH_RADIUS_KM,
   SEARCH_RADIUS_STEPS_KM,
@@ -25,6 +27,29 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type FetchMode = "nearby" | "recent" | "search";
+
+/** Velikost stránky výpisu: mobil 2×4, desktop (lg+) 3×3. */
+function useHomeListingsPageSize(): number {
+  const [pageSize, setPageSize] = useState(HOME_LISTINGS_LIMIT_MOBILE);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(
+      `(min-width: ${HOME_LISTINGS_DESKTOP_MIN_WIDTH_PX}px)`,
+    );
+    const syncPageSize = () => {
+      setPageSize(
+        mediaQuery.matches
+          ? HOME_LISTINGS_LIMIT_DESKTOP
+          : HOME_LISTINGS_LIMIT_MOBILE,
+      );
+    };
+    syncPageSize();
+    mediaQuery.addEventListener("change", syncPageSize);
+    return () => mediaQuery.removeEventListener("change", syncPageSize);
+  }, []);
+
+  return pageSize;
+}
 
 const DEFAULT_FILTER: HomeListingFilterState = {
   subcategorySlug: null,
@@ -64,7 +89,8 @@ export function HomeListings({
   const [nationwideFallback, setNationwideFallback] = useState(false);
   const [loading, setLoading] = useState(() => !hasInitialForCategory);
   const [error, setError] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(HOME_LISTINGS_LIMIT);
+  const pageSize = useHomeListingsPageSize();
+  const [visibleCount, setVisibleCount] = useState(HOME_LISTINGS_LIMIT_MOBILE);
 
   const fetchListings = useCallback(
     async (
@@ -234,8 +260,8 @@ export function HomeListings({
   );
 
   useEffect(() => {
-    setVisibleCount(HOME_LISTINGS_LIMIT);
-  }, [category, filter, searchQuery]);
+    setVisibleCount(pageSize);
+  }, [category, filter, searchQuery, pageSize]);
 
   const visibleListings = useMemo(
     () => filteredListings.slice(0, visibleCount),
@@ -346,10 +372,7 @@ export function HomeListings({
                 type="button"
                 onClick={() =>
                   setVisibleCount((count) =>
-                    Math.min(
-                      count + HOME_LISTINGS_LIMIT,
-                      filteredListings.length,
-                    ),
+                    Math.min(count + pageSize, filteredListings.length),
                   )
                 }
                 className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50"

@@ -1,12 +1,19 @@
 /** Typy pro tabulku posts — PRD §4, v3.7 */
 
+/** Hlavní domény 1. patra — zbožové flat + sluzby/prace/nemovitost/udalost. */
 export type CategoryType =
-  | "zbozi"
+  | "auto"
+  | "detsky"
+  | "dum"
+  | "elektro"
+  | "moda"
+  | "sport"
+  | "hobby"
+  | "ostatni"
   | "sluzby"
   | "udalost"
   | "nemovitost"
   | "prace";
-
 export type PostStatus =
   | "draft"
   | "active"
@@ -20,6 +27,9 @@ export type PostStatusReasonCode =
   | "moderation"
   | "lifetime_max"
   | "account_blacklist";
+
+/** Exit poll při soft-delete majitelem (migrace 069). */
+export type ListingDeletionReason = "sold_on_platform" | "other";
 
 export type PriceType =
   | "fixed"
@@ -83,6 +93,8 @@ export type PostRow = {
   location_text: string;
   status: PostStatus;
   status_reason_code?: PostStatusReasonCode | null;
+  /** Exit poll majitele při soft-delete (zboží); jinak null. */
+  deletion_reason?: ListingDeletionReason | null;
   expires_at: string | null;
   listing_duration_days: number;
   event_date: string | null;

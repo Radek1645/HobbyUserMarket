@@ -109,24 +109,25 @@ Jeden řádek = jeden účet. `id` = stejné UUID jako v Auth.
 
 ### `posts` — samotný inzerát
 
-Hlavní tabulka. Kategorie (`zbozi`, `sluzby`, `udalost`, `nemovitost`, `prace`) žijí jako textové sloupce — taxonomie je v kódu (`categories.ts`), ne v DB.
+Hlavní tabulka. Kategorie žijí jako textové sloupce — taxonomie je v kódu (`categories.ts` / `categories-goods.ts`), ne v DB. Od `070`: flat domény `auto` · `detsky` · `dum` · `elektro` · `moda` · `sport` · `hobby` · `ostatni` + `sluzby` · `prace` · `nemovitost` · `udalost` (bez `zbozi`).
 
 | Skupina | Atributy | Co v nich najdeš |
 |---------|----------|------------------|
 | Identita | `id`, `user_id`, `slug` | ID inzerátu, majitel, URL slug |
 | Text | `title`, `description` | Publikovaný název a popis (max 80 / 2000) |
 | AI originál | `original_title`, `original_description`, `description_ai_assisted` | Text před AI / jestli uživatel vzal AI verzi |
-| SEO | `meta_description`, `image_alt`, `main_image_url`, `search_vector` | Meta, alt, náhledová URL, fulltext |
+| SEO | `meta_description`, `image_alt`, `main_image_url`, `search_vector` | Meta, alt, náhledová URL, fulltext (**bez diakritiky** — `071` + `immutable_unaccent`) |
 | Zařazení | `category_type`, `subcategory_slug`, `condition_label` | Typ, podkategorie, stav/typ nabídky |
 | Cena | `price_type`, `price_amount`, `exchange_for` | Typ ceny, částka, text výměny |
 | Místo | `location_text`, `location` | Text lokality + PostGIS bod |
 | Kontakt | `show_contact_email`, `show_contact_phone`, `contact_phone` | Co smí odhalit „Zobrazit kontakt“ |
 | Práce | `job_cv_required` | Zda inzerát práce chce CV |
-| Životní cyklus | `status`, `status_reason_code`, `expires_at`, `listing_duration_days`, `event_date`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, proč blocked, expirace, událost |
+| Životní cyklus | `status`, `status_reason_code`, `deletion_reason`, `expires_at`, `listing_duration_days`, `event_date`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, proč blocked, důvod smazání majitelem (`069`), expirace, událost |
 | Ostatní | `payment_status`, `view_count`, `created_at`, `updated_at` | Platba (free/paid), zobrazení |
 
 **`status`:** `draft` · `active` · `archived` · `hidden` · `blocked` · `deleted`  
-**`status_reason_code` (typicky u blocked):** `reports_threshold` · `moderation` · `lifetime_max` · `account_blacklist`
+**`status_reason_code` (typicky u blocked):** `reports_threshold` · `moderation` · `lifetime_max` · `account_blacklist`  
+**`deletion_reason` (u `deleted`):** např. `sold_on_zapikolou` / `other` — exit poll u zboží (`069`)
 
 ---
 

@@ -8,8 +8,14 @@ export const SEARCH_RADIUS_STEPS_KM = [15, 30, 50, 60] as const;
 export const SEARCH_RADIUS_KM = SEARCH_RADIUS_STEPS_KM[0];
 /** Minimální počet inzerátů v okruhu; pod tím fallback na celostátní výpis. */
 export const HOME_LISTINGS_MIN_REQUIRED = 6;
-/** Počet karet na homepage po aplikaci filtru (max. z načtené dávky). */
-export const HOME_LISTINGS_LIMIT = 9;
+/** Homepage — desktop mřížka 3×3. */
+export const HOME_LISTINGS_LIMIT_DESKTOP = 9;
+/** Homepage — mobil mřížka 2×4. */
+export const HOME_LISTINGS_LIMIT_MOBILE = 8;
+/** Alias desktop limitu (zpětná kompatibilita). */
+export const HOME_LISTINGS_LIMIT = HOME_LISTINGS_LIMIT_DESKTOP;
+/** Tailwind `lg` breakpoint (px) — shodný s `lg:grid-cols-3` na výpisu. */
+export const HOME_LISTINGS_DESKTOP_MIN_WIDTH_PX = 1024;
 /** Kolik inzerátů načíst z API — větší pool pro filtrování podkategorií na klientovi. */
 export const HOME_LISTINGS_FETCH_LIMIT = 36;
 

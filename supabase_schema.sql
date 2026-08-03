@@ -159,13 +159,19 @@ CREATE TABLE IF NOT EXISTS public.posts (
   location          extensions.geography(POINT, 4326) NOT NULL,
   status            public.post_status NOT NULL DEFAULT 'draft',
   status_reason_code TEXT,
+  deletion_reason   TEXT,
   expires_at        TIMESTAMPTZ,
   renew_count       INTEGER NOT NULL DEFAULT 0,
   payment_status    VARCHAR(20) NOT NULL DEFAULT 'free',
   main_image_url    TEXT,
   slug              VARCHAR(200) NOT NULL,
   search_vector     TSVECTOR GENERATED ALWAYS AS (
-    to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(description, ''))
+    to_tsvector(
+      'simple',
+      public.immutable_unaccent(
+        coalesce(title, '') || ' ' || coalesce(description, '')
+      )
+    )
   ) STORED,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -248,6 +254,12 @@ CREATE TABLE IF NOT EXISTS public.posts (
     CHECK (
       status_reason_code IS NULL
       OR status_reason_code IN ('reports_threshold', 'moderation')
+    ),
+
+  CONSTRAINT posts_deletion_reason_check
+    CHECK (
+      deletion_reason IS NULL
+      OR deletion_reason IN ('sold_on_platform', 'other')
     )
 );
 
@@ -361,6 +373,9 @@ CREATE TABLE IF NOT EXISTS public.rate_limits (
 CREATE INDEX IF NOT EXISTS posts_user_id_idx ON public.posts (user_id);
 CREATE INDEX IF NOT EXISTS posts_status_expires_idx ON public.posts (status, expires_at);
 CREATE INDEX IF NOT EXISTS posts_category_idx ON public.posts (category_type, subcategory_slug);
+CREATE INDEX IF NOT EXISTS posts_deletion_reason_idx
+  ON public.posts (deletion_reason)
+  WHERE deletion_reason IS NOT NULL;
 CREATE INDEX IF NOT EXISTS posts_search_vector_idx ON public.posts USING GIN (search_vector);
 CREATE INDEX IF NOT EXISTS posts_location_gist_idx ON public.posts USING GIST (location);
 
