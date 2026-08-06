@@ -15,7 +15,8 @@
 > **§ G hotovo (2026-08-03):** exit poll zboží + `posts.deletion_reason` (069).  
 > **§ I hotovo (2026-08-03):** veřejná lokalita — obec/město (výjimka událost/nemovitost = + ulice).  
 **Aktualizace 2026-08-03:** § J flat kategorie (Fáze 1 IA — bez deštníku Zboží).  
-**§ J hotovo (2026-08-04):** `070` + Edge deploy; `071` unaccent. Další IA = Fáze 3–4.
+**§ J hotovo (2026-08-04):** `070` + Edge deploy; `071` unaccent. Další IA = Fáze 3–4.  
+**§ E I5 hotovo (2026-08-05):** produkční smoke edit — Sharp/`upravit` 200 → 2× `moderate-listing` 200 (~15 s / ~22 s) → `upravit` 303. I6 (negativní) zůstává otevřené.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
 
@@ -128,6 +129,8 @@ Související: `src/config/categories.ts`, listing formulář, SEO Bible / Metod
 
 ## E. Priorita — staging a menší AI varianty fotek
 
+> **I5 ověřeno na produkci (2026-08-05/06).** Edit inzerátu: `upravit` (Sharp) 200 → 1. `moderate-listing` ~15 s 200 → 2. `moderate-listing` ~22 s 200 → `upravit` 303. Negativní textový smoke: závadný text v AI modalu byl zamítnut s viditelným inline upozorněním; po odstranění textu se inzerát publikoval. I6 (negativní security smoke na fotky / pořadí / cizí path) zatím ne.
+
 **Implementace (2026-07-31):** Originály po klientské Storage kompresi (max. 1920 px / 1 MB) se nahrají **jednou** do privátního bucketu `moderation-image-staging`. Autentizovaná Next.js Server Action stáhne originál a přes Sharp uloží hash-addressed WebP varianty do service-role-only bucketu `moderation-image-renditions`:
 
 - Gemini / hydratace: **všechny fotky 1024 px**, kvalita 80 — technické štítky často nejsou na hlavní fotce;
@@ -161,7 +164,7 @@ DevTools → **Network** → filtr `Fetch/XHR`. Scénář: **Upravit inzerát** 
 | I2 | Sharp Server Action + Edge: hash-addressed varianty 1024/512 px | Edge odvodí cestu varianty z vlastního hashe originálu; SEC-H02 zůstává nad plnými bajty | ☑ kód |
 | I3 | Publish: staging → finální Storage + autoritativní re-hash | Jiný obsah, pořadí nebo hlavní fotka → publish selže | ☑ kód |
 | I4 | Retence stagingu | Úspěšně použité objekty ihned smazat; opuštěné po 24 h cronem | ☑ kód |
-| I5 | Manuální smoke (edit OK; create s fotkami) | Network Sharp + `moderate-listing` 200; WebP v `moderation-image-renditions` | ☐ |
+| I5 | Manuální smoke (edit OK; create s fotkami) | Network Sharp + `moderate-listing` 200; WebP v `moderation-image-renditions` | ☑ produkce 2026-08-05/06 (edit; 2× moderate 200 + redirect 303; negativní text v modalu REJECT, po opravě publikace OK) |
 | I6 | Negativní security smoke | Cizí path / výměna objektu / změna pořadí nebo hlavní fotky neprojde | ☐ |
 
 Související: `067_moderation_image_staging.sql`, `068_moderation_image_renditions.sql`, `moderation-images.ts`, `prepare-moderation-images.ts`, `load-storage-images.ts`, `listing-images.ts`, `moderate-listing`, `publish_approved_post`.

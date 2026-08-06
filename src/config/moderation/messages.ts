@@ -101,10 +101,9 @@ export const MODERATION_SIGHTENGINE_UNAVAILABLE =
 export const MODERATION_TECHNICAL_ERROR =
   "AI kontrola teď nefunguje. Zkuste to prosím za chvíli znovu.";
 
-/** Panel technické chyby AI (U1) — ne obsahové zamítnutí. */
+/** Amber panel ve formuláři (U1) — AI výpadek / rate limit; CTA = hlavní „Uložit“. */
 export const MODERATION_TECHNICAL_UI = {
-  title: "Technická chyba",
-  retryLabel: "Zkusit znovu",
+  title: "Upozornění",
 } as const;
 
 export const MODERATION_GEMINI_QUOTA_ERROR =

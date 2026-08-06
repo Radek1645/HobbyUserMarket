@@ -32,13 +32,23 @@ export const headerInputHeightClass = "h-10";
 export const headerBrandControlHeightClass = "h-11";
 export const headerBrandControlPaddingXClass = "px-6";
 
-/** Header „Vytvořit inzerát s AI“ — jen desktop (md+), pill s textem, ikona Sparkles. */
+/**
+ * Header „Vytvořit inzerát s AI“.
+ * Od `sm` vždy; pod `sm` jen když je viewport nízký (FAB skrytý kvůli zoomu),
+ * ať na telefonu nepřekrývá vyhledávání.
+ */
 export const headerCreateListingButtonClass =
-  `hidden ${headerBrandControlHeightClass} shrink-0 items-center justify-center whitespace-nowrap rounded-full ${headerBrandControlPaddingXClass} text-[0.9375rem] font-semibold md:flex ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+  `hidden ${headerBrandControlHeightClass} shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 text-[0.9375rem] font-semibold sm:inline-flex sm:px-6 [@media(max-height:36rem)]:!inline-flex ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
 
-/** Mobilní FAB pro tvorbu inzerátu — plovoucí, extended → ikona při scrollu. */
+/** Text header CTA — na úzkém/zoomed viewportu jen ikona + aria-label. */
+export const headerCreateListingLabelClass = "ml-2 hidden min-[480px]:inline";
+
+/**
+ * Mobilní FAB — jen úzký a dostatečně vysoký viewport.
+ * Skrytý od `sm` a při nízké výšce (desktop + 150–200 % zoom).
+ */
 export const createListingFabClass =
-  `fixed right-4 z-[95] flex h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 md:hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+  `fixed right-4 z-[95] hidden h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 max-sm:flex [@media(max-height:36rem)]:!hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
 
 /** Primární brand zelená — logo wordmark, shodná s `headerCreateListingSurfaceClass`. */
 export const emeraldBrandAccentClass = "text-emerald-600";

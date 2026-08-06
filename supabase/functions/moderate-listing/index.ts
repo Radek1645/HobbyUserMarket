@@ -3,7 +3,7 @@
  *
  * Deploy (správné pořadí):
  *   1. npm run sync:moderation   ← nejdřív vygeneruje _shared/category-prompts.ts
- *   2. supabase secrets set GEMINI_API_KEY=...
+ *   2. supabase secrets (GEMINI_API_KEY, GEMINI_MODEL, MODERATION_FINAL_*)
  *   3. supabase functions deploy moderate-listing   ← pak teprve deploy
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -13,14 +13,15 @@ import {
   buildModerationUserPrompt,
   type ModerationRequestBody,
 } from "../_shared/moderation/build-user-prompt.ts";
+import { callGeminiModeration } from "../_shared/moderation/gemini.ts";
+import { callOpenAiModeration } from "../_shared/moderation/openai.ts";
 import {
-  callGeminiModeration,
-  resolveGeminiModerationModel,
-} from "../_shared/moderation/gemini.ts";
-import {
-  callOpenAiModeration,
-  resolveOpenAiModerationModel,
-} from "../_shared/moderation/openai.ts";
+  resolveModerationAiFallback,
+  resolveModerationAiPrimary,
+  resolveOpenAiModerationModelName,
+  type ModerationAiPhase,
+  type ModerationAiTarget,
+} from "../_shared/moderation/resolve-moderation-ai-target.ts";
 import {
   filterRedundantEventDateQuestions,
   filterRedundantLocationQuestions,
@@ -275,20 +276,63 @@ async function resolveAuthUser(
 }
 
 function logModerationAiProvider(
+  phase: ModerationAiPhase,
   provider: "gemini" | "openai",
   model: string,
   fallback: boolean,
 ): void {
   console.log(
     "moderation-ai:",
-    JSON.stringify({ provider, model, fallback }),
+    JSON.stringify({ phase, provider, model, fallback }),
   );
+}
+
+function hasProviderKey(provider: "gemini" | "openai"): boolean {
+  if (provider === "gemini") return Boolean(Deno.env.get("GEMINI_API_KEY"));
+  return Boolean(Deno.env.get("OPENAI_API_KEY"));
+}
+
+async function invokeModerationProvider(
+  target: ModerationAiTarget,
+  params: {
+    userPrompt: string;
+    imagesBase64: string[];
+    imageMimeTypes: string[];
+  },
+): Promise<{
+  rawResponse: string;
+  policyHash: string;
+}> {
+  if (target.provider === "gemini") {
+    const systemPrompt = moderationSystemPromptGemini;
+    const rawResponse = await callGeminiModeration({
+      ...params,
+      systemPrompt,
+      model: target.model,
+    });
+    return {
+      rawResponse,
+      policyHash: await computeTextSha256(systemPrompt),
+    };
+  }
+
+  const systemPrompt = moderationSystemPromptFull;
+  const rawResponse = await callOpenAiModeration({
+    ...params,
+    systemPrompt,
+    model: target.model,
+  });
+  return {
+    rawResponse,
+    policyHash: await computeTextSha256(systemPrompt),
+  };
 }
 
 async function callModerationAi(params: {
   userPrompt: string;
   imagesBase64: string[];
   imageMimeTypes: string[];
+  phase: ModerationAiPhase;
 }): Promise<{
   rawResponse: string;
   provider: "gemini" | "openai";
@@ -296,70 +340,64 @@ async function callModerationAi(params: {
   fallback: boolean;
   policyHash: string;
 }> {
-  const hasGemini = Boolean(Deno.env.get("GEMINI_API_KEY"));
-  const hasOpenAi = Boolean(Deno.env.get("OPENAI_API_KEY"));
+  const hasGemini = hasProviderKey("gemini");
+  const hasOpenAi = hasProviderKey("openai");
 
   if (!hasGemini && !hasOpenAi) {
     throw new Error("AI_KEYS_MISSING");
   }
 
-  if (hasGemini) {
-    try {
-      const model = resolveGeminiModerationModel();
-      logModerationAiProvider(
-        "gemini",
-        model,
-        false,
-      );
-      const rawResponse = await callGeminiModeration({
-        ...params,
-        systemPrompt: moderationSystemPromptGemini,
-      });
-      return {
-        rawResponse,
-        provider: "gemini",
-        model,
-        fallback: false,
-        policyHash: await computeTextSha256(moderationSystemPromptGemini),
-      };
-    } catch (geminiError) {
-      console.error("Gemini failed:", geminiError);
-      if (hasOpenAi) {
-        const model = resolveOpenAiModerationModel();
-        logModerationAiProvider(
-          "openai",
-          model,
-          true,
-        );
-        const rawResponse = await callOpenAiModeration({
-          ...params,
-          systemPrompt: moderationSystemPromptFull,
-        });
-        return {
-          rawResponse,
-          provider: "openai",
-          model,
-          fallback: true,
-          policyHash: await computeTextSha256(moderationSystemPromptFull),
-        };
-      }
-      throw geminiError;
-    }
+  let primary = resolveModerationAiPrimary(params.phase);
+
+  // Preview bez Gemini klíče → rovnou OpenAI (stejné chování jako dřív).
+  if (params.phase === "preview" && primary.provider === "gemini" && !hasGemini) {
+    primary = {
+      provider: "openai",
+      model: resolveOpenAiModerationModelName(),
+    };
   }
 
-  const model = resolveOpenAiModerationModel();
-  logModerationAiProvider("openai", model, false);
-  const rawResponse = await callOpenAiModeration({
-    ...params,
-    systemPrompt: moderationSystemPromptFull,
-  });
-  return {
-    rawResponse,
-    provider: "openai",
-    model,
-    fallback: false,
-    policyHash: await computeTextSha256(moderationSystemPromptFull),
-  };
+  if (!hasProviderKey(primary.provider)) {
+    const fallbackOnly = resolveModerationAiFallback(primary);
+    if (!fallbackOnly || !hasProviderKey(fallbackOnly.provider)) {
+      throw new Error("AI_KEYS_MISSING");
+    }
+    primary = fallbackOnly;
+  }
+
+  try {
+    logModerationAiProvider(params.phase, primary.provider, primary.model, false);
+    const result = await invokeModerationProvider(primary, params);
+    return {
+      rawResponse: result.rawResponse,
+      provider: primary.provider,
+      model: primary.model,
+      fallback: false,
+      policyHash: result.policyHash,
+    };
+  } catch (primaryError) {
+    console.error(`${primary.provider} failed:`, primaryError);
+    const fallback = resolveModerationAiFallback(primary);
+    if (!fallback || !hasProviderKey(fallback.provider)) {
+      throw primaryError;
+    }
+    if (
+      fallback.provider === primary.provider &&
+      fallback.model === primary.model
+    ) {
+      throw primaryError;
+    }
+
+    logModerationAiProvider(params.phase, fallback.provider, fallback.model, true);
+    const result = await invokeModerationProvider(fallback, params);
+    return {
+      rawResponse: result.rawResponse,
+      provider: fallback.provider,
+      model: fallback.model,
+      fallback: true,
+      policyHash: result.policyHash,
+    };
+  }
 }
 
 serve(async (req) => {
@@ -763,6 +801,7 @@ serve(async (req) => {
       userPrompt,
       imagesBase64: geminiImagesBase64,
       imageMimeTypes: geminiImageMimeTypes,
+      phase: body.issueApproval === true ? "final" : "preview",
     });
     logCtx.aiProvider = aiResult.provider;
     logCtx.aiModel = aiResult.model;

@@ -20,33 +20,36 @@ Hlavní akce (vytvořit inzerát, potvrdit formulář, modál).
 | `emeraldPrimaryButtonCompactClass` | Modály, kompaktní akční řádek |
 | `headerCreateListingSurfaceClass` | Flat zelený povrch header CTA (`bg-emerald-600`, hover `bg-emerald-700`) — shodně s logem zaPikolou |
 | `createListingCtaLabel` | Text hlavního CTA — „Vytvořit inzerát s AI“ (header + FAB) |
-| `headerCreateListingButtonClass` | Header CTA — jen desktop (`md+`), pill, ikona Sparkles |
-| `createListingFabClass` | Mobilní FAB pro tvorbu inzerátu (`md:hidden`), extended → ikona při scrollu |
+| `headerCreateListingButtonClass` | Header CTA — od `sm`, nebo při nízké výšce (zoom) |
+| `headerCreateListingLabelClass` | Text CTA — skrytý pod ~480 px (jen ikona + `aria-label`) |
+| `createListingFabClass` | Mobilní FAB — jen `< sm` a výška viewportu > 36 rem |
 | `headerInputHeightClass` | Sdílená výška vyhledávače a loga (`h-10`) |
 | `headerBrandControlHeightClass` | Výška header CTA (`h-11`) |
-| `headerBrandControlPaddingXClass` | Horizontální padding header CTA (`px-6`) |
+| `headerBrandControlPaddingXClass` | Horizontální padding header CTA na `sm+` (`px-6`) |
 | `emeraldBrandAccentClass` | Brand zelená pro logo wordmark — `text-emerald-600`, shodná s header CTA |
 | `appLogoFrameClass` | Wordmark loga — `text-lg`, `h-10`, bez rámečku, viz `AppLogo` |
 
 ### Header CTA (hlavní akce)
 
-Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani tloušťkou písma. Na mobilu je nahrazeno FAB (`CreateListingFab`).
+Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani tloušťkou písma. Na telefonu (`< sm`) je místo něj FAB; v headeru zůstává jen při nízké výšce viewportu (browser zoom), kdy je FAB skrytý.
 
 - Povrch: `headerCreateListingSurfaceClass` — `bg-emerald-600`, hover `bg-emerald-700` (stejná zelená jako wordmark loga)
-- Viditelnost: `hidden md:flex` — pouze desktop
+- Viditelnost: `hidden` → `sm:inline-flex` + `[@media(max-height:36rem)]:inline-flex`
+- Text: `headerCreateListingLabelClass` — `hidden` pod 480 px
 - Přechod: `transition-colors duration-200`
 - Typografie: `font-semibold`, bílý text
-- Ikona: `Sparkles` (`iconSmClass`), `mr-2` od textu
-- Tvar: `rounded-full`, padding `px-6` (24px), `whitespace-nowrap`
+- Ikona: `Sparkles` (`iconSmClass`)
+- Tvar: `rounded-full`, padding `px-3` / `sm:px-6`, `whitespace-nowrap`
 - **Bez stínu** — žádný `shadow-*` na tomto tlačítku
 
 ### Mobilní FAB
 
 | Konstanta | Použití |
 |-----------|---------|
-| `createListingFabClass` | Plovoucí CTA vpravo dole, jen `< md` |
+| `createListingFabClass` | Plovoucí CTA vpravo dole, jen úzký + dostatečně vysoký viewport |
 
 - Extended při načtení (plný text `createListingCtaLabel`), po scrollu > 80 px jen ikona
+- Viditelnost: `max-sm:flex` + skryté při `max-height: 36rem` — desktop s 150–200 % zoomem nesmí překrýt hero (pro seniory / zvětšené písmo)
 - `whitespace-nowrap`, horizontální padding `px-6` (24px)
 - Skrytý na `/inzerat/novy`, stránkách úpravy inzerátu, `/onboarding`, `/login` a dokud uživatel nemá dokončený profil (`needsNicknameSetup`) — zabrání stale prefetch redirectu po registraci
 - `prefetch={false}` — auth-gated cíl nesmí zůstat v Router Cache jako redirect na onboarding

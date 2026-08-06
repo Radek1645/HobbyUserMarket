@@ -11,10 +11,11 @@ alwaysApply: false
 
 ## Model a API klíče
 
-- **Gemini (primární):** `gemini-2.5-flash` — default v `_shared/moderation/gemini.ts`; override Supabase secretem `GEMINI_MODEL`.
-- **OpenAI (fallback):** `gpt-4o-mini` — pokud Gemini selže a je nastaven `OPENAI_API_KEY`; override `OPENAI_MODERATION_MODEL`.
-- Secrets `GEMINI_API_KEY` / `OPENAI_API_KEY` / `SIGHTENGINE_API_USER` / `SIGHTENGINE_API_SECRET` **jen** v Supabase Edge Functions secrets, ne v Next.js env ani `.env.local`.
-- Historie volby modelu (Flash-Lite odloženo): `docs/moderace-inzeratu.md` → sekce **Volba Gemini modelu**.
+- **Preview (hydratace):** Gemini `gemini-2.5-flash` — `GEMINI_MODEL` (`resolve-moderation-ai-target.ts` / `gemini.ts`).
+- **Final (`issueApproval`):** default Gemini `gemini-3.5-flash-lite` — `MODERATION_FINAL_PROVIDER` (`gemini` \| `openai`) + `MODERATION_FINAL_MODEL`. A/B OpenAI: `MODERATION_FINAL_PROVIDER=openai` (+ `OPENAI_MODERATION_MODEL` / `gpt-4o-mini`).
+- **Fallback:** při selhání primary druhý dostupný provider (`OPENAI_MODERATION_MODEL` / `GEMINI_MODEL`).
+- Secrets `GEMINI_API_KEY` / `OPENAI_API_KEY` / `SIGHTENGINE_*` / `MODERATION_FINAL_*` **jen** v Supabase Edge Functions secrets, ne v Next.js env ani `.env.local`.
+- Historie A/B modelů: `docs/moderace-inzeratu.md` → sekce **Volba Gemini modelu**.
 
 ## Struktura kódu
 

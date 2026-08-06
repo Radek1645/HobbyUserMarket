@@ -9,7 +9,7 @@ type OpenAiContentPart =
   | { type: "image_url"; image_url: { url: string } };
 
 export function resolveOpenAiModerationModel(): string {
-  return Deno.env.get("OPENAI_MODERATION_MODEL") ?? "gpt-4o-mini";
+  return Deno.env.get("OPENAI_MODERATION_MODEL")?.trim() || "gpt-4o-mini";
 }
 
 export async function callOpenAiModeration(params: {
@@ -17,13 +17,15 @@ export async function callOpenAiModeration(params: {
   userPrompt: string;
   imagesBase64: string[];
   imageMimeTypes: string[];
+  /** Explicitní model; jinak OPENAI_MODERATION_MODEL / gpt-4o-mini. */
+  model?: string;
 }): Promise<string> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY_MISSING");
   }
 
-  const model = resolveOpenAiModerationModel();
+  const model = params.model?.trim() || resolveOpenAiModerationModel();
 
   const userContent: OpenAiContentPart[] = [{ type: "text", text: params.userPrompt }];
   for (const [index, data] of params.imagesBase64.entries()) {

@@ -40,6 +40,9 @@ export const PROMPT_INJECTION_REJECTION_REASON =
 export const PROHIBITED_OUTPUT_REJECTION_REASON =
   "Navržený text porušuje pravidla webu. Upravte obsah a zkuste to znovu.";
 
+export const PROHIBITED_SOURCE_REJECTION_REASON =
+  "Text inzerátu porušuje pravidla webu. Upravte název nebo popis a zkuste to znovu.";
+
 export function containsPromptInjection(text: string): boolean {
   const normalized = text.trim();
   if (!normalized) return false;
@@ -67,6 +70,14 @@ export function applyPostModerationSafetyChecks(
     return {
       status: "REJECTED",
       reason: PROMPT_INJECTION_REJECTION_REASON,
+    };
+  }
+
+  // Publikovaný text = source (modal), ne AI cleaned — keyword musí chytit i ten.
+  if (findProhibitedKeyword(source.title, source.description)) {
+    return {
+      status: "REJECTED",
+      reason: PROHIBITED_SOURCE_REJECTION_REASON,
     };
   }
 

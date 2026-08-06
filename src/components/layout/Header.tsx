@@ -9,6 +9,7 @@ import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   createListingCtaLabel,
   headerCreateListingButtonClass,
+  headerCreateListingLabelClass,
   headerInputHeightClass,
   iconSmClass,
 } from "@/config/ui-primitives";
@@ -98,10 +99,12 @@ export function Header({ user }: HeaderProps) {
               className={headerCreateListingButtonClass}
             >
               <Sparkles
-                className={`${iconSmClass} mr-2 shrink-0`}
+                className={`${iconSmClass} shrink-0`}
                 strokeWidth={2.5}
               />
-              {createListingCtaLabel}
+              <span className={headerCreateListingLabelClass}>
+                {createListingCtaLabel}
+              </span>
             </Link>
           ) : !user ? (
             <Link
@@ -112,10 +115,12 @@ export function Header({ user }: HeaderProps) {
               className={headerCreateListingButtonClass}
             >
               <Sparkles
-                className={`${iconSmClass} mr-2 shrink-0`}
+                className={`${iconSmClass} shrink-0`}
                 strokeWidth={2.5}
               />
-              {createListingCtaLabel}
+              <span className={headerCreateListingLabelClass}>
+                {createListingCtaLabel}
+              </span>
             </Link>
           ) : null}
 

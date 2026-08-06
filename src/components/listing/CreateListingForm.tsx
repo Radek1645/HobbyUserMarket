@@ -206,13 +206,23 @@ export function CreateListingForm({
   const emailPreview = formatEmailPreviewForForm(userEmail);
 
   useEffect(() => {
-    if (state.error && step === 2) {
-      submitErrorRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-    }
+    if (!state.error || step !== 2) return;
+    setModerationPreview(null);
+    setModerationApprovedOpen(false);
+    pendingPublishFormRef.current = null;
+    submitErrorRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
   }, [state.error, step]);
+
+  useEffect(() => {
+    if (!moderationError || step !== 2) return;
+    submitErrorRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [moderationError, step]);
 
   const isEvent = categoryType === "udalost";
   const isJob = categoryType === "prace";
@@ -456,6 +466,11 @@ export function CreateListingForm({
           window.location.assign(ACCOUNT_SUSPENDED_PATH);
           return null;
         }
+        // Zavři náhled — jinak je reject/chyba schovaná pod modalem.
+        setModerationPreview(null);
+        setModerationApprovedOpen(false);
+        setTitle(titleValue);
+        setDescription(descriptionValue);
         const rejection = moderationFailureToRejection(result);
         if (rejection) {
           setModerationRejection(rejection);
@@ -466,6 +481,10 @@ export function CreateListingForm({
       }
 
       if (!result.approvalToken) {
+        setModerationPreview(null);
+        setModerationApprovedOpen(false);
+        setTitle(titleValue);
+        setDescription(descriptionValue);
         setModerationError(
           "AI kontrola nevydala potvrzení pro publikaci. Zkuste to prosím znovu.",
         );
@@ -505,8 +524,8 @@ export function CreateListingForm({
         seoFields: { metaDescription: null, imageAlt: null },
       },
     );
-    setModerationPreview(null);
-    pendingPublishFormRef.current = null;
+    // Náhled necháváme do redirectu / state.error (useEffect) — při chybě Server
+    // Action by předčasné zavření skrylo důvod selhání.
   }
 
   async function handlePublishAiFromPreview(payload: {
@@ -551,8 +570,6 @@ export function CreateListingForm({
         },
       },
     );
-    setModerationPreview(null);
-    pendingPublishFormRef.current = null;
   }
 
   async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -739,7 +756,12 @@ export function CreateListingForm({
     <>
       <ModerationRejectedDialog
         rejection={moderationRejection}
-        onClose={() => setModerationRejection(null)}
+        onClose={() => {
+          if (moderationRejection?.reason) {
+            setModerationError(moderationRejection.reason);
+          }
+          setModerationRejection(null);
+        }}
       />
 
       <ModerationApprovedDialog
@@ -1394,14 +1416,6 @@ export function CreateListingForm({
             >
               <p className="font-semibold">{MODERATION_TECHNICAL_UI.title}</p>
               <p className="mt-1">{moderationError}</p>
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={() => formElementRef.current?.requestSubmit()}
-                className={`mt-3 ${listingFormSecondaryButtonClass}`}
-              >
-                {MODERATION_TECHNICAL_UI.retryLabel}
-              </button>
             </div>
           ) : null}
 

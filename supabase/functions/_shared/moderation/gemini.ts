@@ -9,7 +9,7 @@ type GeminiPart =
   | { inline_data: { mime_type: string; data: string } };
 
 export function resolveGeminiModerationModel(): string {
-  return Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+  return Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-2.5-flash";
 }
 
 export async function callGeminiModeration(params: {
@@ -17,13 +17,15 @@ export async function callGeminiModeration(params: {
   userPrompt: string;
   imagesBase64: string[];
   imageMimeTypes: string[];
+  /** Explicitní model; jinak GEMINI_MODEL / default preview. */
+  model?: string;
 }): Promise<string> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY_MISSING");
   }
 
-  const model = resolveGeminiModerationModel();
+  const model = params.model?.trim() || resolveGeminiModerationModel();
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 

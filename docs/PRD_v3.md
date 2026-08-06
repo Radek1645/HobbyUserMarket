@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.57  
+> **Verze dokumentu:** v3.59  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`068_moderation_image_renditions.sql`](../supabase/068_moderation_image_renditions.sql) · [`069_post_deletion_reason.sql`](../supabase/069_post_deletion_reason.sql) · [`070_flat_goods_categories.sql`](../supabase/070_flat_goods_categories.sql) · [`071_search_unaccent.sql`](../supabase/071_search_unaccent.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-04
+> **Datum:** 2026-08-06
 
 ---
 
@@ -206,7 +206,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Hosting / Deployment:** Vercel (Free / Hobby tier).
 * **Database & Auth:** Supabase (PostgreSQL + PostGIS extenze pro geolokaci, Supabase Auth, Supabase Storage). Přechod na Pro Tier ($25/měsíc) při ostrém startu kvůli garanci záloh a neusínání DB.
 * **Geocoding API:** Mapy.cz API (Autocomplete + Geofocus). Využití bezplatného tarifu pro vývojáře, který plně pokrývá potřeby MVP.
-* **AI Vrstva:** Supabase Edge Functions + **Gemini Flash** (výchozí model **`gemini-2.5-flash`**, override přes Supabase secret `GEMINI_MODEL` v `_shared/moderation/gemini.ts`) s fallbackem na **OpenAI GPT-4o-mini** pro real-time synchronní multimodální moderování a hydrataci obsahu. Timeout Edge Function: **30 s**. Implementační detail: [`docs/moderace-inzeratu.md`](./moderace-inzeratu.md).
+* **AI Vrstva:** Supabase Edge Functions + **dvě fáze AI** (náhled vs. finále) s oddělitelnými modely — viz §5.4. **Preview (hydratace):** Gemini **`gemini-2.5-flash`** (`GEMINI_MODEL`). **Final (`issueApproval`):** default Gemini **`gemini-3.5-flash-lite`** (`MODERATION_FINAL_PROVIDER` / `MODERATION_FINAL_MODEL`; lze `openai` + `gpt-4o-mini`). Fallback na druhý provider při selhání. Timeout Edge Function: **30 s**. Detail: [`docs/moderace-inzeratu.md`](./moderace-inzeratu.md).
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **vlastní cookie lištou** (GTM Consent Mode v2) před aktivací měření. *(✅ GTM `GTM-WGLNJRNK`, consent banner, `/cookies` — 2026-07-14)*
@@ -583,9 +583,10 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
       3. **Zrušit:** Koncept zahozen, v DB nevzniká zápis (nebo zůstane `draft` při selhání publish).
 
 * **Dvě AI kontroly (proč):**
-  1. **První** (`issueApproval` vypnuto) — hydratace a náhled. Token **nevzniká**.
-  2. **Druhá** (`issueApproval: true`) — po potvrzení modalu kontroluje text a fotky, které uživatel **skutečně publikuje**. Teprve ta vydá token.
+  1. **První** (`issueApproval` vypnuto) — hydratace a náhled. Token **nevzniká**. Model: preview (`GEMINI_MODEL` / default `gemini-2.5-flash`).
+  2. **Druhá** (`issueApproval: true`) — po potvrzení modalu kontroluje text a fotky, které uživatel **skutečně publikuje**. Teprve ta vydá token. Model: final (`MODERATION_FINAL_*` / default `gemini-3.5-flash-lite`). Hydratační výstup z 2. volání se do publikace **nepoužije** — publikuje se text z modalu.
   * Důvod: uživatel smí po náhledu text změnit. Token musí patřit k finálnímu obsahu, ne k prvnímu AI návrhu. „Token sedí“ = DB při `publish_approved_post` ověří fingerprint/hashe uloženého řádku proti tokenu; neshoda → zůstane `draft`.
+  * **PLÁN (zatím neimplementováno) — skip 2. AI při nezměněném obsahu:** pokud po modalu platí stejný content fingerprint + image hashes jako u náhledu *a* uživatel nic nedoplnil (žádné odpovědi / editace), zvážit vydání tokenu **bez** druhého AI volání (úspora latence a nákladů). Low priority — většina flow má odpovědi na otázky.
 
 * **Server-side vynucení publikace *(migrace `027` + `062`–`066`)*:**
   * Po potvrzení AI náhledu Edge znovu zkontroluje **přesný** finální text a bajty fotek (`issueApproval: true`), spočítá SHA-256 content fingerprint + image hashes, vloží řádek do `moderation_approvals` (TTL 30 min, jednorázový) a vrátí `approvalToken`.
@@ -796,6 +797,8 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.55 | 2026-08-01 | **Formulář má pravdu** (eventDate/cena/lokalita — no-REJECT + Edge rewrite, TZ Europe/Prague); dětské zboží otázka Věk/výška; počet doručených poptávek na `/moje-inzeraty` + God Mode; safety tipy podle kategorie; podkategorie label Sport (slug `kola-sport`) |
 | v3.56 | 2026-08-03 | **§5.4 fotky pro AI:** oprava zastaralého „512×512 base64“ — sjednoceno se stagingem `067`/`068`: `imageReferences`, Sharp WebP Gemini **1024 px** / Sightengine **512 px** |
 | v3.57 | 2026-08-04 | **Flat kategorie (IA Fáze 1–2):** `070` bez `zbozi`; mřížka + bundle Služby/Práce/Reality; exit poll smazání `069` (`deletion_reason`); fulltext bez diakritiky `071`; veřejná lokalita bez ulice (výjimka událost/nemovitost); UX HP (search, page size) |
+| v3.58 | 2026-08-05 | **Oddělené AI modely náhled vs. finále:** preview = `GEMINI_MODEL` (`gemini-2.5-flash`); final `issueApproval` = `MODERATION_FINAL_PROVIDER`/`MODERATION_FINAL_MODEL` (default `gemini-3.5-flash-lite`, A/B OpenAI); backlog skip 2. AI při nezměněném obsahu; A/B 3.6 Flash bez zisku latence |
+| v3.59 | 2026-08-06 | **QA AI moderace po UX opravě:** produkčně ověřeno, že preview běží na `gemini-2.5-flash`, final `issueApproval` na `gemini-3.5-flash-lite`; závadný text upravený v modalu se viditelně zamítne a po jeho odstranění se inzerát normálně publikuje |
 
 ---
 

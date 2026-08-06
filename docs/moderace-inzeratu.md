@@ -256,7 +256,7 @@ Klient nové soubory jednou nahraje do privátního immutable bucketu `moderatio
 
 **Pořadí je důležité** — nejdřív sync (vygeneruje `_shared`), pak deploy (přibalí čerstvý kód). Deploy před syncem = staré nebo prázdné prompty v cloudu.
 
-1. Nastav secret v Supabase: `GEMINI_API_KEY` (příp. `OPENAI_API_KEY`). Model: **`gemini-2.5-flash`** (default v kódu; override secretem `GEMINI_MODEL`). Historie volby modelu → sekce níže.
+1. Nastav secrets v Supabase: `GEMINI_API_KEY` (příp. `OPENAI_API_KEY`). **Preview model:** `GEMINI_MODEL` (default `gemini-2.5-flash`). **Final model:** `MODERATION_FINAL_PROVIDER` / `MODERATION_FINAL_MODEL` (default Lite — viz sekce Volba modelu).
 2. **Synchronizuj a deploy** (v tomto pořadí):
 
 ```bash
@@ -291,29 +291,60 @@ supabase functions deploy moderate-listing
 
 ## Volba Gemini modelu (rozhodnutí 2026-07-30)
 
-**Aktuálně:** `gemini-2.5-flash` (default v `_shared/moderation/gemini.ts`). Přepnutí bez změny kódu: Supabase secret `GEMINI_MODEL`.
+**Aktuálně (od 2026-08-05):** dvě fáze = dva konfigurovatelné cíle (`resolve-moderation-ai-target.ts`).
 
-### Projednáno: `gemini-3.5-flash-lite`
+| Fáze | Secret | Default |
+|------|--------|---------|
+| **Preview** (hydratace, `issueApproval` vypnuto) | `GEMINI_MODEL` | `gemini-2.5-flash` |
+| **Final** (`issueApproval: true`) | `MODERATION_FINAL_PROVIDER` (`gemini` \| `openai`) + `MODERATION_FINAL_MODEL` | provider `gemini`, model **`gemini-3.5-flash-lite`** |
+| OpenAI fallback / final openai | `OPENAI_MODERATION_MODEL` | `gpt-4o-mini` |
+
+```bash
+# Explicit final Lite (kód má stejně default):
+npx supabase secrets set MODERATION_FINAL_PROVIDER=gemini
+npx supabase secrets set MODERATION_FINAL_MODEL=gemini-3.5-flash-lite
+
+# A/B final na OpenAI:
+npx supabase secrets set MODERATION_FINAL_PROVIDER=openai
+# npx supabase secrets set MODERATION_FINAL_MODEL=gpt-4o-mini
+
+# Návrat final na stejný model jako preview:
+npx supabase secrets set MODERATION_FINAL_MODEL=gemini-2.5-flash
+```
+
+Log Edge: `moderation-ai: {"phase":"preview"|"final","provider",…}` + sloupec `moderation_checks.ai_model`.
+
+**QA final Lite:** latence 2. volání vs. baseline ~15–20 s; APPROVED s odpovědí na otázku; hard REJECT; editace textu v modalu na závadný obsah → 2. volání zamítne. Po odstranění závadného textu se stejný inzerát normálně publikuje. Parametry/SEO z 1. volání se nemění (2. hydratace se nepublikuje).
+
+**Ověřeno na produkci (2026-08-06):**
+- Preview (`issueApproval` vypnuto) používá `GEMINI_MODEL` = default `gemini-2.5-flash`.
+- Final (`issueApproval: true`) používá `MODERATION_FINAL_PROVIDER` / `MODERATION_FINAL_MODEL` = default `gemini-3.5-flash-lite`.
+- OpenAI fallback / final OpenAI zůstává `OPENAI_MODERATION_MODEL` = `gpt-4o-mini`.
+- Negativní UX smoke: vulgarita v modalu vrátí viditelné inline upozornění a publikace se nezapíše.
+- Pozitivní navazující smoke: po odstranění nevhodného textu se inzerát úspěšně publikuje.
+
+### A/B produkce: `gemini-3.6-flash` (2026-08-05) — bez zisku latence
+
+| | |
+|--|--|
+| **Motiv** | Zkrátit čekání na AI (~15 s + ~15–20 s při edit/publish). Cena 3.6 ≈ 3.5 Flash (input $1.50 / output $7.50 vs $9), očekávání vyšší výkon. |
+| **Jak** | `npx supabase secrets set GEMINI_MODEL=gemini-3.6-flash` (bez deploye Edge). Po testu vráceno na `gemini-2.5-flash`. |
+| **Scénář** | Edit existujícího inzerátu na produkci → Network Fetch/XHR: 1. `moderate-listing` (náhled) + 2. `moderate-listing` (`issueApproval`) + `upravit` 303. |
+| **Baseline 2.5** | ~15 s / ~15–20 s (2× opakováno, stabilní). |
+| **3.6 Flash** | Stejný řád: ~15 s / ~15–21 s (více pokusů; žádné podstatné zrychlení). |
+| **Verdikt** | **Nechat 2.5 Flash na preview.** Výměna celého modelu neřeší bottleneck. Od 2026-08-05 final default = Flash-Lite; další páka = skip 2. AI při nezměněném obsahu (PRD backlog). |
+| **Cena vs 2.5** | 3.6 je výrazně dražší (~5× input / ~3× output) — bez latence zisku nedává smysl. |
+
+### Projednáno dříve: `gemini-3.5-flash-lite` jako jediný model
 
 | | |
 |--|--|
 | **Motiv** | Latence — Flash 2.5 je u moderace + hydratace pomalý (Edge timeout ~30 s). |
-| **Verdikt** | **Zatím ne.** Kandidát na pozdější A/B, ne slepý hot-swap defaultu. |
-| **Pipeline** | Mechanicky kompatibilní (obrázky, JSON schema, system prompt, fallback OpenAI). Rozbití kódu neočekáváme. |
-| **Riziko** | Kvalita — workload není jen klasifikace, ale moderace + SEO hydratace + katalogové Parametry + `NEEDS_QUESTIONS`. Lite může ztenčit Parametry, zhoršit hraniční moderaci (escort, scam cena) a zvýšit počet dotazníků. |
+| **Verdikt (2026-07-30)** | **Ne jako jediný model** — riziko slabší hydratace. |
+| **Verdikt (2026-08-05)** | **Ano jako default final** (`issueApproval`) — hydratace zůstává na 2.5 Flash. |
 | **API nuance** | U 3.5 Flash-Lite Google **ignoruje** custom `temperature` / top-K / top-P (náš `0.2` → default ~1.0 → větší variabilita textů). Frequency/presence penalty u nás nepoužíváme. |
 
-**Jak vyzkoušet později (bez deploye kódu):**
-
-```bash
-npx supabase secrets set GEMINI_MODEL=gemini-3.5-flash-lite
-# návrat:
-npx supabase secrets set GEMINI_MODEL=gemini-2.5-flash
-```
-
-**QA před trvalou změnou (~10–15 inzerátů):** auto, elektronika s modelem, móda, hraniční NSFW, podvodná cena, málo textu + fotky — latence vs. kvalita Parametrů / false reject-approve.
-
-**Alternativa při slabé Lite kvalitě:** plnější Flash řady 3.x (např. `gemini-3.6-flash` / 3.5 Flash) místo Lite. Default v kódu + docs (`ai-moderation.mdc`, PRD) měnit až po ověření.
+**Poznámka k plnému Flash 3.x:** `gemini-3.6-flash` produkčně A/B 2026-08-05 — **bez zisku latence** (viz výše). Default preview v kódu neměnit.
 
 ---
 
