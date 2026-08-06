@@ -8,6 +8,7 @@ import { ACCOUNT_BLACKLIST_SOURCE } from "@/config/account-blacklist";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { isStaffRole } from "@/lib/auth/is-staff-role";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
@@ -171,7 +172,7 @@ export default async function ModBlacklistPage({ searchParams }: PageProps) {
         </section>
 
         <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
-          <a
+          <Link
             href="/mod/blacklist"
             className={
               !showHistory
@@ -180,9 +181,9 @@ export default async function ModBlacklistPage({ searchParams }: PageProps) {
             }
           >
             Aktivní ({activeRows.length})
-          </a>
+          </Link>
           <span className="text-gray-300">|</span>
-          <a
+          <Link
             href="/mod/blacklist?historie=1"
             className={
               showHistory
@@ -191,7 +192,7 @@ export default async function ModBlacklistPage({ searchParams }: PageProps) {
             }
           >
             Historie (vč. odebraných)
-          </a>
+          </Link>
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-2xl border border-gray-200">

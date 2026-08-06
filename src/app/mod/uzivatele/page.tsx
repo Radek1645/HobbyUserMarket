@@ -10,6 +10,7 @@ import { LISTING_QUOTA_FREE_DEFAULT } from "@/config/app";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/auth";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
@@ -185,12 +186,12 @@ export default async function ModUsersPage({ searchParams }: ModUsersPageProps) 
 
 function LinkToSettings() {
   return (
-    <a
+    <Link
       href="/profil/nastaveni"
       className="text-xs font-medium text-gray-500 underline-offset-2 hover:underline"
     >
       váš účet → nastavení
-    </a>
+    </Link>
   );
 }
 

@@ -7,6 +7,7 @@ import {
 import { ConfirmEmailPanel } from "@/components/auth/ConfirmEmailPanel";
 import { parseEmailOtpType } from "@/lib/auth/email-otp-types";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -133,12 +134,12 @@ export function AuthSessionFinisher({
         >
           {error}
         </p>
-        <a
+        <Link
           href="/login?tab=register"
           className="inline-flex text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
         >
           Zpět na registraci
-        </a>
+        </Link>
       </div>
     );
   }
