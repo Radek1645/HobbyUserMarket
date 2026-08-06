@@ -84,6 +84,7 @@ Kanon produktového modelu zůstává v [`PRD_v3.md`](./PRD_v3.md) §4; tady je 
 | `listing_packages` | Balíčky kreditů na inzeráty |
 | `user_listing_entitlements` | Přidělené kvóty uživateli |
 | `gdpr_retention_warnings` | Záznam, že šel e-mail před smazáním neaktivity |
+| `category_seo_pages` | SEO copy + `index_status` + `listing_count` kategoriálních landings (`072`) |
 | `bank_payments` | **Plánováno** (PRD monetizace) — v DB zatím není |
 
 **Storage buckety:** `post-images` (veřejné fotky inzerátů) · `moderation-evidence` (privátní NSFW / hard-reject snímky) · `moderation-image-staging` (privátní immutable originály před AI / publikací) · `moderation-image-renditions` (privátní Sharp WebP varianty 1024/512 px, jen service_role).
@@ -255,7 +256,29 @@ Audit smazání: `target_profile_no`, `target_user_id`, `actor_id`, `source` (`s
 
 #### `gdpr_retention_warnings`
 
+
 Že už šel varovný e-mail před smazáním neaktivity: PK `(user_id, last_sign_in_at_snapshot)`, `warned_at`.
+
+---
+
+### Category SEO
+
+#### `category_seo_pages` *(072)*
+
+SEO stav a copy kategoriálních landings. **Taxonomie zůstává v** `categories.ts` — tady jen slug 1:1 + meta.
+
+| Atribut | Co v něm najdeš |
+|---------|-----------------|
+| `slug` | PK = goods subcategory slug (např. `kola-kolobezky`) |
+| `page_no` | Lidské pořadí řádku |
+| `kind` | `subcategory` / `category_type` |
+| `description`, `meta_title`, `meta_description` | Úvodní text + SERP (ne per-request AI) |
+| `index_status` | `index` / `noindex` — čte `generateMetadata` i sitemap |
+| `listing_count` | Povinný snapshot z denního cronu |
+| `above_threshold_since`, `below_threshold_since` | Hystereze 3 / 14 dní |
+| `updated_at` | Poslední sync |
+
+RLS: veřejný SELECT; zápis jen service_role (cron `/api/cron/category-seo-index`).
 
 ---
 

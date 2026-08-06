@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.59  
+> **Verze dokumentu:** v3.60  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** [`003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) · … · [`068_moderation_image_renditions.sql`](../supabase/068_moderation_image_renditions.sql) · [`069_post_deletion_reason.sql`](../supabase/069_post_deletion_reason.sql) · [`070_flat_goods_categories.sql`](../supabase/070_flat_goods_categories.sql) · [`071_search_unaccent.sql`](../supabase/071_search_unaccent.sql)  
+> **Migrace DB:** … · [`071_search_unaccent.sql`](../supabase/071_search_unaccent.sql) · [`072_category_seo_pages.sql`](../supabase/072_category_seo_pages.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
 > **Datum:** 2026-08-06
 
@@ -212,7 +212,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **vlastní cookie lištou** (GTM Consent Mode v2) před aktivací měření. *(✅ GTM `GTM-WGLNJRNK`, consent banner, `/cookies` — 2026-07-14)*
 * **Taxonomie a kategorie:** Systém nevyužívá databázové tabulky pro kategorie (prevence zbytečných JOINů a DB administrace). Jediným zdrojem pravdy je statický soubor `src/config/categories.ts` (+ `categories-goods.ts`). V DB jsou inzeráty kategorizovány textovými poli `category_type` a `subcategory_slug`. Od migrace [`070`](../supabase/070_flat_goods_categories.sql) je **1. patro flat** — zbožové domény `auto` / `detsky` / `dum` / `elektro` / `moda` / `sport` / `hobby` / `ostatni` + `sluzby` / `prace` / `nemovitost` / `udalost` (deštník `zbozi` zrušen). HP: mřížka + bundle „Služby, práce a reality“ (Fáze 2).
 * **Konfigurace aplikace:** Globální parametry (radius vyhledávání, limity rate limitingu, **platnost inzerátu** od v0.1.1, **max délka popisu**) v `src/config/app.ts` (`LISTING_DESCRIPTION_MAX_LENGTH = 2000`, `MODERATION_DESCRIPTION_QA_RESERVE = 400`). Adaptivní kroky rádiusu homepage: **15 → 30 → 50 → 60 km** (`SEARCH_RADIUS_STEPS_KM`), minimální počet inzerátů před celostátním fallbackem: **6** (`HOME_LISTINGS_MIN_REQUIRED`). Parametry AI moderace v `src/config/moderation/index.ts` (`MODERATION_ENABLED`, `MODERATION_RATE_LIMIT_PER_HOUR = 20`, `MODERATION_MAX_QUESTIONS = 5`, Gemini všechny fotky 1024 px, Sightengine 512 px, WebP kvalita 80). Originály se nahrají jednou do privátního immutable stagingu; Next.js Server Action vytvoří přes Sharp hash-addressed AI varianty a Edge z plných bajtů originálů počítá SEC-H02 hashe. Supabase Image Transformations se nepoužívají. Výchozí platnost inzerátu: **30 dní** (rozsah 1–365, konfigurovatelný max). Prompty kategorií sync: `npm run sync:moderation`.
-* **Data v EU / EHP:** Primární DB **Supabase** = West EU Ireland (`eu-west-1`); **Vercel Functions** = Dublin (`dub1` / `eu-west-1`); **Resend** sending = Ireland (`eu-west-1`, doména `zapikolou.cz`) — zapsáno v GDPR §5.1 (2026-07-19). AI moderace stále posílá text a fotky ke **Gemini/OpenAI** (typicky mimo EHP) — DPA/SCC + informace v GDPR. Checklist / backlog **P33** v [`TO-DO_Fable.md`](./TO-DO_Fable.md), [`docs/pravni/README.md`](./pravni/README.md).
+* **Data v EU / EHP:** Primární DB **Supabase** = West EU Ireland (`eu-west-1`); **Vercel Functions** = Dublin (`dub1` / `eu-west-1`); **Resend** sending = Ireland (`eu-west-1`, doména `zapikolou.cz`) — zapsáno v GDPR §5.1 (2026-07-19). AI moderace stále posílá text a fotky ke **Gemini/OpenAI** (typicky mimo EHP) — DPA/SCC + informace v GDPR. Checklist / backlog **P33** v [`SECURITY_UX_BACKLOG.md`](./SECURITY_UX_BACKLOG.md), [`docs/pravni/README.md`](./pravni/README.md).
 
 ### 3.1 Proč Vercel + Supabase (rozhodnutí stacku)
 
@@ -239,7 +239,7 @@ Obě platformy jsou velké B2B SaaS (SOC 2, šifrování at rest / in transit, D
 | **Kombinace** | AI klíče jen v Edge secrets; publish gate v DB | Klient volá Edge přímo — JWT + rate limit + content fingerprint / image hashes (migrace `027`, `062`–`066`) |
 | **GDPR** | Data v EU (DB, hosting, mail) | AI (Gemini / OpenAI) typicky mimo EHP → DPA / SCC + informace v GDPR |
 
-Bezpečnost tedy **není** „Supabase je ze své podstaty bezpečnější než AWS“ — je to kvalita RLS, rolí a publish gate. U zaPikolou.cz to řeší approval token + fingerprint, service-role-only `publish_approved_post` a bezpečnostní audity ([`SECURITY_AND_UX_AUDIT_20260727.md`](./SECURITY_AND_UX_AUDIT_20260727.md)).
+Bezpečnost tedy **není** „Supabase je ze své podstaty bezpečnější než AWS“ — je to kvalita RLS, rolí a publish gate. U zaPikolou.cz to řeší approval token + fingerprint, service-role-only `publish_approved_post` a bezpečnostní audity ([`SECURITY_UX_BACKLOG.md`](./SECURITY_UX_BACKLOG.md)).
 
 #### Konkurenční / podobné platformy
 
@@ -484,7 +484,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * Vyhledávání pouze v `status = 'active'` a neexpirovaných inzerátech.
   * Filtry: Fulltextové výrazy (kategorie zboží/služby/události), lokalita (obec z našeptávače Mapy.cz), profil uživatele, typ ceny, stav/typ nabídky. *(Filtr `udalost` od v0.2.)*
   * Řazení: Kategorie, cena, datum přidání, vzdálenost (pokud je poloha aktivní). *(Události od v0.2: volitelně řazení podle `event_date` — nejbližší konání první.)*
-  * **PLÁN (zatím neimplementováno) — kategoriální SEO výpisy:** Hierarchická URL `/{lokalita}/{kategorie}/{filtr}/` (bez prefixu `/kategorie/`). Indexace kategorií podléhá prahu ≥ 3 aktivní inzeráty a 14denní hysterezi před `noindex`. Popisy kategorií jsou statické, uložené v DB (jednorázově generované AI / ručně u top kategorií), negenerují se per-request. Kanon pravidel: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md); index vrstev: [`seo/README.md`](./seo/README.md).
+  * **Vlna 1 (implementováno) — kategoriální SEO výpisy:** Celostátní `/{slug}/` pro unikátní **goods** subcategory slugy (1:1 s `categories.ts`). Index při ≥ 3 aktivních + obousměrná hystereze (3 dny nahoru / 14 dní dolů); `generateMetadata` a sitemap čtou hotový `index_status` z tabulky `category_seo_pages` (migrace `072`), nepočítají práh za request. Lokalita `/{lokalita}/{kategorie}/` a brand filtr = později (práh ≥ 5). Události později `/udalosti/…`. Kanon: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md) v1.1 · [`seo/CATEGORY_SEO_WAVE1.md`](./seo/CATEGORY_SEO_WAVE1.md).
 * **Header & Footer:**
   * Header: Logo **zaPikolou.cz** (`AppLogo`), vyhledávání, stav přihlášení, dominantní CTA „Vytvořit inzerát s AI“.
   * **Footer — globální dostupnost:** Patička je součástí `AppShell` a zobrazuje se na **všech veřejných i autentizovaných stránkách** (včetně `/mod/*`). Tři sloupce (`src/config/footer.ts`):
@@ -729,7 +729,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 * **SEO Infrastruktura (Indexace):**
   * **Dynamická Sitemap (`sitemap.xml`):** Pouze `active` inzeráty. Expirované/smazané okamžitě mizí.
   * **SSR / ISR:** Detail inzerátu musí být server-renderovaný — žádný prázdný klientský loader.
-  * **Robots.txt:** Zákaz indexace `/profil/*`, `/mod/*`, admin prvků a vyhledávání s parametry. Indexují se HP a detaily aktivních inzerátů. Hierarchické kategoriální výpisy (`/{lokalita}/{kategorie}/…`) jsou **plán** — viz §5.1 a [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md); zatím se jako samostatné landing pages neindexují.
+  * **Robots.txt:** Zákaz indexace `/profil/*`, `/mod/*`, admin prvků a vyhledávání s parametry. Indexují se HP, detaily aktivních inzerátů a kategoriální landings s `index_status = index` (Vlna 1: `/{slug}/` — viz §5.1, [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md)).
 
 ---
 
@@ -786,7 +786,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.44 | 2026-07-24 | **Kvalita inzerátu + volitelné otázky:** soft deterministické skóre v AI náhledu (`listing-quality.ts`); odpovědi v „Vylepšete svůj inzerát“ **volitelné** (neblokují publikaci); Metodika §6.7; [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) |
 | v3.45 | 2026-07-26 | **v0.5 DoD:** FAQ `/faq` + patička; `audit_events` (**059/060**); `moderator_notes` (**061**); AI `categorySuggestion` (**058**); CTA dle kategorie; UI copy „web“ místo „platforma“ (mimo VOP/GDPR); Metodika §2.1.1 / §11.4 |
 | v3.46 | 2026-07-27 | **Kvalita + moderace + SEO title:** skóre bez SEO (tužka volitelná); tipy do 100 %; tolerantní parser Parametrů + normalizace odřádkování; kompaktní AI preview footer; false positive opravy (práce vs služby, fotka s výjimkou v textu); META_TITLE obec/město + zkracování H1 na slovech (SEO bible **v1.8**) |
-| v3.47 | 2026-07-28 | **Bezpečnostní harden publish gate:** content fingerprint + SHA-256 fotek (`062`–`065`); service-role-only `publish_approved_post`; finální `issueApproval` po AI náhledu; publish-sensitive editace vždy re-moderace; staff bypass jen cizí inzerát (`066`); rate limit atomický; Next.js 15.5.22; SEO bible **v1.9** (katalog u identifikovaného modelu); audit [`SECURITY_AND_UX_AUDIT_20260727.md`](./SECURITY_AND_UX_AUDIT_20260727.md) |
+| v3.47 | 2026-07-28 | **Bezpečnostní harden publish gate:** content fingerprint + SHA-256 fotek (`062`–`065`); service-role-only `publish_approved_post`; finální `issueApproval` po AI náhledu; publish-sensitive editace vždy re-moderace; staff bypass jen cizí inzerát (`066`); rate limit atomický; Next.js 15.5.22; SEO bible **v1.9** (katalog u identifikovaného modelu); audit → [`SECURITY_UX_BACKLOG.md`](./SECURITY_UX_BACKLOG.md) (archiv 2026-07-27) |
 | v3.48 | 2026-07-28 | **Default covers + sport hydratace + ověření publish gate:** výchozí ilustrace bez fotky dle kategorie/podkategorie (`listing-default-covers.ts`); u `udalost/sport` doptání na výbavu; ISO UTC pro `eventDate` do Edge; manuální smoke SEC-H01/H02 OK; migrace 062–066 + EF nasazeny |
 | v3.49 | 2026-07-30 | **Sync limity fotek + Gemini model notes:** `sync:moderation` správně vyhodnocuje `LISTING_IMAGE_*` → Edge `MODERATION_IMAGE_MAX_BYTES` = 1 MB / total 6 MB (dřív chybný fallback 500 KB/2 MB blokoval editaci); dokumentace volby Gemini (`gemini-2.5-flash`, Flash-Lite odloženo); backlog TO-DO (formulář SoR, dětské zboží, poptávky, Půjčovna) |
 | v3.50 | 2026-07-30 | **§3.1 Proč Vercel + Supabase:** rozhodnutí stacku (dělení rolí web vs data/auth/AI), model důvěry a bezpečnost (RLS, Edge secrets, publish gate), konkurenční platformy (Firebase, Neon+Clerk, AWS…) |
@@ -799,6 +799,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.57 | 2026-08-04 | **Flat kategorie (IA Fáze 1–2):** `070` bez `zbozi`; mřížka + bundle Služby/Práce/Reality; exit poll smazání `069` (`deletion_reason`); fulltext bez diakritiky `071`; veřejná lokalita bez ulice (výjimka událost/nemovitost); UX HP (search, page size) |
 | v3.58 | 2026-08-05 | **Oddělené AI modely náhled vs. finále:** preview = `GEMINI_MODEL` (`gemini-2.5-flash`); final `issueApproval` = `MODERATION_FINAL_PROVIDER`/`MODERATION_FINAL_MODEL` (default `gemini-3.5-flash-lite`, A/B OpenAI); backlog skip 2. AI při nezměněném obsahu; A/B 3.6 Flash bez zisku latence |
 | v3.59 | 2026-08-06 | **QA AI moderace po UX opravě:** produkčně ověřeno, že preview běží na `gemini-2.5-flash`, final `issueApproval` na `gemini-3.5-flash-lite`; závadný text upravený v modalu se viditelně zamítne a po jeho odstranění se inzerát normálně publikuje |
+| v3.60 | 2026-08-06 | **Category SEO Vlna 1:** `/{slug}/` goods landings; tabulka `category_seo_pages` (`072`); cron hystereze 3/14; sitemap jen `index_status=index`; CATEGORY_SEO v1.1 |
 
 ---
 

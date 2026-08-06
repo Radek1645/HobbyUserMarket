@@ -5,7 +5,8 @@ Dva kanonické dokumenty — **různé vrstvy**, ne náhrada jednoho druhým:
 | Dokument | Vrstva | Co řeší |
 |----------|--------|---------|
 | [`SEO_BIBLE.md`](./SEO_BIBLE.md) | Detail inzerátu | AI hydratace, H1, meta, alt, JSON-LD, slug |
-| [`CATEGORY_SEO.md`](./CATEGORY_SEO.md) | Kategorie / filtry | Hierarchické URL, index/noindex práh, copy výpisů, prolinkování |
+| [`CATEGORY_SEO.md`](./CATEGORY_SEO.md) | Kategorie / filtry | Hierarchické URL, index/noindex práh, copy výpisů, prolinkování (v1.1) |
+| [`CATEGORY_SEO_WAVE1.md`](./CATEGORY_SEO_WAVE1.md) | Produktový řez Vlny 1 | 1A slugy, draft DB modelu, routing sketch (CSEO1–3) |
 
 Při rozporu v tom, kam patří která odpovědnost: **inzerát = SEO_BIBLE.md, výpis = CATEGORY_SEO.md**.
 
@@ -49,7 +50,7 @@ Stejný princip jako u právních snapshotů (`docs/pravni/snapshots/`):
 | AI hydratace (prompt) | `src/config/moderation/build-prompt.ts` (+ Edge `_shared`) |
 | Detail metadata | `src/app/inzerat/[slug]/page.tsx` → `generateMetadata` |
 
-Kategoriální routing / `index_status` / copy kategorií — zatím **není v kódu**; checklist v `CATEGORY_SEO.md` §7.
+Kategoriální landings: pravidla v1.1 + WAVE1; kód CSEO4 (`072`, `app/[slug]`, cron) — po apply migrace.
 
 Metodika (procesy): [`../Metodika.md`](../Metodika.md) §8.5.  
 Hydratace: [`../hydratace-inzeratu.md`](../hydratace-inzeratu.md).

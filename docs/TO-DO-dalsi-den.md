@@ -7,7 +7,8 @@
 > **Aktualizace 2026-07-28:** priorita **„formulář má vždy pravdu“** (§ A).  
 > **Aktualizace 2026-07-30:** § B dětské zboží; § C počet poptávek; § D Půjčovna; § E downscale fotek pro AI.  
 > **Aktualizace 2026-07-31:** § F přejmenování „Kola a sport“ → „Sport“; § G smazání zboží — prodáno na zaPikolou?.  
-> **Aktualizace 2026-08-01:** § H Category SEO — plán hierarchických výpisů (narůstá; zatím neimplementováno); § I lokalita na kartách bez ulice.  
+> **Aktualizace 2026-08-01:** § H Category SEO — plán hierarchických výpisů; § I lokalita na kartách bez ulice.  
+**Aktualizace 2026-08-06:** § H CSEO1–3 odsouhlaseno (Vlna 1 = 1A goods-only; CATEGORY_SEO v1.1 + WAVE1); CSEO4 kód (migrace `072`, route, cron).  
 > **§ A hotovo (2026-08-01):** F1–F3 + TZ `Europe/Prague`; modal vs. formulář záměrně neřešen ([Metodika](./Metodika.md) §6.8.1).  
 > **§ B hotovo (2026-08-01):** D1–D3 — dětské zboží otázka Věk / výška.  
 > **§ C hotovo (2026-08-01):** Q1–Q4 — počet poptávek na `/moje-inzeraty` + God Mode.  
@@ -210,25 +211,27 @@ Související: `MyListingActions.tsx`, `deleteListing` v `listing-management.ts`
 
 ## H. Priorita (plán) — Category SEO / kategoriální výpisy
 
-**Stav (2026-08-01):** Pravidla zamčená v [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md) v1.0; index vrstev [`seo/README.md`](./seo/README.md); PRD v3.53 §5.1 = **PLÁN (zatím neimplementováno)**. `SEO_BIBLE.md` beze změny (detail inzerátu).
+> **CSEO1–3 odsouhlaseno (2026-08-06); CSEO4 kód 2026-08-06.** Pravidla [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md) **v1.1**; WAVE1 + smoke: [`seo/CATEGORY_SEO_WAVE1.md`](./seo/CATEGORY_SEO_WAVE1.md). Zbývá **apply `072`** na Supabase + deploy.
 
-**Co to znamená:** kategorie přestanou být jen filtr na HP (`?kategorie=`) a stanou se indexovatelnými landing pages. Taxonomie v `categories.ts` zůstává; přibude SEO vrstva (URL + copy + `index_status`).
+**Verdikt Vlny 1:** jen celostátní **1A** `/{slug}/` (goods subcategory, slug 1:1 s configem). Lokalita až po objemu (práh ≥ 5). `/{slug}/` nikdy neznamená Události — ty později `/udalosti/…`.
 
 **Rozhodnuto (neřešit znovu):**
-- URL: `/{lokalita}/{kategorie}/{filtr}/` — **bez** prefixu `/kategorie/`
-- Index při ≥ 3 aktivních inzerátech; z indexu dolů až po **14 dnech** pod prahem (hystereze)
-- `generateMetadata` čte hotový `index_status` z DB — nepočítá hysterezi za běhu
-- Popisy kategorií: jednorázová AI + ruční top ~20; uložené v DB, ne per-request
+- URL cíl: `/{lokalita}/{kategorie}/{filtr}/` — **bez** prefixu `/kategorie/`; **produkce teď = jen `/{kategorie}/`**
+- Celostátní index: práh ≥ 3 + hystereze **3 dny nahoru / 14 dní dolů**
+- Lokalita: práh ≥ 5 + stejná hystereze; do té doby `noindex` / mimo sitemap
+- `generateMetadata` čte hotový `index_status` (+ povinný `listing_count` z denního jobu)
+- Popisy: jednorázová AI + ruční top; v DB, ne per-request
 - 0 inzerátů u sezónních = `noindex`, ne `301`
+- Žádná paralelní SEO taxonomie mimo `categories.ts`
 
 | # | Úkol | Očekávání | ✓ |
 |---|------|-----------|---|
-| CSEO1 | Produktový řez: které slugy z `categories.ts` dostanou veřejnou stránku jako první (kombinovaný/lokalizovaný tier) | Seznam prioritních kategorií + lokalit | ☐ |
-| CSEO2 | Návrh datového modelu: SEO pole u kategorie (`description`, meta, `index_status`, `below_threshold_since`) vs. ponechání taxonomie v `categories.ts` | Draft migrace / tabulka — bez konfliktu s PRD §3 „kategorie jen v configu“ | ☐ |
-| CSEO3 | Routing sketch Next.js pro `/{lokalita?}/{kategorie}/{filtr?}` | Neambivalentní segmenty (město vs. kategorie) | ☐ |
-| CSEO4 | Implementace checklistu CATEGORY_SEO §7 | Až po CSEO1–CSEO3 — URL, práh, hystereze, canonical/`page=N`, copy, breadcrumbs, interní linky | ☐ |
+| CSEO1 | Produktový řez Vlny 1 (1A, priorita 8 slugů, bez lokality) | WAVE1 + CATEGORY_SEO v1.1 | ☑ |
+| CSEO2 | Draft datového modelu (`listing_count`, hystereze, taxonomie v configu) | WAVE1 § CSEO2 | ☑ |
+| CSEO3 | Routing sketch (goods-only, `/udalosti/`, lokalita noindex) | WAVE1 § CSEO3 | ☑ |
+| CSEO4 | Implementace checklistu CATEGORY_SEO §7 | Migrace `072`, `/{slug}/`, cron, sitemap (indexované) | ☑ kód; apply `072` + cron na produkci |
 
-Související: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md), [`seo/README.md`](./seo/README.md), PRD §5.1 (v3.53), `src/config/categories.ts`, HP `?kategorie=`.
+Související: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md), [`seo/CATEGORY_SEO_WAVE1.md`](./seo/CATEGORY_SEO_WAVE1.md), [`seo/README.md`](./seo/README.md), PRD §5.1, `src/config/categories.ts`, HP `?kategorie=`.
 
 ---
 
@@ -301,7 +304,7 @@ LIMIT 10;
 | B5 | UI prodloužení | `renew_count` +1 | ☐ |
 | D1 | `/llms.txt` s `[` / `]` v titulku | Markdown OK | ☐ |
 
-Detail: [`TO-DO_Fable.md`](./TO-DO_Fable.md) §0 Smoke A–D.
+Detail: [`SECURITY_UX_BACKLOG.md`](./SECURITY_UX_BACKLOG.md) §3 Smoke A–D.
 
 ---
 

@@ -76,7 +76,7 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 - [ ] **Sightengine DPA** — podepsat / vrátit na support@sightengine.com (EU zákazník)
 - [ ] Revize právníkem před publikací finálního GDPR textu (vč. Sightengine + CSAM hard stop ve VOP/Pravidlech)
 
-Detail: [`TO-DO_Fable.md`](../TO-DO_Fable.md) **P33**.
+Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 
 ## Revize draft 1.1 (2026-07-10) — sladění s PRD
 

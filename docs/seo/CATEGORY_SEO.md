@@ -1,9 +1,18 @@
 # Category SEO Bible — kategorie a filtry zaPikolou.cz
 
-> **Verze:** 1.0
-> **Datum:** 2026-08-01
-> **Účel:** Kanonický zdroj pravidel pro SEO **kategorií a filtrovaných výpisů** — landing page vrstva, ne detail inzerátu.
-> **Vztah k [`SEO_BIBLE.md`](./SEO_BIBLE.md):** SEO_BIBLE.md řeší AI hydrataci jednoho inzerátu (H1, meta, alt). Tento dokument řeší vrstvu nad tím — hierarchické URL typu `/{lokalita}/{kategorie}/{filtr}/` (bez prefixu `/kategorie/`, viz §1), které jsou dlouhodobou hlavní pákou organické návštěvnosti. Při rozporu v tom, kam patří která odpovědnost, platí: **inzerát = SEO_BIBLE.md, výpis = tento dokument.**
+> **Verze:** 1.1  
+> **Datum:** 2026-08-06  
+> **Účel:** Kanonický zdroj pravidel pro SEO **kategorií a filtrovaných výpisů** — landing page vrstva, ne detail inzerátu.  
+> **Vztah k [`SEO_BIBLE.md`](./SEO_BIBLE.md):** SEO_BIBLE.md řeší AI hydrataci jednoho inzerátu (H1, meta, alt). Tento dokument řeší vrstvu nad tím — hierarchické URL (bez prefixu `/kategorie/`, viz §1), které jsou dlouhodobou hlavní pákou organické návštěvnosti. Při rozporu: **inzerát = SEO_BIBLE.md, výpis = tento dokument.**  
+> **Vlna 1 (produkt):** [`CATEGORY_SEO_WAVE1.md`](./CATEGORY_SEO_WAVE1.md) — jen celostátní `/{slug}/` (zboží); lokalita až po objemu.
+
+### Changelog v1.1 (2026-08-06)
+
+- **Vlna 1 = 1A** — produkčně jen `/{kategorie}/`; lokalitní matice neindexovat / nelinkovat ze sitemapy, dokud `(kategorie, lokalita)` ≥ 5 + hystereze.
+- **`/{slug}/` = jen zboží**; Události později `/udalosti/{slug}/` (stejně prefixy pro ostatní non-goods).
+- **Slug 1:1 s `categories.ts`** — žádná paralelní SEO taxonomie.
+- **Hystereze obousměrná** — do indexu až po 3 dnech nad prahem; z indexu po 14 dnech pod prahem (`above_threshold_since` / `below_threshold_since`).
+- **`listing_count` povinný** ve SEO tabulce (denní job).
 
 ---
 
@@ -21,24 +30,36 @@ Detail inzerátu (SEO_BIBLE.md) zůstává „vytěžovačem" dlouhého chvostu 
 
 ## 1. Struktura URL
 
-**Rozhodnuto: hierarchická struktura.**
+**Rozhodnuto: hierarchická struktura** (cílový strom). Cílové varianty:
 
-`/{lokalita}/{kategorie}/{filtr}/` — např. `/brno/detska-kola/author/`
-
-Důvody:
-1. **Entitní strom pro Google** — hierarchie URL čitelně mapuje ČR → Brno → Dětská kola → Author, na rozdíl od ploché struktury (`/detska-kola-author-20-brno/`), kterou bot musí dekódovat bez jistoty.
-2. **Přelévání autority** — backlink na `/brno/detska-kola/author/` posiluje i nadřazené `/brno/detska-kola/` a `/detska-kola/`, takže investice do linkbuildingu jedné stránky se rozlévá dál po stromu.
-3. **Čistota routování** — plochá struktura se u inzertního webu s desítkami kategorií a filtrů rychle stává nekontrolovatelnou.
-
-Varianty URL:
 - Kategorie: `/{kategorie}/`
 - Kategorie + lokalita: `/{lokalita}/{kategorie}/`
 - Kategorie + filtr: `/{kategorie}/{filtr}/`
 - Lokalita + kategorie + filtr: `/{lokalita}/{kategorie}/{filtr}/`
 
-**Prefix `/kategorie/...`, který se objevoval dřív v briefu, je zamítnut natrvalo.** Kategorie a lokalita jdou přímo z kořene (`/brno/detska-kola/...`), bez zastřešujícího segmentu — kratší URL, čistší hierarchie pro breadcrumb i pro přelévání autority.
+Příklad cílového stromu: `/brno/kola-kolobezky/author/` — backlink posiluje i `/brno/kola-kolobezky/` a `/kola-kolobezky/`.
 
-*(TODO: promítnout do routingu — konkrétní Next.js struktura je implementační detail, ne SEO rozhodnutí)*
+**Prefix `/kategorie/...` je zamítnut natrvalo.** Kategorie a lokalita jdou z kořene, bez zastřešujícího segmentu.
+
+### Vlna 1 vs. cílový strom
+
+| Fáze | Co je v produkci (index + sitemap + interní SEO linky) |
+|------|--------------------------------------------------------|
+| **Vlna 1** | Jen `/{slug}/` u **unikátních goods subcategory** slugů z configu. Práh ≥ 3 + hystereze §2. |
+| **Vlna 2** | `/{lokalita}/{kategorie}/` až když buňka má ≥ **5** aktivních + hystereze. Do té doby template smí existovat, ale `noindex` a mimo sitemap. |
+| Později | Brand/filtr segment; non-goods s vlastním prefixem. |
+
+### Namespace podle typu inzerátu
+
+- **`/{slug}/` je vyhrazené pro zboží** (goods subcategory). Nikdy neznamená „cokoliv se stejným slugem“.
+- **Události** (až na řadě): `/udalosti/{slug}/` — např. `/udalosti/sport/`. Tím se vyhne kolizi goods `category_type` / event subcategory `sport`.
+- Stejný princip později pro služby / práci / nemovitosti (`/sluzby/…` atd.), ne bare single-segment.
+
+### Slug = config
+
+`SEO_URL_SLUG === subcategory.slug` (nebo později explicitně goods `category_type`). Žádná jemnější SEO taxonomie mimo [`src/config/categories.ts`](../../src/config/categories.ts). Kolizní slugy (`ostatni`, `pece-zahrada`, ambiguous `sport`) **nedostanou** bare `/{slug}/` — viz [`CATEGORY_SEO_WAVE1.md`](./CATEGORY_SEO_WAVE1.md).
+
+Routing sketch: WAVE1 § CSEO3. Implementace = checklist §7 / CSEO4.
 
 ---
 
@@ -48,24 +69,36 @@ Kombinace filtrů rostou kombinatoricky — velká část z nich bude mít **nul
 
 ### Pravidlo prahu
 
-**Rozhodnuto: práh 3 aktivní inzeráty.**
+| Kontext | Práh aktivních inzerátů |
+|---------|-------------------------|
+| Celostátní `/{kategorie}/` | **≥ 3** |
+| Lokalita `/{lokalita}/{kategorie}/` (Vlna 2) | **≥ 5** (vyšší laťka — nižší objem per buňku) |
 
-| Počet aktivních inzerátů | Akce |
+| Počet vs. práh (po hysterezi níže) | Akce |
 |---|---|
-| `>= 3` | `index, follow`, vlastní `<title>`/meta |
-| `1–2` | `noindex, follow` — crawler projde odkazované inzeráty, ale výpis samotný v indexu chudě nepůsobí |
-| `0` | **`noindex, follow`** jako výchozí. `301` na rodičovskou kategorii se **nepoužívá** pro sezónní kategorie (pneu, kola, lyže…) — po sezóně se počet vrátí nad práh a redirect by se musel rušit, což vytváří redirect loop riziko a matoucí historii pro Google. `301` je vyhrazený jen pro kategorie, které zanikají natrvalo (přejmenování, sloučení). `410` jen pokud kategorie mizí natrvalo a nemá nástupce. **Nikdy ne trvalé `200 OK` s prázdným výpisem** — zbytečně pálí crawl budget |
-| Extrémně úzká kombinace filtrů (3+ najednou, analogie „Brno Líšeň" z briefu) | `noindex, follow` bez ohledu na počet inzerátů — dostupné uživateli, mimo index |
+| Stabilně nad prahem | `index, follow`, vlastní `<title>`/meta |
+| Pod prahem, ale &gt; 0 | `noindex, follow` — crawler projde inzeráty, výpis mimo index |
+| `0` | **`noindex, follow`**. U sezónních kategorií **ne `301`** na rodiče — po sezóně se počet vrátí; redirect by zabil URL. `301` jen při trvalém zániku/sloučení; `410` jen bez nástupce. **Nikdy ne trvalé `200 OK` s prázdným výpisem** |
+| Extrémně úzká kombinace filtrů (3+ najednou) | `noindex, follow` bez ohledu na počet |
 
 ### Hystereze index/noindex (ochrana proti flapování)
 
-Počet inzerátů v kategorii kolísá týden od týdne (prodá se, přibude nový). Pokud by stránka mezi `index`/`noindex` skákala při každém přechodu přes práh, Google bot ztrácí ke stránce důvěru a přestává ji pravidelně crawlovat.
+Počet inzerátů kolísá. Okamžité cukání `index`/`noindex` kazí důvěru Google bota **a** při nízkém objemu by jednodenní spike nad práh zaindexoval thin page.
 
-**Pravidlo:** asymetrický práh.
-- Do indexu **pustit** při `>= 3` inzerátech okamžitě.
-- Z indexu **stáhnout** až když počet zůstane pod prahem (nebo na `0`) **déle než 14 dní** — ne při první výkyvu.
+**Pravidlo: obousměrná hystereze (různá okna).**
 
-**Implementace: sloupec v DB, ne přepočet za běhu.** `generateMetadata` čte hotový `index_status` sloupec u kategorie — nepočítá hysterezi znovu při každém requestu. Sloupec se aktualizuje buď (a) při každé změně počtu inzerátů v kategorii (trigger/hook, který zapíše `below_threshold_since` timestamp a přepne `index_status` až po 14 dnech), nebo (b) jednou denně dávkovým jobem, který projede kategorie a status přepočítá. Varianta (a) je přesnější, (b) jednodušší na údržbu — volba je implementační detail, princip „nepočítat v `generateMetadata`" je závazný.
+| Směr | Podmínka count | Stabilita |
+|------|----------------|-----------|
+| `noindex` → `index` | ≥ práh | kontinuálně **≥ 3 dny** (`above_threshold_since`) |
+| `index` → `noindex` | &lt; práh (vč. 0) | kontinuálně **≥ 14 dní** (`below_threshold_since`) |
+
+**Implementace: DB sloupce, ne přepočet v `generateMetadata`.** Denní job (preferovaná varianta b):
+
+1. Spočítá aktivní posty per slug → zapíše povinný **`listing_count`**.
+2. Aktualizuje `above_threshold_since` / `below_threshold_since` (null na opačné straně prahu).
+3. Teprve po uplynutí okna přepne `index_status`.
+
+Trigger při změně countu (varianta a) je přípustný, pokud dodrží stejná okna. Princip „nepočítat hysterezi za request“ je závazný.
 
 ### Canonical
 
@@ -128,11 +161,11 @@ Sledovat odděleně od implementačního checklistu — toto je marketing/BD pr�
 
 ---
 
-## 7. Implementační checklist (pro PR)
+## 7. Implementační checklist (pro PR) — CSEO4
 
-- [ ] Hierarchická URL struktura (§1) promítnuta do routingu
-- [ ] Práh 3 inzerátů pro index/noindex implementován (§2)
-- [ ] Hystereze 14 dní před přepnutím na `noindex` implementována (§2)
+- [ ] Vlna 1 routing: goods-only `/{slug}/` + reserved paths + unikátní slug set (§1, WAVE1)
+- [ ] Tabulka `category_seo_pages` + povinný `listing_count` + `above`/`below_threshold_since`
+- [ ] Denní job: count → hystereze → `index_status` (celostátní práh 3; 3/14 dní)
 - [ ] Self-referencing canonical na stránkovaných výpisech (`?page=N`), ne zpět na `page=1`
 - [ ] META_TITLE pro strany 2+ obsahuje „(strana N)"
 - [ ] Úvodní text kategorie skryt na stránkách 2+
@@ -140,11 +173,17 @@ Sledovat odděleně od implementačního checklistu — toto je marketing/BD pr�
 - [ ] `BreadcrumbList` JSON-LD na kategorii i detailu
 - [ ] Interní prolinkování: homepage → kategorie → related kategorie → inzerát a zpět
 - [ ] GSC sledování nastaveno per kategorie (ne jen agregátně)
+- [ ] (Vlna 2) lokalitní URL: práh ≥ 5, mimo sitemap dokud nesplní
 
 ---
 
-## 8. Zbývající otevřené otázky
+## 8. Rozhodnuté / odložené
 
-1. Priorita — které kategorie/lokality dostanou ruční copy a linkbuilding jako první? (viz §5 — návrh je „kombinovaný"/„lokalizovaný" tier, ne nejobecnější kategorie)
-2. Přesný routing v Next.js pro tříúrovňovou hierarchii lokalita/kategorie/filtr — implementační detail mimo scope tohoto dokumentu.
-3. Varianta (a) vs. (b) pro update `index_status` sloupce (§2) — trigger na změnu vs. denní job.
+| # | Téma | Stav |
+|---|------|------|
+| 1 | Priorita Vlny 1 (8 slugů, bez lokality) | **Hotovo** — [`CATEGORY_SEO_WAVE1.md`](./CATEGORY_SEO_WAVE1.md) |
+| 2 | Datový model + routing sketch | **Draft odsouhlasen** — WAVE1 CSEO2–3 |
+| 3 | Update `index_status` | **Denní job (b)** preferován |
+| 4 | Lokalitní matice v indexu | **Odloženo** na objem (práh ≥ 5) |
+| 5 | Prefix `/udalosti/` a další non-goods | **Zamčeno jako pravidlo**; implementace až když přijdou na řadu |
+| 6 | Brand filtr ve URL | Mimo Vlnu 1 |

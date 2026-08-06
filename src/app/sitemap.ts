@@ -1,4 +1,5 @@
 import { getSitemapListings } from "@/lib/seo/get-sitemap-listings";
+import { getIndexedCategorySeoPaths } from "@/lib/seo/get-category-seo-page";
 import { getSiteUrl } from "@/lib/supabase/env";
 import type { MetadataRoute } from "next";
 
@@ -64,7 +65,10 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
-  const listings = await getSitemapListings();
+  const [listings, categoryPages] = await Promise.all([
+    getSitemapListings(),
+    getIndexedCategorySeoPaths(),
+  ]);
 
   const staticEntries = STATIC_PAGES.map((entry) => ({
     ...entry,
@@ -74,9 +78,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const listingEntries: MetadataRoute.Sitemap = listings.map((listing) => ({
     url: `${siteUrl}${listing.path}`,
     lastModified: listing.lastModified,
-    changeFrequency: "daily",
+    changeFrequency: "daily" as const,
     priority: 0.8,
   }));
 
-  return [...staticEntries, ...listingEntries];
+  const categoryEntries: MetadataRoute.Sitemap = categoryPages.map((page) => ({
+    url: `${siteUrl}${page.path}`,
+    lastModified: page.lastModified,
+    changeFrequency: "daily" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticEntries, ...categoryEntries, ...listingEntries];
 }

@@ -861,6 +861,8 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 
 **Kanonická pravidla obsahu inzerátů (H1, meta, alt, cena ve schématu, lokální SEO):** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) (verzováno — viz [`seo/README.md`](./seo/README.md)).
 
+**Kategoriální výpisy (Vlna 1):** veřejné URL `/{slug}/` (např. `/kola-kolobezky`) — unikátní zbožové podkategorie z configu. Indexace řídí DB `index_status` (práh ≥ 3 + hystereze); sitemap i meta robots čtou stejný sloupec. Pravidla: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md) · provozní smoke: [`terminal-prikazy.md`](./terminal-prikazy.md) (Category SEO cron).
+
 **Google Search Console:** property `zapikolou.cz` ověřená **DNS TXT** záznamem; sitemap `https://zapikolou.cz/sitemap.xml` odeslaná v Search Console.
 
 #### Meta a AI hydratace (shrnutí)
@@ -877,10 +879,11 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 
 | URL | Co to je |
 |-----|----------|
-| `/sitemap.xml` | Seznam všech stránek, které chceme indexovat |
+| `/sitemap.xml` | Seznam všech stránek, které chceme indexovat (včetně kategorií s `index`) |
 | `/robots.txt` | Pravidla pro roboty — co smí a co nesmí procházet |
 | `/llms.txt` | Stručný popis webu pro AI modely (ChatGPT, Perplexity…) |
 | `/inzerat/{slug}` | Detail s JSON-LD strukturovanými daty v HTML |
+| `/{kategorie-slug}` | Kategoriální výpis (Vlna 1) — H1, úvodní text, mřížka inzerátů |
 
 #### Detail inzerátu
 

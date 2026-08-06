@@ -114,3 +114,70 @@ npm run build
 | `code .` | Otevře aktuální složku ve VS Code. | `code .` |
 
 Před prvním `npm run dev` zkontroluj, že máš vyplněný `.env.local` se Supabase klíči — viz `README.md`. Pro migrace a deploy moderace viz [`supabase-prikazy.md`](./supabase-prikazy.md).
+
+---
+
+## Category SEO — ruční cron (PowerShell)
+
+Denní job `/api/cron/category-seo-index` přepočítá `listing_count` a po hysterezi nastaví `index_status` (`index` / `noindex`). Sitemap i meta robots čtou **jen** `index_status` — nepočítají práh samostatně.
+
+**Pravidlo:** `CRON_SECRET` **nikdy** nepiš doslova do příkazu (historie shellu / sdílený log). Načti ho ze `.env.local` do session.
+
+### 1. Načti secret do session (jednou za otevřený terminál)
+
+V kořeni projektu (`HobbyUserMarket`):
+
+```powershell
+Get-Content .env.local | ForEach-Object {
+  if ($_ -match '^CRON_SECRET=(.*)$') {
+    $env:CRON_SECRET = $Matches[1].Trim().Trim('"')
+  }
+}
+```
+
+Ověření **bez vypsání hodnoty**:
+
+```powershell
+if ($env:CRON_SECRET) { "OK, secret je v session" } else { "Chybí CRON_SECRET v .env.local" }
+```
+
+Po zavření terminálu proměnná zmizí — při novém okně znovu krok 1.
+
+### 2. Spusť cron
+
+Lokálně (běží `npm run dev`):
+
+```powershell
+curl.exe -H "Authorization: Bearer $env:CRON_SECRET" http://localhost:3000/api/cron/category-seo-index
+```
+
+Produkce:
+
+```powershell
+curl.exe -H "Authorization: Bearer $env:CRON_SECRET" https://zapikolou.cz/api/cron/category-seo-index
+```
+
+Očekávaná odpověď (zkráceně): `"ok": true` a u stránek např. `"slug":"kola-kolobezky","listing_count":3,"index_status":"index"`.
+
+### 3. Ověření
+
+- SEO extension / view-source na `/kola-kolobezky` → `index, follow` (nebo `noindex, follow`, pokud ještě neuplynula hystereze).
+- Sitemap obsahuje slug jen při `index`:
+
+```powershell
+curl.exe -s http://localhost:3000/sitemap.xml | Select-String kola-kolobezky
+```
+
+### Rychlý test hystereze (volitelně, SQL v Supabase)
+
+Index se zapne až po **3 dnech** kontinuálně nad prahem (≥ 3 inzeráty). Pro smoke bez čekání:
+
+```sql
+UPDATE category_seo_pages
+SET above_threshold_since = now() - interval '3 days'
+WHERE slug = 'kola-kolobezky';
+```
+
+Pak znovu krok 2 (cron) → `index_status = index` + slug v sitemapě.
+
+Související: [`seo/CATEGORY_SEO_WAVE1.md`](./seo/CATEGORY_SEO_WAVE1.md), migrace `supabase/072_category_seo_pages.sql`.
