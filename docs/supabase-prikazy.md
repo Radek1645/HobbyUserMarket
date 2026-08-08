@@ -263,9 +263,9 @@ Audit smazání: `target_profile_no`, `target_user_id`, `actor_id`, `source` (`s
 
 ### Category SEO
 
-#### `category_seo_pages` *(072)*
+#### `category_seo_pages` *(072, seed `075`)*
 
-SEO stav a copy kategoriálních landings. **Taxonomie zůstává v** `categories.ts` — tady jen slug 1:1 + meta.
+SEO stav a copy kategoriálních landings. **Taxonomie zůstává v** `categories.ts` — tady jen slug 1:1 + meta. Seed Vlny 1 = `072`; `hracky-miminka` = migrace `075`.
 
 | Atribut | Co v něm najdeš |
 |---------|-----------------|

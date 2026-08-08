@@ -37,6 +37,7 @@ export const CATEGORY_SEO_WAVE1_PRIORITY_SLUGS = [
   "nabytek-doplnky",
   "mobily",
   "zahrada-naradi",
+  "hracky-miminka",
 ] as const;
 
 export type CategorySeoIndexStatus = "index" | "noindex";

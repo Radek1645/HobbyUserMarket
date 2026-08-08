@@ -21,6 +21,7 @@
 6. `nabytek-doplnky`
 7. `mobily`
 8. `zahrada-naradi`
+9. `hracky-miminka` — seed `075` (2026-08-09)
 
 ### Audit slugů (2026-08-06)
 
