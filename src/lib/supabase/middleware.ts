@@ -1,4 +1,5 @@
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
+import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { ACCOUNT_SUSPENDED_PATH } from "@/config/account-blacklist";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
@@ -11,6 +12,26 @@ function isAuthPath(pathname: string): boolean {
 
 function isAccountSuspendedPath(pathname: string): boolean {
   return pathname === ACCOUNT_SUSPENDED_PATH;
+}
+
+/** Stránky, které bez dokončeného profilu nemají smysl — jinak lze prohlížet HP. */
+function requiresCompletedProfile(pathname: string): boolean {
+  if (pathname === "/inzerat/novy" || pathname.startsWith("/inzerat/novy/")) {
+    return true;
+  }
+  if (pathname.includes("/upravit")) {
+    return true;
+  }
+  if (pathname.startsWith("/moje-inzeraty")) {
+    return true;
+  }
+  if (pathname.startsWith("/profil")) {
+    return true;
+  }
+  if (pathname.startsWith("/mod")) {
+    return true;
+  }
+  return false;
 }
 
 export async function updateSession(request: NextRequest) {
@@ -89,7 +110,12 @@ export async function updateSession(request: NextRequest) {
     const needsOnboarding =
       !profile || isPlaceholderNickname(profile.nickname);
 
-    if (needsOnboarding && !pathname.startsWith("/onboarding") && !isAuthPath(pathname)) {
+    if (
+      needsOnboarding &&
+      requiresCompletedProfile(pathname) &&
+      !pathname.startsWith("/onboarding") &&
+      !isAuthPath(pathname)
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = "/onboarding";
       const returnPath = `${pathname}${request.nextUrl.search}`;
@@ -100,16 +126,27 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (!needsOnboarding && pathname.startsWith("/onboarding")) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      url.search = "";
-      return NextResponse.redirect(url);
+      const next = sanitizeInternalPath(
+        request.nextUrl.searchParams.get("next"),
+      );
+      return NextResponse.redirect(new URL(next, request.url));
     }
 
     if (pathname === "/login") {
+      const next = sanitizeInternalPath(
+        request.nextUrl.searchParams.get("next"),
+      );
+      if (!needsOnboarding) {
+        const destination = next.startsWith("/login") ? "/" : next;
+        return NextResponse.redirect(new URL(destination, request.url));
+      }
+
       const url = request.nextUrl.clone();
-      url.pathname = needsOnboarding ? "/onboarding" : "/";
+      url.pathname = "/onboarding";
       url.search = "";
+      if (next !== "/" && !next.startsWith("/onboarding")) {
+        url.searchParams.set("next", next);
+      }
       return NextResponse.redirect(url);
     }
   }

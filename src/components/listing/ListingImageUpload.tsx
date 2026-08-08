@@ -5,6 +5,7 @@ import {
   LISTING_IMAGE_MAX_FILES,
   LISTING_IMAGE_MAX_FILE_BYTES,
   LISTING_IMAGE_MAX_SOURCE_BYTES,
+  MODERATION_IMAGE_STAGING_BUCKET,
 } from "@/config/app";
 import { getListingFormTipExample } from "@/config/listing-form-tips";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
@@ -24,6 +25,7 @@ import {
   prepareModerationImages,
   type ModerationImageSource,
 } from "@/lib/moderation/prepare-moderation-images";
+import { uploadGuestModerationImages } from "@/app/actions/guest-moderation";
 import type { ListingImagePreview } from "@/types/post";
 import { Camera, ImageIcon, Loader2, Star, X } from "lucide-react";
 import {
@@ -41,6 +43,14 @@ export type ListingImageUploadHandle = {
   getModerationImages: () => Promise<ModerationImagePayload | null>;
   /** P12 — zvýrazní fotku podle 0-based indexu z AI zamítnutí. */
   highlightRejectedImage: (index: number) => void;
+  getGuestStagingPaths: () => string[];
+  getMainImageIndex: () => number;
+  /** Naplní nové fotky po AI prefillu (včetně volitelných staging cest). */
+  seedNewImages: (params: {
+    files: File[];
+    stagedPaths?: string[];
+    mainIndex?: number;
+  }) => Promise<void>;
 };
 
 type ImageItem =
@@ -62,13 +72,22 @@ type ListingImageUploadProps = {
   initialImages?: ListingImagePreview[];
   categoryType: string;
   subcategorySlug: string;
+  guestMode?: boolean;
+  /** Guest bootstrap / jiné blokování nahrávání. */
+  disabled?: boolean;
 };
 
 export const ListingImageUpload = forwardRef<
   ListingImageUploadHandle,
   ListingImageUploadProps
 >(function ListingImageUpload(
-  { initialImages = [], categoryType, subcategorySlug },
+  {
+    initialImages = [],
+    categoryType,
+    subcategorySlug,
+    guestMode = false,
+    disabled = false,
+  },
   ref,
 ) {
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +111,7 @@ export const ListingImageUpload = forwardRef<
   const [error, setError] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
+  const uploadBlocked = isCompressing || disabled;
   const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const stagedPathsRef = useRef<Map<string, string>>(new Map());
   const renditionSignatureRef = useRef<string | undefined>(undefined);
@@ -161,6 +181,59 @@ export const ListingImageUpload = forwardRef<
       return null;
     }
 
+    const mainIndex = Math.max(
+      0,
+      items.findIndex((item) => item.key === (mainKey || items[0]?.key)),
+    );
+
+    if (guestMode) {
+      const pending: { key: string; file: File }[] = [];
+
+      for (const item of items) {
+        if (item.kind !== "new") {
+          throw new Error("V hostovském režimu nahrajte nové fotky.");
+        }
+        if (!stagedPathsRef.current.has(item.key)) {
+          pending.push({ key: item.key, file: item.file });
+        }
+      }
+
+      if (pending.length > 0) {
+        const formData = new FormData();
+        for (const entry of pending) {
+          formData.append("file", entry.file);
+          formData.append("clientKey", entry.key);
+        }
+        const uploaded = await uploadGuestModerationImages(formData);
+        if (!uploaded.ok) {
+          throw new Error(uploaded.error);
+        }
+
+        for (const item of uploaded.items) {
+          stagedPathsRef.current.set(item.clientKey, item.storagePath);
+        }
+      }
+
+      const imageReferences = items.map((item) => {
+        const storagePath = stagedPathsRef.current.get(item.key);
+        if (!storagePath) {
+          throw new Error("Fotku se nepodařilo připravit pro AI kontrolu.");
+        }
+        return {
+          bucket: MODERATION_IMAGE_STAGING_BUCKET,
+          storagePath,
+        } as const;
+      });
+
+      return {
+        imageReferences,
+        mainImageIndex: Math.min(
+          mainIndex,
+          Math.max(imageReferences.length - 1, 0),
+        ),
+      };
+    }
+
     const sources: ModerationImageSource[] = items.map((item) =>
       item.kind === "new"
         ? {
@@ -170,10 +243,6 @@ export const ListingImageUpload = forwardRef<
             stagingPath: stagedPathsRef.current.get(item.key),
           }
         : { kind: "stored", storagePath: item.storagePath },
-    );
-    const mainIndex = Math.max(
-      0,
-      items.findIndex((item) => item.key === (mainKey || items[0]?.key)),
     );
 
     const prepared = await prepareModerationImages(
@@ -191,7 +260,67 @@ export const ListingImageUpload = forwardRef<
     renditionSignatureRef.current = prepared.renditionSignature;
 
     return prepared.payload;
+  }, [guestMode, items, mainKey]);
+
+  const getGuestStagingPaths = useCallback(() => {
+    return items
+      .map((item) => stagedPathsRef.current.get(item.key))
+      .filter((path): path is string => Boolean(path));
+  }, [items]);
+
+  const getMainImageIndex = useCallback(() => {
+    if (items.length === 0) {
+      return 0;
+    }
+    const index = items.findIndex(
+      (item) => item.key === (mainKey || items[0]?.key),
+    );
+    return Math.max(0, index);
   }, [items, mainKey]);
+
+  const seedNewImages = useCallback(
+    async (params: {
+      files: File[];
+      stagedPaths?: string[];
+      mainIndex?: number;
+    }) => {
+      const nextItems: ImageItem[] = [];
+      stagedPathsRef.current = new Map();
+      renditionSignatureRef.current = undefined;
+
+      for (const [index, file] of params.files.entries()) {
+        if (nextItems.length >= LISTING_IMAGE_MAX_FILES) break;
+        const key = `n:${crypto.randomUUID()}`;
+        nextItems.push({
+          key,
+          kind: "new",
+          file,
+          previewUrl: URL.createObjectURL(file),
+        });
+        const stagedPath = params.stagedPaths?.[index];
+        if (stagedPath) {
+          stagedPathsRef.current.set(key, stagedPath);
+        }
+      }
+
+      // Zruš preview URL starých „new“ položek
+      for (const item of items) {
+        if (item.kind === "new") {
+          URL.revokeObjectURL(item.previewUrl);
+        }
+      }
+
+      setItems(nextItems);
+      setRemovedIds([]);
+      setError(null);
+      const mainIdx = Math.min(
+        Math.max(params.mainIndex ?? 0, 0),
+        Math.max(nextItems.length - 1, 0),
+      );
+      setMainKey(nextItems[mainIdx]?.key ?? "");
+    },
+    [items],
+  );
 
   useImperativeHandle(
     ref,
@@ -200,8 +329,19 @@ export const ListingImageUpload = forwardRef<
       hasImageChanges,
       getModerationImages,
       highlightRejectedImage,
+      getGuestStagingPaths,
+      getMainImageIndex,
+      seedNewImages,
     }),
-    [appendToFormData, getModerationImages, hasImageChanges, highlightRejectedImage],
+    [
+      appendToFormData,
+      getGuestStagingPaths,
+      getMainImageIndex,
+      getModerationImages,
+      hasImageChanges,
+      highlightRejectedImage,
+      seedNewImages,
+    ],
   );
 
   async function processFiles(incoming: FileList | File[]) {
@@ -393,7 +533,7 @@ export const ListingImageUpload = forwardRef<
           <div className="space-y-2 sm:hidden">
             <button
               type="button"
-              disabled={isCompressing}
+              disabled={uploadBlocked}
               {...gtmCtaProps(GTM_CTA.LISTING_IMAGE_ADD)}
               onClick={() => cameraInputRef.current?.click()}
               className={`flex w-full ${listingFormSecondaryButtonClass} py-3.5`}
@@ -403,7 +543,7 @@ export const ListingImageUpload = forwardRef<
             </button>
             <button
               type="button"
-              disabled={isCompressing}
+              disabled={uploadBlocked}
               {...gtmCtaProps(GTM_CTA.LISTING_IMAGE_ADD)}
               onClick={() => galleryInputRef.current?.click()}
               className={`flex w-full ${listingFormSecondaryButtonClass} border-dashed py-3`}
@@ -416,14 +556,14 @@ export const ListingImageUpload = forwardRef<
           {/* Desktop — drag & drop + výběr souborů */}
           <div
             role="button"
-            tabIndex={isCompressing ? -1 : 0}
-            aria-disabled={isCompressing}
+            tabIndex={uploadBlocked ? -1 : 0}
+            aria-disabled={uploadBlocked}
             {...gtmCtaProps(GTM_CTA.LISTING_IMAGE_ADD)}
             onClick={() => {
-              if (!isCompressing) galleryInputRef.current?.click();
+              if (!uploadBlocked) galleryInputRef.current?.click();
             }}
             onKeyDown={(event) => {
-              if (isCompressing) return;
+              if (uploadBlocked) return;
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 galleryInputRef.current?.click();
@@ -432,12 +572,14 @@ export const ListingImageUpload = forwardRef<
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
               event.preventDefault();
-              if (isCompressing) return;
+              if (uploadBlocked) return;
               if (event.dataTransfer.files.length > 0) {
                 void processFiles(event.dataTransfer.files);
               }
             }}
-            className={`hidden cursor-pointer sm:block ${listingFormDropzoneClass} disabled:cursor-wait disabled:opacity-60`}
+            className={`hidden cursor-pointer sm:block ${listingFormDropzoneClass} ${
+              uploadBlocked ? "cursor-wait opacity-60" : ""
+            }`}
           >
             Přetáhněte fotky sem nebo klikněte pro výběr
           </div>

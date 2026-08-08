@@ -68,6 +68,19 @@ Ostatní zelená CTA (`emeraldSurfaceClass`) používají `bg-emerald-600` / hov
 
 `listingFormPrimaryButtonClass` v `listing-form-ui.ts` skládá `emeraldPrimaryButtonClass` + layout (`flex`, padding) + disabled stavy.
 
+Krok 0 AI prefill (`/inzerat/novy`):
+
+| Konstanta | Použití |
+|-----------|---------|
+| `listingFormDropzoneClass` | Výchozí dropzone (dashed slate) |
+| `listingFormDropzoneActiveClass` | Drag-over — emerald border/bg |
+| `listingFormStepActiveClass` | Aktivní krok krokovníku (emerald pill) |
+| `listingFormStepInactiveClass` | Neaktivní krok (`text-slate-400`) |
+| `listingFormManualBannerClass` | Slate banner pod AI kartou (ruční cesta) |
+| `listingFormManualBannerButtonClass` | CTA v manuálním banneru |
+
+CTA prefillu se renderuje až po ≥1 fotce. Ruční cesta (reality / služby / práce / události) je **slate banner** pod AI kartou (`listingFormManualBannerClass`) — `onChooseManual` → `setStep(1)`, ne samostatná route.
+
 ---
 
 ## 2. Modály

@@ -13,6 +13,7 @@ alwaysApply: false
 
 - **Preview (hydratace):** Gemini `gemini-2.5-flash` — `GEMINI_MODEL` (`resolve-moderation-ai-target.ts` / `gemini.ts`).
 - **Final (`issueApproval`):** default Gemini `gemini-3.5-flash-lite` — `MODERATION_FINAL_PROVIDER` (`gemini` \| `openai`) + `MODERATION_FINAL_MODEL`. A/B OpenAI: `MODERATION_FINAL_PROVIDER=openai` (+ `OPENAI_MODERATION_MODEL` / `gpt-4o-mini`).
+- **Photo-first prefill (zboží):** Edge `suggest-listing-from-photos` — samostatný `SUGGEST_LISTING_MODEL`, default `gemini-3.5-flash-lite`. Nepoužívá `MODERATION_FINAL_*`, protože volá výhradně Gemini API. Auth JWT nebo guest visitor; rate limity `suggest_from_photos` (10/h) / `guest_suggest_from_photos`. **Neměnit** publish flow v `moderate-listing`.
 - **Fallback:** při selhání primary druhý dostupný provider (`OPENAI_MODERATION_MODEL` / `GEMINI_MODEL`).
 - Secrets `GEMINI_API_KEY` / `OPENAI_API_KEY` / `SIGHTENGINE_*` / `MODERATION_FINAL_*` **jen** v Supabase Edge Functions secrets, ne v Next.js env ani `.env.local`.
 - Historie A/B modelů: `docs/moderace-inzeratu.md` → sekce **Volba Gemini modelu**.
@@ -20,9 +21,11 @@ alwaysApply: false
 ## Struktura kódu
 
 - Edge Function: `supabase/functions/moderate-listing/index.ts`
+- Prefill (zboží): `supabase/functions/suggest-listing-from-photos/index.ts` + `_shared/moderation/suggest-listing.ts` + `goods-taxonomy.ts` (sync)
 - Pre-Gemini: hard-hit (`prohibited-scan.ts` + `hard-hit-terms.ts`), NSFW (`sightengine.ts`), evidence (`hard-reject-evidence.ts`)
-- Gemini volání: `supabase/functions/_shared/moderation/gemini.ts`
+- Gemini volání: `supabase/functions/_shared/moderation/gemini.ts` (volitelné `responseSchema`)
 - Klient: `src/lib/moderation/moderate-listing-client.ts` → `supabase.functions.invoke()` (ne Next.js API route)
+- Prefill klient: `src/lib/listing/suggest-listing-client.ts` + flag `src/config/suggest-from-photos.ts`
 - Feature flag: `MODERATION_ENABLED` v `src/config/moderation/index.ts`
 - Detailní docs: `docs/moderace-inzeratu.md`, zadání brány: `docs/cursor-prompt-nsfw-gate.md`
 
@@ -33,9 +36,10 @@ Vždy **nejdřív sync, pak deploy** — deploy před syncem = staré prompty v 
 ```bash
 npm run sync:moderation
 npx supabase functions deploy moderate-listing
+npx supabase functions deploy suggest-listing-from-photos
 ```
 
-`sync:moderation` kopíruje `prohibited-topics.ts` / `hard-hit-terms.ts`, generuje `constants.ts` a spustí export kategorií.
+`sync:moderation` kopíruje `prohibited-topics.ts` / `hard-hit-terms.ts`, generuje `constants.ts`, spustí export kategorií **a** `goods-taxonomy.ts`.
 
 ## Co vyžaduje re-sync + re-deploy
 

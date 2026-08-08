@@ -1,7 +1,9 @@
 "use server";
 
+import { MODERATION_IMAGE_STAGING_BUCKET } from "@/config/app";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { isStaffRole } from "@/lib/auth/is-staff-role";
+import { GUEST_PUBLISH_LOCK_TIMEOUT_MS } from "@/config/guest-listing";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { buildPostSlug } from "@/lib/posts/slug";
 import {
@@ -21,6 +23,7 @@ import { syncListingImagesFromForm } from "@/lib/posts/listing-images";
 import { buildStoredListingImageBindings } from "@/lib/posts/listing-image-hashes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { isUniqueViolation } from "@/lib/supabase/postgres-errors";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -44,6 +47,22 @@ const IMAGE_CONTENT_MISMATCH_ERROR =
   "Fotky neodpovídají verzi schválené AI kontrolou. Odešlete inzerát znovu.";
 const POST_NOT_DRAFT_ERROR =
   "Inzerát se nepodařilo připravit k bezpečné publikaci. Obnovte stránku a zkuste změny uložit znovu.";
+const PUBLISH_IN_PROGRESS_ERROR =
+  "Publikace už probíhá v jiné kartě. Počkejte chvíli a obnovte stránku.";
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type IdempotentPost = {
+  id: number;
+  slug: string;
+  status: string;
+  publish_started_at: string | null;
+};
+
+function readPublishRequestId(formData: FormData): string | null {
+  const value = String(formData.get("publishRequestId") ?? "").trim();
+  return UUID_RE.test(value) ? value : null;
+}
 
 /**
  * H1: publikace (status='active') jde výhradně přes publish_approved_post RPC,
@@ -185,48 +204,144 @@ export async function createListing(
     return { error: PROHIBITED_CONTENT_ERROR };
   }
 
+  const publishRequestId = readPublishRequestId(formData);
+  const supabase = await createClient();
+  const adminResult = createAdminClient();
+  if (publishRequestId && !adminResult.ok) {
+    console.error("createListing idempotency admin:", adminResult.error);
+    return { error: "Publikaci se nepodařilo bezpečně připravit. Zkuste to znovu." };
+  }
+
+  let row: IdempotentPost | null = null;
+  let isIdempotentRetry = false;
+
+  if (publishRequestId && adminResult.ok) {
+    const { data: existing, error: existingError } = await adminResult.client
+      .from("posts")
+      .select("id, slug, status, publish_started_at")
+      .eq("user_id", user.id)
+      .eq("publish_request_id", publishRequestId)
+      .maybeSingle<IdempotentPost>();
+
+    if (existingError) {
+      console.error("createListing idempotency lookup:", existingError);
+      return { error: "Publikaci se nepodařilo bezpečně připravit. Zkuste to znovu." };
+    }
+
+    if (existing?.status === "active") {
+      redirect(`${getListingPath(existing.slug)}?published=${existing.id}`);
+    }
+
+    if (existing?.status === "draft") {
+      const staleBefore = new Date(
+        Date.now() - GUEST_PUBLISH_LOCK_TIMEOUT_MS,
+      ).toISOString();
+      const { data: claimed, error: claimError } = await adminResult.client
+        .from("posts")
+        .update({ publish_started_at: new Date().toISOString() })
+        .eq("id", existing.id)
+        .eq("user_id", user.id)
+        .or(
+          `publish_started_at.is.null,publish_started_at.lt.${staleBefore}`,
+        )
+        .select("id, slug, status, publish_started_at")
+        .maybeSingle<IdempotentPost>();
+
+      if (claimError) {
+        console.error("createListing idempotency claim:", claimError);
+        return { error: "Publikaci se nepodařilo bezpečně obnovit. Zkuste to znovu." };
+      }
+      if (!claimed) {
+        return { error: PUBLISH_IN_PROGRESS_ERROR };
+      }
+
+      row = claimed;
+      isIdempotentRetry = true;
+    } else if (existing) {
+      // Neúspěšný soft-deleted pokus nesmí blokovat nový insert stejného draftu.
+      await adminResult.client
+        .from("posts")
+        .update({
+          publish_request_id: null,
+          publish_started_at: null,
+        })
+        .eq("id", existing.id)
+        .eq("user_id", user.id);
+    }
+  }
+
   const quota = await getUserListingQuota(user.id);
   if (isNewPublicationQuotaBlocked(quota)) {
     return { error: LISTING_QUOTA_EXCEEDED_MESSAGE };
   }
 
-  const supabase = await createClient();
-  const slug = buildPostSlug(data.title);
+  if (!row) {
+    const slug = buildPostSlug(data.title);
+    // H1: insert jako 'draft' — RLS ani trigger nedovolí přímý 'active'.
+    const insertPayload: Record<string, unknown> = {
+      user_id: user.id,
+      ...buildListingPayload(data),
+      status: "draft",
+      slug,
+      ...(publishRequestId
+        ? {
+            publish_request_id: publishRequestId,
+            publish_started_at: new Date().toISOString(),
+          }
+        : {}),
+    };
 
-  // H1: insert jako 'draft' — RLS ani trigger nedovolí přímý 'active'.
-  const insertPayload: Record<string, unknown> = {
-    user_id: user.id,
-    ...buildListingPayload(data),
-    status: "draft",
-    slug,
-  };
+    const { data: inserted, error } = await supabase
+      .from("posts")
+      .insert(insertPayload)
+      .select("id, slug, status, publish_started_at")
+      .single<IdempotentPost>();
 
-  const { data: row, error } = await supabase
-    .from("posts")
-    .insert(insertPayload)
-    .select("id, slug")
-    .single();
-
-  if (error || !row) {
-    console.error("createListing:", error);
-    return { error: "Inzerát se nepodařilo uložit. Zkuste to prosím znovu." };
+    if (error || !inserted) {
+      if (publishRequestId && isUniqueViolation(error ?? {})) {
+        return { error: PUBLISH_IN_PROGRESS_ERROR };
+      }
+      console.error("createListing:", error);
+      return { error: "Inzerát se nepodařilo uložit. Zkuste to prosím znovu." };
+    }
+    row = inserted;
   }
 
-  const stagingAdminResult = createAdminClient();
-  const imageResult = await syncListingImagesFromForm(
-    supabase,
-    user.id,
-    row.id,
-    formData,
-    stagingAdminResult.ok ? stagingAdminResult.client : undefined,
-  );
+  let shouldSyncImages = true;
+  if (isIdempotentRetry) {
+    const { count, error: imageCountError } = await supabase
+      .from("post_images")
+      .select("id", { count: "exact", head: true })
+      .eq("post_id", row.id);
+    if (imageCountError) {
+      console.error("createListing retry image count:", imageCountError);
+      return { error: "Fotky se nepodařilo bezpečně obnovit. Zkuste to znovu." };
+    }
+    shouldSyncImages =
+      (count ?? 0) === 0 && formData.getAll("stagedImagePath").length > 0;
+  }
+
+  const imageResult = shouldSyncImages
+    ? await syncListingImagesFromForm(
+        supabase,
+        user.id,
+        row.id,
+        formData,
+        adminResult.ok ? adminResult.client : undefined,
+        { cleanupStaging: false },
+      )
+    : {};
 
   // P2: při chybě uploadu nesmí zůstat orphan draft (kvóta / „Koncept“ bez fotek).
   // Soft-delete spustí trg_posts_cleanup_storage (Storage).
   if (imageResult.error) {
     const { error: cleanupError } = await supabase
       .from("posts")
-      .update({ status: "deleted" })
+      .update({
+        status: "deleted",
+        publish_request_id: null,
+        publish_started_at: null,
+      })
       .eq("id", row.id)
       .eq("user_id", user.id);
     if (cleanupError) {
@@ -242,11 +357,33 @@ export async function createListing(
     formData,
   );
   if (publishError) {
+    if (publishRequestId && adminResult.ok) {
+      await adminResult.client
+        .from("posts")
+        .update({ publish_started_at: null })
+        .eq("id", row.id)
+        .eq("user_id", user.id);
+    }
     return { error: publishError };
   }
 
+  if (adminResult.ok) {
+    const stagingPaths = formData
+      .getAll("stagedImagePath")
+      .map((path) => String(path))
+      .filter((path) => path.startsWith(`${user.id}/`));
+    if (stagingPaths.length > 0) {
+      const { error: cleanupError } = await adminResult.client.storage
+        .from(MODERATION_IMAGE_STAGING_BUCKET)
+        .remove(stagingPaths);
+      if (cleanupError) {
+        console.error("createListing staging cleanup:", cleanupError);
+      }
+    }
+  }
+
   revalidatePath("/");
-  redirect(getListingPath(row.slug));
+  redirect(`${getListingPath(row.slug)}?published=${row.id}`);
 }
 
 export async function updateListing(

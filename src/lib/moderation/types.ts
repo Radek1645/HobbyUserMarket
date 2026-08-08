@@ -104,6 +104,11 @@ export type ListingModerationInput = {
   };
   /** Token vydat jen při finální kontrole bezprostředně před publikací. */
   issueApproval?: boolean;
+  /** Guest preview — UUID z cookie. */
+  guestVisitorId?: string;
+  /** Serverový podpis visitor ID pro Edge rate limit. */
+  guestVisitorToken?: string;
+  turnstileToken?: string;
 };
 
 export type ListingModerationSuccess = {
@@ -126,12 +131,15 @@ export type ListingModerationFailure =
       reason: string;
       topicId?: string;
       rejectedImageIndex?: number;
+      /** Edge errorCode — HARD_HIT_TEXT / NSFW_IMAGE / … */
+      errorCode?: string;
       accountBlocked?: boolean;
     }
   | {
       ok: false;
       kind: "error";
       error: string;
+      errorCode?: string;
       accountBlocked?: boolean;
     };
 

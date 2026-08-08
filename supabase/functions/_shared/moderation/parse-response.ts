@@ -548,13 +548,17 @@ export function applyFormEventDateToCleanedDescription(
   return `${intro.trim()}\n\n---\n\n${parameters.trim()}`.trim();
 }
 
-/** Jednoduchý strip kontaktů — záloha, když AI něco propustí. */
+/** Jednoduchý strip kontaktů + SPZ — záloha, když AI něco propustí. */
 export function stripContactInfo(text: string): string {
   const CONTACT_PLACEHOLDER = "[SKRYTO – použij chráněné pole]";
+  const PLATE_PLACEHOLDER = "[SKRYTO]";
   const EMAIL_PATTERN =
     /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
   const PHONE_PATTERN =
     /(?:\+420[\s.-]?)?(?:[67]\d{2}|[2-5]\d{2})[\s.-]?\d{3}[\s.-]?\d{3}\b/g;
+  const CZ_LICENSE_PLATE_MODERN_PATTERN = /\b\d[A-Z]{2}\s?\d{4}\b/gi;
+  const CZ_LICENSE_PLATE_ALT_PATTERN =
+    /\b[A-Z]{1,2}\s?\d{1,2}[-\s]\d{2,4}\b/g;
   const PRICE_PHRASE_PATTERN =
     /\b((?:[Cc]ena|[Oo]rientační cena|[Mm]zda|[Vv]stupné)\s+\d[\d\s]{0,15}\d\s*Kč\.?)/g;
   const PRICE_TOKEN_PREFIX = "\uE000PRICE";
@@ -568,7 +572,9 @@ export function stripContactInfo(text: string): string {
 
   const stripped = masked
     .replace(EMAIL_PATTERN, CONTACT_PLACEHOLDER)
-    .replace(PHONE_PATTERN, CONTACT_PLACEHOLDER);
+    .replace(PHONE_PATTERN, CONTACT_PLACEHOLDER)
+    .replace(CZ_LICENSE_PLATE_MODERN_PATTERN, PLATE_PLACEHOLDER)
+    .replace(CZ_LICENSE_PLATE_ALT_PATTERN, PLATE_PLACEHOLDER);
 
   return stripped.replace(
     new RegExp(`${PRICE_TOKEN_PREFIX}(\\d+)\uE000`, "g"),

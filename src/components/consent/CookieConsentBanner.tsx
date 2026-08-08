@@ -14,8 +14,13 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 export function CookieConsentBanner() {
-  const { bannerOpen, isReady, acceptAnalytics, rejectOptional } =
-    useCookieConsent();
+  const {
+    bannerOpen,
+    isReady,
+    acceptAll,
+    acceptAnalyticsOnly,
+    rejectOptional,
+  } = useCookieConsent();
   const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,11 +85,11 @@ export function CookieConsentBanner() {
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-row gap-2 sm:items-center">
+        <div className="flex shrink-0 flex-row flex-wrap gap-2 sm:items-center sm:justify-end">
           <button
             type="button"
             onClick={rejectOptional}
-            className={`${modalCancelOutlineButtonClass} min-w-0 flex-1 px-2.5 py-2 text-xs sm:flex-none sm:px-4 sm:text-sm`}
+            className={`${modalCancelOutlineButtonClass} min-w-0 flex-1 px-2.5 py-2 text-xs sm:flex-none sm:px-3 sm:text-sm`}
           >
             <span className="sm:hidden">
               {COOKIE_CONSENT_UI.rejectOptionalLabelMobile}
@@ -95,14 +100,26 @@ export function CookieConsentBanner() {
           </button>
           <button
             type="button"
-            onClick={acceptAnalytics}
+            onClick={acceptAnalyticsOnly}
+            className={`${modalCancelOutlineButtonClass} min-w-0 flex-1 px-2.5 py-2 text-xs sm:flex-none sm:px-3 sm:text-sm`}
+          >
+            <span className="sm:hidden">
+              {COOKIE_CONSENT_UI.acceptAnalyticsOnlyLabelMobile}
+            </span>
+            <span className="hidden sm:inline">
+              {COOKIE_CONSENT_UI.acceptAnalyticsOnlyLabel}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={acceptAll}
             className={`${emeraldPrimaryButtonCompactClass} min-w-0 flex-1 px-2.5 py-2 text-xs sm:flex-none sm:px-4 sm:text-sm`}
           >
             <span className="sm:hidden">
-              {COOKIE_CONSENT_UI.acceptAnalyticsLabelMobile}
+              {COOKIE_CONSENT_UI.acceptAllLabelMobile}
             </span>
             <span className="hidden sm:inline">
-              {COOKIE_CONSENT_UI.acceptAnalyticsLabel}
+              {COOKIE_CONSENT_UI.acceptAllLabel}
             </span>
           </button>
         </div>

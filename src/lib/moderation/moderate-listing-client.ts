@@ -45,6 +45,7 @@ function mapResponse(
       reason: response.reason ?? MODERATION_DEFAULT_REJECTION_REASON,
       topicId: response.rejectedTopicId,
       rejectedImageIndex: response.rejectedImageIndex,
+      errorCode: response.errorCode,
       accountBlocked: response.accountBlocked === true,
     };
   }
@@ -98,13 +99,25 @@ function delay(ms: number): Promise<void> {
   });
 }
 
-/** Auth / rate limit — další pokus nemá smysl. */
+/** Auth / rate limit / captcha — další pokus nemá smysl. */
 function shouldRetryTechnicalError(message: string): boolean {
   const normalized = message.toLowerCase();
   if (normalized.includes("sezení") || normalized.includes("přihlaste")) {
     return false;
   }
   if (normalized.includes("příliš mnoho")) {
+    return false;
+  }
+  if (normalized.includes("limit")) {
+    return false;
+  }
+  if (
+    normalized.includes("robot") ||
+    normalized.includes("captcha") ||
+    normalized.includes("potvrďte") ||
+    normalized.includes("návštěvnick") ||
+    normalized.includes("relace")
+  ) {
     return false;
   }
   return true;
@@ -134,6 +147,24 @@ async function parseInvokeError(
     if (body?.error === "AUTH_REQUIRED") {
       return null;
     }
+    if (body?.error === "CAPTCHA_REQUIRED") {
+      return {
+        type: "technical",
+        message:
+          typeof body.message === "string" && body.message.trim()
+            ? body.message.trim()
+            : "Potvrďte, že nejste robot, a zkuste to znovu.",
+      };
+    }
+    if (body?.error === "GUEST_VISITOR_REQUIRED") {
+      return {
+        type: "technical",
+        message:
+          typeof body.message === "string" && body.message.trim()
+            ? body.message.trim()
+            : "Návštěvnická relace není platná. Obnovte stránku.",
+      };
+    }
     // P8/U1: technické selhání Edge Function nemá být mapované jako REJECTED.
     if (body?.error === "TECHNICAL_ERROR") {
       const message =
@@ -141,6 +172,15 @@ async function parseInvokeError(
           ? body.message.trim()
           : MODERATION_TECHNICAL_ERROR;
       return { type: "technical", message };
+    }
+    if (body?.error === "RATE_LIMIT" || body?.error === "RATE_LIMIT_UNAVAILABLE") {
+      return {
+        type: "technical",
+        message:
+          typeof body.message === "string" && body.message.trim()
+            ? body.message.trim()
+            : MODERATION_TECHNICAL_ERROR,
+      };
     }
     if (body?.status) {
       return { type: "moderation", body };
@@ -162,6 +202,15 @@ async function invokeModerateListingOnce(
       body: {
         intent: input.intent,
         issueApproval: input.issueApproval === true,
+        ...(input.guestVisitorId
+          ? { guestVisitorId: input.guestVisitorId }
+          : {}),
+        ...(input.guestVisitorToken
+          ? { guestVisitorToken: input.guestVisitorToken }
+          : {}),
+        ...(input.turnstileToken
+          ? { turnstileToken: input.turnstileToken }
+          : {}),
         title: input.title,
         description: input.description,
         categoryType: input.categoryType,
@@ -246,8 +295,13 @@ export async function invokeModerateListing(
 ): Promise<ListingModerationSuccess | ListingModerationFailure> {
   let lastResult: ListingModerationSuccess | ListingModerationFailure | null =
     null;
+  // Guest request spotřebovává rate-limit a případný Turnstile token.
+  // Automatický retry by z jednoho kliknutí udělal další request/token use.
+  const maxAttempts = input.guestVisitorId
+    ? 1
+    : MODERATION_CLIENT_MAX_ATTEMPTS;
 
-  for (let attempt = 0; attempt < MODERATION_CLIENT_MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0) {
       const delayMs =
         MODERATION_CLIENT_RETRY_DELAYS_MS[attempt - 1] ??

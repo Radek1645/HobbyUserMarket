@@ -20,7 +20,8 @@ type CookieConsentContextValue = {
   consent: CookieConsentRecord | null;
   bannerOpen: boolean;
   isReady: boolean;
-  acceptAnalytics: () => void;
+  acceptAll: () => void;
+  acceptAnalyticsOnly: () => void;
   rejectOptional: () => void;
   openBanner: () => void;
 };
@@ -45,19 +46,26 @@ export function CookieConsentProvider({ children }: CookieConsentProviderProps) 
     setIsReady(true);
   }, []);
 
-  const persistChoice = useCallback((analytics: boolean) => {
-    const record = writeCookieConsent(analytics);
-    applyGtmConsentUpdate({ analytics });
-    setConsent(record);
-    setBannerOpen(false);
-  }, []);
+  const persistChoice = useCallback(
+    (analytics: boolean, marketing: boolean) => {
+      const record = writeCookieConsent(analytics, marketing);
+      applyGtmConsentUpdate({ analytics, marketing });
+      setConsent(record);
+      setBannerOpen(false);
+    },
+    [],
+  );
 
-  const acceptAnalytics = useCallback(() => {
-    persistChoice(true);
+  const acceptAll = useCallback(() => {
+    persistChoice(true, true);
+  }, [persistChoice]);
+
+  const acceptAnalyticsOnly = useCallback(() => {
+    persistChoice(true, false);
   }, [persistChoice]);
 
   const rejectOptional = useCallback(() => {
-    persistChoice(false);
+    persistChoice(false, false);
   }, [persistChoice]);
 
   const openBanner = useCallback(() => {
@@ -69,12 +77,14 @@ export function CookieConsentProvider({ children }: CookieConsentProviderProps) 
       consent,
       bannerOpen,
       isReady,
-      acceptAnalytics,
+      acceptAll,
+      acceptAnalyticsOnly,
       rejectOptional,
       openBanner,
     }),
     [
-      acceptAnalytics,
+      acceptAll,
+      acceptAnalyticsOnly,
       bannerOpen,
       consent,
       isReady,

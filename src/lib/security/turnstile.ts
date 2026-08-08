@@ -1,0 +1,58 @@
+/**
+ * Cloudflare Turnstile verify (Next.js server).
+ * Secret: TURNSTILE_SECRET_KEY (server-only).
+ */
+export async function verifyTurnstileTokenServer(params: {
+  token: string;
+  ipAddress?: string | null;
+}): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
+  if (!secret) {
+    console.error("turnstile: missing TURNSTILE_SECRET_KEY");
+    return false;
+  }
+
+  const token = params.token.trim();
+  if (!token) {
+    return false;
+  }
+
+  const body = new URLSearchParams();
+  body.set("secret", secret);
+  body.set("response", token);
+  if (params.ipAddress) {
+    body.set("remoteip", params.ipAddress);
+  }
+
+  try {
+    const response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body,
+      },
+    );
+    if (!response.ok) {
+      return false;
+    }
+    const payload = (await response.json()) as { success?: boolean };
+    return payload.success === true;
+  } catch (error) {
+    console.error("turnstile verify:", error);
+    return false;
+  }
+}
+
+export function readRequestIp(headers: Headers): string {
+  const forwarded = headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return (
+    headers.get("cf-connecting-ip")?.trim() ||
+    headers.get("x-real-ip")?.trim() ||
+    "0.0.0.0"
+  );
+}

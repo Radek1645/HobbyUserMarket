@@ -58,6 +58,8 @@ export const GTM_CTA = {
   CREATE_STEP_BACK: "cta_create_step_back",
   CREATE_EDIT_CATEGORY: "cta_create_edit_category",
   CREATE_PUBLISH: "cta_create_publish",
+  CREATE_AI_PREFILL: "cta_create_ai_prefill",
+  CREATE_MANUAL_ENTRY: "cta_create_manual_entry",
   EDIT_SAVE: "cta_edit_save",
   LISTING_IMAGE_ADD: "cta_listing_image_add",
   LISTING_IMAGE_REMOVE: "cta_listing_image_remove",

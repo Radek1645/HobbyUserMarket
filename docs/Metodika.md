@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **Hydratace / kvalita inzerátu:** [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) · **NSFW / hard-hit brána:** [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
-> **Datum:** 2026-08-01 (poslední sync s kódem)
+> **Datum:** 2026-08-08 (poslední sync s kódem — AI modely včetně prefillu)
 
 ---
 
@@ -231,7 +231,7 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 | Činnost | Kde | Poznámka |
 |---------|-----|----------|
 | Zobrazit své inzeráty | `/moje-inzeraty` | Včetně expirovaných, pozastavených a zablokovaných |
-| Založit nový inzerát | `/inzerat/novy` | 3krokový formulář + AI flow |
+| Založit nový inzerát | `/inzerat/novy` | Wizard (fotky/kategorie/obsah) + AI náhled; host může začít bez účtu |
 | Upravit vlastní inzerát | `/inzerat/[slug]/upravit` | Změna publikovaného obsahu nebo fotek vyžaduje finální AI kontrolu |
 | Obnovit expirovaný inzerát | `/moje-inzeraty` | Prodloužení platnosti |
 | Smazat inzerát | `/moje-inzeraty` | S povinným exit polem (důvod) |
@@ -244,15 +244,86 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 
 ## 5. Založení inzerátu
 
-Cesta: **Přihlášení → `/inzerat/novy` → 3 kroky → AI kontrola → publikace**.
+Cesta (přihlášený): **`/inzerat/novy` → (volitelně AI fotky) → kategorie / obsah → AI kontrola při publikaci**.
+
+Cesta (host, flag `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED`): stejný formulář **bez loginu** → při Publikovat login/registrace → návrat na `/inzerat/novy?resume=1` → claim staging + finální AI → publikace. Draft je v **localStorage**; cíl po OAuth drží `sessionStorage` + httpOnly cookie `pending_auth_return_path` (přežije **Zpět** z Google výběru účtu). Detail: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
+
+**Krokovník** (jen orientace, ne samostatné obrazovky): photo-first `1. Fotky a AI prefill → 2. Kategorie → 3. Obsah → 4. AI vylepšení → 5. Publikace`; ruční cesta bez prefillu začíná kategorií (čísla 1–4). Chip „AI vylepšení“ / „Publikace“ se zvýrazní při modalu kontroly resp. finálním uložení.
+
+### Krok 0 — AI předvyplnění ze fotek (zboží)
+
+Flag: `SUGGEST_FROM_PHOTOS_ENABLED` (`src/config/suggest-from-photos.ts`). Jen **create** (`/inzerat/novy`); edit (`/upravit`) krok 0 nemá.
+
+**Cíl:** urychlit založení zbožového inzerátu — uživatel nahraje 1–2 fotky, AI navrhne název, popis a kategorii; cenu, stav a lokalitu doplní sám. Služby / práce / reality / události jdou **ruční** cestou.
+
+#### Rozhodnutí (produkt)
+
+- Taxonomie jen reálné zbožové slugy z `GOODS_CATEGORIES` (`auto`, `detsky`, `dum`, `elektro`, `moda`, `sport`, `hobby`, `ostatni` + podkategorie) — closed vocabulary, žádné vymyšlené slugy.
+- Prefill jen zboží. Non-goods → manuální wizard (krok 1 → 2).
+- Žádný pop-up „AI vs ručně“. Jedna stránka: primární AI dropzone (~2/3) + viditelný manuální blok (~1/3).
+- Oddělená Edge funkce `suggest-listing-from-photos` — `moderate-listing` (publish gate) beze změny.
+- Prefilluje: `title`, `description`, `categoryType`, `subcategorySlug`. **Ne** cena, stav, lokalita.
+- Sightengine = jen NSFW gate; klasifikace = Gemini (`SUGGEST_LISTING_MODEL`, default `gemini-3.5-flash-lite`). `MODERATION_FINAL_*` se na prefill nepoužívá.
+- Hosté: stejný flow (guest visitor + podpis, rate limit `guest_suggest_from_photos`, Turnstile po soft limitu).
+
+#### UX flow
+
+```mermaid
+flowchart TD
+  HP["HP CTA /inzerat/novy"] --> Entry["Krok 0: vstupní obrazovka"]
+  Entry --> AI["AI dropzone 1-2 fotky"]
+  Entry --> Manual["Manuální cesta: kategorie grid"]
+  AI --> Upload["Staging + Sharp renditions"]
+  Upload --> NSFW["Sightengine NSFW"]
+  NSFW -->|OK| Gemini["Gemini suggest JSON"]
+  NSFW -->|REJECT| FailSoft["Chyba + nabídka ručně"]
+  Gemini --> Prefill["Krok 2 formulář: title/desc/cat vyplněné"]
+  Prefill --> Publish["Publikovat = stávající moderate-listing"]
+  Manual --> CatStep["Krok 1 kategorie"]
+  CatStep --> ContentStep["Krok 2 obsah"]
+  ContentStep --> Publish
+```
+
+**Vstupní obrazovka (krok 0):**
+
+- Dominantní karta: „Nahrajte fotky a my vyplníme zbytek“, dropzone 1–2 fotky, CTA **„Vytvořit inzerát s AI“**, loader (Kontrola → Analýza → Předvyplnění).
+- Spodní blok (~1/3): „Služby, události, práce, reality — nebo raději ručně“ + CTA **„Vyplnit inzerát ručně“** → krok 1 (CategoryGrid).
+- Po úspěchu: skok na krok 2, fotky v uploadu, název/popis/kategorie vyplněné; cena/stav/lokalita prázdné a vizuálně „ještě doplň“.
+- Nízká jistota podkategorie (`confidence < 0.7` nebo neplatný slug) → `subcategorySlug` null → krok 1 s kategorií a textem, uživatel vybere podkategorii.
+- Fail-soft (NSFW / timeout / rate limit): inline chyba, zůstává na kroku 0, manuál dostupný.
+
+#### Backend `suggest-listing-from-photos` (stručně)
+
+1. Auth JWT **nebo** guest visitor + token; rate limit `suggest_from_photos` (20/h) / `guest_suggest_from_photos` (5/h, soft=hard).
+2. Staging + Sharp renditions (512 Sightengine / 1024 Gemini) — stejné buckety jako u moderace.
+3. Sightengine NSFW na všech fotkách.
+4. Gemini structured JSON (vlastní schema, ne moderační).
+5. Server validace goods páru; odpověď `{ title, description, categoryType, subcategorySlug, confidenceScore }` — **bez** approval tokenu a bez hydratace.
+
+Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence.
+
+Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace + token). Prefill **nenahrazuje** publish gate. Dvě volání Gemini (prefill + publish) jsou záměr.
+
+#### DB
+
+Žádné nové tabulky. Jen enum hodnota `suggest_from_photos` (migrace `074`) a textová guest akce ve stávající `anonymous_rate_limits` (`073`).
+
+#### Co v MVP záměrně není
+
+- Odhad ceny / prefill stavu a lokality.
+- Provider fallback OpenAI u prefillu (u moderace ano; zde zatím UX fail-soft) — odloženo.
+- Cache verdiktu Sightengine podle image hash (prefill + preview + final dnes volají API znovu) — dává smysl costově, realizace později.
+- Auto-zařazení služeb/událostí z fotky.
+
+Deploy: `npm run sync:moderation` → `supabase functions deploy suggest-listing-from-photos`. Smoke checklist: [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § K.
 
 ### Krok 1 — Kategorie a stav
 
-Uživatel vybere:
+Uživatel vybere (manuální cesta, nebo doplnění po AI):
 
-- **Typ:** Zboží / Služby / Událost / Nemovitost
-- **Podkategorii** (např. Elektronika, Opékání, Byty…)
-- **Stav nebo typ nabídky** podle kategorie:
+- **Typ:** zbožová doména / Služby / Událost / Nemovitost / Práce
+- **Podkategorii**
+- **Stav nebo typ nabídky** podle kategorie (ve formuláři až v kroku obsahu):
   - Zboží: Nové, Jako nové, Použité, Poškozené / na díly
   - Služby: Jednorázově, Dlouhodobě, Záskok
   - Události: Jednorázová / Pravidelná akce
@@ -323,6 +394,23 @@ Pokud publikace selže (chybí/neplatný token / neshoda obsahu), inzerát zůst
 
 Toto je klíčový proces při založení i úpravě inzerátu. Uživatel ho vnímá jako „AI náhled a doplnění“.
 
+### AI modely — aktuální defaults
+
+> **Aktualizace: 2026-08-08.** Modely se mohou měnit přes Supabase secrets (bez redeploye kódu u většiny override). Zdroj pravdy v kódu: `resolve-moderation-ai-target.ts`, `suggest-listing-from-photos` (`resolveSuggestModel`). Detail A/B: [`moderace-inzeratu.md`](./moderace-inzeratu.md) → Volba Gemini modelu.
+
+| Použití | Edge / fáze | Secret | Default |
+|---------|-------------|--------|---------|
+| **Photo-first prefill** (krok 0, zboží) | `suggest-listing-from-photos` | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
+| **Moderace — preview** (hydratace, náhled) | `moderate-listing`, `issueApproval` vypnuto | `GEMINI_MODEL` | `gemini-2.5-flash` |
+| **Moderace — final** (approval token) | `moderate-listing`, `issueApproval: true` | `MODERATION_FINAL_PROVIDER` + `MODERATION_FINAL_MODEL` | provider `gemini`, model `gemini-3.5-flash-lite` |
+| **OpenAI** (fallback / A/B final) | `moderate-listing` | `OPENAI_MODERATION_MODEL` | `gpt-4o-mini` |
+| **NSFW fotky** (pre-Gemini) | obě Edge funkce | Sightengine API | model `nudity-2.1` |
+
+Poznámky:
+- Prefill **nepoužívá** `MODERATION_FINAL_*` (final může být OpenAI při A/B).
+- Prefill zatím **nemá** OpenAI fallback — při selhání Gemini UX fail-soft + ruční cesta.
+- Timeout Edge AI volání: ~25–30 s (viz PRD / Edge).
+
 ### 6.1 Proč to existuje
 
 1. **Bezpečnost** — zabránit nelegálnímu obsahu (drogy, zbraně, porno, CSAM…).
@@ -345,7 +433,7 @@ Formulář → klik „Publikovat“ / „Uložit“
     → Edge Function moderate-listing
         → 1) hard-hit text (CSAM fráze) — bez Gemini
         → 2) Sightengine NSFW na fotky — bez Gemini
-        → 3) AI: Gemini / GPT (timeout 25 s; model `gemini-2.5-flash`, viz moderace-inzeratu.md → Volba Gemini modelu)
+        → 3) AI: Gemini / GPT (timeout ~25 s; **preview** = `GEMINI_MODEL` / default `gemini-2.5-flash`; **final** = `MODERATION_FINAL_*` / default `gemini-3.5-flash-lite` — viz [AI modely](#ai-modely--aktuální-defaults) a [`moderace-inzeratu.md`](./moderace-inzeratu.md))
         → TECHNICAL_ERROR → amber panel „Technická chyba“ + „Zkusit znovu“
            (klient až 3 pokusy; není to obsahové zamítnutí)
            včetně výpadku Sightengine (`SIGHTENGINE_UNAVAILABLE`)
@@ -756,19 +844,48 @@ ORDER BY mc.created_at DESC
 LIMIT 30;
 ```
 
+#### F2) Rate limity (prefill / AI check) + přezdívka
+
+```sql
+-- Přihlášený: odkomentuj filtr dle potřeb
+SELECT a.*, p.nickname
+FROM public.rate_limits a
+LEFT JOIN public.profiles p ON p.id = a.user_id
+WHERE 1 = 1
+-- AND a.action_type = 'suggest_from_photos'
+-- AND a.action_type = 'ai_check'
+ORDER BY a.window_start DESC;
+
+-- Host prefill
+SELECT *
+FROM public.anonymous_rate_limits
+WHERE action_type = 'guest_suggest_from_photos'
+ORDER BY window_start DESC
+LIMIT 50;
+```
+
 #### G) Evidence jednoho uživatele + počet hard hitů za 24 h
 
 ```sql
--- nahraď UUID
-WITH uid AS (
-  SELECT id FROM public.profiles WHERE email = 'uzivatel@example.com'
-)
-SELECT kind, count(*) AS pocet
-FROM public.moderation_hard_reject_evidence
-WHERE user_id = (SELECT id FROM uid)
-  AND kind IN ('hard_hit_text', 'nsfw_image')
-  AND created_at >= now() - interval '24 hours'
-GROUP BY kind;
+-- Nahraď e-mail. Hard stop = 3× hard_hit_text / nsfw_image za 24 h (Gemini reject se nepočítá).
+SELECT
+  e.kind,
+  count(*) FILTER (WHERE e.created_at >= now() - interval '24 hours') AS za_24h,
+  count(*) AS celkem
+FROM public.moderation_hard_reject_evidence e
+JOIN public.profiles p ON p.id = e.user_id
+WHERE p.email = 'uzivatel@example.com'
+  AND e.kind IN ('hard_hit_text', 'nsfw_image', 'hard_reject_threshold_reached')
+GROUP BY e.kind
+ORDER BY e.kind;
+
+-- Detail posledních hitů
+SELECT e.created_at, e.kind, e.matched_category, e.matched_term, e.title_snippet
+FROM public.moderation_hard_reject_evidence e
+JOIN public.profiles p ON p.id = e.user_id
+WHERE p.email = 'uzivatel@example.com'
+ORDER BY e.created_at DESC
+LIMIT 20;
 ```
 
 Snapshot fotky z `storage_path` v UI Storage u bucketu `moderation-evidence` běžný uživatel neuvidí — bucket je privátní (service_role). Pro prohlížení použij Storage → bucket s elevated přístupem, nebo signed URL přes service role.
@@ -781,7 +898,7 @@ Cesta: **`/moje-inzeraty` → Upravit → `/inzerat/[slug]/upravit`**.
 
 ### 7.1 Co uživatel může měnit
 
-Stejný 3krokový formulář jako při založení, předvyplněný aktuálními daty.
+Stejný create formulář jako při založení (bez kroku 0 prefill), předvyplněný aktuálními daty.
 
 ### 7.2 Kdy znovu proběhne AI
 
@@ -1629,7 +1746,7 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 |----------|-------|
 | [`PRD_v3.md`](./PRD_v3.md) | Produktová a technická specifikace |
 | [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md) | SEO bible inzerátů (H1, meta, alt, schema) — verzovaná |
-| [`moderace-inzeratu.md`](./moderace-inzeratu.md) | Konfigurace AI pravidel, deploy, sync; **volba Gemini modelu** (Flash-Lite odloženo 2026-07-30) |
+| [`moderace-inzeratu.md`](./moderace-inzeratu.md) | Konfigurace AI pravidel, deploy, sync; **volba Gemini modelu** (preview / final / OpenAI; prefill = Metodika §6) |
 | [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) | Hydratace textu, dotazník, skóre kvality inzerátu |
 | [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) | NSFW / hard-hit brána před Gemini (Sightengine, evidence) |
 | [`riziko-gemini-api-zakazany-obsah.md`](./riziko-gemini-api-zakazany-obsah.md) | Riziko Gemini ToS / CSAM — problém a návrh řešení |

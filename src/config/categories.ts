@@ -1,5 +1,6 @@
 import type { CategoryType, ConditionLabel, PriceType } from "@/types/post";
 import { GOODS_CATEGORIES } from "@/config/categories-goods";
+import { isGoodsCategoryType } from "@/config/goods-categories";
 
 export type SubcategoryConfig = {
   slug: string;
@@ -401,6 +402,31 @@ export function getConditionLabel(
   const found = category?.conditionLabels.find((c) => c.value === conditionLabel);
   if (found) return found.label;
   return formatSlugAsLabel(conditionLabel);
+}
+
+/** Výchozí stav při založení / změně kategorie (u zboží „Použité“). */
+export function getDefaultConditionLabel(
+  categoryType: CategoryType,
+): ConditionLabel {
+  const options = getCategoryConfig(categoryType).conditionLabels;
+  if (isGoodsCategoryType(categoryType)) {
+    const used = options.find((option) => option.value === "used");
+    if (used) return "used";
+  }
+  return options[0]?.value ?? "used";
+}
+
+/** Výchozí typ ceny — u zboží/nemovitostí pevná cena. */
+export function getDefaultPriceType(categoryType: CategoryType): PriceType {
+  const options = getCategoryConfig(categoryType).priceTypes;
+  const preferred: PriceType | undefined =
+    isGoodsCategoryType(categoryType) || categoryType === "nemovitost"
+      ? "fixed"
+      : options[0]?.value;
+  const match = preferred
+    ? options.find((option) => option.value === preferred)
+    : undefined;
+  return match?.value ?? options[0]?.value ?? "negotiable";
 }
 
 /**

@@ -1,13 +1,13 @@
 # Zásady používání souborů cookie
 
 **Platforma:** HobbyUserMarket  
-**Verze:** Draft 1.1 · **Datum účinnosti:** [doplnit]
+**Verze:** Draft 1.2 · **Datum účinnosti:** 06.08.2026
 
 ---
 
 ## TL;DR — v čem je pointa
 
-Cookies používáme k tomu, aby web fungoval a abychom po vašem souhlasu měřili návštěvnost. **Technické cookies vypnout nelze**; analytické aktivujeme až po souhlasu (GA4 přes GTM).
+Cookies používáme k tomu, aby web fungoval a abychom po vašem souhlasu měřili návštěvnost a případně výkon reklamy. **Technické cookies vypnout nelze**; analytické a marketingové aktivujeme až po souhlasu v cookie liště.
 
 ---
 
@@ -27,22 +27,23 @@ Zajišťují přihlášení, bezpečnost, základní nastavení a správné zobr
 
 ### Analytické
 
-Pomáhají nám pochopit, jak web používáte (návštěvnost stránek, chování v agregované podobě). V současné verzi používáme **Google Analytics 4 (GA4)** prostřednictvím **Google Tag Manageru (GTM)**. Aktivují se až po vašem souhlasu v cookie liště.
+Pomáhají nám pochopit, jak web používáte (návštěvnost stránek, chování v agregované podobě). Používáme **Google Analytics 4 (GA4)** prostřednictvím **Google Tag Manageru (GTM)**. Aktivují se až po vašem souhlasu s analytikou v cookie liště.
 
 ### Marketingové
 
-Slouží k měření a cílení reklamy, pokud takové nástroje nasadíme. **V současné verzi platformy marketingové pixely (např. Meta Pixel) standardně nenasazujeme.** Pokud je v budoucnu aktivujeme, budou se ukládat až po vašem souhlasu v cookie liště; tento dokument aktualizujeme.
+Slouží k měření a cílení reklamy. Po souhlasu s marketingem můžeme aktivovat **Meta Pixel** (Facebook/Instagram Ads) — měří např. dokončení registrace a publikaci inzerátu. Pixel se nenačítá bez marketingového souhlasu.
 
 ---
 
 ## 3. Souhlas a odvolání
 
-S ukládáním **analytických** cookies (a případně marketingových, pokud je nasadíme) vyjadřujete souhlas prostřednictvím **cookie lišty** při první návštěvě (GTM consent mode).
+V cookie liště můžete zvolit:
 
-Svůj souhlas můžete kdykoli:
+- **Přijmout vše** — analytika i marketing,
+- **Jen analytika** — GA4/GTM bez Meta Pixelu,
+- **Pouze nezbytné** — bez analytiky i marketingu.
 
-- změnit nebo odvolat v nastavení cookie lišty na webu (CMP centrum),
-- omezit nebo smazat cookies v nastavení prohlížeče.
+Souhlas můžete kdykoli změnit nebo odvolat v nastavení cookie lišty na webu (CMP centrum) nebo omezením cookies v prohlížeči.
 
 Odvolání souhlasu neovlivní zákonnost zpracování před jeho odvoláním.
 
@@ -50,14 +51,12 @@ Odvolání souhlasu neovlivní zákonnost zpracování před jeho odvoláním.
 
 ## 4. Společné správcovství
 
-U analytických nástrojů nasazených po souhlasu (GA4 / GTM) může v určitých případech vystupovat Provozovatel společně s poskytovatelem jako **společní správce** ve smyslu GDPR. Více v [Zásadách ochrany osobních údajů](/gdpr).
+U analytických a marketingových nástrojů nasazených po souhlasu (GA4 / GTM / Meta Pixel) může v určitých případech vystupovat Provozovatel společně s poskytovatelem jako **společní správce** ve smyslu GDPR. Více v [Zásadách ochrany osobních údajů](/gdpr).
 
 ---
 
 ## 5. Kontakt
 
-Dotazy k cookies: **[e-mail provozovatele]**
+Dotazy k cookies: **info@zapikolou.cz**
 
 ---
-
-*Draft — před publikací nechat zkontrolovat právníkem.*

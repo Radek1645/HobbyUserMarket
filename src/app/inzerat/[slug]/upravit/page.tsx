@@ -95,6 +95,7 @@ export default async function EditListingPage({ params }: PageProps) {
         userEmail={user.email}
         forceModeration={post.status === "draft" || post.status === "blocked"}
         publishBlockedByQuota={publishBlockedByQuota}
+        showDeleteHint={post.user_id === user.id}
       />
     </div>
   );

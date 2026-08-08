@@ -19,6 +19,11 @@ export async function callGeminiModeration(params: {
   imageMimeTypes: string[];
   /** Explicitní model; jinak GEMINI_MODEL / default preview. */
   model?: string;
+  /**
+   * Structured-output schema. Default = moderation schema.
+   * Suggest-from-photos předává vlastní schema; moderate-listing beze změny.
+   */
+  responseSchema?: unknown;
 }): Promise<string> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
@@ -40,6 +45,9 @@ export async function callGeminiModeration(params: {
       });
     }
   }
+
+  const responseSchema =
+    params.responseSchema ?? GEMINI_MODERATION_RESPONSE_SCHEMA;
 
   let response: Response;
   try {
@@ -69,7 +77,7 @@ export async function callGeminiModeration(params: {
         generationConfig: {
           temperature: 0.2,
           responseMimeType: "application/json",
-          responseSchema: GEMINI_MODERATION_RESPONSE_SCHEMA,
+          responseSchema,
         },
       }),
     });

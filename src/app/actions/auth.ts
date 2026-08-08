@@ -10,6 +10,7 @@ import {
 import { normalizeIco, validateIco } from "@/lib/company/ico";
 import { createClient } from "@/lib/supabase/server";
 import { isUniqueViolation } from "@/lib/supabase/postgres-errors";
+import { storePendingAuthReturnPath } from "@/lib/auth/pending-auth-return-path";
 import { getSiteUrl } from "@/lib/supabase/env";
 import {
   userRequiresRegistrationConsentsOnboarding,
@@ -18,9 +19,11 @@ import {
 import {
   flushPendingRegistrationConsents,
   persistRegistrationConsents,
+  profileHasRecordedConsents,
   readRegistrationConsentPayload,
   buildPendingConsentMetadata,
 } from "@/lib/auth/persist-registration-consents";
+import { storePendingOAuthRegistrationConsents } from "@/lib/auth/oauth-registration-consents";
 import { parseEmailOtpType } from "@/lib/auth/email-otp-types";
 import { resolvePostAuthNextPath } from "@/lib/auth/finish-auth-redirect";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
@@ -28,6 +31,7 @@ import {
   DUPLICATE_EMAIL_MESSAGE,
   mapAuthError,
 } from "@/lib/auth/map-auth-error";
+import { PENDING_REGISTRATION_METADATA_KEY } from "@/config/meta-pixel";
 import { PASSWORD_MIN_LENGTH } from "@/config/app";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -81,8 +85,28 @@ async function redirectAfterAuth(nextPath: string) {
   redirect(nextPath);
 }
 
-export async function signInWithGoogle(nextPath = "/") {
-  const safeNextPath = sanitizeInternalPath(nextPath);
+export async function signInWithGoogle(formData: FormData) {
+  const safeNextPath = readNextPath(formData);
+  const requireRegistrationConsents =
+    formData.get("require_registration_consents") === "1";
+
+  // Cookie přežije Back z Google chooseru i když `?next=` z URL zmizí.
+  await storePendingAuthReturnPath(safeNextPath);
+
+  if (requireRegistrationConsents) {
+    const consentError = validateRegistrationConsents(formData);
+    if (consentError) {
+      redirect(
+        `/login?tab=register&next=${encodeURIComponent(safeNextPath)}&error=${encodeURIComponent(
+          consentError.error ?? "Potvrďte povinné souhlasy.",
+        )}`,
+      );
+    }
+    await storePendingOAuthRegistrationConsents(
+      readRegistrationConsentPayload(formData),
+    );
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -98,7 +122,7 @@ export async function signInWithGoogle(nextPath = "/") {
 
   if (error) {
     redirect(
-      `/login?error=${encodeURIComponent(mapAuthError(error.message))}`,
+      `/login?next=${encodeURIComponent(safeNextPath)}&error=${encodeURIComponent(mapAuthError(error.message))}`,
     );
   }
 
@@ -157,6 +181,7 @@ export async function signUpWithEmail(
   }
 
   const consentPayload = readRegistrationConsentPayload(formData);
+  const nextPath = readNextPath(formData);
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -164,8 +189,12 @@ export async function signUpWithEmail(
     password,
     options: {
       // Klientská stránka — zvládne ?code= i #access_token= (serverový callback hash nevidí).
-      emailRedirectTo: `${getSiteUrl()}/auth/dokoncit`,
-      data: buildPendingConsentMetadata(consentPayload),
+      // `next` musí přežít e-mail verify (guest draft resume).
+      emailRedirectTo: `${getSiteUrl()}/auth/dokoncit?next=${encodeURIComponent(nextPath)}`,
+      data: {
+        ...buildPendingConsentMetadata(consentPayload),
+        [PENDING_REGISTRATION_METADATA_KEY]: true,
+      },
     },
   });
 
@@ -195,19 +224,21 @@ export async function signUpWithEmail(
 /** Znovu odešle ověřovací e-mail po registraci (U21). */
 export async function resendSignupVerificationEmail(
   email: string,
+  nextPath = "/",
 ): Promise<AuthFormState> {
   const normalized = email.trim().toLowerCase();
   if (!normalized) {
     return { error: "Chybí e-mail pro opětovné odeslání." };
   }
 
+  const safeNext = sanitizeInternalPath(nextPath);
   const supabase = await createClient();
   // Stejný cíl jako signUp — /auth/dokoncit čte PKCE code i implicit hash.
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: normalized,
     options: {
-      emailRedirectTo: `${getSiteUrl()}/auth/dokoncit`,
+      emailRedirectTo: `${getSiteUrl()}/auth/dokoncit?next=${encodeURIComponent(safeNext)}`,
     },
   });
 
@@ -413,11 +444,14 @@ export async function completeOnboarding(
   }
 
   if (userRequiresRegistrationConsentsOnboarding(user)) {
-    const consentError = validateRegistrationConsents(formData);
-    if (consentError) {
-      return consentError;
+    const alreadyRecorded = await profileHasRecordedConsents(supabase, user.id);
+    if (!alreadyRecorded) {
+      const consentError = validateRegistrationConsents(formData);
+      if (consentError) {
+        return consentError;
+      }
+      await persistRegistrationConsents(supabase, user.id, formData);
     }
-    await persistRegistrationConsents(supabase, user.id, formData);
   } else {
     await flushPendingRegistrationConsents(
       supabase,

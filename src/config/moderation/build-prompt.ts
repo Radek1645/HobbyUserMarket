@@ -47,6 +47,7 @@ Pravidla pro fotografie:
 - Bezpečnostní filtr musí projít VŠECHNY fotografie (max. 6). Zamítnutí jedné fotky = zamítnutí celého inzerátu.
 - U REJECTED kvůli fotce uveď rejectedImageIndex (0-based index fotky v pořadí).
 - Hlavní fotka (mainImageIndex) slouží výhradně pro cross-validaci text ↔ foto: nabízená věc/služba v názvu a popisu musí být na hlavní fotce rozpoznatelná (náhled na homepage). REJECTED jen při zjevné neshodě (např. text o telefonu, na fotce lednice).
+- Jen u **zboží** (categoryType ∈ auto, detsky, dum, elektro, moda, sport, hobby, ostatni): REJECTED (rejectedTopicId=scam_fraud) **jen** když 2+ fotografie zjevně ukazují **dva vzájemně vylučující se hlavní produkty stejného druhu** (např. dvě různá auta, dva různé telefony) — typicky podvod / záměna. Důvod česky: „Fotky ukazují různé věci — nahrajte jen snímky jedné nabídky.“ NIKDY neREJECT, když jde o **jednu nabídku se setem / příslušenstvím** (notebook + klávesnice + nabíječka + myš; kočárek + korba; konzole + ovladače), hlavní + detail, jiný úhel, nebo věci výslovně jako součást balení. U **nemovitost / udalost / sluzby / prace** toto pravidlo neplatí (různé místnosti/scény jsou OK).
 - Na fotce smí být i doplňky / okolí / stylizace (židle u stolku, krabice, pozadí). Pokud popis výslovně říká, že něco na fotce NENÍ součástí prodeje (např. „židličky nejsou součástí“, „bez příslušenství“), NIKDY to není důvod k REJECTED — naopak je to v pořádku. Do cleanedDescription tu výjimku zachovej.
 - Zvolená kategorie (categoryType) je závazná. REJECTED kvůli kategorii jen když text/fotky zjevně patří do JINÉHO typu (např. zboží vs práce, nebo práce vs služby při jasném záměru). Důvod česky: „Inzerát je zařazený do špatné kategorie. Vyberte prosím vhodnější podkategorii.“
 - Jiná podkategorie ve STEJNÉM categoryType (překryv, např. pece-zahrada vs brigady-jednorazove) NIKDY není REJECTED — nech APPROVED/NEEDS_QUESTIONS a do categorySuggestion dej fit=better_existing.
@@ -99,6 +100,7 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - U statusu NEEDS_QUESTIONS: úvod + Parametry s fakty, které už znáš (včetně katalogových u identifikovaného modelu); chybějící kusové údaje ptej v dotazníku. Nikdy nevkládej do Parametrů placeholder „…" nebo prázdnou hodnotu.
 - Frázi „osobní prohlídka po domluvě" používej pouze u nemovitostí. U zboží a módy piš „osobní předání po domluvě" nebo „vyzvednutí po domluvě".
 - U každé otázky v poli questions uveď label a paramLabel (max. 4 slova, bez otazníku).
+- U dětského zboží / hraček: na věk nebo výšku dítěte se ptej nejvýš jednou — paramLabel „Věk / výška“. Nepřidávej druhou otázku typu „doporučený věk“ / „věk pro hračku“.
 - U otázek na měřitelné veličiny uveď jednotku v label (cm, ml, m², km, kg) a slad paramLabel.
 - Pokud user prompt uvádí typ ceny a částku z formuláře (pevná nebo dohodou), NIKDY se na cenu neptej — uveď ji v úvodu; v metaDescription jen „za X Kč“.
 - Pokud user prompt uvádí eventDate z formuláře, NIKDY se na datum ani čas konání neptej — uveď je v úvodu/Parametrech.

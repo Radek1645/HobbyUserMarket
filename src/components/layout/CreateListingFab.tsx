@@ -1,6 +1,7 @@
 "use client";
 
 import { useCookieConsent } from "@/components/consent/CookieConsentProvider";
+import { GUEST_LISTING_DRAFT_ENABLED } from "@/config/guest-listing";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   createListingCtaLabel,
@@ -52,7 +53,9 @@ export function CreateListingFab({ user }: CreateListingFabProps) {
 
   const href = user
     ? "/inzerat/novy"
-    : "/login?next=/inzerat/novy&message=create_listing&tab=register";
+    : GUEST_LISTING_DRAFT_ENABLED
+      ? "/inzerat/novy"
+      : "/login?next=/inzerat/novy&message=create_listing&tab=register";
 
   const cookieBannerOffsetActive = cookieConsentReady && bannerOpen;
   const fabBottomClass = cookieBannerOffsetActive

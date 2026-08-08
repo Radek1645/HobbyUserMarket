@@ -2,10 +2,14 @@
 
 import { completeOnboarding, type AuthFormState } from "@/app/actions/auth";
 import { CompanyIcoInput } from "@/components/auth/CompanyIcoInput";
+import { FreeListingQuotaBanner } from "@/components/auth/FreeListingQuotaBanner";
 import { RegistrationConsentFields } from "@/components/auth/RegistrationConsentFields";
-import { LISTING_QUOTA_FREE_DEFAULT } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
-import { useActionState, useState } from "react";
+import {
+  clearAuthReturnPath,
+  resolveAuthReturnPath,
+} from "@/lib/auth/auth-return-path";
+import { useActionState, useEffect, useState } from "react";
 
 type OnboardingFormProps = {
   nextPath: string;
@@ -25,6 +29,15 @@ export function OnboardingForm({
 }: OnboardingFormProps) {
   const [state, action, pending] = useActionState(completeOnboarding, initialState);
   const [isCompany, setIsCompany] = useState(false);
+  const [resolvedNextPath, setResolvedNextPath] = useState(nextPath);
+
+  useEffect(() => {
+    const resolved = resolveAuthReturnPath(nextPath);
+    setResolvedNextPath(resolved);
+    if (resolved !== "/") {
+      clearAuthReturnPath();
+    }
+  }, [nextPath]);
 
   const enableCompanyMode = () => {
     setIsCompany(true);
@@ -32,12 +45,10 @@ export function OnboardingForm({
 
   return (
     <form action={action} className="space-y-4">
-      <input type="hidden" name="next" value={nextPath} />
+      <input type="hidden" name="next" value={resolvedNextPath} />
       <input type="hidden" name="isCompany" value={isCompany ? "true" : "false"} />
 
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-center text-sm font-medium text-emerald-900">
-        Startujete s {LISTING_QUOTA_FREE_DEFAULT} inzeráty zdarma!
-      </div>
+      <FreeListingQuotaBanner />
 
       <p className="text-sm text-gray-600">
         Jednorázové nastavení profilu — přezdívku uvidí sousedé u vašich

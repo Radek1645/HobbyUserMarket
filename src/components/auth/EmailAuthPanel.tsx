@@ -14,9 +14,16 @@ import {
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { Mail } from "lucide-react";
 import { useActionState, useEffect, useState, useTransition } from "react";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { FreeListingQuotaBanner } from "@/components/auth/FreeListingQuotaBanner";
 import { PasswordInput } from "@/components/auth/PasswordInput";
-import { RegistrationConsentFields } from "@/components/auth/RegistrationConsentFields";
+import {
+  RegistrationConsentFields,
+  RegistrationConsentHiddenInputs,
+  type RegistrationConsentValues,
+} from "@/components/auth/RegistrationConsentFields";
 import { BackButton } from "@/components/navigation/BackLink";
+import { resolveAuthReturnPath } from "@/lib/auth/auth-return-path";
 
 type AuthTab = "login" | "register" | "forgot";
 
@@ -147,6 +154,18 @@ export function EmailAuthPanel({
   prominent = false,
 }: EmailAuthPanelProps) {
   const [tab, setTab] = useState<AuthTab>(initialTab);
+  const [resolvedNextPath, setResolvedNextPath] = useState(nextPath);
+  const [registrationConsents, setRegistrationConsents] =
+    useState<RegistrationConsentValues>({
+      age: false,
+      vop: false,
+      marketing: false,
+    });
+
+  useEffect(() => {
+    setResolvedNextPath(resolveAuthReturnPath(nextPath));
+  }, [nextPath]);
+
   const [loginState, loginAction, loginPending] = useActionState(
     signInWithEmail,
     initialState,
@@ -197,7 +216,7 @@ export function EmailAuthPanel({
     if (!email || resendCooldownDownSec > 0) return;
 
     startResendTransition(async () => {
-      const result = await resendSignupVerificationEmail(email);
+      const result = await resendSignupVerificationEmail(email, resolvedNextPath);
       if (result.error) {
         setResendFeedback({ type: "error", message: result.error });
         return;
@@ -274,84 +293,116 @@ export function EmailAuthPanel({
       ) : null}
 
       {tab === "login" ? (
-        <form action={loginAction} className="space-y-4">
-          <input type="hidden" name="next" value={nextPath} />
-          <div>
-            <label htmlFor="login-email" className={fieldLabelClass}>
-              E-mail
-            </label>
-            <input
-              id="login-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              className={fieldInputClass}
+        <>
+          <GoogleSignInButton nextPath={resolvedNextPath} prominent={prominent} />
+          <AuthOrDivider />
+          <form action={loginAction} className="space-y-4">
+            <input type="hidden" name="next" value={resolvedNextPath} />
+            <div>
+              <label htmlFor="login-email" className={fieldLabelClass}>
+                E-mail
+              </label>
+              <input
+                id="login-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className={fieldInputClass}
+              />
+            </div>
+            <PasswordInput
+              id="login-password"
+              name="password"
+              label="Heslo"
+              autoComplete="current-password"
+              prominent={prominent}
             />
-          </div>
-          <PasswordInput
-            id="login-password"
-            name="password"
-            label="Heslo"
-            autoComplete="current-password"
-            prominent={prominent}
-          />
-          <button
-            type="button"
-            {...gtmCtaProps(GTM_CTA.AUTH_TAB_FORGOT)}
-            onClick={() => setTab("forgot")}
-            className="text-sm text-gray-600 underline-offset-2 hover:text-gray-900 hover:underline"
-          >
-            Zapomenuté heslo?
-          </button>
-          <button
-            type="submit"
-            {...gtmCtaProps(GTM_CTA.LOGIN_EMAIL)}
-            disabled={loginPending}
-            className={submitButtonClass}
-          >
-            {loginPending ? "Přihlašuji…" : "Přihlásit se"}
-          </button>
-        </form>
+            <button
+              type="button"
+              {...gtmCtaProps(GTM_CTA.AUTH_TAB_FORGOT)}
+              onClick={() => setTab("forgot")}
+              className="text-sm text-gray-600 underline-offset-2 hover:text-gray-900 hover:underline"
+            >
+              Zapomenuté heslo?
+            </button>
+            <button
+              type="submit"
+              {...gtmCtaProps(GTM_CTA.LOGIN_EMAIL)}
+              disabled={loginPending}
+              className={submitButtonClass}
+            >
+              {loginPending ? "Přihlašuji…" : "Přihlásit se"}
+            </button>
+          </form>
+        </>
       ) : null}
 
       {tab === "register" && !registerComplete ? (
-        <form action={registerAction} className="space-y-4">
-          <div>
-            <label htmlFor="register-email" className={fieldLabelClass}>
-              E-mail
-            </label>
-            <input
-              id="register-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              className={fieldInputClass}
-            />
-          </div>
-          <PasswordInput
-            id="register-password"
-            name="password"
-            label="Heslo"
-            autoComplete="new-password"
-            minLength={PASSWORD_MIN_LENGTH}
-            hint={`Minimálně ${PASSWORD_MIN_LENGTH} znaků.`}
+        <>
+          {!prominent ? <FreeListingQuotaBanner /> : null}
+          <RegistrationConsentFields
             prominent={prominent}
+            values={registrationConsents}
+            onChange={setRegistrationConsents}
+            includeInputNames={false}
           />
-          <p className={`text-gray-500 ${prominent ? "text-xs sm:text-sm" : "text-xs"}`}>
-            Po registraci vám pošleme ověřovací odkaz. Bez něj se nepřihlásíte.
-          </p>
-          <RegistrationConsentFields prominent={prominent} />
-          <button
-            type="submit"
-            {...gtmCtaProps(GTM_CTA.REGISTER_SUBMIT)}
-            disabled={registerPending}
-            className={submitButtonClass}
+          <GoogleSignInButton
+            nextPath={resolvedNextPath}
+            requireRegistrationConsents
+            prominent={prominent}
+            disabled={
+              !registrationConsents.age || !registrationConsents.vop
+            }
           >
-            {registerPending ? "Vytvářím účet…" : "Vytvořit účet"}
-          </button>
-        </form>
+            <RegistrationConsentHiddenInputs values={registrationConsents} />
+          </GoogleSignInButton>
+          <AuthOrDivider />
+          <form action={registerAction} className="space-y-4">
+            <input type="hidden" name="next" value={resolvedNextPath} />
+            <RegistrationConsentHiddenInputs values={registrationConsents} />
+            <div>
+              <label htmlFor="register-email" className={fieldLabelClass}>
+                E-mail
+              </label>
+              <input
+                id="register-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className={fieldInputClass}
+              />
+            </div>
+            <PasswordInput
+              id="register-password"
+              name="password"
+              label="Heslo"
+              autoComplete="new-password"
+              minLength={PASSWORD_MIN_LENGTH}
+              hint={`Minimálně ${PASSWORD_MIN_LENGTH} znaků.`}
+              prominent={prominent}
+            />
+            <p
+              className={`text-gray-500 ${prominent ? "text-xs sm:text-sm" : "text-xs"}`}
+            >
+              Po registraci vám pošleme ověřovací odkaz. Bez něj se
+              nepřihlásíte.
+            </p>
+            <button
+              type="submit"
+              {...gtmCtaProps(GTM_CTA.REGISTER_SUBMIT)}
+              disabled={
+                registerPending ||
+                !registrationConsents.age ||
+                !registrationConsents.vop
+              }
+              className={submitButtonClass}
+            >
+              {registerPending ? "Vytvářím účet…" : "Vytvořit účet"}
+            </button>
+          </form>
+        </>
       ) : null}
 
       {tab === "forgot" && !resetComplete ? (
@@ -387,6 +438,19 @@ export function EmailAuthPanel({
           />
         </form>
       ) : null}
+    </div>
+  );
+}
+
+function AuthOrDivider() {
+  return (
+    <div className="relative my-2">
+      <div className="absolute inset-0 flex items-center" aria-hidden="true">
+        <div className="w-full border-t border-gray-200" />
+      </div>
+      <div className="relative flex justify-center text-xs uppercase">
+        <span className="bg-white px-2 text-gray-500">nebo</span>
+      </div>
     </div>
   );
 }

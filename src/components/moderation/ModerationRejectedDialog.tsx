@@ -13,6 +13,8 @@ export type ModerationRejectionState = {
   reason: string;
   topicId?: string;
   rejectedImageIndex?: number;
+  /** Edge errorCode — hard gate vs Gemini. */
+  errorCode?: string;
 };
 
 type ModerationRejectedDialogProps = {
@@ -177,5 +179,6 @@ export function moderationFailureToRejection(
     reason: failure.reason,
     topicId: failure.topicId,
     rejectedImageIndex: failure.rejectedImageIndex,
+    errorCode: failure.errorCode,
   };
 }

@@ -5,7 +5,7 @@ description: Uzavírá vývojovou session — ověření, dokumentace (Metodika,
 
 # Ukončení práce na projektu
 
-Obecný postup podle [`docs/TO-DO-ukonceniPrace.md`](../../docs/TO-DO-ukonceniPrace.md).
+Postupuj shora dolů. Session log patří do `Stav_projektu/`, ne do samostatného TO-DO.
 
 ```
 1. Ověřit funkčnost  →  2. Infrastruktura  →  3. Dokumentace
@@ -39,7 +39,7 @@ Necommituj bez odpovědi; neověřené migrace zapiš do `Stav_projektu` jako **
 | Doména, GSC, GTM | [`docs/branding-a-domeny.md`](../../docs/branding-a-domeny.md) |
 | AI moderace (deploy) | [`docs/moderace-inzeratu.md`](../../docs/moderace-inzeratu.md) |
 | **Nová / změněná DB tabulka, sloupec, enum, bucket** | [`docs/supabase-prikazy.md`](../../docs/supabase-prikazy.md) — sekce **Schéma databáze** (lidský popis + atributy). Zároveň stručně PRD §4, pokud jde o produktový model. |
-| Bezpečnostní nález nebo oprava | [`docs/SECURITY_AND_UX_AUDIT_20260727.md`](../../docs/SECURITY_AND_UX_AUDIT_20260727.md) |
+| Bezpečnostní nález nebo oprava | [`docs/SECURITY_UX_BACKLOG.md`](../../docs/SECURITY_UX_BACKLOG.md) |
 
 **Pravidlo:** Kód bez dokumentace není hotový. Migrace SQL bez aktualizace § Schéma = nedokončená session.
 
@@ -94,4 +94,5 @@ Po pushi připomeň: Vercel build, případně manuální test na produkci.
 - [`docs/PRD_v3.md`](../../docs/PRD_v3.md) — kanon
 - [`docs/Metodika.md`](../../docs/Metodika.md) — uživatelské flow
 - [`docs/supabase-prikazy.md`](../../docs/supabase-prikazy.md) — CLI + **Schéma databáze**
-- [`docs/TO-DO-ukonceniPrace.md`](../../docs/TO-DO-ukonceniPrace.md) — plný checklist
+- [`docs/SECURITY_UX_BACKLOG.md`](../../docs/SECURITY_UX_BACKLOG.md) — security/UX backlog
+- [`docs/TO-DO-dalsi-den.md`](../../docs/TO-DO-dalsi-den.md) — operativní smoke / produktové TO-DO

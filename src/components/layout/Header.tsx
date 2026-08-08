@@ -5,6 +5,7 @@ import { UserAvatar } from "@/components/account/UserAvatar";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { HeaderLocationPanel } from "@/components/location/HeaderLocationPanel";
+import { GUEST_LISTING_DRAFT_ENABLED } from "@/config/guest-listing";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   createListingCtaLabel,
@@ -108,7 +109,11 @@ export function Header({ user }: HeaderProps) {
             </Link>
           ) : !user ? (
             <Link
-              href="/login?next=/inzerat/novy&message=create_listing&tab=register"
+              href={
+                GUEST_LISTING_DRAFT_ENABLED
+                  ? "/inzerat/novy"
+                  : "/login?next=/inzerat/novy&message=create_listing&tab=register"
+              }
               prefetch={false}
               {...gtmCtaProps(GTM_CTA.HEADER_CREATE_LISTING)}
               aria-label={createListingCtaLabel}

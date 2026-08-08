@@ -1,5 +1,9 @@
 import { resolvePostAuthNextPath } from "@/lib/auth/finish-auth-redirect";
 import { mapAuthError } from "@/lib/auth/map-auth-error";
+import {
+  clearPendingAuthReturnPath,
+  resolveAuthReturnPathFromRequest,
+} from "@/lib/auth/pending-auth-return-path";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -14,7 +18,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const otpType = searchParams.get("type");
-  let next = sanitizeInternalPath(searchParams.get("next"));
+  let next = await resolveAuthReturnPathFromRequest(searchParams.get("next"));
 
   if (!code) {
     const dokoncit = new URL("/auth/dokoncit", origin);
@@ -28,11 +32,15 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    const safeNext = sanitizeInternalPath(next);
+    const nextQuery =
+      safeNext !== "/" ? `&next=${encodeURIComponent(safeNext)}` : "";
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(mapAuthError(error.message))}`,
+      `${origin}/login?error=${encodeURIComponent(mapAuthError(error.message))}${nextQuery}`,
     );
   }
 
+  await clearPendingAuthReturnPath();
   next = await resolvePostAuthNextPath(supabase, next);
 
   return NextResponse.redirect(`${origin}${next}`);

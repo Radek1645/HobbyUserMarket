@@ -1,13 +1,30 @@
 "use client";
 
+import {
+  bootstrapGuestVisitor,
+  claimGuestStagingImages,
+} from "@/app/actions/guest-moderation";
 import { createListing, updateListing, type CreateListingState, type UpdateListingState } from "@/app/actions/posts";
+import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/security/TurnstileWidget";
+import {
+  GUEST_LISTING_RESUME_QUERY,
+  resolveTurnstileSiteKey,
+} from "@/config/guest-listing";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
+import { storeAuthReturnPath } from "@/lib/auth/auth-return-path";
+import {
+  readGuestListingDraft,
+  saveGuestListingDraft,
+  type GuestListingDraft,
+} from "@/lib/guest/listing-draft";
+import type { ModerationImageReference } from "@/lib/moderation/prepare-moderation-images";
 import {
   MODERATION_CHECKING_UI,
   MODERATION_ENABLED,
   MODERATION_MAX_QUESTIONS,
   MODERATION_TECHNICAL_UI,
   ACCOUNT_SUSPENDED_PATH,
+  isHardGateModerationErrorCode,
 } from "@/config/moderation";
 import {
   LISTING_DURATION_DEFAULT_DAYS,
@@ -17,13 +34,21 @@ import {
   LISTING_DESCRIPTION_MAX_LENGTH,
   LISTING_DESCRIPTION_MIN_LENGTH,
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
+  MODERATION_IMAGE_STAGING_BUCKET,
 } from "@/config/app";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { CREATE_LISTING_CATEGORY_GRID_TILES } from "@/config/home-category-grid";
 import {
+  SUGGEST_FROM_PHOTOS_ENABLED,
+  SUGGEST_FROM_PHOTOS_UI,
+} from "@/config/suggest-from-photos";
+import { AiListingPrefillEntry } from "@/components/listing/AiListingPrefillEntry";
+import {
   getCategoryConfig,
   getConditionFieldLabel,
   getConditionLabel,
+  getDefaultConditionLabel,
+  getDefaultPriceType,
   getListingCategoryNotice,
   getListingDescriptionPlaceholder,
   getListingTitlePlaceholder,
@@ -69,6 +94,8 @@ import {
 import { LocationInput } from "@/components/listing/LocationInput";
 import { JobListingNotice, RealEstateMinorNotice } from "@/components/legal/SafetyNotice";
 import { PriceAmountInput } from "@/components/listing/PriceAmountInput";
+import { BackButton } from "@/components/navigation/BackLink";
+import { BackHomeLink } from "@/components/navigation/BackHomeLink";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 import {
@@ -78,6 +105,8 @@ import {
   useRef,
   useState,
   useTransition,
+  useCallback,
+  type ReactNode,
 } from "react";
 
 import {
@@ -94,13 +123,25 @@ import {
   listingFormRequiredLegendClass,
   listingFormRequiredMarkClass,
   listingFormSecondaryButtonClass,
+  listingFormStepActiveClass,
+  listingFormStepInactiveClass,
+  LISTING_FORM_DELETE_HINT,
   LISTING_FORM_REQUIRED_LEGEND,
   LISTING_FORM_SAVING_UI,
+  LISTING_FORM_STEPPER_MANUAL,
+  LISTING_FORM_STEPPER_PHOTO_FIRST,
 } from "@/config/listing-form-ui";
 import type { CategoryType, ConditionLabel, ListingImagePreview, PriceType } from "@/types/post";
+import Link from "next/link";
 
 type CreateListingFormProps = {
   mode?: "create" | "edit";
+  /** Anonymní AI preview — publish až po loginu (FB funnel C). */
+  guestMode?: boolean;
+  guestVisitorId?: string;
+  guestVisitorToken?: string;
+  /** Po OAuth — obnov draft z localStorage a doběhni final AI + publish. */
+  resumeGuestDraft?: boolean;
   postId?: number;
   initialValues?: ListingFormInitialValues;
   initialImages?: ListingImagePreview[];
@@ -113,6 +154,14 @@ type CreateListingFormProps = {
   forceModeration?: boolean;
   /** Vyčerpaný limit — nová publikace se neodešle (AI moderace se nespustí). */
   publishBlockedByQuota?: boolean;
+  /** Hint na smazání ve Správě inzerátů — jen vlastník při editaci. */
+  showDeleteHint?: boolean;
+  /** Hlavička create stránky — zpět závisí na kroku (rozcestník vs úvod). */
+  pageHeading?: {
+    title: string;
+    description: ReactNode;
+    afterDescription?: ReactNode;
+  };
 };
 
 type FormState = CreateListingState | UpdateListingState;
@@ -127,26 +176,42 @@ const errorAlertClass =
 const technicalErrorAlertClass =
   "rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950";
 
+/** Hard-hit / NSFW / hard-stop — silnější výstraha než Gemini reject. */
+const hardGateErrorAlertClass =
+  "rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-950";
+
 const initialState: FormState = {};
 
 export function CreateListingForm({
   mode = "create",
+  guestMode = false,
+  guestVisitorId,
+  guestVisitorToken,
+  resumeGuestDraft = false,
   postId,
   initialValues,
   initialImages = [],
   userEmail,
   forceModeration = false,
   publishBlockedByQuota = false,
+  showDeleteHint = false,
+  pageHeading,
 }: CreateListingFormProps) {
   const isEdit = mode === "edit";
   const formAction = isEdit ? updateListing : createListing;
+  const showPrefillChoice =
+    SUGGEST_FROM_PHOTOS_ENABLED && !isEdit && Boolean(pageHeading);
 
   const [state, boundAction, pending] = useActionState(
     formAction,
     initialState,
   );
   const [isModerating, startModerationTransition] = useTransition();
-  const [moderationError, setModerationError] = useState<string | null>(null);
+  const [moderationError, setModerationErrorState] = useState<string | null>(
+    null,
+  );
+  /** true = hard gate (HARD_HIT_TEXT / NSFW / blacklist), ne Gemini reasoning. */
+  const [moderationErrorHardGate, setModerationErrorHardGate] = useState(false);
   const [moderationRejection, setModerationRejection] =
     useState<ModerationRejectionState | null>(null);
   const [moderationPreview, setModerationPreview] =
@@ -155,7 +220,291 @@ export function CreateListingForm({
   const pendingPublishFormRef = useRef<HTMLFormElement | null>(null);
   const formElementRef = useRef<HTMLFormElement | null>(null);
   const [isCheckingAi, setIsCheckingAi] = useState(false);
-  const [step, setStep] = useState(isEdit ? 2 : 1);
+  const [step, setStep] = useState(
+    isEdit ? 2 : SUGGEST_FROM_PHOTOS_ENABLED ? 0 : 1,
+  );
+  /** Po návštěvě kroku 2 neunmountovat — jinak Upravit kategorii smaže fotky v ListingImageUpload. */
+  const [contentStepMounted, setContentStepMounted] = useState(isEdit);
+  const [fromAiPrefill, setFromAiPrefill] = useState(false);
+  const pendingAiSeedRef = useRef<{
+    files: File[];
+    stagedPaths: string[];
+  } | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [guestSession, setGuestSession] = useState<{
+    visitorId: string;
+    visitorToken: string;
+  } | null>(
+    guestVisitorId && guestVisitorToken
+      ? { visitorId: guestVisitorId, visitorToken: guestVisitorToken }
+      : null,
+  );
+  const [guestBootstrapError, setGuestBootstrapError] = useState<string | null>(
+    null,
+  );
+  const resumeStartedRef = useRef(false);
+  const turnstileTokenRef = useRef<string | null>(null);
+  const turnstileWidgetRef = useRef<TurnstileWidgetHandle | null>(null);
+  const resolvedGuestVisitorId = guestMode
+    ? (guestSession?.visitorId ?? guestVisitorId)
+    : undefined;
+  const resolvedGuestVisitorToken = guestMode
+    ? (guestSession?.visitorToken ?? guestVisitorToken)
+    : undefined;
+  const guestSessionReady = !guestMode || Boolean(resolvedGuestVisitorId);
+
+  const setModerationInlineError = useCallback(
+    (message: string | null, hardGate = false) => {
+      setModerationErrorState(message);
+      setModerationErrorHardGate(Boolean(message && hardGate));
+    },
+    [],
+  );
+
+  useEffect(() => {
+    turnstileTokenRef.current = turnstileToken;
+  }, [turnstileToken]);
+
+  /** Cookie smí nastavit jen Server Action — ne RSC stránka. */
+  useEffect(() => {
+    if (!guestMode || guestSession) {
+      return;
+    }
+    let cancelled = false;
+    void bootstrapGuestVisitor()
+      .then((session) => {
+        if (!cancelled) {
+          setGuestSession(session);
+          setGuestBootstrapError(null);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setGuestBootstrapError(
+            error instanceof Error
+              ? error.message
+              : "Návštěvnickou relaci se nepodařilo připravit.",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [guestMode, guestSession]);
+
+  const consumeTurnstileToken = useCallback(() => {
+    turnstileTokenRef.current = null;
+    setTurnstileToken(null);
+    turnstileWidgetRef.current?.reset();
+  }, []);
+
+  /** Po OAuth: claim staging → final AI → publish (draft je jen UX). */
+  useEffect(() => {
+    if (!resumeGuestDraft || guestMode || resumeStartedRef.current) {
+      return;
+    }
+    resumeStartedRef.current = true;
+
+    async function resume() {
+      const draft = readGuestListingDraft();
+      if (!draft) {
+        setModerationInlineError(
+          "Koncept inzerátu se nepodařilo obnovit. Vyplňte formulář znovu.",
+        );
+        return;
+      }
+
+      if (publishBlockedByQuota) {
+        setModerationInlineError(LISTING_QUOTA_EXCEEDED_MESSAGE);
+        return;
+      }
+
+      setTitle(draft.title);
+      setDescription(draft.description);
+      setCategoryType(draft.categoryType);
+      setSubcategorySlug(draft.subcategorySlug);
+      if (draft.conditionLabel) {
+        setConditionLabel(draft.conditionLabel);
+      }
+      setPriceType(draft.priceType);
+      setPriceAmount(draft.priceAmount);
+      setExchangeFor(draft.exchangeFor);
+      setLocationText(draft.locationText);
+      setLatitude(draft.latitude);
+      setLongitude(draft.longitude);
+      setEventDate(draft.eventDate);
+      setListingDurationDays(draft.listingDurationDays);
+      setShowContactEmail(draft.showContactEmail);
+      setShowContactPhone(draft.showContactPhone);
+      setContactPhone(draft.contactPhone);
+      setJobCvRequired(draft.jobCvRequired);
+      setStep(2);
+
+      setIsCheckingAi(true);
+      try {
+        let imageReferences: ModerationImageReference[] = (
+          draft.claimedPaths ?? []
+        ).map((storagePath) => ({
+          bucket: MODERATION_IMAGE_STAGING_BUCKET,
+          storagePath,
+        }));
+        let mainImageIndex = draft.mainImageIndex;
+
+        if (!draft.claimDone || imageReferences.length === 0) {
+          const claimed = await claimGuestStagingImages({
+            storagePaths: draft.stagingPaths,
+            mainImageIndex: draft.mainImageIndex,
+          });
+          if (!claimed.ok) {
+            setModerationInlineError(claimed.error);
+            return;
+          }
+          imageReferences = claimed.imageReferences;
+          mainImageIndex = claimed.mainImageIndex;
+          const draftSaved = saveGuestListingDraft({
+            ...draft,
+            claimDone: true,
+            claimedPaths: claimed.imageReferences.map((ref) => ref.storagePath),
+            mainImageIndex: claimed.mainImageIndex,
+            savedAt: new Date().toISOString(),
+          });
+          if (!draftSaved) {
+            setModerationInlineError(
+              "Koncept se nepodařilo bezpečně uložit. Povolte úložiště prohlížeče a zkuste to znovu.",
+            );
+            return;
+          }
+        }
+
+        const finalTitle = stripContactInfo(draft.title);
+        const finalDescription = stripContactInfo(draft.description);
+
+        const approval = await invokeModerateListing({
+          intent: "create",
+          issueApproval: true,
+          title: finalTitle,
+          description: finalDescription,
+          categoryType: draft.categoryType,
+          subcategorySlug: draft.subcategorySlug,
+          conditionLabel: draft.conditionLabel || undefined,
+          conditionLabelText: draft.conditionLabel
+            ? getConditionLabel(draft.categoryType, draft.conditionLabel)
+            : undefined,
+          conditionFieldLabel: getConditionFieldLabel(draft.categoryType),
+          eventDate:
+            draft.categoryType === "udalost" && draft.eventDate
+              ? toModerationEventDateIso(draft.eventDate)
+              : undefined,
+          priceType: draft.priceType,
+          priceTypeLabel: getPriceTypeLabel(draft.categoryType, draft.priceType),
+          priceAmount: parsePriceInput(draft.priceAmount) ?? undefined,
+          exchangeFor:
+            draft.priceType === "exchange" && draft.exchangeFor.trim()
+              ? stripContactInfo(draft.exchangeFor.trim())
+              : undefined,
+          locationText: draft.locationText.trim() || undefined,
+          latitude: draft.latitude ?? undefined,
+          longitude: draft.longitude ?? undefined,
+          listingDurationDays: draft.listingDurationDays,
+          showContactEmail: draft.showContactEmail,
+          showContactPhone: draft.showContactPhone,
+          contactPhone: draft.showContactPhone
+            ? draft.contactPhone.trim() || undefined
+            : undefined,
+          jobCvRequired: draft.categoryType === "prace" && draft.jobCvRequired,
+          images:
+            imageReferences.length > 0
+              ? {
+                  imageReferences,
+                  mainImageIndex,
+                }
+              : undefined,
+        });
+
+        if (!approval.ok || !approval.approvalToken) {
+          if (approval.ok === false && approval.kind === "rejected") {
+            setModerationRejection(moderationFailureToRejection(approval));
+          } else {
+            setModerationInlineError(
+              approval.ok === false && approval.kind === "error"
+                ? approval.error
+                : "AI kontrola nevydala potvrzení. Zkuste to znovu.",
+            );
+          }
+          return;
+        }
+
+        const form = formElementRef.current;
+        if (!form) {
+          setModerationInlineError("Formulář není připravený. Obnovte stránku.");
+          return;
+        }
+
+        const formData = new FormData(form);
+        formData.set("title", finalTitle);
+        formData.set("description", finalDescription);
+        formData.set("categoryType", draft.categoryType);
+        formData.set("subcategorySlug", draft.subcategorySlug);
+        formData.set("conditionLabel", draft.conditionLabel || "used");
+        formData.set("priceType", draft.priceType);
+        formData.set("priceAmount", draft.priceAmount);
+        formData.set("exchangeFor", draft.exchangeFor);
+        formData.set("locationText", draft.locationText);
+        if (draft.latitude != null) {
+          formData.set("latitude", String(draft.latitude));
+        }
+        if (draft.longitude != null) {
+          formData.set("longitude", String(draft.longitude));
+        }
+        formData.set("eventDate", draft.eventDate);
+        formData.set("listingDurationDays", String(draft.listingDurationDays));
+        formData.set(
+          "showContactEmail",
+          draft.showContactEmail ? "true" : "false",
+        );
+        formData.set(
+          "showContactPhone",
+          draft.showContactPhone ? "true" : "false",
+        );
+        formData.set("contactPhone", draft.contactPhone);
+        formData.set(
+          "jobCvRequired",
+          draft.jobCvRequired ? "true" : "false",
+        );
+        formData.set("moderationToken", approval.approvalToken);
+        formData.set("publishRequestId", draft.publishRequestId);
+        formData.set(
+          "descriptionAiAssisted",
+          draft.preferAi ? "true" : "false",
+        );
+        if (draft.metaDescription || draft.imageAlt) {
+          formData.set("seoFieldsProvided", "true");
+          formData.set("metaDescription", draft.metaDescription ?? "");
+          formData.set("imageAlt", draft.imageAlt ?? "");
+        }
+
+        const orderKeys = imageReferences.map((_, index) => `n:${index}`);
+        formData.set("imageOrder", orderKeys.join(","));
+        formData.set(
+          "mainImageKey",
+          orderKeys[mainImageIndex] ?? orderKeys[0] ?? "",
+        );
+        for (const path of imageReferences.map((ref) => ref.storagePath)) {
+          formData.append("stagedImagePath", path);
+        }
+
+        // Draft maže až ListingPublished beacon po redirectu (?published=1).
+        startModerationTransition(() => {
+          boundAction(formData);
+        });
+      } finally {
+        setIsCheckingAi(false);
+      }
+    }
+
+    void resume();
+  }, [boundAction, guestMode, publishBlockedByQuota, resumeGuestDraft]);
 
   const [categoryType, setCategoryType] = useState<CategoryType>(
     initialValues?.categoryType ?? "ostatni",
@@ -164,7 +513,8 @@ export function CreateListingForm({
     initialValues?.subcategorySlug ?? "",
   );
   const [conditionLabel, setConditionLabel] = useState<ConditionLabel>(
-    initialValues?.conditionLabel ?? "used",
+    initialValues?.conditionLabel ??
+      getDefaultConditionLabel(initialValues?.categoryType ?? "ostatni"),
   );
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
@@ -176,7 +526,8 @@ export function CreateListingForm({
     initialValues?.longitude ?? null,
   );
   const [priceType, setPriceType] = useState<PriceType>(
-    initialValues?.priceType ?? "negotiable",
+    initialValues?.priceType ??
+      getDefaultPriceType(initialValues?.categoryType ?? "ostatni"),
   );
   const [priceAmount, setPriceAmount] = useState(initialValues?.priceAmount ?? "");
   const [exchangeFor, setExchangeFor] = useState(initialValues?.exchangeFor ?? "");
@@ -202,8 +553,125 @@ export function CreateListingForm({
   const submitErrorRef = useRef<HTMLDivElement>(null);
   const imageUploadRef = useRef<ListingImageUploadHandle>(null);
 
+  useEffect(() => {
+    if (step === 2) {
+      setContentStepMounted(true);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== 2 || !pendingAiSeedRef.current) return;
+    let cancelled = false;
+
+    const trySeed = () => {
+      if (cancelled || !pendingAiSeedRef.current) return;
+      const handle = imageUploadRef.current;
+      if (!handle) {
+        requestAnimationFrame(trySeed);
+        return;
+      }
+      const pending = pendingAiSeedRef.current;
+      pendingAiSeedRef.current = null;
+      void handle.seedNewImages({
+        files: pending.files,
+        stagedPaths: pending.stagedPaths.every((path) => Boolean(path))
+          ? pending.stagedPaths
+          : undefined,
+        mainIndex: 0,
+      });
+    };
+
+    trySeed();
+    return () => {
+      cancelled = true;
+    };
+  }, [step]);
+
   const category = getCategoryConfig(categoryType);
   const emailPreview = formatEmailPreviewForForm(userEmail);
+
+  function buildGuestDraftPayload(overrides?: {
+    aiTitle?: string;
+    aiDescription?: string;
+    metaDescription?: string;
+    imageAlt?: string;
+    preferAi?: boolean;
+  }): GuestListingDraft | null {
+    const visitorId = resolvedGuestVisitorId;
+    if (!visitorId) {
+      return null;
+    }
+    const preferAi = overrides?.preferAi === true;
+    const draftTitle = preferAi
+      ? (overrides?.aiTitle ?? title.trim())
+      : title.trim();
+    const draftDescription = preferAi
+      ? (overrides?.aiDescription ?? description.trim())
+      : description.trim();
+    return {
+      version: 1,
+      visitorId,
+      publishRequestId: crypto.randomUUID(),
+      title: draftTitle,
+      description: draftDescription,
+      categoryType,
+      subcategorySlug,
+      conditionLabel,
+      priceType,
+      priceAmount,
+      exchangeFor,
+      locationText,
+      latitude,
+      longitude,
+      eventDate,
+      listingDurationDays,
+      showContactEmail,
+      showContactPhone,
+      contactPhone,
+      jobCvRequired,
+      stagingPaths: imageUploadRef.current?.getGuestStagingPaths() ?? [],
+      mainImageIndex: imageUploadRef.current?.getMainImageIndex() ?? 0,
+      aiTitle: overrides?.aiTitle,
+      aiDescription: overrides?.aiDescription,
+      metaDescription: overrides?.metaDescription,
+      imageAlt: overrides?.imageAlt,
+      preferAi: overrides?.preferAi,
+      savedAt: new Date().toISOString(),
+    };
+  }
+
+  function redirectGuestToAuth() {
+    const next = `/inzerat/novy?${GUEST_LISTING_RESUME_QUERY}=1`;
+    storeAuthReturnPath(next);
+    window.location.assign(
+      `/login?next=${encodeURIComponent(next)}&message=create_listing&tab=register`,
+    );
+  }
+
+  function gateGuestPublish(overrides?: {
+    aiTitle?: string;
+    aiDescription?: string;
+    metaDescription?: string;
+    imageAlt?: string;
+    preferAi?: boolean;
+  }): boolean {
+    if (!guestMode) {
+      return false;
+    }
+    const draft = buildGuestDraftPayload(overrides);
+    if (!draft) {
+      setModerationInlineError("Obnovte stránku a zkuste to znovu.");
+      return true;
+    }
+    if (!saveGuestListingDraft(draft)) {
+      setModerationInlineError(
+        "Koncept se nepodařilo uložit. Povolte úložiště prohlížeče a zkuste to znovu.",
+      );
+      return true;
+    }
+    redirectGuestToAuth();
+    return true;
+  }
 
   useEffect(() => {
     if (!state.error || step !== 2) return;
@@ -334,11 +802,10 @@ export function CreateListingForm({
 
   function handleCategoryChange(type: CategoryType) {
     setCategoryType(type);
-    const next = getCategoryConfig(type);
     // U6: nevybírat automaticky první podkategorii — uživatel musí zvolit.
     setSubcategorySlug("");
-    setConditionLabel(next.conditionLabels[0]?.value ?? "used");
-    setPriceType(next.priceTypes[0]?.value ?? "negotiable");
+    setConditionLabel(getDefaultConditionLabel(type));
+    setPriceType(getDefaultPriceType(type));
     if (type !== "prace") {
       setJobCvRequired(false);
     }
@@ -346,6 +813,32 @@ export function CreateListingForm({
 
   function canGoStep2(): boolean {
     return Boolean(subcategorySlug);
+  }
+
+  function handleAiPrefillSuccess(result: {
+    title: string;
+    description: string;
+    categoryType: CategoryType;
+    subcategorySlug: string | null;
+    files: File[];
+    stagedPaths: string[];
+  }) {
+    setTitle(stripContactInfo(result.title));
+    setDescription(stripContactInfo(result.description));
+    setCategoryType(result.categoryType);
+    setConditionLabel(getDefaultConditionLabel(result.categoryType));
+    setPriceType(getDefaultPriceType(result.categoryType));
+    setSubcategorySlug(result.subcategorySlug ?? "");
+    setFromAiPrefill(true);
+    pendingAiSeedRef.current = {
+      files: result.files,
+      stagedPaths: result.stagedPaths,
+    };
+    if (result.subcategorySlug) {
+      setStep(2);
+    } else {
+      setStep(1);
+    }
   }
 
   function publishListing(
@@ -414,7 +907,7 @@ export function CreateListingForm({
       moderationImages =
         (await imageUploadRef.current?.getModerationImages()) ?? undefined;
     } catch (imagePrepError) {
-      setModerationError(
+      setModerationInlineError(
         imagePrepError instanceof Error
           ? imagePrepError.message
           : "Fotky se nepodařilo připravit pro AI kontrolu.",
@@ -475,7 +968,7 @@ export function CreateListingForm({
         if (rejection) {
           setModerationRejection(rejection);
         } else {
-          setModerationError(result.kind === "error" ? result.error : null);
+          setModerationInlineError(result.kind === "error" ? result.error : null);
         }
         return null;
       }
@@ -485,7 +978,7 @@ export function CreateListingForm({
         setModerationApprovedOpen(false);
         setTitle(titleValue);
         setDescription(descriptionValue);
-        setModerationError(
+        setModerationInlineError(
           "AI kontrola nevydala potvrzení pro publikaci. Zkuste to prosím znovu.",
         );
         return null;
@@ -504,6 +997,17 @@ export function CreateListingForm({
 
     const finalTitle = stripContactInfo(preview.originalTitle);
     const finalDescription = stripContactInfo(preview.originalDescription);
+
+    if (
+      gateGuestPublish({
+        aiTitle: preview.aiTitle,
+        aiDescription: preview.aiDescription,
+        preferAi: false,
+      })
+    ) {
+      return;
+    }
+
     const approvalToken = await requestFinalApproval(
       finalTitle,
       finalDescription,
@@ -547,6 +1051,18 @@ export function CreateListingForm({
         payload.questionAnswers,
       ),
     );
+
+    if (
+      gateGuestPublish({
+        aiTitle: finalTitle,
+        aiDescription: finalDescription,
+        metaDescription: payload.metaDescription,
+        imageAlt: payload.imageAlt,
+        preferAi: true,
+      })
+    ) {
+      return;
+    }
     const approvalToken = await requestFinalApproval(
       finalTitle,
       finalDescription,
@@ -574,13 +1090,13 @@ export function CreateListingForm({
 
   async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setModerationError(null);
+    setModerationInlineError(null);
     setModerationRejection(null);
     setModerationPreview(null);
     setModerationApprovedOpen(false);
 
     if (publishBlockedByQuota) {
-      setModerationError(LISTING_QUOTA_EXCEEDED_MESSAGE);
+      setModerationInlineError(LISTING_QUOTA_EXCEEDED_MESSAGE);
       submitErrorRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "nearest",
@@ -602,7 +1118,7 @@ export function CreateListingForm({
         (await imageUploadRef.current?.getModerationImages()) ?? undefined;
     } catch (imagePrepError) {
       setIsCheckingAi(false);
-      setModerationError(
+      setModerationInlineError(
         imagePrepError instanceof Error
           ? imagePrepError.message
           : "Fotky se nepodařilo připravit pro AI kontrolu.",
@@ -618,6 +1134,12 @@ export function CreateListingForm({
     try {
       moderation = await runListingModeration({
         intent: isEdit ? "update" : "create",
+        issueApproval: false,
+        guestVisitorId: guestMode ? resolvedGuestVisitorId : undefined,
+        guestVisitorToken: guestMode ? resolvedGuestVisitorToken : undefined,
+        turnstileToken: guestMode
+          ? (turnstileTokenRef.current ?? undefined)
+          : undefined,
         title: titleTrimmed,
         description: descriptionTrimmed,
         categoryType,
@@ -662,10 +1184,21 @@ export function CreateListingForm({
       setIsCheckingAi(false);
     }
 
+    if (guestMode && turnstileTokenRef.current) {
+      consumeTurnstileToken();
+    }
+
     if (!moderation.ok) {
       if (moderation.accountBlocked) {
         window.location.assign(ACCOUNT_SUSPENDED_PATH);
         return;
+      }
+      if (
+        moderation.kind === "error" &&
+        (moderation.error.toLowerCase().includes("robot") ||
+          moderation.error.toLowerCase().includes("captcha"))
+      ) {
+        setShowCaptcha(true);
       }
       const rejection = moderationFailureToRejection(moderation);
       if (rejection) {
@@ -681,7 +1214,7 @@ export function CreateListingForm({
         return;
       }
 
-      setModerationError(
+      setModerationInlineError(
         moderation.kind === "error" ? moderation.error : null,
       );
       submitErrorRef.current?.scrollIntoView({
@@ -752,13 +1285,38 @@ export function CreateListingForm({
 
   const isSaving = pending || isModerating || isCheckingAi;
 
+  /** Orientační chipy 4/5 — ne form `step`. */
+  const isPublishStepActive = pending;
+  const isAiStepActive =
+    !isPublishStepActive &&
+    (isCheckingAi ||
+      Boolean(moderationPreview) ||
+      moderationApprovedOpen ||
+      isModerating);
+  const photoFirstStepper = SUGGEST_FROM_PHOTOS_ENABLED && !isEdit;
+  const stepperLabels = photoFirstStepper
+    ? LISTING_FORM_STEPPER_PHOTO_FIRST
+    : LISTING_FORM_STEPPER_MANUAL;
+  const formStepIndex = photoFirstStepper
+    ? step
+    : step === 1
+      ? 0
+      : step === 2
+        ? 1
+        : -1;
+  const aiLabelIndex = photoFirstStepper ? 3 : 2;
+  const publishLabelIndex = photoFirstStepper ? 4 : 3;
+
   return (
     <>
       <ModerationRejectedDialog
         rejection={moderationRejection}
         onClose={() => {
           if (moderationRejection?.reason) {
-            setModerationError(moderationRejection.reason);
+            setModerationInlineError(
+              moderationRejection.reason,
+              isHardGateModerationErrorCode(moderationRejection.errorCode),
+            );
           }
           setModerationRejection(null);
         }}
@@ -825,6 +1383,27 @@ export function CreateListingForm({
         </div>
       ) : null}
 
+      {pageHeading ? (
+        <div className="mb-6">
+          {showPrefillChoice && step > 0 ? (
+            <BackButton
+              label="Zpět na výběr způsobu"
+              gtmId={GTM_CTA.CREATE_BACK_HOME}
+              onClick={() => setStep(0)}
+            />
+          ) : (
+            <BackHomeLink />
+          )}
+          <h1 className="mt-4 text-2xl font-semibold text-gray-900">
+            {pageHeading.title}
+          </h1>
+          <div className="mt-1 text-sm text-gray-600">
+            {pageHeading.description}
+          </div>
+          {pageHeading.afterDescription}
+        </div>
+      ) : null}
+
       <form
         ref={formElementRef}
         onSubmit={handleFormSubmit}
@@ -850,30 +1429,79 @@ export function CreateListingForm({
         <input type="hidden" name="eventDate" value={eventDate} />
       ) : null}
 
-      <nav aria-label="Kroky formuláře" className="flex items-center gap-2 text-sm text-gray-500">
-        <ol className="flex items-center gap-2">
-          <li
-            className={
-              step === 1 ? "font-medium text-gray-900" : "text-gray-500"
-            }
-            aria-current={step === 1 ? "step" : undefined}
-          >
-            1. Kategorie
-          </li>
-          <li aria-hidden="true">→</li>
-          <li
-            className={
-              step === 2 ? "font-medium text-gray-900" : "text-gray-500"
-            }
-            aria-current={step === 2 ? "step" : undefined}
-          >
-            2. Obsah
-          </li>
+      <nav aria-label="Kroky formuláře" className="flex items-center gap-2 text-sm">
+        <ol className="flex flex-wrap items-center gap-2">
+          {stepperLabels.map((label, index) => {
+            const isActive =
+              index === aiLabelIndex
+                ? isAiStepActive
+                : index === publishLabelIndex
+                  ? isPublishStepActive
+                  : !isAiStepActive &&
+                    !isPublishStepActive &&
+                    index === formStepIndex;
+
+            return (
+              <li key={label} className="flex items-center gap-2">
+                {index > 0 ? (
+                  <span
+                    className={listingFormStepInactiveClass}
+                    aria-hidden="true"
+                  >
+                    →
+                  </span>
+                ) : null}
+                <span
+                  className={
+                    isActive
+                      ? listingFormStepActiveClass
+                      : listingFormStepInactiveClass
+                  }
+                  aria-current={isActive ? "step" : undefined}
+                >
+                  {index + 1}. {label}
+                </span>
+              </li>
+            );
+          })}
         </ol>
       </nav>
 
+      {step === 0 && SUGGEST_FROM_PHOTOS_ENABLED ? (
+        <AiListingPrefillEntry
+          guestMode={guestMode}
+          guestVisitorId={resolvedGuestVisitorId}
+          guestVisitorToken={resolvedGuestVisitorToken}
+          guestSessionReady={guestSessionReady}
+          onPrefillSuccess={handleAiPrefillSuccess}
+          onChooseManual={() => {
+            setFromAiPrefill(false);
+            pendingAiSeedRef.current = null;
+            setStep(1);
+          }}
+        />
+      ) : null}
+
       {step === 1 ? (
         <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
+          {SUGGEST_FROM_PHOTOS_ENABLED && !isEdit ? (
+            <button
+              type="button"
+              onClick={() => setStep(0)}
+              className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Zpět na výběr způsobu
+            </button>
+          ) : null}
+
+          {fromAiPrefill && !subcategorySlug ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              AI navrhla kategorii, ale podkategorie není jistá — vyberte ji
+              prosím ručně. Název a popis už jsou připravené.
+            </p>
+          ) : null}
+
           <div>
             <span className={labelClass}>Hlavní kategorie</span>
             <div className="mt-2">
@@ -933,8 +1561,19 @@ export function CreateListingForm({
         </div>
       ) : null}
 
-      {step === 2 ? (
-        <div className={listingFormCardClass}>
+      {contentStepMounted ? (
+        <div
+          className={
+            step === 2 ? listingFormCardClass : "hidden"
+          }
+          aria-hidden={step !== 2}
+        >
+          {fromAiPrefill ? (
+            <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint}
+            </p>
+          ) : null}
+
           <div className={listingFormCategoryBarClass}>
             <p>
               <span className="font-semibold text-neutral-900">
@@ -1024,16 +1663,47 @@ export function CreateListingForm({
             ) : null}
           </div>
 
+          {guestBootstrapError ? (
+            <p className={errorAlertClass} role="alert">
+              {guestBootstrapError}
+            </p>
+          ) : null}
+
+          {!guestSessionReady && guestMode && !guestBootstrapError ? (
+            <p className="text-sm text-gray-600" aria-live="polite">
+              Připravuji nahrávání fotek…
+            </p>
+          ) : null}
+
           <ListingImageUpload
             ref={imageUploadRef}
             initialImages={initialImages}
             categoryType={categoryType}
             subcategorySlug={subcategorySlug}
+            guestMode={guestMode}
+            disabled={guestMode && !guestSessionReady}
           />
 
-          <div>
+          {guestMode && showCaptcha && resolveTurnstileSiteKey() ? (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="mb-2 text-xs text-gray-600">
+                Ochrana proti zneužití AI — potvrďte, že nejste robot.
+              </p>
+              <TurnstileWidget
+                ref={turnstileWidgetRef}
+                onToken={setTurnstileToken}
+              />
+            </div>
+          ) : null}
+
+          <div className={fromAiPrefill ? "rounded-xl ring-2 ring-amber-400/80 ring-offset-2" : undefined}>
             <label htmlFor="condition" className={labelClass}>
               {getConditionFieldLabel(categoryType)}
+              {fromAiPrefill ? (
+                <span className={listingFormRequiredMarkClass} aria-hidden="true">
+                  *
+                </span>
+              ) : null}
             </label>
             <select
               id="condition"
@@ -1146,19 +1816,21 @@ export function CreateListingForm({
             </div>
           ) : null}
 
-          <LocationInput
-            value={{ locationText, latitude, longitude }}
-            onChange={({ locationText: text, latitude: lat, longitude: lng }) => {
-              setLocationText(text);
-              setLatitude(lat);
-              setLongitude(lng);
-            }}
-            inputClass={inputClass}
-            labelClass={labelClass}
-            requireConfirmation={isEdit}
-          />
+          <div className={fromAiPrefill ? "rounded-xl ring-2 ring-amber-400/80 ring-offset-2" : undefined}>
+            <LocationInput
+              value={{ locationText, latitude, longitude }}
+              onChange={({ locationText: text, latitude: lat, longitude: lng }) => {
+                setLocationText(text);
+                setLatitude(lat);
+                setLongitude(lng);
+              }}
+              inputClass={inputClass}
+              labelClass={labelClass}
+              requireConfirmation={isEdit}
+            />
+          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={`grid gap-4 sm:grid-cols-2 ${fromAiPrefill ? "rounded-xl ring-2 ring-amber-400/80 ring-offset-2 p-1" : ""}`}>
             <div>
               <label htmlFor="priceType" className={labelClass}>
                 Typ ceny
@@ -1412,7 +2084,11 @@ export function CreateListingForm({
             <div
               ref={submitErrorRef}
               role="alert"
-              className={technicalErrorAlertClass}
+              className={
+                moderationErrorHardGate
+                  ? hardGateErrorAlertClass
+                  : technicalErrorAlertClass
+              }
             >
               <p className="font-semibold">{MODERATION_TECHNICAL_UI.title}</p>
               <p className="mt-1">{moderationError}</p>
@@ -1483,6 +2159,19 @@ export function CreateListingForm({
               )}
             </button>
           </div>
+
+          {showDeleteHint ? (
+            <p className={`${listingFormRequiredLegendClass} mt-3 mb-0`}>
+              {LISTING_FORM_DELETE_HINT.beforeLink}
+              <Link
+                href={LISTING_FORM_DELETE_HINT.href}
+                className="font-medium text-neutral-800 underline underline-offset-2 hover:text-neutral-950"
+              >
+                {LISTING_FORM_DELETE_HINT.linkLabel}
+              </Link>
+              {LISTING_FORM_DELETE_HINT.afterLink}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </form>

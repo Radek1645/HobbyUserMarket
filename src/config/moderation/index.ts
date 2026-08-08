@@ -74,6 +74,28 @@ export const SIGHTENGINE_FETCH_TIMEOUT_MS = 5_000;
  */
 export const HARD_REJECT_AUTOBAN_THRESHOLD = 3;
 
+/**
+ * Edge `errorCode` pre-Gemini / hard-stop — UI výstraha (červená), ne amber „AI reasoning“.
+ * Odpovídá evidence kind hard_hit_text / nsfw_image / hard_reject_threshold_reached.
+ */
+export const MODERATION_HARD_GATE_ERROR_CODES = [
+  "HARD_HIT_TEXT",
+  "NSFW_IMAGE",
+  "ACCOUNT_BLACKLISTED",
+] as const;
+
+export type ModerationHardGateErrorCode =
+  (typeof MODERATION_HARD_GATE_ERROR_CODES)[number];
+
+export function isHardGateModerationErrorCode(
+  errorCode: string | null | undefined,
+): boolean {
+  if (!errorCode) return false;
+  return (MODERATION_HARD_GATE_ERROR_CODES as readonly string[]).includes(
+    errorCode,
+  );
+}
+
 /** Rolling window pro hard-reject counter (ms). */
 export const HARD_REJECT_WINDOW_MS = 24 * 60 * 60 * 1000;
 

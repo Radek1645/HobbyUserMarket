@@ -9,7 +9,7 @@
 
 ## 0. Must-have před ostrým provozem
 
-Blokátory spuštění (ne „nice to have“). Stav k 2026-08-06.
+Blokátory spuštění (ne „nice to have“). Stav k 2026-08-06 večer.
 
 ### Hotovo — bezpečnostní základ
 
@@ -22,18 +22,19 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-06.
 | Staging fotek + Sharp renditions (SEC-H02 hardening) | ✅ 067–068; I5 produkční smoke OK |
 | Auth open redirect | ✅ H3 |
 | Keyword scan + fail-closed AI / rate limit | ✅ |
+| Hard stop auto-ban (3× hard gate / 24 h) | ✅ produkční smoke H1/H3/H5 2026-08-06 |
 
 ### Otevřené blokátory
 
 | # | Úkol | Proč | Odkaz |
 |---|------|------|-------|
-| **GO-1** | Produkční smoke **hard stop** H1–H3, H5 | Účet se po abuse musí zavřít; zatím jen H4/H6/H7 na localhost | [`TO-DO-dalsi-den`](./TO-DO-dalsi-den.md) §1 |
+| ~~**GO-1**~~ | ~~Produkční smoke **hard stop** H1–H3, H5~~ | ✅ H1/H3/H5 produkce 2026-08-06; zbývá H2 NSFW fotka (volitelné) + H4 mail na produkci | [`TO-DO-dalsi-den`](./TO-DO-dalsi-den.md) §1 |
 | **GO-2** | RLS smoke **B1–B5** na produkční DB | Triggery 047 v kódu ≠ ověřené na live | níže §3 + TO-DO §3 |
 | **GO-3** | Negativní smoke fotek **I6** | Cizí path / výměna / pořadí nesmí projít publish gate | TO-DO §E |
 | **GO-4** | Ops checklist: Vercel `main` zelený, Edge `CRON_SECRET` + `SITE_URL=https://zapikolou.cz` | Bez toho crony a maily padají | TO-DO §0 |
 | **GO-5** | **P33** — revize GDPR textů právníkem (Resend DPA už ✅) | Právní riziko při ostrém provozu s PII | §4 P33 |
 | **GO-6** | Inquiry abuse hardening: `Content-Type` + `Origin` (CAPTCHA až při spam tlaku) | Cross-site spam poptávek (SEC-M02) | §2 SEC-M02 |
-| **GO-7** | FAQ + DSA/VOP odkazy smoke (**F1**) | Povinné info stránky musí žít na produkci | TO-DO §4 |
+| ~~**GO-7**~~ | ~~FAQ + DSA/VOP odkazy smoke (**F1**)~~ | ✅ produkce 2026-08-06 | [`TO-DO-dalsi-den`](./TO-DO-dalsi-den.md) §4 |
 
 ### Není blokátor soft launch
 
@@ -49,7 +50,7 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-06.
 | Proces (Fable) | — | P5, P13, P16, P18, P28 ops, P29, P30 UI, P32, P33 právník | P25, P34, P36, P40 |
 | UX | — | loading/error boundaries, silent errors, 2 AI modaly | a11y drobnosti |
 
-**Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **I6 / B1–B5 / hard stop produkce:** ⏳
+**Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **Hard stop H1/H3/H5 produkce:** 2026-08-06 ✅ · **I6 / B1–B5:** ⏳
 
 ---
 
@@ -125,7 +126,7 @@ Jako běžný `authenticated` (ne service_role):
 
 ### Hard stop · fotky
 
-Viz [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) §1 (H1–H7) a §E (I5 ✅, I6 ☐).
+Viz [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) §1 — **H1/H3/H5 produkce ✅ 2026-08-06**; H2 NSFW ☐; I5 ✅, I6 ☐.
 
 ---
 
@@ -182,13 +183,13 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 
 ### P0 — před ostrým provozem (= §0 GO-*)
 
-- [ ] GO-1 Hard stop produkční smoke
+- [x] GO-7 FAQ smoke na produkci
 - [ ] GO-2 RLS B1–B5
 - [ ] GO-3 I6 negativní fotky
 - [ ] GO-4 Ops secrets + zelený build
 - [ ] GO-5 P33 právník
 - [ ] GO-6 Inquiry Content-Type + Origin
-- [ ] GO-7 FAQ smoke na produkci
+- [x] GO-1 Hard stop produkční smoke (H1/H3/H5; H2 NSFW + H4 mail produkce volitelně)
 
 ### P1 — bezpečnost / abuse (hned po GO nebo paralelně)
 
@@ -219,7 +220,7 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 2. Změna publish-sensitive pole / fotky po AI → token neplatný (I6 + fingerprint smoke).
 3. Neplatný AI JSON / chybějící token ≠ publikace.
 4. `npm audit --omit=dev` bez Critical/High; `lint` + `build` OK.
-5. Hard stop 3×/24h → `/ucet-pozastaven` + mail.
+5. Hard stop 3×/24h → `/ucet-pozastaven` (+ mail — H4 produkce ještě neověřen). **Ověřeno produkce 2026-08-06** (stop stránka + blacklist automatic).
 
 ---
 
@@ -232,6 +233,7 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 
 | Datum | Změna |
 |-------|-------|
+| 2026-08-06 večer | Produkční smoke hard stop H1/H3/H5 ✅; UI rose panel pro hard gate vs amber Gemini; GO-1 uzavřen |
 | 2026-08-06 | Sjednocení Fable + Security auditu do tohoto souboru; originály archivovány |
 | 2026-07-27…28 | SEC-H01–H04 opravy + nasazení 062–066 |
 | 2026-07-06…26 | Fable fáze 1–7 (PII, publish gate, anti-spam, GDPR texty, UX) |

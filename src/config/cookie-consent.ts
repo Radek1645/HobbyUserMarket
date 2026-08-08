@@ -1,7 +1,7 @@
 import { COOKIES_PATH } from "@/config/legal";
 
 /** Verze schéma souhlasu — bump při změně kategorií nebo právního textu. */
-export const COOKIE_CONSENT_SCHEMA_VERSION = 1;
+export const COOKIE_CONSENT_SCHEMA_VERSION = 2;
 
 export const COOKIE_CONSENT_STORAGE_KEY = `cookie-consent:v${COOKIE_CONSENT_SCHEMA_VERSION}`;
 
@@ -11,9 +11,11 @@ export const COOKIE_CONSENT_BANNER_HEIGHT_CSS_VAR = "--cookie-consent-banner-hei
 export const COOKIE_CONSENT_UI = {
   bannerTitle: "Soubory cookie",
   bannerDescription:
-    "Technické cookies pro provoz webu. Analytické cookies zapneme jen s vaším souhlasem.",
-  acceptAnalyticsLabel: "Přijmout",
-  acceptAnalyticsLabelMobile: "Přijmout",
+    "Technické cookies pro provoz webu. Analytiku a marketing (např. Meta Pixel) zapneme jen s vaším souhlasem.",
+  acceptAllLabel: "Přijmout vše",
+  acceptAllLabelMobile: "Přijmout",
+  acceptAnalyticsOnlyLabel: "Jen analytika",
+  acceptAnalyticsOnlyLabelMobile: "Analytika",
   rejectOptionalLabel: "Pouze nezbytné",
   rejectOptionalLabelMobile: "Nezbytné",
   cookiesPolicyLinkLabel: "Zásady cookies",

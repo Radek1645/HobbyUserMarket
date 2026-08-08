@@ -31,6 +31,16 @@ Formulář (create / edit)
 
 **Proč `issueApproval` až po modalu:** první volání jen připraví náhled (bez tokenu). Token se vydá z druhé kontroly **přesného** odesílaného textu, SHA-256 plných Storage objektů, jejich pořadí a `mainImageIndex` — jinak by šlo po schválení vyměnit obsah nebo hlavní fotku.
 
+### Guest draft (FB funnel C)
+
+Feature flag `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED` (default **vypnuto**). Host může na `/inzerat/novy` nahrát fotky a dostat AI náhled **bez loginu** (`issueApproval: false` only). Pojistky:
+
+1. Anonymous rate limit (IP + visitor) — migrace `073`, Edge `assertGuestAiModerationRateLimit`
+2. Cloudflare Turnstile po soft limitu / na guest upload
+3. Po OAuth vždy **nové** final AI + `publish_approved_post` — draft v **localStorage** je jen UX; `next`/`resume` drží cookie `pending_auth_return_path` + `sessionStorage` (Back z Google)
+
+**Před FB ads:** produkční smoke na mobilu + Pixel (E3/E4) — viz [`fb-promo-campaign.md`](./fb-promo-campaign.md) a [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L.
+
 - **Pre-Gemini brána:** hard-hit text + Sightengine nudity — viz [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md). Evidence `moderation_hard_reject_evidence` (**054**). Hard stop: `account_blacklist` (**055**), UI `/mod/blacklist`, stop stránka `/ucet-pozastaven`. Není to `/mod/karantena`.
 - AI se **nevolá přes Next.js API** (riziko timeoutu na Vercel) — jen přes Supabase Edge Function z klienta.
 - **Publikaci na `active` nelze obejít** — migrace `063` omezuje `publish_approved_post` na `service_role` a vyžaduje shodu fingerprintu i hashů fotek; `066` omezuje staff bypass na God Mode cizího inzerátu (viz níže).
@@ -291,13 +301,17 @@ supabase functions deploy moderate-listing
 
 ## Volba Gemini modelu (rozhodnutí 2026-07-30)
 
-**Aktuálně (od 2026-08-05):** dvě fáze = dva konfigurovatelné cíle (`resolve-moderation-ai-target.ts`).
+**Aktuálně (od 2026-08-08):** tři Gemini cíle + OpenAI + Sightengine. Kanonická tabulka s datem: [`PRD_v3.md`](./PRD_v3.md) §5.4 · [`Metodika.md`](./Metodika.md) §6.
 
 | Fáze | Secret | Default |
 |------|--------|---------|
+| **Prefill** (krok 0, `suggest-listing-from-photos`) | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
 | **Preview** (hydratace, `issueApproval` vypnuto) | `GEMINI_MODEL` | `gemini-2.5-flash` |
 | **Final** (`issueApproval: true`) | `MODERATION_FINAL_PROVIDER` (`gemini` \| `openai`) + `MODERATION_FINAL_MODEL` | provider `gemini`, model **`gemini-3.5-flash-lite`** |
 | OpenAI fallback / final openai | `OPENAI_MODERATION_MODEL` | `gpt-4o-mini` |
+| NSFW pre-gate | Sightengine | `nudity-2.1` |
+
+Prefill **nepoužívá** `MODERATION_FINAL_*` a zatím nemá OpenAI fallback.
 
 ```bash
 # Explicit final Lite (kód má stejně default):

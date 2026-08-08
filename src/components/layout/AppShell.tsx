@@ -1,5 +1,7 @@
 "use client";
 
+import { RegistrationConversionBeacon } from "@/components/analytics/ConversionBeacons";
+import { MetaPixelLoader } from "@/components/analytics/MetaPixelLoader";
 import { VirtualPageviewTracker } from "@/components/analytics/VirtualPageviewTracker";
 import { UserProvider } from "@/components/auth/UserContext";
 import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
@@ -10,6 +12,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteNoticeBar } from "@/components/layout/SiteNoticeBar";
 import { VisitorLocationProvider } from "@/components/location/VisitorLocationProvider";
 import type { AppUser } from "@/types/auth";
+import { Suspense } from "react";
 
 type AppShellProps = {
   user: AppUser | null;
@@ -22,6 +25,10 @@ export function AppShell({ user, children }: AppShellProps) {
       <CookieConsentProvider>
         <VisitorLocationProvider>
           <VirtualPageviewTracker />
+          <MetaPixelLoader />
+          <Suspense fallback={null}>
+            <RegistrationConversionBeacon userId={user?.id ?? null} />
+          </Suspense>
           <SiteNoticeBar />
           <Header user={user} />
           <main className="mx-auto w-full max-w-5xl flex-1">{children}</main>

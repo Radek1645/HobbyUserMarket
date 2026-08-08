@@ -52,10 +52,10 @@ export const MODERATION_CHECKING_UI = {
 export const MODERATION_PREVIEW_UI = {
   title: "AI vám vylepšila inzerát!",
   subtitle:
-    "AI může udělat chybu — před publikací si text zkontrolujte. Můžete publikovat vylepšený text, nebo ponechat svůj původní — obojí je v pořádku. U AI textu se v Parametrech zobrazí „Vytvořeno s pomocí AI: Ano“.",
+    "AI může udělat chybu — text před publikací zkontrolujte. Je zásadně mimo? Klikněte na Zrušit a doplňte detaily sami. Jinak publikujte vylepšený text, nebo ponechte původní — obojí je v pořádku. U AI textu se v Parametrech zobrazí „Vytvořeno s pomocí AI: Ano“.",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
-  seoSectionLabel: "Texty pro vyhledávače",
+  seoSectionLabel: "Texty pro vyhledávače (doporučujeme neměnit)",
   seoSectionHint:
     "Připravil AI. Úprava jen pokud víte, co děláte — jinak nechte tak.",
   seoEditAriaLabel: "Odemknout úpravy textů pro vyhledávače",

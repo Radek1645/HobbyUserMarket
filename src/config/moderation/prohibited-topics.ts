@@ -37,7 +37,7 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
       "Také inzeráty u zboží nebo módy, které primárně sexualizují osobu na fotografii (model v negližé na posteli, boudoir póza) místo produktu — zejména u vágního textu typu „spodní prádlo“ bez velikosti, značky a produktové fotografie (typický vzor escort návnady). " +
       "U módy platí: spodní a intimní prádlo jen s fotkou věci a uvedenou velikostí; jinak REJECTED. " +
       "Zamítni i kódovaný sexuální obsah: „adult“ / „18+ only“ ve smyslu sexuální nabídky, „lolita“ v erotickém kontextu. " +
-      "Zamítni i vulgární sexuální a obscénní slovník v názvu nebo popisu (např. šukat, mrdát, jebat, souložit, kunda, píča, čurák, děvka, mrdat, srát, hovno) — i když zbytek inzerátu vypadá jako běžná nabídka. " +
+      "Zamítni i vulgární sexuální a obscénní slovník v názvu nebo popisu (např. šukat, mrdát, jebat, souložit, kunda, píča, pička, čurák, děvka, mrdat, srát, hovno) — i když zbytek inzerátu vypadá jako běžná nabídka. " +
       "Zamítni i sexuální urážky / BDSM návnady v nesouvisejícím inzerátu (např. „sub děvko“, výzvy k sexuálnímu aktu). " +
       "Výjimka: běžný prodej knihy/filmu Lolita (Nabokov) nebo zboží „adult size“ / pro dospělé bez sexuálního kontextu — APPROVED.",
     keywords: [
@@ -69,6 +69,8 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
       "píča",
       "pica",
       "piča",
+      "pička",
+      "picka",
       "pičovin",
       "picovin",
       "srát",

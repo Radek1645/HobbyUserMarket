@@ -18,8 +18,102 @@
 **Aktualizace 2026-08-03:** § J flat kategorie (Fáze 1 IA — bez deštníku Zboží).  
 **§ J hotovo (2026-08-04):** `070` + Edge deploy; `071` unaccent. Další IA = Fáze 3–4.  
 **§ E I5 hotovo (2026-08-05):** produkční smoke edit — Sharp/`upravit` 200 → 2× `moderate-listing` 200 (~15 s / ~22 s) → `upravit` 303. I6 (negativní) zůstává otevřené.
+**Hard stop produkce (2026-08-06):** H1–H3, H5, H8; **H2** NSFW hard gate (`erotica`/`sexual_display`). H4 mail na produkci zůstává.
+**Aktualizace 2026-08-08:** § K AI photo-first prefill (zboží) — kód; migrace `074` na Supabase hotova; Edge `suggest-listing-from-photos` nasazen.  
+**Aktualizace 2026-08-08:** § L manuální smoke — FB guest funnel C + AI prefill (scénáře k odškrtávání).  
+**Aktualizace 2026-08-08:** § L.B5–B8 — kvalita prefill textu (PII, konzistence title/desc, few-shot stabilita, jiná kategorie).  
+**Aktualizace 2026-08-08:** § L.B9 — prefill mimo zboží (nemovitost) → nejistá kategorie / ruční podkategorie.
+**Aktualizace 2026-08-09:** OAuth resume po **Zpět** z Google (cookie + sessionStorage); krokovník + AI/Publikace; C3 + D2 smoke; PRD v3.64. FB ads odloženy — produkční test na mobilu.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
+
+---
+
+## L. Priorita — smoke FB funnel C + AI prefill
+
+> **2026-08-08.** Manuální průchod před ads switch. Flag C: `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED=true`. Prefill: `SUGGEST_FROM_PHOTOS_ENABLED`. Migrace `073` + `074`, Edge `moderate-listing` + `suggest-listing-from-photos`, Turnstile. Testuj v anonymním okně. Detail: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
+
+**Minimum před ads:** A1, A3, C3, D1, B1, **B5, B6** (kvalita textu).  
+**Localhost 2026-08-09:** A1–A3, B1–B7/B9, C3, D2 hotovo; zbývá hlavně **D1** (explicitně FAB/header copy), Pixel **E3/E4**, produkční mobil.
+
+**Doporučené pořadí:** B1 → **B5 → B6 → B7** → A1 → A3 → B2/B3a → C3 → D1/D2 → (A2, B8) → E3/E4.
+
+### A. Happy path — host z FB (prefill → login → publish)
+
+| # | Scénář | Očekávání | ✓ |
+|---|--------|-----------|---|
+| A1 | Host `/inzerat/novy` → 1–2 fotky zboží → AI prefill → doplnit cenu/stav/lokalitu → AI náhled → Publikovat → **Google** OAuth → onboarding (VOP/věk už z registrace) → resume | Krok 0 guest UI; po prefillu title/desc/cat, **cena prázdná**; bez auth nejde publish; draft v localStorage; po OAuth `/inzerat/novy?resume=1` → aktivní inzerát `?published=<id>`; hlavní fotka = zvolená; Pixel ListingPublished 1× | ☑ 2026-08-08 + **2026-08-09** (Google Zpět → správný účet → resume OK; Opel Zafira) |
+| A2 | Stejné jako A1, ale **e-mail** registrace + verify odkaz **v nové kartě** | Draft přežije (localStorage); po verify resume → publish; fotky/text beze ztráty | ☑ 2026-08-08 (Buddha 25b5; captcha + e-mail verify + onboarding Parak) |
+| A3 | Host prefill → Publikovat → přihlásit **existující** hotový účet | `next` + resume; publish bez znovu VOP/věku; jeden inzerát (ne duplicita) | ☑ 2026-08-08 (potvrzeno) |
+
+### B. Prefill (nová úprava + kvalita textu)
+
+| # | Scénář | Očekávání | ✓ |
+|---|--------|-----------|---|
+| B1 | **Přihlášený** → `/inzerat/novy` → 1–2 fotky → AI prefill → doplnit → AI → Publikovat | Prefill krok 0 (ne guest copy); title/desc/cat, cena prázdná; publish **hned** bez login redirectu | ☑ 2026-08-08 (Tlapková patrola Rocky) |
+| B2 | „Vyplnit inzerát ručně“ (host i přihlášený) | Klasický výběr kategorie; **žádné** volání `suggest-listing-from-photos`; host: publish→login; přihlášený: publish hned | ☑ 2026-08-08 (přihlášený + host: resume→login→publish pod hory_99) |
+| B3a | NSFW fotka u prefillu | Chyba NSFW + CTA pokračovat ručně; app nepadá | ☑ 2026-08-08 (erotica 0.99 / sexual_display 0.97 → reject UI) |
+| B3b | Soft rate limit prefill (host) | Turnstile / captcha; po limitu zpráva + manuál dostupný | ☑ 2026-08-08 (Turnstile při guest AI / A2) |
+| B3c | Edge / Gemini down | Technická chyba + manuál; lze dokončit bez prefillu | ☐ |
+| B3d | 0 fotek / 3+ fotek | Validace min 1, max 2 | ☑ 2026-08-09 (3+ → warning + první 2; 0 → needPhotos) |
+| B4 | Po prefillu změnit kategorii/text → publish | Formulář má pravdu; final AI respektuje formulář (cena/lokalita z formuláře) | ☑ 2026-08-09 (změna kategorie — fotky zůstaly) |
+| B5 | **Kvalita draftu (auto bez čitelného modelu)** — 1×: fotky Škoda bez nápisu modelu na kufru | Title obecné (např. „Bílé osobní auto Škoda“), **ne** tipovaný model (Rapid…); description „Nabízím…“; **oddělené** `[DOPLNIT x]`, `[DOPLNIT y]` (ne slitý seznam); **žádná** výzva ke kontaktu („kontaktujte mě/mne“, „napište mi“…); **žádná SPZ/tel/e-mail** v textu (i když je SPZ na fotce); title ↔ description konzistentní | ☑ 2026-08-08 (Opel: title „Stříbrné osobní auto Opel“, ne Corsa; oddělené DOPLNIT) |
+| B6 | **Stabilita formátu** — stejné fotky jako B5, **3–4×** po sobě (nový prefill / refresh) | Každý běh splní kritéria B5. Pokud v ≥1/5 běhů „kontaktujte…“ nebo slitý placeholder → fail (flash-lite nedeterminismus); zapsat a řešit | ☑ |
+| B7 | **Jiná kategorie** — dětské oblečení **nebo** elektro (1–2 fotky) | Prefill generalizuje: category sedí; nejisté atributy jako oddělené `[DOPLNIT velikost]` / značka atd. (ne automobilový slovník rok/km); bez kontaktu / PII; title bez hádání | ☑ 2026-08-08 (odrážedlo → Sport/Kola; DOPLNIT značka/velikost/materiál) |
+| B8 | **Auto s čitelným modelem** na kufru/masce (Octavia, Fabia…) | Title i description mohou obsahovat model; **ne** `[DOPLNIT typ/model]` zároveň s konkrétním modelem v title | ☐ |
+| B9 | **Mimo zboží (nemovitost)** — 1–2 fotky domu / reality (ad-hoc; photo-first je primárně zboží) | Prefill **neuhádne** jistotou špatnou podkategorii: banner „AI navrhla kategorii, ale podkategorie není jistá“ (nebo ekv.); title/desc připravené; uživatel doplní kategorii ručně (např. Služby/práce/reality → nemovitost) | ☑ 2026-08-08 (dům ONYX REALITY → Ostatní + ruční podkategorie; title/desc OK) |
+
+> **Poznámka (2026-08-08):** B5 jednou vyšlo čistě po few-shot v promptu. B6 ověří, jestli formát drží napříč voláními; B7 jestli generalizuje mimo auto. Bez B6/B7 neoznačovat prefill za hotový. B9 = fail-soft mimo closed vocabulary zboží.
+
+### C. Guest funnel bez prefillu (regrese FB)
+
+| # | Scénář | Očekávání | ✓ |
+|---|--------|-----------|---|
+| C1 | Host ručně (fotky + kategorie) → AI → Publikovat → Google → onboarding → publish | Stejný resume jako A1; aktivní inzerát | ☐ |
+| C2 | Soft rate limit guest AI preview (2+/hod) | Captcha; neretryuje donekonečna; srozumitelná chyba | ☐ |
+| C3 | Po loginu na `?resume=1` **refresh** uprostřed publish | Jeden inzerát (`publish_request_id`), ne dva | ☑ 2026-08-09 (2× F5; jeden Opel) |
+| C4 | Selhání publish (síť / Edge) | Draft/staging obnoven nebo zachován; znovu Publikovat bez ztráty fotek | ☐ |
+
+### D. Přihlášený při flagu C = on (nesmí do guestu)
+
+| # | Scénář | Očekávání | ✓ |
+|---|--------|-----------|---|
+| D1 | Hotový účet → header/FAB `/inzerat/novy` | Klasický create + prefill; **bez** „účet až při publikaci“ | ☐ |
+| D2 | Přihlášený vyplnit → AI → Publikovat | Žádný OAuth/login redirect | ☑ 2026-08-09 (edit Opel / změna ceny → hydratace, bez registrace) |
+| D3 | Účet bez přezdívky → `/inzerat/novy` | Onboarding → návrat na create / `?resume=1` | ☐ |
+| D4 | Přihlášený bez cizího guest draftu | Žádný claim cizího stagingu | ☐ |
+
+### E. Auth / Pixel kolem FB landingu
+
+| # | Scénář | Očekávání | ✓ |
+|---|--------|-----------|---|
+| E1 | Landing A: `/login?next=/inzerat/novy&message=create_listing&tab=register` | Zelený box (profil + 20 inzerátů); po registraci → create | ☐ |
+| E2 | Landing C: přímo `/inzerat/novy` | Guest + prefill (site-wide) | ☐ |
+| E3 | Nová registrace z funnelu | Pixel CompleteRegistration / `registered=1` jen u **nové** registrace | ☐ |
+| E4 | Publish | `ListingPublished` s `published=<postId>`; bez duplicity při refresh | ☐ |
+| E5 | Logo / „Zpět“ z onboardingu | HP, bez smyčky login↔onboarding | ☐ |
+
+---
+
+## K. Priorita — AI photo-first prefill (zboží)
+
+> **Kód 2026-08-08.** Flag `SUGGEST_FROM_PHOTOS_ENABLED`. Edge oddělená od `moderate-listing`. Deploy checklist; smoke detaily v § L.
+
+| # | Úkol | Očekávání | ✓ |
+|---|------|-----------|---|
+| PRE1 | Migrace `074` na Supabase | enum `suggest_from_photos` | ☑ 2026-08-08 |
+| PRE2 | `npm run sync:moderation` + deploy `suggest-listing-from-photos` | Edge 200 na auth request | ☑ 2026-08-08 (potvrzeno) |
+| PRE3 | Smoke: 1–2 fotky zboží → prefill title/desc/cat; cena prázdná | → § L B1 / B5–B7 | ☑ → L B1 |
+| PRE4 | Manuální CTA → klasický krok kategorie | → § L B2 | ☑ → L B2 |
+| PRE5 | NSFW / rate limit → chyba + manuál dostupný | → § L B3a / B3b | ☐ |
+
+Související: [`src/config/suggest-from-photos.ts`](../src/config/suggest-from-photos.ts), Metodika §5 krok 0, PRD v3.61, § L.
+
+**Odloženo (ne teď):**
+- Provider fallback OpenAI u photo-prefillu (jako u `moderate-listing`) — zatím UX fail-soft.
+- Cache Sightengine verdiktu podle image hash (prefill + preview + final dnes volají API znovu na stejné fotky) — dává smysl costově; realizace později. Detail v plánu `ai_photo_prefill`.
+
+**Rozpor 2 fotek (2026-08-08):** Prefill **N/A**. Final pojistka jen u zboží: **dva vzájemně vylučující se hlavní produkty** (2 auta) → REJECTED `scam_fraud`. Set/příslušenství (notebook+myš+nabíječka), nemovitost/udalost ≠ REJECT. Smoke: Zafira+Corsa = REJECT; set / hlavní+detail = ne REJECT.
 
 ---
 
@@ -264,13 +358,16 @@ Související: `ListingCard.tsx`, `format-public-location.ts`, detail `inzerat/[
 
 | # | Scénář | Jak | Očekávání | ✓ |
 |---|--------|-----|-----------|---|
-| H1 | Hard reject hláška | Inzerát s hard-hit textem (1×) | Dialog: porušení podmínek + kontakt `info@…`; účet dál funguje | ☐ |
-| H2 | NSFW reject | Fotka nad prahem (nebo 2. hard-hit) | Reject + evidence; stále bez blacklistu | ☐ |
-| H3 | Auto hard stop 3×/24h | 3. hard reject na test účtu | Redirect `/ucet-pozastaven`; řádek v `account_blacklist` (`automatic`); aktivní inzeráty `blocked` + `account_blacklist` | ☐ |
-| H4 | E-mail hard stop | Po H3 (nebo ruční add) | Mail „Účet … byl pozastaven“ (Resend / schránka) | ☑ localhost |
-| H5 | Gate | Přihlášený blacklisted → jiná URL | Redirect na `/ucet-pozastaven`; odhlášení funguje | ☐ |
+| H1 | Hard reject hláška | Inzerát s hard-hit textem (1×) | Dialog: porušení podmínek + kontakt `info@…`; účet dál funguje | ☑ produkce 2026-08-06 (`CSAM`; rose panel po hard gate) |
+| H2 | NSFW reject | Fotka nad prahem (nebo 2. hard-hit) | Reject + evidence; stále bez blacklistu | ☑ produkce 2026-08-06 (`NSFW_IMAGE`; erotica 0.99 / sexual_display 0.97 / sexual_activity 0.66; `ai_provider` null) |
+| H3 | Auto hard stop 3×/24h | 3. hard reject na test účtu | Redirect `/ucet-pozastaven`; řádek v `account_blacklist` (`automatic`); aktivní inzeráty `blocked` + `account_blacklist` | ☑ produkce 2026-08-06 (`testhorakradek@…`; 3× hard_hit_text + threshold) |
+| H4 | E-mail hard stop | Po H3 (nebo ruční add) | Mail „Účet … byl pozastaven“ (Resend / schránka) | ☑ produkce 2026-08-06 |
+| H5 | Gate | Přihlášený blacklisted → jiná URL | Redirect na `/ucet-pozastaven`; odhlášení funguje | ☑ produkce 2026-08-06 |
 | H6 | Unban + obnova | `/mod/blacklist` → Odebrat + důvod | Účet OK; inzeráty z hard stopu znovu `active`; mail o obnově | ☑ localhost |
 | H7 | Ruční blacklist | Staff přidá cizí e-mail + důvod | `source=manual`; stejný gate + mail | ☑ localhost (hide 5 / restore 5 po 057) |
+| H8 | **Kontrola po ~24 h** (od 2026-08-06 večer → **2026-08-07 večer**) | `testhorakradek@…` | 1) Bez unbanu: po přihlášení stále `/ucet-pozastaven` (blacklist **neexpiruje** sám — 24 h je jen okno pro počítání 3 hitů). 2) Staff unban v `/mod/blacklist` → účet OK, inzerát(y) s `account_blacklist` znovu `active`, jde **editovat** / uložit. | ☑ produkce 2026-08-06 (unban hned; inzerát active, viditelný dle polohy Kolín) |
+
+> **Pozn. H8:** Inzerát po H3 zmizel z veřejného výpisu (`blocked` + `status_reason_code = account_blacklist`) — OK. Obnova = unban, ne uplynutí 24 h.
 
 SQL rychlá kontrola:
 
@@ -287,9 +384,9 @@ LIMIT 10;
 
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
-| T1 | Badge **Podnikatel** | Štítek u firmy | ☐ |
-| T2 | Milník **5+** | `Aktivní inzerent · 5+` | ☐ |
-| T4 | `/uzivatel/[nickname]` | Grid aktivních | ☐ |
+| T1 | Badge **Podnikatel** | Štítek u firmy | ☑ produkce 2026-08-06 |
+| T2 | Milník **5+** | `Aktivní inzerent · 5+` | ☑ produkce 2026-08-06 |
+| T4 | `/uzivatel/[nickname]` | Grid aktivních | ☑ produkce 2026-08-06 (`hory_63` / `meluzina`) |
 | V1 | View count | Anonymní view navýší (dedup 24 h) | ☐ |
 | V2 | Majitel nepočítá | Vlastní detail `view_count` nestoupá | ☐ |
 
@@ -301,7 +398,7 @@ LIMIT 10;
 |---|--------|-----------|---|
 | A6 | Poptávka Práce: PDF/JPG OK; falešné `.pdf` | Platná OK; falešná → chyba | ☐ |
 | B1–B4 | SQL RLS (ico / payment / renew / expires) | `42501` | ☐ |
-| B5 | UI prodloužení | `renew_count` +1 | ☐ |
+| B5 | UI prodloužení | `renew_count` +1 | ☑ produkce 2026-08-06 (router id 47; `renew_count: 1`, `expires_at` → 2. 10. 2026) |
 | D1 | `/llms.txt` s `[` / `]` v titulku | Markdown OK | ☐ |
 
 Detail: [`SECURITY_UX_BACKLOG.md`](./SECURITY_UX_BACKLOG.md) §3 Smoke A–D.
@@ -312,8 +409,8 @@ Detail: [`SECURITY_UX_BACKLOG.md`](./SECURITY_UX_BACKLOG.md) §3 Smoke A–D.
 
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
-| F1 | `/faq` | Accordion, ≥5 otázek; odkazy VOP/Podmínky fungují; v patičce u **Co je zaPikolou?** | ☐ |
-| F2 | Poznámky God Mode | Staff na detailu → **Poznámky** → uložit / edit do 24 h | ☐ |
+| F1 | `/faq` | Accordion, ≥5 otázek; odkazy VOP/Podmínky fungují; v patičce u **Co je zaPikolou?** | ☑ produkce 2026-08-06 (vč. prokliků) |
+| F2 | Poznámky God Mode | Staff na detailu → **Poznámky** → uložit / edit do 24 h | ☑ produkce 2026-08-06 (uložení + úprava) |
 | F3 | Audit po pauza | Po změně stavu řádek v `audit_events` (`event_type` + actor) | ☐ |
 | F4 | CTA „přes web“ | Nový AI inzerát má CTA …zprávu přes web (ne platformu) | ☐ |
 

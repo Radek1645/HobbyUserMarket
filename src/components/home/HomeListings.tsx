@@ -81,13 +81,12 @@ export function HomeListings({
   const activeLocation = locationEnabled ? location : null;
   const [filter, setFilter] = useState<HomeListingFilterState>(DEFAULT_FILTER);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [listings, setListings] = useState<PublicListingPreview[]>(
-    () => (hasInitialForCategory ? initialListings : []),
-  );
+  // Nesypat SSR celostátní výpis do stavu hned — po načtení polohy by „problikl“ a zmizel.
+  const [listings, setListings] = useState<PublicListingPreview[]>([]);
   const [fetchMode, setFetchMode] = useState<FetchMode>("recent");
   const [effectiveRadiusKm, setEffectiveRadiusKm] = useState<number | null>(null);
   const [nationwideFallback, setNationwideFallback] = useState(false);
-  const [loading, setLoading] = useState(() => !hasInitialForCategory);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const pageSize = useHomeListingsPageSize();
   const [visibleCount, setVisibleCount] = useState(HOME_LISTINGS_LIMIT_MOBILE);
@@ -222,12 +221,10 @@ export function HomeListings({
     }
 
     if (!locationReady) {
+      // Počkej na localStorage polohy — jinak SSR celostátní výpis „problikne“
+      // a po nearby fetchi zmizí (Kolín při poloze Brno).
       if (hasInitialForCategory) {
-        setListings(initialListings);
-        setFetchMode("recent");
-        setEffectiveRadiusKm(null);
-        setNationwideFallback(false);
-        setLoading(false);
+        setLoading(true);
         setError(null);
       }
       return;
@@ -243,7 +240,11 @@ export function HomeListings({
       return;
     }
 
-    void fetchListings(activeLocation, category, "", { silent: hasInitialForCategory });
+    // S aktivní polohou nenechávat SSR recent viditelný během nearby fetch.
+    if (activeLocation && hasInitialForCategory) {
+      setListings([]);
+    }
+    void fetchListings(activeLocation, category, "", { silent: false });
   }, [
     activeLocation,
     category,
@@ -336,10 +337,12 @@ export function HomeListings({
         />
       </div>
 
-      {loading && !hasInitialForCategory ? (
+      {loading && listings.length === 0 ? (
         <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Načítám inzeráty…
+          {activeLocation
+            ? "Načítám inzeráty podle polohy…"
+            : "Načítám inzeráty…"}
         </div>
       ) : null}
 
@@ -382,13 +385,6 @@ export function HomeListings({
             </div>
           ) : null}
         </>
-      ) : null}
-
-      {loading && hasInitialForCategory && activeLocation ? (
-        <p className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Aktualizuji podle polohy…
-        </p>
       ) : null}
 
       {error ? (

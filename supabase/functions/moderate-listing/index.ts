@@ -36,7 +36,12 @@ import {
   PROMPT_INJECTION_REJECTION_REASON,
 } from "../_shared/moderation/prompt-injection-guard.ts";
 import { findProhibitedKeyword, checkHardHitText } from "../_shared/moderation/prohibited-scan.ts";
-import { assertAiModerationRateLimit } from "../_shared/moderation/rate-limit.ts";
+import {
+  assertAiModerationRateLimit,
+  assertGuestAiModerationRateLimit,
+  verifyGuestVisitorToken,
+} from "../_shared/moderation/rate-limit.ts";
+import { verifyTurnstileToken } from "../_shared/moderation/turnstile.ts";
 import {
   loadModerationImagesFromStorage,
   type LoadedModerationImages,
@@ -152,11 +157,22 @@ type ModerationResponseBody = ModerationResult & {
 };
 
 function logModerationResult(
-  userId: string,
+  userId: string | null,
   logCtx: ModerationLogContext,
   body: ModerationResponseBody,
   errorCode?: string,
 ): Promise<boolean> {
+  if (!userId) {
+    console.log(
+      "guest-moderation:",
+      JSON.stringify({
+        status: body.status,
+        errorCode,
+        categoryType: logCtx.categoryType,
+      }),
+    );
+    return Promise.resolve(true);
+  }
   return logModerationCheck({
     userId,
     intent: logCtx.intent,
@@ -185,7 +201,7 @@ function logModerationResult(
 }
 
 async function respondWithLog(
-  userId: string,
+  userId: string | null,
   logCtx: ModerationLogContext,
   body: ModerationResponseBody,
   options?: {
@@ -210,11 +226,18 @@ async function respondWithLog(
 }
 
 function logRejectedFromContext(
-  userId: string,
+  userId: string | null,
   logCtx: ModerationLogContext,
   rejectionReason: string,
   errorCode?: string,
 ): Promise<boolean> {
+  if (!userId) {
+    console.log(
+      "guest-moderation-rejected:",
+      JSON.stringify({ rejectionReason, errorCode }),
+    );
+    return Promise.resolve(true);
+  }
   return logModerationCheck({
     userId,
     intent: logCtx.intent,
@@ -400,6 +423,24 @@ async function callModerationAi(params: {
   }
 }
 
+function readClientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  const cfIp = req.headers.get("cf-connecting-ip")?.trim();
+  if (cfIp) return cfIp;
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+  return "0.0.0.0";
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(value);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -409,75 +450,172 @@ serve(async (req) => {
     return jsonResponse({ status: "REJECTED", reason: "Metoda není povolena." }, 405);
   }
 
-  let userId: string | null = null;
-  let userEmail: string | null = null;
-  const logCtx: ModerationLogContext = {};
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    let ownerPrefix: string | null = null;
+    const logCtx: ModerationLogContext = {};
 
   try {
     const authUser = await resolveAuthUser(req);
     userId = authUser?.userId ?? null;
     userEmail = authUser?.email ?? null;
+
+    // Body potřebujeme dřív pro guest visitorId / turnstile — přečteme jednou.
+    const body = (await req.json()) as ModerationRequestBody & {
+      guestVisitorId?: string;
+      guestVisitorToken?: string;
+      turnstileToken?: string;
+    };
+
     if (!userId) {
-      return jsonResponse(
-        {
-          error: "AUTH_REQUIRED",
-          message: "Pro AI kontrolu se přihlaste.",
-        },
-        401,
-      );
-    }
+      if (body.issueApproval === true) {
+        return jsonResponse(
+          {
+            error: "AUTH_REQUIRED",
+            message: "Pro publikaci se přihlaste.",
+          },
+          401,
+        );
+      }
 
-    if (userEmail && (await isEmailBlacklisted(userEmail))) {
-      await logModerationCheck({
-        userId,
-        status: "REJECTED",
-        rejectionReason: ACCOUNT_BLACKLISTED_MESSAGE,
-        errorCode: "ACCOUNT_BLACKLISTED",
-      });
-      return jsonResponse(
-        {
+      const visitorId = String(body.guestVisitorId ?? "").trim();
+      if (!isUuid(visitorId)) {
+        return jsonResponse(
+          {
+            error: "GUEST_VISITOR_REQUIRED",
+            message: "Obnovte stránku a zkuste to znovu.",
+          },
+          400,
+        );
+      }
+      const visitorToken = String(body.guestVisitorToken ?? "").trim();
+      if (!(await verifyGuestVisitorToken(visitorId, visitorToken))) {
+        return jsonResponse(
+          {
+            error: "GUEST_VISITOR_REQUIRED",
+            message: "Návštěvnická relace není platná. Obnovte stránku.",
+          },
+          403,
+        );
+      }
+
+      const ipAddress = readClientIp(req);
+      const turnstileToken = String(body.turnstileToken ?? "").trim();
+
+      let guestLimit;
+      try {
+        guestLimit = await assertGuestAiModerationRateLimit({
+          ipAddress,
+          visitorId,
+          captchaVerified: false,
+        });
+      } catch (rateError) {
+        if (rateError instanceof Error && rateError.message === "RATE_LIMIT") {
+          return technicalErrorResponse(
+            "Dosáhli jste limitu AI náhledů. Zkuste to v následující hodině, nebo se přihlaste.",
+            429,
+            "RATE_LIMIT",
+          );
+        }
+        return technicalErrorResponse(
+          "AI kontrola teď není dostupná. Zkuste to prosím za chvíli znovu.",
+          503,
+          "RATE_LIMIT_UNAVAILABLE",
+        );
+      }
+
+      if (guestLimit.requiresCaptcha) {
+        const ok = await verifyTurnstileToken({
+          token: turnstileToken,
+          ipAddress,
+        });
+        if (!ok) {
+          return jsonResponse(
+            {
+              error: "CAPTCHA_REQUIRED",
+              message: "Potvrďte, že nejste robot, a zkuste to znovu.",
+            },
+            403,
+          );
+        }
+
+        try {
+          await assertGuestAiModerationRateLimit({
+            ipAddress,
+            visitorId,
+            captchaVerified: true,
+          });
+        } catch (rateError) {
+          if (rateError instanceof Error && rateError.message === "RATE_LIMIT") {
+            return technicalErrorResponse(
+              "Dosáhli jste limitu AI náhledů. Zkuste to v následující hodině, nebo se přihlaste.",
+              429,
+              "RATE_LIMIT",
+            );
+          }
+          return technicalErrorResponse(
+            "AI kontrola teď není dostupná. Zkuste to prosím za chvíli znovu.",
+            503,
+            "RATE_LIMIT_UNAVAILABLE",
+          );
+        }
+      }
+
+      ownerPrefix = `guest/${visitorId}`;
+    } else {
+      ownerPrefix = userId;
+
+      if (userEmail && (await isEmailBlacklisted(userEmail))) {
+        await logModerationCheck({
+          userId,
           status: "REJECTED",
-          reason: ACCOUNT_BLACKLISTED_MESSAGE,
-          accountBlocked: true,
+          rejectionReason: ACCOUNT_BLACKLISTED_MESSAGE,
           errorCode: "ACCOUNT_BLACKLISTED",
-        },
-        403,
-      );
+        });
+        return jsonResponse(
+          {
+            status: "REJECTED",
+            reason: ACCOUNT_BLACKLISTED_MESSAGE,
+            accountBlocked: true,
+            errorCode: "ACCOUNT_BLACKLISTED",
+          },
+          403,
+        );
+      }
+
+      try {
+        await assertAiModerationRateLimit(userId);
+      } catch (rateError) {
+        if (rateError instanceof Error && rateError.message === "RATE_LIMIT") {
+          const reason =
+            "Dosáhli jste hodinového limitu AI kontrol (max. 20). Další kontrolu bude možné spustit v následující hodině.";
+          await logModerationCheck({
+            userId,
+            status: "REJECTED",
+            rejectionReason: reason,
+            errorCode: "RATE_LIMIT",
+          });
+          // P8: rate limit ≠ obsahové zamítnutí — klient zobrazí technickou chybu.
+          return technicalErrorResponse(reason, 429, "RATE_LIMIT");
+        }
+        if (
+          rateError instanceof Error &&
+          rateError.message === "RATE_LIMIT_UNAVAILABLE"
+        ) {
+          const reason =
+            "AI kontrola teď není dostupná. Zkuste to prosím za chvíli znovu.";
+          await logModerationCheck({
+            userId,
+            status: "REJECTED",
+            rejectionReason: reason,
+            errorCode: "RATE_LIMIT_UNAVAILABLE",
+          });
+          return technicalErrorResponse(reason, 503, "RATE_LIMIT_UNAVAILABLE");
+        }
+        throw rateError;
+      }
     }
 
-    try {
-      await assertAiModerationRateLimit(userId);
-    } catch (rateError) {
-      if (rateError instanceof Error && rateError.message === "RATE_LIMIT") {
-        const reason =
-          "Dosáhli jste hodinového limitu AI kontrol (max. 20). Další kontrolu bude možné spustit v následující hodině.";
-        await logModerationCheck({
-          userId,
-          status: "REJECTED",
-          rejectionReason: reason,
-          errorCode: "RATE_LIMIT",
-        });
-        // P8: rate limit ≠ obsahové zamítnutí — klient zobrazí technickou chybu.
-        return technicalErrorResponse(reason, 429, "RATE_LIMIT");
-      }
-      if (
-        rateError instanceof Error &&
-        rateError.message === "RATE_LIMIT_UNAVAILABLE"
-      ) {
-        const reason =
-          "AI kontrola teď není dostupná. Zkuste to prosím za chvíli znovu.";
-        await logModerationCheck({
-          userId,
-          status: "REJECTED",
-          rejectionReason: reason,
-          errorCode: "RATE_LIMIT_UNAVAILABLE",
-        });
-        return technicalErrorResponse(reason, 503, "RATE_LIMIT_UNAVAILABLE");
-      }
-      throw rateError;
-    }
-
-    const body = (await req.json()) as ModerationRequestBody;
     const title = String(body?.title ?? "").trim();
     const description = String(body?.description ?? "").trim();
     logCtx.intent = String(body?.intent ?? "").trim() || undefined;
@@ -510,7 +648,7 @@ serve(async (req) => {
       if (imageReferences.length > 0) {
         loadedImages = await loadModerationImagesFromStorage(
           imageReferences,
-          userId,
+          ownerPrefix!,
         );
       } else {
         assertModerationImagesWithinLimits(legacyImagesBase64);
@@ -622,18 +760,21 @@ serve(async (req) => {
     // --- Pre-Gemini gate: hard-hit text + NSFW fotky ---
     const hardHit = checkHardHitText(`${title}\n${description}`);
     if (hardHit.rejected) {
-      await recordHardRejectEvidence({
-        userId,
-        kind: "hard_hit_text",
-        matchedCategory: hardHit.matchedCategory,
-        matchedTerm: hardHit.matchedTerm,
-        reason: HARD_HIT_TEXT_REASON,
-        titleSnippet: title,
-      });
-      const accountBlocked = await incrementHardRejectAndMaybeApplyHardStop(
-        userId,
-        userEmail,
-      );
+      let accountBlocked = false;
+      if (userId) {
+        await recordHardRejectEvidence({
+          userId,
+          kind: "hard_hit_text",
+          matchedCategory: hardHit.matchedCategory,
+          matchedTerm: hardHit.matchedTerm,
+          reason: HARD_HIT_TEXT_REASON,
+          titleSnippet: title,
+        });
+        accountBlocked = await incrementHardRejectAndMaybeApplyHardStop(
+          userId,
+          userEmail,
+        );
+      }
       return respondWithLog(
         userId,
         logCtx,
@@ -667,25 +808,28 @@ serve(async (req) => {
           logCtx.sightengineResponses = sightengineResponses;
 
           if (nudity.rejected) {
-            const storagePath = await uploadNsfwEvidenceImage(
-              userId,
-              imageBase64,
-              imageIndex,
-              sightengineImageMimeTypes[imageIndex],
-            );
-            await recordHardRejectEvidence({
-              userId,
-              kind: "nsfw_image",
-              reason: nudity.reason,
-              titleSnippet: title,
-              storagePath: storagePath ?? undefined,
-              imageIndex,
-              sightengineResponses,
-            });
-            const accountBlocked = await incrementHardRejectAndMaybeApplyHardStop(
-              userId,
-              userEmail,
-            );
+            let accountBlocked = false;
+            if (userId) {
+              const storagePath = await uploadNsfwEvidenceImage(
+                userId,
+                imageBase64,
+                imageIndex,
+                sightengineImageMimeTypes[imageIndex],
+              );
+              await recordHardRejectEvidence({
+                userId,
+                kind: "nsfw_image",
+                reason: nudity.reason,
+                titleSnippet: title,
+                storagePath: storagePath ?? undefined,
+                imageIndex,
+                sightengineResponses,
+              });
+              accountBlocked = await incrementHardRejectAndMaybeApplyHardStop(
+                userId,
+                userEmail,
+              );
+            }
             return respondWithLog(
               userId,
               logCtx,
@@ -705,14 +849,16 @@ serve(async (req) => {
               error: nudityError.message,
             });
             logCtx.sightengineResponses = sightengineResponses;
-            await recordHardRejectEvidence({
-              userId,
-              kind: "sightengine_unavailable",
-              reason: nudityError.message,
-              titleSnippet: title,
-              imageIndex,
-              sightengineResponses,
-            });
+            if (userId) {
+              await recordHardRejectEvidence({
+                userId,
+                kind: "sightengine_unavailable",
+                reason: nudityError.message,
+                titleSnippet: title,
+                imageIndex,
+                sightengineResponses,
+              });
+            }
             await logRejectedFromContext(
               userId,
               logCtx,
@@ -852,6 +998,15 @@ serve(async (req) => {
     // Otázky jsou podle UI nepovinné, proto finální bezpečnostní kontrola smí
     // vydat token pro oba nezamítnuté statusy. Token stále váže přesný text.
     if (result.status !== "REJECTED" && body.issueApproval === true) {
+      if (!userId) {
+        return jsonResponse(
+          {
+            error: "AUTH_REQUIRED",
+            message: "Pro publikaci se přihlaste.",
+          },
+          401,
+        );
+      }
       const auditLogged = await logModerationResult(
         userId,
         logCtx,

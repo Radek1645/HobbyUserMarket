@@ -66,7 +66,7 @@ export function buildPendingConsentMetadata(
   };
 }
 
-async function profileHasRecordedConsents(
+export async function profileHasRecordedConsents(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<boolean> {
@@ -85,13 +85,23 @@ export async function persistRegistrationConsents(
   userId: string,
   formData: FormData,
 ): Promise<void> {
+  await persistRegistrationConsentPayload(
+    supabase,
+    userId,
+    readRegistrationConsentPayload(formData),
+  );
+}
+
+export async function persistRegistrationConsentPayload(
+  supabase: SupabaseClient,
+  userId: string,
+  payload: RegistrationConsentPayload,
+): Promise<void> {
   if (await profileHasRecordedConsents(supabase, userId)) {
     return;
   }
 
-  const payload = readRegistrationConsentPayload(formData);
   const update = buildConsentRowUpdate(payload.marketing, payload.vopVersion);
-
   await supabase.from("profiles").update(update).eq("id", userId);
 }
 

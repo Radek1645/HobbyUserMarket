@@ -14,6 +14,14 @@ export const listingFormRequiredMarkClass =
 
 export const LISTING_FORM_REQUIRED_LEGEND = "* Označená pole jsou povinná.";
 
+/** Edit vlastního inzerátu — smazání je ve Správě inzerátů, ne ve formuláři. */
+export const LISTING_FORM_DELETE_HINT = {
+  beforeLink: "* Tip: inzerát smažete ve ",
+  linkLabel: "Správě inzerátů",
+  afterLink: " — otevřete horní menu a zvolte „Správa inzerátů“.",
+  href: "/moje-inzeraty",
+} as const;
+
 /** Full-screen overlay při publikaci / uložení změn (CreateListingForm). */
 export const LISTING_FORM_SAVING_UI = {
   title: "Ukládám inzerát…",
@@ -58,4 +66,39 @@ export const listingInquiryCtaButtonClass =
   "flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const listingFormDropzoneClass =
-  "rounded-xl border-2 border-dashed border-neutral-500 bg-neutral-50 px-4 py-6 text-center text-sm text-neutral-700 transition hover:border-neutral-600 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
+  "rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 px-4 py-6 text-center text-sm text-neutral-700 transition-all duration-200 hover:border-neutral-600 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 cursor-pointer";
+
+/** Dropzone při drag-over (soubor nad plochou). */
+export const listingFormDropzoneActiveClass =
+  "border-emerald-500 bg-emerald-50/30";
+
+/** Aktivní krok v krokovníku create formuláře. */
+export const listingFormStepActiveClass =
+  "rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-800";
+
+/** Neaktivní krok v krokovníku. */
+export const listingFormStepInactiveClass = "font-normal text-slate-400";
+
+/** Labely krokovníku — photo-first create (čísla 1–5). */
+export const LISTING_FORM_STEPPER_PHOTO_FIRST = [
+  "Fotky a AI prefill",
+  "Kategorie",
+  "Obsah",
+  "AI vylepšení",
+  "Publikace",
+] as const;
+
+/** Labely krokovníku — ruční create / edit (čísla 1–4). */
+export const LISTING_FORM_STEPPER_MANUAL = [
+  "Kategorie",
+  "Obsah",
+  "AI vylepšení",
+  "Publikace",
+] as const;
+
+/** Sekundární banner — ruční cesta (reality / služby / práce / události). */
+export const listingFormManualBannerClass =
+  "mt-2 flex flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:p-5";
+
+export const listingFormManualBannerButtonClass =
+  "self-stretch rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 sm:self-auto whitespace-nowrap disabled:pointer-events-none disabled:opacity-50";

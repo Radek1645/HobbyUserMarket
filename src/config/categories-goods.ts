@@ -47,6 +47,15 @@ const AUTO_OSOBNI_AUTA_AI_PROMPT =
   "Úvod + Parametry (rok, nájezd, motorizace, STK, datum poslední servisní prohlídky, výbava, stav). " +
   "Je-li značka + model (+ motorizace) jasné, doplň katalogové vlastnosti s jistotou (palivo/pohon, typ karoserie, výkon kW pokud z motorizace jednoznačně plyne, běžná výbava modelu). " +
   "Výbavový stupeň (Ambition/Style…) nehádej. Rok, nájezd, STK, poslední servis a vady jsou kusové — chybí-li, zeptej se (paramLabel např. „Poslední servis“, „Nájezd“, „Rok“). " +
+  "VÝBAVA VOZU (kusová): pokud text ani fotky neříkají konkrétní výbavu vozu (klima, navigace, tempomat, parkovací senzory/kamera, vyhřívaná sedadla, tažné, střešní okno, CarPlay/Android Auto, sada kol…), " +
+  "zeptej se jednou (paramLabel: „Výbava“; label např. „Jaká je výbava vozu?“) — nevymýšlej. Je-li výbava v textu nebo jasně vidět na fotkách, zapiš do Parametrů a neptej se. " +
+  "Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu.";
+
+const AUTO_MOTORKY_AI_PROMPT =
+  "Úvod + Parametry (rok, nájezd, objem/motorizace, STK, výbava, stav). " +
+  "Je-li značka + model jasné, doplň katalogové vlastnosti s jistotou. " +
+  "VÝBAVA (kusová): pokud text ani fotky neříkají konkrétní výbavu (kufr, padací rámy, plexi, vyhřívané rukojeti, ABS, tempomat…), " +
+  "zeptej se jednou (paramLabel: „Výbava“; label např. „Jaká je výbava motorky?“) — nevymýšlej. Je-li výbava jasná, zapiš do Parametrů a neptej se. " +
   "Na cenu se neptej, pokud je ve formuláři — cenu dej do úvodu.";
 
 const POTRAVINY_DOMACI_AI_PROMPT =
@@ -137,6 +146,7 @@ export const GOODS_CATEGORIES: CategoryConfig[] = [
         titlePlaceholder: "např. Yamaha MT-07",
         descriptionPlaceholder:
           "Rok, nájezd, objem, STK, výbava, stav…",
+        aiPrompt: AUTO_MOTORKY_AI_PROMPT,
       },
       {
         slug: "dily-prislusenstvi",

@@ -4,6 +4,34 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+const guestListingConfig = readFileSync(
+  join(root, "src/config/guest-listing.ts"),
+  "utf8",
+);
+function readGuestLimit(name, fallback) {
+  const match = guestListingConfig.match(
+    new RegExp(`export const ${name} = (\\d+);`),
+  );
+  return Number(match?.[1] ?? fallback);
+}
+const guestRateLimitTarget = join(
+  root,
+  "supabase/functions/_shared/moderation/guest-rate-limit-config.ts",
+);
+writeFileSync(
+  guestRateLimitTarget,
+  `/** Auto-synced from src/config/guest-listing.ts — do not edit. */
+export const GUEST_AI_SOFT_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_AI_SOFT_LIMIT_PER_HOUR", 2)};
+export const GUEST_AI_IP_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_AI_IP_LIMIT_PER_HOUR", 5)};
+export const GUEST_AI_VISITOR_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_AI_VISITOR_LIMIT_PER_HOUR", 5)};
+export const GUEST_SUGGEST_SOFT_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_SUGGEST_SOFT_LIMIT_PER_HOUR", 5)};
+export const GUEST_SUGGEST_IP_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_SUGGEST_IP_LIMIT_PER_HOUR", 5)};
+export const GUEST_SUGGEST_VISITOR_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_SUGGEST_VISITOR_LIMIT_PER_HOUR", 5)};
+`,
+);
+console.log("Synced guest rate limits:", guestRateLimitTarget);
+
 const source = join(root, "src/config/moderation/prohibited-topics.ts");
 const target = join(
   root,

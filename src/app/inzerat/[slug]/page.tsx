@@ -6,6 +6,7 @@ import {
   getSubcategoryLabel,
 } from "@/config/categories";
 import { SITE_DISPLAY_NAME } from "@/config/site";
+import { ListingPublishedConversionBeacon } from "@/components/analytics/ConversionBeacons";
 import { AdvertiserBadges } from "@/components/listing/AdvertiserBadges";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
 import { ListingDefaultCover } from "@/components/listing/ListingDefaultCover";
@@ -47,6 +48,7 @@ import type { ListingImagePreview, PostRow, PostStatusReasonCode } from "@/types
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -256,6 +258,9 @@ export default async function ListingDetailPage({
 
   return (
     <article className="px-4 py-8 sm:px-6">
+      <Suspense fallback={null}>
+        <ListingPublishedConversionBeacon postId={post.id} />
+      </Suspense>
       {post.status === "active" ? (
         <ListingViewBeacon postId={post.id} />
       ) : null}

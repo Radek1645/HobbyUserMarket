@@ -160,6 +160,8 @@ CREATE TABLE IF NOT EXISTS public.posts (
   status            public.post_status NOT NULL DEFAULT 'draft',
   status_reason_code TEXT,
   deletion_reason   TEXT,
+  publish_request_id UUID,
+  publish_started_at TIMESTAMPTZ,
   expires_at        TIMESTAMPTZ,
   renew_count       INTEGER NOT NULL DEFAULT 0,
   payment_status    VARCHAR(20) NOT NULL DEFAULT 'free',
@@ -367,6 +369,14 @@ CREATE TABLE IF NOT EXISTS public.rate_limits (
     UNIQUE (user_id, action_type, window_start)
 );
 
+CREATE TABLE IF NOT EXISTS public.anonymous_rate_limits (
+  subject_key   TEXT NOT NULL,
+  action_type   TEXT NOT NULL,
+  window_start  TIMESTAMPTZ NOT NULL,
+  count         INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (subject_key, action_type, window_start)
+);
+
 -- -----------------------------------------------------------------------------
 -- 5. INDEXES
 -- -----------------------------------------------------------------------------
@@ -378,8 +388,13 @@ CREATE INDEX IF NOT EXISTS posts_deletion_reason_idx
   WHERE deletion_reason IS NOT NULL;
 CREATE INDEX IF NOT EXISTS posts_search_vector_idx ON public.posts USING GIN (search_vector);
 CREATE INDEX IF NOT EXISTS posts_location_gist_idx ON public.posts USING GIST (location);
+CREATE UNIQUE INDEX IF NOT EXISTS posts_user_publish_request_unique_idx
+  ON public.posts (user_id, publish_request_id)
+  WHERE publish_request_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS post_images_post_id_idx ON public.post_images (post_id);
+CREATE INDEX IF NOT EXISTS anonymous_rate_limits_window_idx
+  ON public.anonymous_rate_limits (window_start);
 
 CREATE INDEX IF NOT EXISTS comments_post_id_idx ON public.comments (post_id);
 CREATE INDEX IF NOT EXISTS comments_user_id_idx ON public.comments (user_id);
@@ -785,6 +800,7 @@ ALTER TABLE public.contact_reveals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inquiry_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.listing_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rate_limits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.anonymous_rate_limits ENABLE ROW LEVEL SECURITY;
 
 -- profiles
 DROP POLICY IF EXISTS profiles_select_own ON public.profiles;
@@ -1189,6 +1205,8 @@ GRANT SELECT ON public.listing_views TO authenticated;
 GRANT SELECT, INSERT ON public.listing_views TO service_role;
 GRANT UPDATE (view_count) ON public.posts TO service_role;
 -- SEC-H03 (062): žádný přímý grant pro authenticated/anon — jen increment_rate_limit.
+REVOKE ALL ON public.anonymous_rate_limits FROM PUBLIC, anon, authenticated;
+GRANT ALL ON public.anonymous_rate_limits TO service_role;
 
 -- =============================================================================
 -- 9. OCHRANA PII KONTAKTŮ (audit C1 + C2)
@@ -1769,6 +1787,143 @@ $$;
 
 REVOKE ALL ON FUNCTION public.increment_rate_limit(UUID, TEXT, TIMESTAMPTZ) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.increment_rate_limit(UUID, TEXT, TIMESTAMPTZ) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.increment_anonymous_rate_limit(
+  p_subject_key TEXT,
+  p_action_type TEXT,
+  p_window_start TIMESTAMPTZ
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  IF p_subject_key IS NULL OR length(trim(p_subject_key)) < 8 THEN
+    RAISE EXCEPTION 'invalid_subject_key' USING errcode = '22023';
+  END IF;
+
+  INSERT INTO public.anonymous_rate_limits (
+    subject_key, action_type, window_start, count
+  )
+  VALUES (trim(p_subject_key), trim(p_action_type), p_window_start, 1)
+  ON CONFLICT (subject_key, action_type, window_start)
+  DO UPDATE SET count = public.anonymous_rate_limits.count + 1
+  RETURNING count INTO v_count;
+
+  RETURN v_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.increment_anonymous_rate_limit(TEXT, TEXT, TIMESTAMPTZ)
+  FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.increment_anonymous_rate_limit(TEXT, TEXT, TIMESTAMPTZ)
+  TO service_role;
+
+CREATE OR REPLACE FUNCTION public.consume_anonymous_rate_limit_pair(
+  p_ip_key TEXT,
+  p_visitor_key TEXT,
+  p_action_type TEXT,
+  p_window_start TIMESTAMPTZ,
+  p_soft_limit INTEGER,
+  p_ip_hard_limit INTEGER,
+  p_visitor_hard_limit INTEGER,
+  p_captcha_verified BOOLEAN DEFAULT false
+)
+RETURNS TABLE (
+  ip_count INTEGER,
+  visitor_count INTEGER,
+  requires_captcha BOOLEAN,
+  allowed BOOLEAN
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_ip_count INTEGER;
+  v_visitor_count INTEGER;
+  v_requires_captcha BOOLEAN;
+BEGIN
+  IF
+    p_ip_key IS NULL OR length(trim(p_ip_key)) < 8
+    OR p_visitor_key IS NULL OR length(trim(p_visitor_key)) < 8
+    OR p_ip_key = p_visitor_key
+    OR p_soft_limit < 0
+    OR p_ip_hard_limit < 1
+    OR p_visitor_hard_limit < 1
+    OR p_soft_limit > LEAST(p_ip_hard_limit, p_visitor_hard_limit)
+  THEN
+    RAISE EXCEPTION 'invalid_rate_limit_input' USING errcode = '22023';
+  END IF;
+
+  INSERT INTO public.anonymous_rate_limits (
+    subject_key, action_type, window_start, count
+  )
+  VALUES
+    (trim(p_ip_key), trim(p_action_type), p_window_start, 0),
+    (trim(p_visitor_key), trim(p_action_type), p_window_start, 0)
+  ON CONFLICT (subject_key, action_type, window_start) DO NOTHING;
+
+  PERFORM 1
+  FROM public.anonymous_rate_limits
+  WHERE subject_key IN (trim(p_ip_key), trim(p_visitor_key))
+    AND action_type = trim(p_action_type)
+    AND window_start = p_window_start
+  ORDER BY subject_key
+  FOR UPDATE;
+
+  SELECT count INTO v_ip_count
+  FROM public.anonymous_rate_limits
+  WHERE subject_key = trim(p_ip_key)
+    AND action_type = trim(p_action_type)
+    AND window_start = p_window_start;
+
+  SELECT count INTO v_visitor_count
+  FROM public.anonymous_rate_limits
+  WHERE subject_key = trim(p_visitor_key)
+    AND action_type = trim(p_action_type)
+    AND window_start = p_window_start;
+
+  v_requires_captcha :=
+    v_ip_count >= p_soft_limit OR v_visitor_count >= p_soft_limit;
+
+  IF
+    v_ip_count >= p_ip_hard_limit
+    OR v_visitor_count >= p_visitor_hard_limit
+  THEN
+    RETURN QUERY SELECT
+      v_ip_count, v_visitor_count, v_requires_captcha, false;
+    RETURN;
+  END IF;
+
+  IF v_requires_captcha AND NOT p_captcha_verified THEN
+    RETURN QUERY SELECT v_ip_count, v_visitor_count, true, false;
+    RETURN;
+  END IF;
+
+  UPDATE public.anonymous_rate_limits
+  SET count = count + 1
+  WHERE subject_key IN (trim(p_ip_key), trim(p_visitor_key))
+    AND action_type = trim(p_action_type)
+    AND window_start = p_window_start;
+
+  RETURN QUERY SELECT
+    v_ip_count + 1,
+    v_visitor_count + 1,
+    v_requires_captcha,
+    true;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.consume_anonymous_rate_limit_pair(
+  TEXT, TEXT, TEXT, TIMESTAMPTZ, INTEGER, INTEGER, INTEGER, BOOLEAN
+) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.consume_anonymous_rate_limit_pair(
+  TEXT, TEXT, TEXT, TIMESTAMPTZ, INTEGER, INTEGER, INTEGER, BOOLEAN
+) TO service_role;
 
 -- =============================================================================
 -- 11. LOG AI MODERACE (028)

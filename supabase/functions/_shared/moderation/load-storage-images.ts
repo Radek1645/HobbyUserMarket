@@ -51,11 +51,11 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 
 function assertOwnedReference(
   reference: StorageImageReference,
-  userId: string,
+  ownerPrefix: string,
 ): void {
   if (
     !ALLOWED_BUCKETS.has(reference.bucket) ||
-    !reference.storagePath.startsWith(`${userId}/`)
+    !reference.storagePath.startsWith(`${ownerPrefix}/`)
   ) {
     throw new Error("IMAGE_REFERENCE_FORBIDDEN");
   }
@@ -64,10 +64,12 @@ function assertOwnedReference(
 /**
  * Načte plné Storage objekty pro SEC-H02 a hash-addressed varianty vytvořené
  * přes Sharp do service-role-only bucketu.
+ *
+ * `ownerPrefix` = userId (auth) nebo `guest/{visitorId}` (guest preview).
  */
 export async function loadModerationImagesFromStorage(
   references: StorageImageReference[],
-  userId: string,
+  ownerPrefix: string,
 ): Promise<LoadedModerationImages> {
   if (references.length === 0) {
     return {
@@ -105,7 +107,7 @@ export async function loadModerationImagesFromStorage(
   }
 
   const loadedImages = await Promise.all(references.map(async (reference) => {
-    assertOwnedReference(reference, userId);
+    assertOwnedReference(reference, ownerPrefix);
 
     const { data: original, error: downloadError } = await admin.storage
       .from(reference.bucket)
@@ -118,7 +120,7 @@ export async function loadModerationImagesFromStorage(
     const originalBase64 = bytesToBase64(originalBytes);
     assertModerationImagesWithinLimits([originalBase64]);
     const imageHash = await sha256Hex(originalBytes);
-    const renditionPrefix = `${userId}/${imageHash}`;
+    const renditionPrefix = `${ownerPrefix}/${imageHash}`;
 
     const [geminiImage, sightengineImage] = await Promise.all([
       loadTrustedRendition(`${renditionPrefix}/gemini.webp`),

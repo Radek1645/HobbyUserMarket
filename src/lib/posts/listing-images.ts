@@ -135,7 +135,10 @@ async function uploadListingImageBytes(
   };
 }
 
-type SyncResult = { error?: string };
+type SyncResult = {
+  error?: string;
+  consumedStagingPaths?: string[];
+};
 
 export async function syncListingImagesFromForm(
   supabase: SupabaseClient,
@@ -143,6 +146,7 @@ export async function syncListingImagesFromForm(
   postId: number,
   formData: FormData,
   stagingAdmin?: SupabaseClient,
+  options?: { cleanupStaging?: boolean },
 ): Promise<SyncResult> {
   const { imageOrder, mainImageKey, removedIds, stagedImagePaths } =
     parseListingImagesFormData(formData);
@@ -364,7 +368,11 @@ export async function syncListingImagesFromForm(
     .update({ main_image_url: mainUrl })
     .eq("id", postId);
 
-  if (stagingAdmin && consumedStagingPaths.length > 0) {
+  if (
+    options?.cleanupStaging !== false &&
+    stagingAdmin &&
+    consumedStagingPaths.length > 0
+  ) {
     const { error: cleanupError } = await stagingAdmin.storage
       .from(MODERATION_IMAGE_STAGING_BUCKET)
       .remove(consumedStagingPaths);
@@ -373,7 +381,7 @@ export async function syncListingImagesFromForm(
     }
   }
 
-  return {};
+  return { consumedStagingPaths };
 }
 
 export async function getListingImages(

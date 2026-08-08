@@ -179,7 +179,7 @@ Diskuse pod inzerátem se **nepoužívá**. Tabulka může zůstat; nové UI na 
 
 #### `rate_limits`
 
-`id`, `user_id`, `action_type` (`ai_check` / `contact_reveal` / `comment`), `count`, `window_start` — hodinová okna limitů.
+`id`, `user_id`, `action_type` (`ai_check` / `suggest_from_photos` / …), `count`, `window_start` — hodinová okna limitů (přihlášený). Hosté: `anonymous_rate_limits` (`guest_suggest_from_photos`, …).
 
 ---
 
@@ -613,6 +613,58 @@ FROM public.moderation_checks
 WHERE created_at >= now() - interval '24 hours'
 GROUP BY status, error_code
 ORDER BY pocet DESC;
+```
+
+**Počet hard-hitů jednoho účtu** (hard stop = 3× `hard_hit_text` / `nsfw_image` za 24 h; Gemini reject se nepočítá). Nahraď e-mail:
+
+```sql
+-- Součet za 24 h + celkem podle kind
+SELECT
+  e.kind,
+  count(*) FILTER (WHERE e.created_at >= now() - interval '24 hours') AS za_24h,
+  count(*) AS celkem
+FROM public.moderation_hard_reject_evidence e
+JOIN public.profiles p ON p.id = e.user_id
+WHERE p.email = 'TVUJ@EMAIL.cz'
+  AND e.kind IN ('hard_hit_text', 'nsfw_image', 'hard_reject_threshold_reached')
+GROUP BY e.kind
+ORDER BY e.kind;
+
+-- Detail posledních hitů
+SELECT e.created_at, e.kind, e.matched_category, e.matched_term, e.title_snippet
+FROM public.moderation_hard_reject_evidence e
+JOIN public.profiles p ON p.id = e.user_id
+WHERE p.email = 'TVUJ@EMAIL.cz'
+ORDER BY e.created_at DESC
+LIMIT 20;
+
+-- Je účet na blacklistu?
+SELECT blacklist_no, email, source, reason, created_at, removed_at
+FROM public.account_blacklist
+WHERE email = lower(trim('TVUJ@EMAIL.cz'))
+ORDER BY created_at DESC;
+```
+
+### SQL — rate limity (AI moderace / prefill)
+
+Přihlášený: `rate_limits`. Host: `anonymous_rate_limits` (hashed subject, ne nickname).
+
+```sql
+-- Přihlášený: limity + přezdívka (odkomentuj filtr pro prefill)
+SELECT a.*, p.nickname
+FROM public.rate_limits a
+LEFT JOIN public.profiles p ON p.id = a.user_id
+WHERE 1 = 1
+-- AND a.action_type = 'suggest_from_photos'
+-- AND a.action_type = 'ai_check'
+ORDER BY a.window_start DESC;
+
+-- Host prefill (anonymní)
+SELECT *
+FROM public.anonymous_rate_limits
+WHERE action_type = 'guest_suggest_from_photos'
+ORDER BY window_start DESC
+LIMIT 50;
 ```
 
 ### Secrets (API klíče v cloudu)

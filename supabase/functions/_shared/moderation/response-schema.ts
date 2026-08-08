@@ -115,3 +115,25 @@ export const OPENAI_MODERATION_RESPONSE_SCHEMA = {
     },
   },
 } as const;
+
+/**
+ * Schema pro photo-first prefill (suggest-listing-from-photos).
+ * Closed vocabulary categoryType/subcategorySlug vynucuje Edge validace + prompt.
+ */
+export const GEMINI_SUGGEST_LISTING_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  required: [
+    "title",
+    "description",
+    "categoryType",
+    "subcategorySlug",
+    "confidenceScore",
+  ],
+  properties: {
+    title: { type: "STRING", maxLength: 80 },
+    description: { type: "STRING", maxLength: 2000 },
+    categoryType: { type: "STRING" },
+    subcategorySlug: { type: "STRING", nullable: true },
+    confidenceScore: { type: "NUMBER", minimum: 0, maximum: 1 },
+  },
+} as const;

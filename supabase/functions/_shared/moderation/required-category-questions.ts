@@ -54,6 +54,47 @@ function normalizeQuestionKey(question: ModerationQuestion): string {
     .toLocaleLowerCase("cs");
 }
 
+/**
+ * Stejné téma = jedna otázka. AI často přidá „doporučený věk u hračky“
+ * vedle povinné „Věk / výška“ — bez topic key by obě prošly.
+ */
+function isChildAgeHeightQuestion(question: ModerationQuestion): boolean {
+  const text = `${question.paramLabel ?? ""} ${question.label}`
+    .trim()
+    .toLocaleLowerCase("cs");
+  if (!text) return false;
+  if (/v[eě]k\s*\/\s*v[yý]šk/.test(text)) return true;
+  if (/\bdoporučen\w*.{0,40}\bv[eě]k\b/.test(text)) return true;
+  if (/\bv[eě]k\b.{0,50}(?:d[ií]t|hračk|mimink|batol)/.test(text)) return true;
+  if (/(?:d[ií]t|hračk|mimink|batol).{0,50}\bv[eě]k\b/.test(text)) return true;
+  if (/\bv[yý]šk\w*.{0,30}(?:d[ií]t|d[eě]tsk)/.test(text)) return true;
+  if (/(?:pro\s+jak[ýé]\s+v[eě]k|vhodn\w*.{0,20}v[eě]k)/.test(text)) {
+    return true;
+  }
+  return false;
+}
+
+function questionDedupeKey(question: ModerationQuestion): string {
+  if (isChildAgeHeightQuestion(question)) {
+    return "topic:child-age-height";
+  }
+  return normalizeQuestionKey(question);
+}
+
+function dedupeQuestions(
+  questions: ModerationQuestion[],
+): ModerationQuestion[] {
+  const merged: ModerationQuestion[] = [];
+  const seen = new Set<string>();
+  for (const question of questions) {
+    const key = questionDedupeKey(question);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(question);
+  }
+  return merged;
+}
+
 /** Zjevně dětské zboží — ne „dětský styl“ pro dospělé bez těchto slov. */
 function isChildrensProduct(text: string): boolean {
   return /\b(?:d[eě]tsk\w*|d[ií]vč[ií]\w*|chlapeck\w*|pro\s+d[ií]t[eě])\b/iu.test(
@@ -136,6 +177,45 @@ function hasSportEquipmentAnswer(text: string): boolean {
       text,
     )
   );
+}
+
+/** Konkrétní výbava vozu/motorky už v textu nebo v AI Parametrech. */
+function hasVehicleEquipmentAnswer(text: string): boolean {
+  return (
+    /(?:výbav|vybaven)/iu.test(text) ||
+    /(?:klimatizac|\bklima\b|navigac|tempomat|parkovač|parkovac[ií]|parkovací|senzor|xenon|matrix|carplay|android\s*auto|apple\s*car|vyhřívan|kožen|\bkůže\b|tažné|střešní|panoramat|multimedi|infotainment|bluetooth|hands[\s-]?free|asistent|zpětn[aá]\s+kamera|airbag|\besp\b|\babs\b|alufelg|lit[aá]\s+kol|zimn[ií]\s+pneu|letn[ií]\s+pneu|sada\s+kol|kufr(?:y|ík)?\b|padac[ií]\s+r[aá]m|plexi|vyhřívan[eé]\s+rukojet)/iu.test(
+      text,
+    )
+  );
+}
+
+function resolveVehicleEquipmentQuestions(
+  context: RequiredCategoryQuestionContext,
+  text: string,
+): ModerationQuestion[] {
+  if (context.categoryType !== "auto") {
+    return [];
+  }
+  if (
+    context.subcategorySlug !== "osobni-auta" &&
+    context.subcategorySlug !== "motorky"
+  ) {
+    return [];
+  }
+  if (hasVehicleEquipmentAnswer(text)) {
+    return [];
+  }
+
+  const isMotorcycle = context.subcategorySlug === "motorky";
+  return [
+    {
+      id: "required-vehicle-equipment",
+      label: isMotorcycle
+        ? "Jaká je výbava motorky?"
+        : "Jaká je výbava vozu?",
+      paramLabel: "Výbava",
+    },
+  ];
 }
 
 function resolveSportEventQuestions(
@@ -274,18 +354,21 @@ export function ensureRequiredCategoryQuestions<T extends ModerationResultLike>(
     .join("\n");
 
   const requiredQuestions = isGoodsCategoryType(context.categoryType)
-    ? resolveGoodsRequiredQuestions(context.categoryType, searchableText)
+    ? [
+        ...resolveGoodsRequiredQuestions(context.categoryType, searchableText),
+        ...resolveVehicleEquipmentQuestions(context, searchableText),
+      ]
     : resolveSportEventQuestions(context, searchableText);
 
-  if (requiredQuestions.length === 0) return result;
+  const aiQuestions = result.questions ?? [];
+  if (requiredQuestions.length === 0 && aiQuestions.length === 0) {
+    return result;
+  }
 
-  const merged: ModerationQuestion[] = [];
-  const seen = new Set<string>();
-  for (const question of [...requiredQuestions, ...(result.questions ?? [])]) {
-    const key = normalizeQuestionKey(question);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    merged.push(question);
+  // Required first — při kolizi tématu (věk) zůstane kanonická „Věk / výška“.
+  const merged = dedupeQuestions([...requiredQuestions, ...aiQuestions]);
+  if (merged.length === 0) {
+    return result;
   }
 
   return {

@@ -82,6 +82,10 @@ export async function runListingModeration(
 
   return invokeModerateListing({
     intent: params.intent,
+    issueApproval: params.issueApproval,
+    guestVisitorId: params.guestVisitorId,
+    guestVisitorToken: params.guestVisitorToken,
+    turnstileToken: params.turnstileToken,
     title,
     description,
     categoryType: params.categoryType,

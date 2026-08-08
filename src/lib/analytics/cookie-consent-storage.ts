@@ -6,6 +6,7 @@ import {
 export type CookieConsentRecord = {
   version: typeof COOKIE_CONSENT_SCHEMA_VERSION;
   analytics: boolean;
+  marketing: boolean;
   decidedAt: string;
 };
 
@@ -24,6 +25,7 @@ export function readCookieConsent(): CookieConsentRecord | null {
     if (
       parsed.version !== COOKIE_CONSENT_SCHEMA_VERSION ||
       typeof parsed.analytics !== "boolean" ||
+      typeof parsed.marketing !== "boolean" ||
       typeof parsed.decidedAt !== "string"
     ) {
       return null;
@@ -35,10 +37,14 @@ export function readCookieConsent(): CookieConsentRecord | null {
   }
 }
 
-export function writeCookieConsent(analytics: boolean): CookieConsentRecord {
+export function writeCookieConsent(
+  analytics: boolean,
+  marketing: boolean,
+): CookieConsentRecord {
   const record: CookieConsentRecord = {
     version: COOKIE_CONSENT_SCHEMA_VERSION,
     analytics,
+    marketing,
     decidedAt: new Date().toISOString(),
   };
 
@@ -69,15 +75,21 @@ try {
   var raw = localStorage.getItem(${JSON.stringify(COOKIE_CONSENT_STORAGE_KEY)});
   if (raw) {
     var parsed = JSON.parse(raw);
-    if (parsed && parsed.version === ${COOKIE_CONSENT_SCHEMA_VERSION} && typeof parsed.analytics === "boolean") {
-      var state = parsed.analytics ? "granted" : "denied";
+    if (
+      parsed &&
+      parsed.version === ${COOKIE_CONSENT_SCHEMA_VERSION} &&
+      typeof parsed.analytics === "boolean" &&
+      typeof parsed.marketing === "boolean"
+    ) {
+      var analyticsState = parsed.analytics ? "granted" : "denied";
+      var marketingState = parsed.marketing ? "granted" : "denied";
       gtag("consent", "update", {
-        analytics_storage: state,
-        ad_storage: state,
-        ad_user_data: state,
-        ad_personalization: state,
-        functionality_storage: state,
-        personalization_storage: state
+        analytics_storage: analyticsState,
+        ad_storage: marketingState,
+        ad_user_data: marketingState,
+        ad_personalization: marketingState,
+        functionality_storage: analyticsState,
+        personalization_storage: analyticsState
       });
     }
   }
