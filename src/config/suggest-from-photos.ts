@@ -46,5 +46,5 @@ export const SUGGEST_FROM_PHOTOS_UI = {
   nsfwReject:
     "Fotografie porušuje podmínky webu. Nahrajte jiné snímky, nebo pokračujte ručně.",
   missingFieldsHint:
-    "Připravili jsme název, popis a kategorii. Doplňte cenu, stav a lokalitu.",
+    "Připravili jsme návrh názvu, popisu a kategorie. Zkontrolujte ho a doplňte cenu, stav a lokalitu.",
 } as const;
