@@ -66,6 +66,7 @@ import { listingNeedsModeration } from "@/lib/moderation/needs-moderation";
 import { invokeModerateListing } from "@/lib/moderation/moderate-listing-client";
 import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
+import { stripDoplnitPlaceholders } from "@/lib/listing/strip-doplnit-placeholders";
 import { appendQuestionAnswersToDescription } from "@/lib/moderation/append-question-answers";
 import {
   ModerationApprovedDialog,
@@ -377,8 +378,12 @@ export function CreateListingForm({
           }
         }
 
-        const finalTitle = stripContactInfo(draft.title);
-        const finalDescription = stripContactInfo(draft.description);
+        const finalTitle = stripDoplnitPlaceholders(
+          stripContactInfo(draft.title),
+        );
+        const finalDescription = stripDoplnitPlaceholders(
+          stripContactInfo(draft.description),
+        );
 
         const approval = await invokeModerateListing({
           intent: "create",
@@ -1008,8 +1013,12 @@ export function CreateListingForm({
     const preview = moderationPreview;
     if (!form || !preview) return;
 
-    const finalTitle = stripContactInfo(preview.originalTitle);
-    const finalDescription = stripContactInfo(preview.originalDescription);
+    const finalTitle = stripDoplnitPlaceholders(
+      stripContactInfo(preview.originalTitle),
+    );
+    const finalDescription = stripDoplnitPlaceholders(
+      stripContactInfo(preview.originalDescription),
+    );
 
     if (
       gateGuestPublish({
@@ -1056,12 +1065,14 @@ export function CreateListingForm({
     const preview = moderationPreview;
     if (!form || !preview) return;
 
-    const finalTitle = stripContactInfo(payload.title);
-    const finalDescription = stripContactInfo(
-      appendQuestionAnswersToDescription(
-        payload.description,
-        preview.questions.slice(0, MODERATION_MAX_QUESTIONS),
-        payload.questionAnswers,
+    const finalTitle = stripDoplnitPlaceholders(stripContactInfo(payload.title));
+    const finalDescription = stripDoplnitPlaceholders(
+      stripContactInfo(
+        appendQuestionAnswersToDescription(
+          payload.description,
+          preview.questions.slice(0, MODERATION_MAX_QUESTIONS),
+          payload.questionAnswers,
+        ),
       ),
     );
 

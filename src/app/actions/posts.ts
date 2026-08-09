@@ -13,6 +13,7 @@ import {
 } from "@/lib/posts/validation";
 import { findProhibitedKeyword } from "@/lib/moderation/prohibited-scan";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
+import { stripDoplnitPlaceholders } from "@/lib/listing/strip-doplnit-placeholders";
 import {
   getUserListingQuota,
   isListingQuotaExceededError,
@@ -129,10 +130,14 @@ async function publishWithApprovalToken(
   return null;
 }
 
+function sanitizeListingText(text: string): string {
+  return stripDoplnitPlaceholders(stripContactInfo(text));
+}
+
 function buildListingPayload(data: CreateListingInput) {
   const payload: Record<string, unknown> = {
-    title: stripContactInfo(data.title),
-    description: stripContactInfo(data.description),
+    title: sanitizeListingText(data.title),
+    description: sanitizeListingText(data.description),
     category_type: data.categoryType,
     subcategory_slug: data.subcategorySlug,
     price_type: data.priceType,
