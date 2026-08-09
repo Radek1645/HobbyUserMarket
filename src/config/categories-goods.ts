@@ -84,10 +84,14 @@ const KOLA_SPORT_AI_PROMPT =
 
 const DETSKY_OBLECENI_AI_PROMPT =
   "Uživatel prodává dětské oblečení, obuv nebo doplňky.\n\n" +
+  "FOTKY A OSOBY:\n" +
+  "- Preferuj fotku věci (věšák, položená na stole, detail) bez rozpoznatelné tváře.\n" +
+  "- Rozpoznatelná tvář dítěte / adolescenta → REJECTED, minor_photos.\n" +
+  "- Rozpoznatelná tvář dospělého na fotce zboží → REJECTED, identifiable_face (ne sexual_services); reason: nahrajte fotku věci bez obličeje.\n\n" +
   "SPODNÍ A INTIMNÍ PRÁDLO — povinná pravidla:\n" +
-  "- Fotografie musí ukazovat pouze věc (věšák, flat lay, detail materiálu), ne osobu v prádle, postel ani boudoir styl.\n" +
+  "- Fotografie musí ukazovat pouze věc (věšák, položená na stole, detail materiálu), ne osobu v prádle, postel ani boudoir styl.\n" +
   "- V popisu nebo Parametrech musí být velikost; doporuč značku a stav.\n" +
-  "- Zamítnout (REJECTED, sexual_services), pokud foto sexualizuje osobu nebo inzerát působí jako nabídka sexuální služby místo prodeje věci.\n" +
+  "- Zamítnout (REJECTED, sexual_services) jen při zjevném erotickém / escort kontextu (boudoir, negližé, explicitní póza) — ne u běžné fotky oblečení.\n" +
   "- Pro předání piš „osobní předání po domluvě“ nebo „vyzvednutí po domluvě“, NIKDY „osobní prohlídka“ (to platí jen u nemovitostí).\n\n" +
   "BOTY A OBUV — pokud text/fotky ukazují boty:\n" +
   "- Chybí-li info o vyndávací stélce (vložce), zeptej se (paramLabel: „Vyndávací stélka“; label např. „Mají boty vyndávací stélku / vložku?“).\n" +
@@ -103,10 +107,15 @@ const DETSKY_OBLECENI_AI_PROMPT =
 const MODA_DOSPELE_AI_PROMPT =
   "Uživatel prodává módu a oblečení pro dospělé.\n\n" +
   "Dětské oblečení patří do kategorie detsky — u zjevně dětského zboží navrhni přesun (categorySuggestion).\n\n" +
+  "FOTKY A OSOBY:\n" +
+  "- Preferuj fotku věci (věšák, položená na stole, detail) bez rozpoznatelné tváře.\n" +
+  "- Běžná fotka dospělého v oblečení / s doplňkem (kšiltovka, bunda, boty) NENÍ sexual_services.\n" +
+  "- Rozpoznatelná tvář dospělého (close-up, selfie) → REJECTED, identifiable_face; reason: nahrajte fotku věci bez rozpoznatelného obličeje.\n" +
+  "- sexual_services jen při zjevném erotickém / escort kontextu (boudoir, negližé, explicitní póza, intimní prádlo na osobě jako hlavní motiv).\n\n" +
   "SPODNÍ A INTIMNÍ PRÁDLO — povinná pravidla:\n" +
-  "- Fotografie musí ukazovat pouze věc (věšák, flat lay, detail materiálu), ne osobu v prádle, postel ani boudoir styl.\n" +
+  "- Fotografie musí ukazovat pouze věc (věšák, položená na stole, detail materiálu), ne osobu v prádle, postel ani boudoir styl.\n" +
   "- V popisu nebo Parametrech musí být velikost; doporuč značku a stav.\n" +
-  "- Zamítnout (REJECTED, sexual_services), pokud foto sexualizuje osobu nebo inzerát působí jako nabídka sexuální služby místo prodeje věci.\n" +
+  "- Zamítnout (REJECTED, sexual_services) jen při zjevném erotickém / escort kontextu — ne u běžné fotky módy.\n" +
   "- Pro předání piš „osobní předání po domluvě“ nebo „vyzvednutí po domluvě“, NIKDY „osobní prohlídka“ (to platí jen u nemovitostí).\n\n" +
   "BOTY A OBUV (včetně bot na chození) — pokud text/fotky ukazují boty:\n" +
   "- Chybí-li info o vyndávací stélce (vložce), zeptej se (paramLabel: „Vyndávací stélka“; label např. „Mají boty vyndávací stélku / vložku?“).\n" +

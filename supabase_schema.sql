@@ -1932,7 +1932,8 @@ GRANT EXECUTE ON FUNCTION public.consume_anonymous_rate_limit_pair(
 
 CREATE TABLE IF NOT EXISTS public.moderation_checks (
   log_no               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id              UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  user_id              UUID REFERENCES auth.users (id) ON DELETE CASCADE,
+  guest_visitor_id     UUID,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   intent               TEXT,
   status               TEXT NOT NULL,
@@ -1957,7 +1958,9 @@ CREATE TABLE IF NOT EXISTS public.moderation_checks (
     CHECK (
       category_fit IS NULL
       OR category_fit IN ('match', 'better_existing', 'missing_taxonomy')
-    )
+    ),
+  CONSTRAINT moderation_checks_actor_check
+    CHECK (user_id IS NOT NULL OR guest_visitor_id IS NOT NULL)
 );
 
 CREATE INDEX IF NOT EXISTS moderation_checks_created_at_idx
@@ -1965,6 +1968,14 @@ CREATE INDEX IF NOT EXISTS moderation_checks_created_at_idx
 
 CREATE INDEX IF NOT EXISTS moderation_checks_user_idx
   ON public.moderation_checks (user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS moderation_checks_guest_visitor_idx
+  ON public.moderation_checks (guest_visitor_id, created_at DESC)
+  WHERE guest_visitor_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS moderation_checks_intent_idx
+  ON public.moderation_checks (intent, created_at DESC)
+  WHERE intent IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS moderation_checks_rejected_idx
   ON public.moderation_checks (created_at DESC)

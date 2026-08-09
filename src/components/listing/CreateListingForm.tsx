@@ -792,12 +792,25 @@ export function CreateListingForm({
 
   const missingPublishFields = (() => {
     const missing: string[] = [];
-    if (!hasLocation) missing.push("lokalita (vyberte z našeptávače)");
+    if (!hasLocation) missing.push("lokalitu (vyberte z našeptávače)");
     if (!isTitleValid) missing.push("název");
     if (!isDescriptionValid) missing.push("popis");
-    if (!isPriceValid) missing.push("cena");
+    if (!isPriceValid) missing.push("cenu");
     if (!isEventDateValid) missing.push("datum události");
     return missing;
+  })();
+
+  const missingPublishFieldsLabel = (() => {
+    if (missingPublishFields.length === 0) return "";
+    if (missingPublishFields.length === 1) {
+      return `Doplňte: ${missingPublishFields[0]}.`;
+    }
+    if (missingPublishFields.length === 2) {
+      return `Doplňte: ${missingPublishFields[0]} a ${missingPublishFields[1]}.`;
+    }
+    const head = missingPublishFields.slice(0, -1).join(", ");
+    const last = missingPublishFields[missingPublishFields.length - 1];
+    return `Doplňte: ${head} a ${last}.`;
   })();
 
   function handleCategoryChange(type: CategoryType) {
@@ -2111,7 +2124,7 @@ export function CreateListingForm({
 
           {!canPublish && !publishBlockedByQuota ? (
             <p role="status" className="text-sm text-amber-800">
-              Chybí: {missingPublishFields.join(", ")}
+              {missingPublishFieldsLabel}
             </p>
           ) : null}
 
@@ -2138,7 +2151,7 @@ export function CreateListingForm({
                   : !canPublish
                   ? isEvent && eventDateError
                     ? eventDateError
-                    : `Chybí: ${missingPublishFields.join(", ")}`
+                    : missingPublishFieldsLabel || undefined
                   : undefined
               }
               className={`flex flex-1 items-center justify-center gap-2 ${listingFormPrimaryButtonClass}`}

@@ -90,6 +90,25 @@ export function getCategorySeoPath(slug: string): string {
   return `/${slug}`;
 }
 
+/** Filtr homepage podle hlavní kategorie (`/?kategorie=detsky`). */
+export function getHomeCategoryFilterHref(categoryType: string): string {
+  return `/?kategorie=${encodeURIComponent(categoryType)}`;
+}
+
+/**
+ * Odkaz z detailu inzerátu na podkategorii:
+ * SEO landing `/{slug}` u unique goods, jinak filtr homepage podle domény.
+ */
+export function getListingSubcategoryHref(
+  categoryType: string,
+  subcategorySlug: string,
+): string {
+  if (isCategorySeoLandingSlug(subcategorySlug)) {
+    return getCategorySeoPath(subcategorySlug);
+  }
+  return getHomeCategoryFilterHref(categoryType);
+}
+
 /** Doména (category_type) pro goods subcategory slug, nebo null. */
 export function getGoodsCategoryTypeForSeoSlug(
   slug: string,

@@ -55,7 +55,7 @@ export async function buildLlmsTxt(): Promise<string> {
     "",
     "### Pro inzerenty",
     "",
-    "- Vytvořit inzerát s AI: stačí fotka a pár slov (např. „Prodám kolo“).",
+    "- Vytvořit inzerát: stačí fotka a pár slov (např. „Prodám kolo“).",
     "- AI doplní popis, doptá se jen na chybějící detaily a připraví inzerát k publikaci.",
     "- Cíl: zveřejnění do cca 2 minut — bez dlouhého formuláře.",
     "- Kategorie: zboží, služby, práce, nemovitost, událost.",

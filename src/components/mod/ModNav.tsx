@@ -4,7 +4,7 @@ import Link from "next/link";
 
 type ModNavProps = {
   role: UserRole;
-  current: "karantena" | "inzeraty" | "uzivatele" | "blacklist";
+  current: "karantena" | "inzeraty" | "uzivatele" | "blacklist" | "prefill-lab";
 };
 
 const linkClass = (active: boolean) =>
@@ -31,6 +31,12 @@ export function ModNav({ role, current }: ModNavProps) {
         className={linkClass(current === "blacklist")}
       >
         Blacklist
+      </Link>
+      <Link
+        href="/mod/prefill-lab"
+        className={linkClass(current === "prefill-lab")}
+      >
+        Prefill lab
       </Link>
       {role === "admin" ? (
         <Link

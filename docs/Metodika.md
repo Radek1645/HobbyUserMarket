@@ -264,6 +264,7 @@ Flag: `SUGGEST_FROM_PHOTOS_ENABLED` (`src/config/suggest-from-photos.ts`). Jen *
 - Oddělená Edge funkce `suggest-listing-from-photos` — `moderate-listing` (publish gate) beze změny.
 - Prefilluje: `title`, `description`, `categoryType`, `subcategorySlug`. **Ne** cena, stav, lokalita.
 - Sightengine = jen NSFW gate; klasifikace = Gemini (`SUGGEST_LISTING_MODEL`, default `gemini-3.5-flash-lite`). `MODERATION_FINAL_*` se na prefill nepoužívá.
+- Staff srovnání modelů: Edge `compare-suggest-from-photos` + `/mod/prefill-lab` (stejný prompt/schema, bez DB).
 - Hosté: stejný flow (guest visitor + podpis, rate limit `guest_suggest_from_photos`, Turnstile po soft limitu).
 
 #### UX flow
@@ -300,7 +301,7 @@ flowchart TD
 4. Gemini structured JSON (vlastní schema, ne moderační).
 5. Server validace goods páru; odpověď `{ title, description, categoryType, subcategorySlug, confidenceScore }` — **bez** approval tokenu a bez hydratace.
 
-Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence.
+Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence. Nejisté `[DOPLNIT …]` jdou **pod** odstavec nabídky (jeden na řádek) — prompt + normalizace v `parseSuggestListingResponse` / `formatDoplnitPlaceholders`.
 
 Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace + token). Prefill **nenahrazuje** publish gate. Dvě volání Gemini (prefill + publish) jsou záměr.
 
@@ -316,6 +317,22 @@ Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace +
 - Auto-zařazení služeb/událostí z fotky.
 
 Deploy: `npm run sync:moderation` → `supabase functions deploy suggest-listing-from-photos`. Smoke checklist: [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § K.
+
+#### Prefill lab — srovnání modelů (staff, 2026-08-09)
+
+Ruční A/B bez zásahu do produkčního trafficu. Cíl: často měnit kandidáty modelů (turbulentní pricing/kvalita) a rozhodnout switch `SUGGEST_LISTING_MODEL` podle side-by-side výsledků.
+
+| | |
+|--|--|
+| **UI** | `/mod/prefill-lab` (God Mode → Prefill lab), jen `moderator` / `admin` |
+| **Edge** | `compare-suggest-from-photos` |
+| **Pipeline** | Stejný prompt + schema + parse jako produkce (`run-suggest-listing.ts`). Dvě **sekvenční** volání; liší se jen `provider` + `model`. |
+| **Bez** | `moderation_checks`, produkční rate limity, Sightengine (srovnává se klasifikace, ne NSFW gate) |
+| **Default A** | `gemini` / `gemini-3.5-flash-lite` (Edge fallback: secret `COMPARE_SUGGEST_ARM_A_MODEL` → `SUGGEST_LISTING_MODEL` → kódový default) |
+| **Default B** | `openai` / `gpt-5.4-nano` (Edge fallback: `COMPARE_SUGGEST_ARM_B_MODEL` → kódový default) |
+| **UI override** | Provider + model u obou ramen editovatelné před každým během |
+
+Konfig UI defaultů: `src/config/compare-suggest-from-photos.ts`. Deploy labu: `npx supabase functions deploy compare-suggest-from-photos`. Hydratační lab (preview model) = **samostatný** budoucí scope, stejný pattern.
 
 ### Krok 1 — Kategorie a stav
 
@@ -396,11 +413,12 @@ Toto je klíčový proces při založení i úpravě inzerátu. Uživatel ho vn�
 
 ### AI modely — aktuální defaults
 
-> **Aktualizace: 2026-08-08.** Modely se mohou měnit přes Supabase secrets (bez redeploye kódu u většiny override). Zdroj pravdy v kódu: `resolve-moderation-ai-target.ts`, `suggest-listing-from-photos` (`resolveSuggestModel`). Detail A/B: [`moderace-inzeratu.md`](./moderace-inzeratu.md) → Volba Gemini modelu.
+> **Aktualizace: 2026-08-09.** Modely se mohou měnit přes Supabase secrets (bez redeploye kódu u většiny override). Zdroj pravdy v kódu: `resolve-moderation-ai-target.ts`, `suggest-listing-from-photos` (`resolveSuggestModel`), prefill lab UI `compare-suggest-from-photos.ts`. Detail A/B: [`moderace-inzeratu.md`](./moderace-inzeratu.md) → Volba Gemini modelu.
 
 | Použití | Edge / fáze | Secret | Default |
 |---------|-------------|--------|---------|
 | **Photo-first prefill** (krok 0, zboží) | `suggest-listing-from-photos` | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
+| **Prefill lab** (staff `/mod/prefill-lab`) | `compare-suggest-from-photos` | request `armA`/`armB` (volitelně `COMPARE_SUGGEST_ARM_*_MODEL`) | A: flash-lite, B: `gpt-5.4-nano` |
 | **Moderace — preview** (hydratace, náhled) | `moderate-listing`, `issueApproval` vypnuto | `GEMINI_MODEL` | `gemini-2.5-flash` |
 | **Moderace — final** (approval token) | `moderate-listing`, `issueApproval: true` | `MODERATION_FINAL_PROVIDER` + `MODERATION_FINAL_MODEL` | provider `gemini`, model `gemini-3.5-flash-lite` |
 | **OpenAI** (fallback / A/B final) | `moderate-listing` | `OPENAI_MODERATION_MODEL` | `gpt-4o-mini` |

@@ -14,6 +14,7 @@ alwaysApply: false
 - **Preview (hydratace):** Gemini `gemini-2.5-flash` — `GEMINI_MODEL` (`resolve-moderation-ai-target.ts` / `gemini.ts`).
 - **Final (`issueApproval`):** default Gemini `gemini-3.5-flash-lite` — `MODERATION_FINAL_PROVIDER` (`gemini` \| `openai`) + `MODERATION_FINAL_MODEL`. A/B OpenAI: `MODERATION_FINAL_PROVIDER=openai` (+ `OPENAI_MODERATION_MODEL` / `gpt-4o-mini`).
 - **Photo-first prefill (zboží):** Edge `suggest-listing-from-photos` — samostatný `SUGGEST_LISTING_MODEL`, default `gemini-3.5-flash-lite`. Nepoužívá `MODERATION_FINAL_*`, protože volá výhradně Gemini API. Auth JWT nebo guest visitor; rate limity `suggest_from_photos` (10/h) / `guest_suggest_from_photos`. **Neměnit** publish flow v `moderate-listing`.
+- **Prefill compare lab (staff):** Edge `compare-suggest-from-photos` + UI `/mod/prefill-lab`. Stejný prompt/schema/parse (`run-suggest-listing.ts`) jako produkční suggest; dvě sekvenční volání (provider+model z requestu). Bez DB logu, bez Sightengine, bez produkčních rate limitů. Default A = Gemini flash-lite, B = `gpt-5.4-nano`. Hydratační lab = **samostatný** budoucí scope (stejný pattern, jiný prompt).
 - **Fallback:** při selhání primary druhý dostupný provider (`OPENAI_MODERATION_MODEL` / `GEMINI_MODEL`).
 - Secrets `GEMINI_API_KEY` / `OPENAI_API_KEY` / `SIGHTENGINE_*` / `MODERATION_FINAL_*` **jen** v Supabase Edge Functions secrets, ne v Next.js env ani `.env.local`.
 - Historie A/B modelů: `docs/moderace-inzeratu.md` → sekce **Volba Gemini modelu**.
@@ -22,6 +23,8 @@ alwaysApply: false
 
 - Edge Function: `supabase/functions/moderate-listing/index.ts`
 - Prefill (zboží): `supabase/functions/suggest-listing-from-photos/index.ts` + `_shared/moderation/suggest-listing.ts` + `goods-taxonomy.ts` (sync)
+- Prefill lab: `supabase/functions/compare-suggest-from-photos/index.ts` + `src/app/mod/prefill-lab/` + `src/config/compare-suggest-from-photos.ts`
+- Sdílená suggest inference: `_shared/moderation/run-suggest-listing.ts` (Gemini i OpenAI)
 - Pre-Gemini: hard-hit (`prohibited-scan.ts` + `hard-hit-terms.ts`), NSFW (`sightengine.ts`), evidence (`hard-reject-evidence.ts`)
 - Gemini volání: `supabase/functions/_shared/moderation/gemini.ts` (volitelné `responseSchema`)
 - Klient: `src/lib/moderation/moderate-listing-client.ts` → `supabase.functions.invoke()` (ne Next.js API route)
@@ -37,6 +40,7 @@ Vždy **nejdřív sync, pak deploy** — deploy před syncem = staré prompty v 
 npm run sync:moderation
 npx supabase functions deploy moderate-listing
 npx supabase functions deploy suggest-listing-from-photos
+npx supabase functions deploy compare-suggest-from-photos
 ```
 
 `sync:moderation` kopíruje `prohibited-topics.ts` / `hard-hit-terms.ts`, generuje `constants.ts`, spustí export kategorií **a** `goods-taxonomy.ts`.

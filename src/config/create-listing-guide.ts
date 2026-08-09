@@ -131,7 +131,7 @@ export const CREATE_LISTING_GUIDE_UI = {
   metaDescription: `Vyfoťte věc mobilem — klidně i štítek s parametry. AI na ${SITE_SHORT_NAME} doplní popis. Ukázka ve 4 krocích.`,
   pageTitle: "Jak snadno lze vytvořit inzerát do dvou minut?",
   scenariosLabel: "Ukázky podle typu věci",
-  ctaLabel: "Vytvořit inzerát s AI",
+  ctaLabel: "Vytvořit inzerát",
   ctaHint: "Registrace zabere chvíli — pak rovnou fotíte a píšete.",
   steps: [
     {

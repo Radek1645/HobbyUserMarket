@@ -108,12 +108,9 @@ export function AiListingPrefillEntry({
   const addFiles = useCallback(async (incoming: FileList | File[]) => {
     setError(null);
     const allIncoming = Array.from(incoming);
-    const truncated =
-      allIncoming.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES;
-    const list = allIncoming.slice(0, SUGGEST_FROM_PHOTOS_MAX_IMAGES);
     const next: LocalPhoto[] = [];
 
-    for (const file of list) {
+    for (const file of allIncoming) {
       const sourceError = validateListingImageSourceFile(file);
       if (sourceError) {
         setError(sourceError);
@@ -150,12 +147,25 @@ export function AiListingPrefillEntry({
       });
     }
 
+    if (next.length === 0) return;
+
+    // Mobil foťák typicky vrací 1 soubor — přidej k existujícím, drž poslední 2.
+    let truncated = false;
     setPhotos((prev) => {
-      for (const photo of prev) {
-        URL.revokeObjectURL(photo.previewUrl);
+      const combined = [...prev, ...next];
+      truncated =
+        combined.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES ||
+        allIncoming.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES;
+      const kept = combined.slice(-SUGGEST_FROM_PHOTOS_MAX_IMAGES);
+      const keptKeys = new Set(kept.map((photo) => photo.key));
+      for (const photo of combined) {
+        if (!keptKeys.has(photo.key)) {
+          URL.revokeObjectURL(photo.previewUrl);
+        }
       }
-      return next.slice(0, SUGGEST_FROM_PHOTOS_MAX_IMAGES);
+      return kept;
     });
+
     if (truncated) {
       setError(SUGGEST_FROM_PHOTOS_UI.tooManyPhotos);
     }
@@ -416,7 +426,7 @@ export function AiListingPrefillEntry({
         {guestMode && showCaptcha && resolveTurnstileSiteKey() ? (
           <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
             <p className="mb-2 text-xs text-neutral-600">
-              Ochrana proti zneužití AI — potvrďte, že nejste robot.
+              Ochrana proti zneužití — potvrďte, že nejste robot.
             </p>
             <TurnstileWidget
               ref={turnstileWidgetRef}

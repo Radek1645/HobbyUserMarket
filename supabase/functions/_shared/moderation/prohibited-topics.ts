@@ -34,11 +34,11 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
     label: "Sexuální služby a pornografie",
     criteria:
       "Nabídka nebo poptávka sexuálních služeb, erotických masáží s explicitním sexuálním kontextem, pornografického obsahu, eskort služeb, „privátů“. " +
-      "Také inzeráty u zboží nebo módy, které primárně sexualizují osobu na fotografii (model v negližé na posteli, boudoir póza) místo produktu — zejména u vágního textu typu „spodní prádlo“ bez velikosti, značky a produktové fotografie (typický vzor escort návnady). " +
-      "U módy platí: spodní a intimní prádlo jen s fotkou věci a uvedenou velikostí; jinak REJECTED. " +
+      "Také zjevně erotické / boudoir snímky (negližé, explicitní póza, intimní prádlo na osobě jako hlavní motiv) nebo vágní text typu „spodní prádlo“ bez velikosti, značky a produktové fotografie věci — typický vzor escort návnady. " +
       "Zamítni i kódovaný sexuální obsah: „adult“ / „18+ only“ ve smyslu sexuální nabídky, „lolita“ v erotickém kontextu. " +
       "Zamítni i vulgární sexuální a obscénní slovník v názvu nebo popisu (např. šukat, mrdát, jebat, souložit, kunda, píča, pička, čurák, děvka, mrdat, srát, hovno) — i když zbytek inzerátu vypadá jako běžná nabídka. " +
       "Zamítni i sexuální urážky / BDSM návnady v nesouvisejícím inzerátu (např. „sub děvko“, výzvy k sexuálnímu aktu). " +
+      "NENÍ sexual_services: běžná fotka dospělého v oblečení nebo s doplňkem (kšiltovka, bunda, boty, šaty), i když je vidět obličej — u rozpoznatelné tváře použij identifiable_face. " +
       "Výjimka: běžný prodej knihy/filmu Lolita (Nabokov) nebo zboží „adult size“ / pro dospělé bez sexuálního kontextu — APPROVED.",
     keywords: [
       "escort",
@@ -139,6 +139,16 @@ export const PROHIBITED_TOPICS: readonly ProhibitedTopic[] = [
     label: "Fotografie dětí a adolescentů",
     criteria:
       "Fotografie, na které je rozpoznatelně zachycen člověk vypadající jako malé dítě nebo adolescent (odhad mladší 18 let), ať už jako hlavní motiv nebo výrazná část snímku — včetně skupinových fotek. Zamítni i snímky, kde je taková osoba na pozadí nebo v odrazu. Výjimka: fotka ukazuje pouze věc bez rozpoznatelné tváře nezletilé osoby (např. dětské kolo, hračka). Samotný text typu „dětské kolo“ bez dítěte na fotografii není důvod k zamítnutí.",
+  },
+  {
+    id: "identifiable_face",
+    label: "Rozpoznatelný obličej na fotce zboží",
+    criteria:
+      "Jen u inzerátů zboží (auto, detsky, dum, elektro, moda, sport, hobby, ostatni): fotografie, kde je hlavním nebo výrazným motivem rozpoznatelná tvář dospělé osoby (close-up hlavy, selfie, portrait), i když na sobě má nabízenou věc. " +
+      "Důvod je ochrana soukromí (GDPR) — věc foťte bez detailu obličeje (položená na stole, věšák, detail produktu, tělo bez tváře). " +
+      "reason uveď česky a prakticky, např.: „Nahrajte fotku věci bez rozpoznatelného obličeje (např. položená na stole, na věšáku nebo detail bez tváře).“ " +
+      "NIKDY neklasifikuj jako sexual_services. U nezletilých vždy minor_photos, ne tento topic. " +
+      "Výjimky (APPROVED): tvář je drobná / nerozpoznatelná / odvrácená; kategorie nemovitost, udalost, sluzby, prace.",
   },
   {
     id: "gambling_illegal",

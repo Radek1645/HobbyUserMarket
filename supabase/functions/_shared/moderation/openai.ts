@@ -19,6 +19,13 @@ export async function callOpenAiModeration(params: {
   imageMimeTypes: string[];
   /** Explicitní model; jinak OPENAI_MODERATION_MODEL / gpt-4o-mini. */
   model?: string;
+  /**
+   * Structured-output schema. Default = moderation schema.
+   * Suggest / compare lab předává vlastní schema.
+   */
+  responseSchema?: unknown;
+  /** json_schema.name — musí být unikátní per schema tvar. */
+  responseSchemaName?: string;
 }): Promise<string> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) {
@@ -26,6 +33,10 @@ export async function callOpenAiModeration(params: {
   }
 
   const model = params.model?.trim() || resolveOpenAiModerationModel();
+  const responseSchema =
+    params.responseSchema ?? OPENAI_MODERATION_RESPONSE_SCHEMA;
+  const responseSchemaName =
+    params.responseSchemaName?.trim() || "listing_moderation_result";
 
   const userContent: OpenAiContentPart[] = [{ type: "text", text: params.userPrompt }];
   for (const [index, data] of params.imagesBase64.entries()) {
@@ -55,9 +66,9 @@ export async function callOpenAiModeration(params: {
           response_format: {
             type: "json_schema",
             json_schema: {
-              name: "listing_moderation_result",
+              name: responseSchemaName,
               strict: true,
-              schema: OPENAI_MODERATION_RESPONSE_SCHEMA,
+              schema: responseSchema,
             },
           },
           messages: [

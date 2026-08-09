@@ -2,6 +2,7 @@ import {
   getCategorySeoPath,
   getGoodsCategoryTypeForSeoSlug,
   getGoodsSubcategoryLabelForSeoSlug,
+  getHomeCategoryFilterHref,
   isCategorySeoLandingSlug,
   CATEGORY_SEO_WAVE1_PRIORITY_SLUGS,
 } from "@/config/category-seo";
@@ -99,7 +100,7 @@ export default async function CategorySeoLandingPage({
   };
 
   const homeFilterHref = categoryType
-    ? `/?kategorie=${encodeURIComponent(categoryType)}`
+    ? getHomeCategoryFilterHref(categoryType)
     : "/";
 
   return (

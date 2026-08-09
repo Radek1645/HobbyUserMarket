@@ -5,6 +5,10 @@ import {
   getPriceTypeLabel,
   getSubcategoryLabel,
 } from "@/config/categories";
+import {
+  getHomeCategoryFilterHref,
+  getListingSubcategoryHref,
+} from "@/config/category-seo";
 import { SITE_DISPLAY_NAME } from "@/config/site";
 import { ListingPublishedConversionBeacon } from "@/components/analytics/ConversionBeacons";
 import { AdvertiserBadges } from "@/components/listing/AdvertiserBadges";
@@ -183,6 +187,13 @@ export default async function ListingDetailPage({
     post.category_type,
     post.subcategory_slug,
   );
+  const categoryHref = getHomeCategoryFilterHref(post.category_type);
+  const subcategoryHref = getListingSubcategoryHref(
+    post.category_type,
+    post.subcategory_slug,
+  );
+  const categoryMetaLinkClass =
+    "hover:text-gray-800 underline-offset-2 hover:underline";
 
   const expiresLabel = post.expires_at
     ? new Date(post.expires_at).toLocaleDateString("cs-CZ")
@@ -321,9 +332,19 @@ export default async function ListingDetailPage({
 
       <header className="mt-4">
         <p className="text-sm text-gray-500">
-          {intentLabel
-            ? `${intentLabel} · ${categoryLabel} · ${subcategory.label}`
-            : `${categoryLabel} · ${subcategory.label}`}
+          {intentLabel ? (
+            <>
+              {intentLabel}
+              {" · "}
+            </>
+          ) : null}
+          <Link href={categoryHref} className={categoryMetaLinkClass}>
+            {categoryLabel}
+          </Link>
+          {" · "}
+          <Link href={subcategoryHref} className={categoryMetaLinkClass}>
+            {subcategory.label}
+          </Link>
           {conditionText ? ` · ${conditionText}` : ""}
           {subcategory.isLegacy ? (
             <span className="text-gray-400"> (archivní kategorie)</span>

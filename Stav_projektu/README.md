@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-08-10 | [2026-08-10.md](./2026-08-10.md) — Prefill lab, 076 guest log, DOPLNIT formát, category links, móda face rules, PRD v3.66; SQL/Edge ✅ |
 | 2026-08-09 | [2026-08-09.md](./2026-08-09.md) — FB guest funnel C + AI prefill, OAuth resume, krokovník, smoke § L, PRD v3.64; SQL/Edge ✅ |
 | 2026-08-06 (večer) | [2026-08-06-vecer.md](./2026-08-06-vecer.md) — Category SEO Vlna 1 (`072`, `/{slug}/`, cron), PRD v3.60; SQL ✅ |
 | 2026-08-06 | [2026-08-06.md](./2026-08-06.md) — UX po rejectu 2. moderace, source keyword scan, dual-model preview/final, vulgarismy, QA moderace, PRD v3.59; Edge deploy ✅ |

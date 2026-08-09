@@ -52,15 +52,15 @@ export const MODERATION_CHECKING_UI = {
 export const MODERATION_PREVIEW_UI = {
   title: "AI vám vylepšila inzerát!",
   subtitle:
-    "AI může udělat chybu — text před publikací zkontrolujte. Je zásadně mimo? Klikněte na Zrušit a doplňte detaily sami. Jinak publikujte vylepšený text, nebo ponechte původní — obojí je v pořádku. U AI textu se v Parametrech zobrazí „Vytvořeno s pomocí AI: Ano“.",
+    "AI může udělat chybu, proto text před publikací zkontrolujte. Je něco zásadně špatně? Klikněte na Zrušit a detaily doplňte sami. Jinak můžete publikovat vylepšený text, nebo ponechat původní – obojí je v pořádku.",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
-  seoSectionLabel: "Texty pro vyhledávače (doporučujeme neměnit)",
+  seoSectionLabel: "Text pro vyhledávání",
   seoSectionHint:
-    "Připravil AI. Úprava jen pokud víte, co děláte — jinak nechte tak.",
-  seoEditAriaLabel: "Odemknout úpravy textů pro vyhledávače",
-  seoLockAriaLabel: "Zamknout úpravy textů pro vyhledávače",
-  seoLockedHint: "Jen náhled. Úprava přes tužku — běžně není potřeba.",
+    "Doporučujeme neměnit. Tento text používáme pro lepší nalezení vašeho inzerátu.",
+  seoEditAriaLabel: "Odemknout úpravy textu pro vyhledávání",
+  seoLockAriaLabel: "Zamknout úpravy textu pro vyhledávání",
+  seoLockedHint: "Doporučujeme neměnit. Úprava přes tužku — běžně není potřeba.",
   metaDescriptionLabel: "Meta popis (vyhledávače)",
   metaDescriptionHelp:
     "Zobrazí se ve výsledcích Googlu a Seznamu a zvyšuje viditelnost.",
@@ -68,14 +68,14 @@ export const MODERATION_PREVIEW_UI = {
   imageAltHelp: "Popis fotky pro vyhledávače obrázků (bez lokality).",
   questionsHeading: "Vylepšete svůj inzerát",
   questionsHint:
-    "Odpovězte na to, co kupující nejvíc zajímá. Urychlíte prodej a vyhnete se zbytečným otázkám v chatu.",
+    "Doplňte informace, které kupující nejčastěji potřebují. Ušetříte si zbytečné otázky v chatu.",
   questionsSkipHint:
     "Nevíte odpověď? Nechte prázdné — publikaci to nezdrží.",
   publishAiLabel: "Publikovat vylepšený inzerát",
   publishAiHint: "Doporučeno",
   publishOriginalLabel: "Ponechat můj původní text",
   publishOriginalHint:
-    "Zahodí AI návrh. Kontakty v původním textu se skryjí.",
+    "AI návrh se nepoužije. Kontakty v původním textu se skryjí.",
   descriptionLengthWarning: (current: number, max: number) =>
     `Popis včetně odpovědí má ${current} znaků — maximum je ${max}. Zkrácením textu nebo odpovědí to vejde.`,
   descriptionLengthCounter: (current: number, max: number) =>

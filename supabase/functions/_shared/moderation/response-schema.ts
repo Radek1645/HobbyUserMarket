@@ -137,3 +137,23 @@ export const GEMINI_SUGGEST_LISTING_RESPONSE_SCHEMA = {
     confidenceScore: { type: "NUMBER", minimum: 0, maximum: 1 },
   },
 } as const;
+
+/** OpenAI structured output ekvivalent GEMINI_SUGGEST_LISTING_RESPONSE_SCHEMA. */
+export const OPENAI_SUGGEST_LISTING_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "title",
+    "description",
+    "categoryType",
+    "subcategorySlug",
+    "confidenceScore",
+  ],
+  properties: {
+    title: { type: "string" },
+    description: { type: "string" },
+    categoryType: { type: "string" },
+    subcategorySlug: nullableOpenAiString,
+    confidenceScore: { type: "number" },
+  },
+} as const;

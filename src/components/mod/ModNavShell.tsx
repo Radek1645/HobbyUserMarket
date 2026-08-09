@@ -18,7 +18,9 @@ export function ModNavShell({ role }: ModNavShellProps) {
         ? "blacklist"
         : pathname.startsWith("/mod/inzeraty")
           ? "inzeraty"
-          : "karantena";
+          : pathname.startsWith("/mod/prefill-lab")
+            ? "prefill-lab"
+            : "karantena";
 
   return <ModNav role={role} current={current} />;
 }

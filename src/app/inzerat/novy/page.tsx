@@ -56,8 +56,9 @@ export default async function NewListingPage({
           userEmail=""
           pageHeading={{
             title: "Založit inzerát",
-            description:
-              "Vyfoťte věc, napište pár slov — zbytek doplní AI. Účet založíte až při publikaci.",
+            description: SUGGEST_FROM_PHOTOS_ENABLED
+              ? SUGGEST_FROM_PHOTOS_UI.pageHintGuest
+              : "Vyplňte kategorii a obsah. Účet založíte až při publikaci.",
           }}
         />
       </div>

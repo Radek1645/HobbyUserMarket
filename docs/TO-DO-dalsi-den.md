@@ -23,6 +23,8 @@
 **Aktualizace 2026-08-08:** § L manuální smoke — FB guest funnel C + AI prefill (scénáře k odškrtávání).  
 **Aktualizace 2026-08-08:** § L.B5–B8 — kvalita prefill textu (PII, konzistence title/desc, few-shot stabilita, jiná kategorie).  
 **Aktualizace 2026-08-08:** § L.B9 — prefill mimo zboží (nemovitost) → nejistá kategorie / ruční podkategorie.
+**Aktualizace 2026-08-09:** Prefill lab — `/mod/prefill-lab` + Edge `compare-suggest-from-photos` (staff side-by-side modelů; bez DB). Default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`.
+**Aktualizace 2026-08-10:** Prefill `[DOPLNIT …]` — pod nabídkou, jeden na řádek (prompt + `formatDoplnitPlaceholders` v parse).
 **Aktualizace 2026-08-09:** OAuth resume po **Zpět** z Google (cookie + sessionStorage); krokovník + AI/Publikace; C3 + D2 smoke; PRD v3.64. FB ads odloženy — produkční test na mobilu.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
@@ -34,7 +36,8 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 > **2026-08-08.** Manuální průchod před ads switch. Flag C: `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED=true`. Prefill: `SUGGEST_FROM_PHOTOS_ENABLED`. Migrace `073` + `074`, Edge `moderate-listing` + `suggest-listing-from-photos`, Turnstile. Testuj v anonymním okně. Detail: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
 
 **Minimum před ads:** A1, A3, C3, D1, B1, **B5, B6** (kvalita textu).  
-**Localhost 2026-08-09:** A1–A3, B1–B7/B9, C3, D2 hotovo; zbývá hlavně **D1** (explicitně FAB/header copy), Pixel **E3/E4**, produkční mobil.
+**Localhost 2026-08-09:** A1–A3, B1–B7/B9, C3, D2 hotovo; zbývá hlavně **D1** (explicitně FAB/header copy), Pixel **E3/E4**, produkční mobil.  
+**Rychlý smoke po 076 / Prefill lab (2026-08-10) — pokud ještě ne:** T1–T3 níže (§ L konec).
 
 **Doporučené pořadí:** B1 → **B5 → B6 → B7** → A1 → A3 → B2/B3a → C3 → D1/D2 → (A2, B8) → E3/E4.
 
@@ -57,7 +60,7 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 | B3c | Edge / Gemini down | Technická chyba + manuál; lze dokončit bez prefillu | ☐ |
 | B3d | 0 fotek / 3+ fotek | Validace min 1, max 2 | ☑ 2026-08-09 (3+ → warning + první 2; 0 → needPhotos) |
 | B4 | Po prefillu změnit kategorii/text → publish | Formulář má pravdu; final AI respektuje formulář (cena/lokalita z formuláře) | ☑ 2026-08-09 (změna kategorie — fotky zůstaly) |
-| B5 | **Kvalita draftu (auto bez čitelného modelu)** — 1×: fotky Škoda bez nápisu modelu na kufru | Title obecné (např. „Bílé osobní auto Škoda“), **ne** tipovaný model (Rapid…); description „Nabízím…“; **oddělené** `[DOPLNIT x]`, `[DOPLNIT y]` (ne slitý seznam); **žádná** výzva ke kontaktu („kontaktujte mě/mne“, „napište mi“…); **žádná SPZ/tel/e-mail** v textu (i když je SPZ na fotce); title ↔ description konzistentní | ☑ 2026-08-08 (Opel: title „Stříbrné osobní auto Opel“, ne Corsa; oddělené DOPLNIT) |
+| B5 | **Kvalita draftu (auto bez čitelného modelu)** — 1×: fotky Škoda bez nápisu modelu na kufru | Title obecné (např. „Bílé osobní auto Škoda“), **ne** tipovaný model (Rapid…); description „Nabízím…“; **`[DOPLNIT …]` pod nabídkou, každý na vlastním řádku** (ne slitý seznam v jedné větě); **žádná** výzva ke kontaktu; **žádná SPZ/tel/e-mail**; title ↔ description konzistentní | ☑ 2026-08-08 (Opel…); formát řádků 2026-08-10 (prompt + parse) |
 | B6 | **Stabilita formátu** — stejné fotky jako B5, **3–4×** po sobě (nový prefill / refresh) | Každý běh splní kritéria B5. Pokud v ≥1/5 běhů „kontaktujte…“ nebo slitý placeholder → fail (flash-lite nedeterminismus); zapsat a řešit | ☑ |
 | B7 | **Jiná kategorie** — dětské oblečení **nebo** elektro (1–2 fotky) | Prefill generalizuje: category sedí; nejisté atributy jako oddělené `[DOPLNIT velikost]` / značka atd. (ne automobilový slovník rok/km); bez kontaktu / PII; title bez hádání | ☑ 2026-08-08 (odrážedlo → Sport/Kola; DOPLNIT značka/velikost/materiál) |
 | B8 | **Auto s čitelným modelem** na kufru/masce (Octavia, Fabia…) | Title i description mohou obsahovat model; **ne** `[DOPLNIT typ/model]` zároveň s konkrétním modelem v title | ☐ |
@@ -92,6 +95,14 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 | E3 | Nová registrace z funnelu | Pixel CompleteRegistration / `registered=1` jen u **nové** registrace | ☐ |
 | E4 | Publish | `ListingPublished` s `published=<postId>`; bez duplicity při refresh | ☐ |
 | E5 | Logo / „Zpět“ z onboardingu | HP, bez smyčky login↔onboarding | ☐ |
+
+### T. Rychlý smoke — Prefill lab / 076 / odkazy (2026-08-10)
+
+| # | Scénář | Očekávání | ✓ |
+|---|--------|-----------|---|
+| T1 | Staff `/mod/prefill-lab` → 1 fotka zboží → Spustit | A i B vrátí title/desc/cat; žádný zápis do `moderation_checks` | ☐ |
+| T2 | Host `/inzerat/novy` → AI prefill 1 fotka | Popis: `[DOPLNIT …]` pod nabídkou, 1 na řádek; v DB řádek `moderation_checks` s `intent=suggest_from_photos` a `guest_visitor_id` (ne null) | ☐ |
+| T3 | Detail aktivního inzerátu → klik kategorie / podkategorie | Goods SEO slug → `/{slug}`; jinak `/?kategorie=…` | ☐ |
 
 ---
 

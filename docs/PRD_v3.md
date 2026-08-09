@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.64  
+> **Verze dokumentu:** v3.66  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** … · [`072_category_seo_pages.sql`](../supabase/072_category_seo_pages.sql) · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql)  
+> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-09
+> **Datum:** 2026-08-10
 
 ---
 
@@ -206,7 +206,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Hosting / Deployment:** Vercel (Free / Hobby tier).
 * **Database & Auth:** Supabase (PostgreSQL + PostGIS extenze pro geolokaci, Supabase Auth, Supabase Storage). Přechod na Pro Tier ($25/měsíc) při ostrém startu kvůli garanci záloh a neusínání DB.
 * **Geocoding API:** Mapy.cz API (Autocomplete + Geofocus). Využití bezplatného tarifu pro vývojáře, který plně pokrývá potřeby MVP.
-* **AI Vrstva:** Supabase Edge Functions — **prefill** (`suggest-listing-from-photos`) + **dvě fáze moderace** (`moderate-listing`: náhled vs. finále) s oddělitelnými modely. Defaults (aktualizace **2026-08-08**): prefill `SUGGEST_LISTING_MODEL` = `gemini-3.5-flash-lite`; preview `GEMINI_MODEL` = `gemini-2.5-flash`; final `MODERATION_FINAL_*` = `gemini-3.5-flash-lite` (A/B OpenAI `gpt-4o-mini`). Tabulka: §5.4 · Metodika §6 · [`moderace-inzeratu.md`](./moderace-inzeratu.md). Timeout Edge Function: **30 s**.
+* **AI Vrstva:** Supabase Edge Functions — **prefill** (`suggest-listing-from-photos`) + **dvě fáze moderace** (`moderate-listing`: náhled vs. finále) s oddělitelnými modely + staff **prefill lab** (`compare-suggest-from-photos`). Defaults (aktualizace **2026-08-09**): prefill `SUGGEST_LISTING_MODEL` = `gemini-3.5-flash-lite`; lab A/B default `gemini-3.5-flash-lite` vs `gpt-5.4-nano`; preview `GEMINI_MODEL` = `gemini-2.5-flash`; final `MODERATION_FINAL_*` = `gemini-3.5-flash-lite` (A/B OpenAI `gpt-4o-mini`). Tabulka: §5.4 · Metodika §6 · [`moderace-inzeratu.md`](./moderace-inzeratu.md). Timeout Edge Function: **30 s**.
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
 * **Analytika:** Google Tag Manager (GTM) + Google Analytics 4 (GA4) s **vlastní cookie lištou** (GTM Consent Mode v2) před aktivací měření. *(✅ GTM `GTM-WGLNJRNK`, consent banner, `/cookies` — 2026-07-14)*
@@ -553,7 +553,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
      * Upload fotografií: max **6 ks**, formáty JPEG/PNG/WebP (včetně snímků z foťáku). **Automatická komprese na klientovi** — každá fotka max **1 MB** po zmenšení (resize + WebP/JPEG) před odesláním do Supabase Storage. Vstupní soubor může být větší (až ~25 MB).
      * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (náhled)“** (radio button/hvězdička). Výchozí je první nahraná. Hlavní fotka určuje náhled na homepage a slouží pro cross-validaci textu a AI hydrataci — **ne** jako jediná kontrolovaná fotka.
 
-* **AI photo-first prefill (zboží, v3.61):** Na `/inzerat/novy` je krok 0 — dropzone 1–2 fotek + viditelná manuální cesta pro služby/události/práci/reality. Edge `suggest-listing-from-photos` (Sightengine NSFW → Gemini; closed vocabulary z `GOODS_CATEGORIES`) předvyplní `title` / `description` / `categoryType` / `subcategorySlug`. **Bez** odhadu ceny. Model řídí samostatný `SUGGEST_LISTING_MODEL` (default `gemini-3.5-flash-lite`); `MODERATION_FINAL_*` patří pouze publish moderaci. Auth JWT nebo guest visitor (rate limit `suggest_from_photos` / `guest_suggest_from_photos`, Turnstile po soft limitu). Flag `SUGGEST_FROM_PHOTOS_ENABLED`. Publish gate zůstává `moderate-listing` beze změny.
+* **AI photo-first prefill (zboží, v3.61):** Na `/inzerat/novy` je krok 0 — dropzone 1–2 fotek + viditelná manuální cesta pro služby/události/práci/reality. Edge `suggest-listing-from-photos` (Sightengine NSFW → Gemini; closed vocabulary z `GOODS_CATEGORIES`) předvyplní `title` / `description` / `categoryType` / `subcategorySlug`. **Bez** odhadu ceny. Model řídí samostatný `SUGGEST_LISTING_MODEL` (default `gemini-3.5-flash-lite`); `MODERATION_FINAL_*` patří pouze publish moderaci. Auth JWT nebo guest visitor (rate limit `suggest_from_photos` / `guest_suggest_from_photos`, Turnstile po soft limitu). Flag `SUGGEST_FROM_PHOTOS_ENABLED`. Publish gate zůstává `moderate-listing` beze změny. **Staff prefill lab (v3.65):** `/mod/prefill-lab` + Edge `compare-suggest-from-photos` — stejný prompt/schema, dvě sekvenční volání (default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`); bez DB / Sightengine / produkčních rate limitů.
 
 * **Multimodální AI Guardrail & Interaktivní doplňování (Text + Foto cross-validace):**
   * Po kliknutí na **„Publikovat inzerát“** (create) / **„Uložit“** (edit): klient nejprve nahraje nové originály do privátního immutable stagingu (`moderation-image-staging`); Next.js Server Action přes **Sharp** vytvoří hash-addressed WebP varianty do `moderation-image-renditions` (**Gemini 1024 px**, **Sightengine 512 px**, `fit: inside` — zachovaný poměr stran, WebP kvalita 80). Pak klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `categoryType`, `subcategory_slug`, metadata z formuláře (`conditionLabel`, `conditionLabelText`, `conditionFieldLabel`, `priceType`, `priceTypeLabel`, `priceAmount`, u událostí `eventDate`), **`imageReferences`** (max. 6 odkazů na staging objekty — **ne** base64) a `mainImageIndex`. Edge stáhne originály (SEC-H02 hashe), načte důvěryhodné varianty a provede **jedno** AI kolo — Sightengine NSFW na všech snímcích (512 px), cross-validace text ↔ hlavní fotka + hydratace z **všech** fotek přes Gemini (1024 px) / GPT-4o-mini fallback; výstup je striktní JSON. **Žádná Next.js API Route v AI volání** (Sharp Server Action jen připravuje varianty). Detail: [`moderace-inzeratu.md`](./moderace-inzeratu.md).
@@ -590,17 +590,18 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * Důvod: uživatel smí po náhledu text změnit. Token musí patřit k finálnímu obsahu, ne k prvnímu AI návrhu. „Token sedí“ = DB při `publish_approved_post` ověří fingerprint/hashe uloženého řádku proti tokenu; neshoda → zůstane `draft`.
   * **PLÁN (zatím neimplementováno) — skip 2. AI při nezměněném obsahu:** pokud po modalu platí stejný content fingerprint + image hashes jako u náhledu *a* uživatel nic nedoplnil (žádné odpovědi / editace), zvážit vydání tokenu **bez** druhého AI volání (úspora latence a nákladů). Low priority — většina flow má odpovědi na otázky.
 
-* **AI modely — kanonická tabulka defaults (aktualizace 2026-08-08):**
+* **AI modely — kanonická tabulka defaults (aktualizace 2026-08-09):**
 
 | Použití | Edge | Secret | Default |
 |---------|------|--------|---------|
 | Photo-first prefill (zboží, krok 0) | `suggest-listing-from-photos` | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
+| Prefill lab (staff `/mod/prefill-lab`) | `compare-suggest-from-photos` | request `armA`/`armB` (+ volitelně `COMPARE_SUGGEST_ARM_*_MODEL`) | A: `gemini` / `gemini-3.5-flash-lite` · B: `openai` / `gpt-5.4-nano` |
 | Moderace preview (hydratace) | `moderate-listing` | `GEMINI_MODEL` | `gemini-2.5-flash` |
 | Moderace final (approval) | `moderate-listing` | `MODERATION_FINAL_PROVIDER` + `MODERATION_FINAL_MODEL` | `gemini` / `gemini-3.5-flash-lite` |
 | OpenAI fallback / A/B final | `moderate-listing` | `OPENAI_MODERATION_MODEL` | `gpt-4o-mini` |
-| NSFW pre-gate | obě Edge | Sightengine | `nudity-2.1` |
+| NSFW pre-gate | produkční Edge | Sightengine | `nudity-2.1` |
 
-Prefill nepoužívá `MODERATION_FINAL_*` a zatím nemá OpenAI fallback. Při změně modelu aktualizujte **datum v této tabulce**, Metodiku §6 a changelog níže.
+Prefill nepoužívá `MODERATION_FINAL_*` a zatím nemá OpenAI fallback v produkci. Prefill lab je staff-only srovnání (bez DB); UI defaulty v `src/config/compare-suggest-from-photos.ts`. Při změně modelu aktualizujte **datum v této tabulce**, Metodiku §6 a changelog níže.
 
 * **Server-side vynucení publikace *(migrace `027` + `062`–`066`)*:**
   * Po potvrzení AI náhledu Edge znovu zkontroluje **přesný** finální text a bajty fotek (`issueApproval: true`), spočítá SHA-256 content fingerprint + image hashes, vloží řádek do `moderation_approvals` (TTL 30 min, jednorázový) a vrátí `approvalToken`.
@@ -818,6 +819,8 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.62 | 2026-08-08 | **Photo-prefill model izolován:** `SUGGEST_LISTING_MODEL` (default `gemini-3.5-flash-lite`); bez fallbacku na `MODERATION_FINAL_MODEL` (může být OpenAI při A/B) |
 | v3.63 | 2026-08-08 | **Kanonická tabulka AI modelů** (prefill + preview + final + OpenAI + Sightengine) v §5.4 a Metodika §6; datum aktualizace u tabulky — při změně modelu syncovat |
 | v3.64 | 2026-08-09 | **FB guest funnel C + smoke:** migrace `073`/`074`, OAuth `next` přes cookie + sessionStorage (Back z Google nechá resume); krokovník create ukazuje AI vylepšení + Publikaci; final moderace REJECT při dvou vzájemně vylučujících hlavních produktech na fotkách (jen zboží); localhost smoke § L (A1–A3, B*, C3, D2) |
+| v3.65 | 2026-08-09 | **Staff Prefill lab:** `/mod/prefill-lab` + Edge `compare-suggest-from-photos` — stejný suggest prompt/schema, dvě sekvenční volání (default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`); bez DB / Sightengine; hydratační lab odložen |
+| v3.66 | 2026-08-10 | **Prefill log + UX:** migrace `076` (`moderation_checks.guest_visitor_id`, nullable `user_id`); `[DOPLNIT …]` pod nabídkou (jeden na řádek); odkazy kategorie/podkategorie na detailu inzerátu; móda/dětské — `identifiable_face` vs `sexual_services`; SEO landings Hračky/Miminka (`075`, už dříve) |
 
 ---
 

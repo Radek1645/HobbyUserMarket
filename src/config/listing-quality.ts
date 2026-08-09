@@ -3,7 +3,7 @@
 /** Kotva sekce „Vylepšete svůj inzerát“ v ModerationPreviewDialog. */
 export const IMPROVE_LISTING_SECTION_ID = "improve-listing";
 
-/** Kotva sekce „Texty pro vyhledávače“ v ModerationPreviewDialog. */
+/** Kotva sekce „Text pro vyhledávání“ v ModerationPreviewDialog. */
 export const LISTING_SEO_SECTION_ID = "listing-seo";
 
 /** Bez fotky score nesmí přesáhnout tento strop. */

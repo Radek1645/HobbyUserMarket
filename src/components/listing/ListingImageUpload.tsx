@@ -7,7 +7,6 @@ import {
   LISTING_IMAGE_MAX_SOURCE_BYTES,
   MODERATION_IMAGE_STAGING_BUCKET,
 } from "@/config/app";
-import { getListingFormTipExample } from "@/config/listing-form-tips";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   listingFormDropzoneClass,
@@ -439,7 +438,6 @@ export const ListingImageUpload = forwardRef<
     event.target.value = "";
   }
 
-  const tipExample = getListingFormTipExample(categoryType, subcategorySlug);
   const maxPhotoSizeMb = Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024));
   const maxSourceSizeMb = Math.round(
     LISTING_IMAGE_MAX_SOURCE_BYTES / (1024 * 1024),
@@ -451,14 +449,15 @@ export const ListingImageUpload = forwardRef<
         <span className={listingFormLabelClass}>Fotky</span>
         <div className={`${listingFormHintClass} space-y-1`}>
           <p>
-            ⚡ <strong>Tip</strong>: Napište stručný popisek (např. „{tipExample}“), nahrajte fotku a nechte AI, ať váš text vylepší a dotáhne do konce.
+            ⚡ <strong>Tip</strong>: Přidejte fotky, které nejlépe ukazují stav
+            a detaily inzerované věci.
           </p>
           <p>
             📸 Max. {LISTING_IMAGE_MAX_FILES} fotek — vstup max. {maxSourceSizeMb}{" "}
             MB před zmenšením, výsledek do {maxPhotoSizeMb} MB.
           </p>
-          <p>⭐ Hvězdičkou vyberte hlavní fotku na homepage.</p>
-          <p>🛡️ Bezpečnost fotek hlídá AI kontrola.</p>
+          <p>⭐ Hvězdičkou vyberte hlavní fotku.</p>
+          <p>🛡️ Fotky před publikací zkontrolujeme pomocí AI.</p>
         </div>
       </div>
 

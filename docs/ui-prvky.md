@@ -19,7 +19,7 @@ Hlavní akce (vytvořit inzerát, potvrdit formulář, modál).
 | `emeraldPrimaryButtonClass` | Obecné zelené CTA, `rounded-xl` |
 | `emeraldPrimaryButtonCompactClass` | Modály, kompaktní akční řádek |
 | `headerCreateListingSurfaceClass` | Flat zelený povrch header CTA (`bg-emerald-600`, hover `bg-emerald-700`) — shodně s logem zaPikolou |
-| `createListingCtaLabel` | Text hlavního CTA — „Vytvořit inzerát s AI“ (header + FAB) |
+| `createListingCtaLabel` | Text hlavního CTA — „Vytvořit inzerát“ (header + FAB) |
 | `headerCreateListingButtonClass` | Header CTA — od `sm`, nebo při nízké výšce (zoom) |
 | `headerCreateListingLabelClass` | Text CTA — skrytý pod ~480 px (jen ikona + `aria-label`) |
 | `createListingFabClass` | Mobilní FAB — jen `< sm` a výška viewportu > 36 rem |

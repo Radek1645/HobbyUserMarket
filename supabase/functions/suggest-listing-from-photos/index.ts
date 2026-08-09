@@ -10,7 +10,6 @@
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
-import { callGeminiModeration } from "../_shared/moderation/gemini.ts";
 import {
   loadModerationImagesFromStorage,
   type StorageImageReference,
@@ -20,20 +19,24 @@ import {
   assertSuggestFromPhotosRateLimit,
   verifyGuestVisitorToken,
 } from "../_shared/moderation/rate-limit.ts";
-import { GEMINI_SUGGEST_LISTING_RESPONSE_SCHEMA } from "../_shared/moderation/response-schema.ts";
+import { logModerationCheck } from "../_shared/moderation/log-moderation-check.ts";
 import {
   checkImageNudity,
   SightengineUnavailableError,
 } from "../_shared/moderation/sightengine.ts";
-import {
-  buildSuggestListingSystemPrompt,
-  buildSuggestListingUserPrompt,
-  parseSuggestListingResponse,
-} from "../_shared/moderation/suggest-listing.ts";
+import { runSuggestListingInference } from "../_shared/moderation/run-suggest-listing.ts";
+import type { SuggestListingParsed } from "../_shared/moderation/suggest-listing.ts";
 import { isEmailBlacklisted } from "../_shared/moderation/account-blacklist.ts";
 import { verifyTurnstileToken } from "../_shared/moderation/turnstile.ts";
 
 const SUGGEST_MAX_IMAGES = 2;
+const SUGGEST_LOG_INTENT = "suggest_from_photos";
+
+type SightengineResponseEntry = {
+  imageIndex: number;
+  response?: unknown;
+  error?: string;
+};
 const NSFW_IMAGE_REASON =
   "Fotografie porušuje podmínky webu (nevhodný obsah). Nahrajte jiné snímky.";
 const SIGHTENGINE_UNAVAILABLE_MESSAGE =
@@ -133,6 +136,7 @@ serve(async (req) => {
 
     let ownerPrefix: string;
     let logUserId: string | null = authUser?.userId ?? null;
+    let logGuestVisitorId: string | null = null;
 
     if (!authUser) {
       const visitorId = String(body?.guestVisitorId ?? "").trim();
@@ -219,6 +223,7 @@ serve(async (req) => {
       }
 
       ownerPrefix = `guest/${visitorId}`;
+      logGuestVisitorId = visitorId;
     } else {
       const { userId, email: userEmail } = authUser;
       ownerPrefix = userId;
@@ -316,13 +321,30 @@ serve(async (req) => {
       sightengineImageMimeTypes,
     } = loadedImages;
 
+    const sightengineResponses: SightengineResponseEntry[] = [];
     for (let index = 0; index < sightengineImagesBase64.length; index++) {
       try {
         const result = await checkImageNudity(
           sightengineImagesBase64[index]!,
           sightengineImageMimeTypes[index] ?? "image/webp",
         );
+        sightengineResponses.push({
+          imageIndex: index,
+          response: result.response,
+        });
         if (result.rejected) {
+          await logModerationCheck({
+            userId: logUserId,
+            guestVisitorId: logGuestVisitorId,
+            intent: SUGGEST_LOG_INTENT,
+            status: "REJECTED",
+            imageCount: sightengineImagesBase64.length,
+            rejectionReason: NSFW_IMAGE_REASON,
+            rejectedImageIndex: index,
+            errorCode: "NSFW_IMAGE",
+            rejectedTopicId: result.reason,
+            sightengineResponses,
+          });
           return jsonResponse(
             {
               status: "REJECTED",
@@ -335,6 +357,21 @@ serve(async (req) => {
         }
       } catch (nsfwError) {
         if (nsfwError instanceof SightengineUnavailableError) {
+          sightengineResponses.push({
+            imageIndex: index,
+            error: nsfwError.message,
+          });
+          await logModerationCheck({
+            userId: logUserId,
+            guestVisitorId: logGuestVisitorId,
+            intent: SUGGEST_LOG_INTENT,
+            status: "REJECTED",
+            imageCount: sightengineImagesBase64.length,
+            rejectionReason: SIGHTENGINE_UNAVAILABLE_MESSAGE,
+            rejectedImageIndex: index,
+            errorCode: "SIGHTENGINE_UNAVAILABLE",
+            sightengineResponses,
+          });
           return technicalErrorResponse(
             SIGHTENGINE_UNAVAILABLE_MESSAGE,
             503,
@@ -346,23 +383,32 @@ serve(async (req) => {
     }
 
     const model = resolveSuggestModel();
-    const systemPrompt = buildSuggestListingSystemPrompt();
-    const userPrompt = buildSuggestListingUserPrompt(geminiImagesBase64.length);
 
-    let rawResponse: string;
+    let suggestion: SuggestListingParsed;
     try {
-      rawResponse = await callGeminiModeration({
-        systemPrompt,
-        userPrompt,
+      const inference = await runSuggestListingInference({
+        provider: "gemini",
+        model,
         imagesBase64: geminiImagesBase64,
         imageMimeTypes: geminiImageMimeTypes,
-        model,
-        responseSchema: GEMINI_SUGGEST_LISTING_RESPONSE_SCHEMA,
       });
+      suggestion = inference.suggestion;
     } catch (aiError) {
       const code = aiError instanceof Error ? aiError.message : "GEMINI_ERROR";
       console.error("suggest-listing gemini:", code);
       if (code.startsWith("GEMINI_BLOCKED_")) {
+        await logModerationCheck({
+          userId: logUserId,
+          guestVisitorId: logGuestVisitorId,
+          intent: SUGGEST_LOG_INTENT,
+          status: "REJECTED",
+          imageCount: geminiImagesBase64.length,
+          rejectionReason: NSFW_IMAGE_REASON,
+          errorCode: "NSFW_IMAGE",
+          sightengineResponses,
+          aiProvider: "gemini",
+          aiModel: model,
+        });
         return jsonResponse(
           {
             status: "REJECTED",
@@ -372,6 +418,39 @@ serve(async (req) => {
           200,
         );
       }
+      if (code === "SUGGEST_PARSE_ERROR") {
+        await logModerationCheck({
+          userId: logUserId,
+          guestVisitorId: logGuestVisitorId,
+          intent: SUGGEST_LOG_INTENT,
+          status: "REJECTED",
+          imageCount: geminiImagesBase64.length,
+          rejectionReason:
+            "AI vrátila neplatnou odpověď. Zkuste to znovu, nebo vyplňte inzerát ručně.",
+          errorCode: "SUGGEST_PARSE_ERROR",
+          sightengineResponses,
+          aiProvider: "gemini",
+          aiModel: model,
+        });
+        return technicalErrorResponse(
+          "AI vrátila neplatnou odpověď. Zkuste to znovu, nebo vyplňte inzerát ručně.",
+          503,
+          "SUGGEST_PARSE_ERROR",
+        );
+      }
+      await logModerationCheck({
+        userId: logUserId,
+        guestVisitorId: logGuestVisitorId,
+        intent: SUGGEST_LOG_INTENT,
+        status: "REJECTED",
+        imageCount: geminiImagesBase64.length,
+        rejectionReason:
+          "AI předvyplnění teď selhalo. Zkuste to znovu, nebo vyplňte inzerát ručně.",
+        errorCode: code,
+        sightengineResponses,
+        aiProvider: "gemini",
+        aiModel: model,
+      });
       return technicalErrorResponse(
         "AI předvyplnění teď selhalo. Zkuste to znovu, nebo vyplňte inzerát ručně.",
         503,
@@ -379,21 +458,11 @@ serve(async (req) => {
       );
     }
 
-    let suggestion;
-    try {
-      suggestion = parseSuggestListingResponse(rawResponse);
-    } catch {
-      return technicalErrorResponse(
-        "AI vrátila neplatnou odpověď. Zkuste to znovu, nebo vyplňte inzerát ručně.",
-        503,
-        "SUGGEST_PARSE_ERROR",
-      );
-    }
-
     console.log(
       "suggest-listing:",
       JSON.stringify({
         userId: logUserId,
+        guestVisitorId: logGuestVisitorId,
         guest: logUserId === null,
         categoryType: suggestion.categoryType,
         subcategorySlug: suggestion.subcategorySlug,
@@ -401,6 +470,20 @@ serve(async (req) => {
         model,
       }),
     );
+
+    await logModerationCheck({
+      userId: logUserId,
+      guestVisitorId: logGuestVisitorId,
+      intent: SUGGEST_LOG_INTENT,
+      status: "APPROVED",
+      categoryType: suggestion.categoryType,
+      subcategorySlug: suggestion.subcategorySlug ?? undefined,
+      imageCount: geminiImagesBase64.length,
+      titlePreview: suggestion.title,
+      sightengineResponses,
+      aiProvider: "gemini",
+      aiModel: model,
+    });
 
     return jsonResponse({
       status: "OK",

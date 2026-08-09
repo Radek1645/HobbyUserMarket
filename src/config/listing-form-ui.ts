@@ -81,7 +81,7 @@ export const listingFormStepInactiveClass = "font-normal text-slate-400";
 
 /** Labely krokovníku — photo-first create (čísla 1–5). */
 export const LISTING_FORM_STEPPER_PHOTO_FIRST = [
-  "Fotky a AI prefill",
+  "Fotky a předvyplnění",
   "Kategorie",
   "Obsah",
   "AI vylepšení",

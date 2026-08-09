@@ -23,7 +23,7 @@ export const headerCreateListingSurfaceClass =
   "bg-emerald-600 text-white transition-colors duration-200 hover:bg-emerald-700";
 
 /** Sdílený text hlavního CTA pro tvorbu inzerátu (header + FAB). */
-export const createListingCtaLabel = "Vytvořit inzerát s AI";
+export const createListingCtaLabel = "Vytvořit inzerát";
 
 /** Výška vyhledávače a loga v headeru (`HeaderSearch` input). */
 export const headerInputHeightClass = "h-10";
@@ -33,7 +33,7 @@ export const headerBrandControlHeightClass = "h-11";
 export const headerBrandControlPaddingXClass = "px-6";
 
 /**
- * Header „Vytvořit inzerát s AI“.
+ * Header „Vytvořit inzerát“.
  * Od `sm` vždy; pod `sm` jen když je viewport nízký (FAB skrytý kvůli zoomu),
  * ať na telefonu nepřekrývá vyhledávání.
  */

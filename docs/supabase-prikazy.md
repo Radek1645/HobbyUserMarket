@@ -26,25 +26,36 @@ Migrace v tomto projektu jsou **číslované soubory** `supabase/NNN_popis.sql`.
 
 **Pořadí:** migrace spouštěj **v číselném pořadí** (028 před 029…). Nové migrace přidej do hlavičky [`PRD_v3.md`](./PRD_v3.md).
 
-### Změna AI moderace (Edge Function)
+### Změna AI moderace / prefillu (Edge Functions)
 
-AI moderace **neběží na Vercelu** — běží jako Edge Function `moderate-listing` na Supabase. Git push ji **automaticky nenasadí**.
+AI moderace a photo-first prefill **neběží na Vercelu** — běží jako Edge Functions na Supabase. Git push je **automaticky nenasadí**.
 
-Po každé změně pravidel nebo promptů spusť **oba příkazy za sebou** (v kořeni repa). První připraví soubory lokálně, druhý je nahraje do cloudu — **samotný sync produkci neaktualizuje**.
+Po každé změně pravidel nebo promptů spusť **sync a potom deploy všech dotčených funkcí** (v kořeni repa). Samotný sync produkci neaktualizuje.
 
 ```powershell
 cd c:\Users\HP\Documents\Cursor\0_Projects\HobbyUserMarket
 
 npm run sync:moderation
 npx supabase functions deploy moderate-listing
+npx supabase functions deploy suggest-listing-from-photos
+npx supabase functions deploy compare-suggest-from-photos
 ```
 
 | # | Příkaz | Co dělá |
 |---|--------|---------|
-| 1 | `npm run sync:moderation` | Zkopíruje pravidla z `src/config/` do `supabase/functions/_shared/` (včetně promptů z `categories.ts`) |
-| 2 | `npx supabase functions deploy moderate-listing` | Nahraje novou verzi Edge Function na produkci — **bez tohoto kroku platí stará moderace** |
+| 1 | `npm run sync:moderation` | Zkopíruje pravidla z `src/config/` do `supabase/functions/_shared/` (včetně promptů z `categories.ts` a taxonomie zboží) |
+| 2 | `npx supabase functions deploy moderate-listing` | Publish gate: NSFW (Sightengine) → Gemini kontrola textu/fotek → approval token. **Bez deploye platí stará moderace.** |
+| 3 | `npx supabase functions deploy suggest-listing-from-photos` | Photo-first prefill na `/inzerat/novy`: z 1–2 fotek předvyplní název, popis a kategorii (Sightengine → Gemini). **Bez deploye platí starý prefill.** |
+| 4 | `npx supabase functions deploy compare-suggest-from-photos` | Staff lab `/mod/prefill-lab`: stejný suggest prompt/schema, dvě po sobě jdoucí volání modelu (bez DB logu, bez Sightengine). |
 
-**Kdy:** po změně `prohibited-topics.ts`, `bound-user-content.ts`, `categories.ts` (AI prompty), `build-prompt.ts` nebo souborů v `supabase/functions/moderate-listing/`.
+**Kdy deployovat kterou funkci:**
+
+| Změna | Deploy |
+|-------|--------|
+| `prohibited-topics.ts`, `build-prompt.ts`, AI prompty v `categories*.ts`, `moderate-listing/` | `moderate-listing` |
+| Prefill prompt / `suggest-listing.ts`, rate limity prefillu, `suggest-listing-from-photos/` | `suggest-listing-from-photos` (+ `compare-suggest-from-photos` pokud měníš sdílenou inference) |
+| Prefill compare lab (`compare-suggest-from-photos/`, `/mod/prefill-lab`) | `compare-suggest-from-photos` |
+| Sdílené `_shared/moderation/` (Sightengine, log, taxonomie, `run-suggest-listing.ts`…) | **obě** suggest funkce (+ lab) |
 
 **Před prvním deployem:** jednorázově `npx supabase login` a `npx supabase link --project-ref <PROJECT_REF>` (viz níže).
 
@@ -74,7 +85,7 @@ Kanon produktového modelu zůstává v [`PRD_v3.md`](./PRD_v3.md) §4; tady je 
 | `listing_views` | Zobrazení detailu (+ podklad pro `view_count`) |
 | `rate_limits` | Počítadla limitů (AI, kontakt…) |
 | `moderation_approvals` | Jednorázový token pro publikaci po AI |
-| `moderation_checks` | Log každého volání AI moderace |
+| `moderation_checks` | Log AI volání — publish moderace i prefill (`intent`); Sightengine JSON ve `sightengine_responses`; guest přes `guest_visitor_id` (076) |
 | `moderation_hard_reject_evidence` | Evidence hard-rejectu (NSFW / hard-hit) před Gemini |
 | `audit_events` | Systémový audit (změny stavů, moderace…) |
 | `moderator_note_kinds` | Číselník typů poznámek |
@@ -208,11 +219,11 @@ Bez platného tokenu inzerát zůstane `draft`.
 
 #### `moderation_checks` — log AI
 
-Každé volání Edge Function (náhled i `issueApproval`).
+Každé volání Edge Function: publish moderace (náhled / `issueApproval`) i photo-prefill (`intent = suggest_from_photos`). Migrace **076**: actor = `user_id` **nebo** `guest_visitor_id` (check constraint).
 
 | Skupina | Atributy |
 |---------|----------|
-| Identita | `log_no`, `user_id`, `created_at`, `intent` |
+| Identita | `log_no`, `user_id` (nullable od 076), `guest_visitor_id` (076), `created_at`, `intent` |
 | Výsledek | `status` (`APPROVED` / `REJECTED` / `NEEDS_QUESTIONS`), `category_type`, `subcategory_slug`, `image_count` |
 | Zamítnutí | `rejected_topic_id`, `rejection_reason`, `error_code`, `title_preview`, `rejected_image_index` |
 | Návrh kategorie | `category_fit`, `suggested_category_type`, `suggested_subcategory_slug`, `category_taxonomy_hint` |
@@ -565,24 +576,30 @@ Uživatel uvidí nový limit v **`/profil/nastaveni`** (plán Free, počítadlo 
 
 ### Edge Functions
 
-**Nasazení moderace (vždy oba řádky, v tomto pořadí):**
+**Nasazení AI Edge Functions (sync + deploy dotčených funkcí):**
 
 ```powershell
 npm run sync:moderation
 npx supabase functions deploy moderate-listing
+npx supabase functions deploy suggest-listing-from-photos
+npx supabase functions deploy compare-suggest-from-photos
 ```
 
 | Příkaz | Vysvětlení |
 |--------|------------|
 | `npx supabase functions list` | Vypíše nasazené funkce |
-| `npx supabase functions logs moderate-listing` | Logy funkce (debug) — po neúspěšné moderaci |
-| `npx supabase functions serve moderate-listing` | Lokální běh funkce — vyžaduje Docker + `supabase start` |
+| `npx supabase functions logs moderate-listing` | Logy publish moderace (debug) |
+| `npx supabase functions logs suggest-listing-from-photos` | Logy photo-first prefillu (debug) |
+| `npx supabase functions logs compare-suggest-from-photos` | Logy staff prefill labu (debug) |
+| `npx supabase functions serve moderate-listing` | Lokální běh — vyžaduje Docker + `supabase start` |
 
 **Funkce v projektu:**
 
 | Funkce | Účel |
 |--------|------|
-| `moderate-listing` | AI kontrola inzerátu (+ pre-Gemini NSFW/hard-hit), vydání approval tokenu |
+| `moderate-listing` | Publish gate: pre-Gemini NSFW/hard-hit → Gemini kontrola → approval token při publikaci |
+| `suggest-listing-from-photos` | Photo-first prefill zboží na `/inzerat/novy`: z 1–2 fotek návrh title/description/kategorie (Sightengine → Gemini). Nezasahuje do publish gate. Loguje do `moderation_checks` s `intent = suggest_from_photos` (včetně guest, migrace `076`). |
+| `compare-suggest-from-photos` | Staff-only lab: stejný suggest prompt/schema, dvě sekvenční volání modelu (UI `/mod/prefill-lab`). Bez DB logu, bez Sightengine, bez rate_limit tabulek. |
 
 ### SQL — přehled AI / NSFW kontrol
 
@@ -692,7 +709,7 @@ Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, a
 
 | Příkaz | Co dělá |
 |--------|---------|
-| `npm run sync:moderation` | Sync pravidel a promptů → `supabase/functions/_shared/` — **vždy hned potom** `npx supabase functions deploy moderate-listing` |
+| `npm run sync:moderation` | Sync pravidel a promptů → `supabase/functions/_shared/` — **potom** deploy `moderate-listing` a/nebo `suggest-listing-from-photos` (viz tabulka „Kdy deployovat“) |
 
 ---
 
@@ -702,7 +719,9 @@ Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, a
 |-------------|--------|
 | Nový soubor `supabase/NNN_*.sql` | SQL Editor na produkci + commit + PRD hlavička + **aktualizuj § Schéma databáze** v tomto souboru |
 | Nová tabulka / sloupec / enum | Stejně — lidský popis atributů v § Schéma databáze (skill ukončení práce) |
-| `prohibited-topics.ts` / AI prompty / `categories.ts` | Viz blok výše — oba příkazy pod sebou: `npm run sync:moderation` a `npx supabase functions deploy moderate-listing` |
+| `prohibited-topics.ts` / AI prompty / `categories.ts` | `npm run sync:moderation` + deploy `moderate-listing` (a při sdílených změnách i `suggest-listing-from-photos`) |
+| Prefill (`suggest-listing.ts`, `suggest-from-photos.ts`, Edge `suggest-listing-from-photos`) | `npm run sync:moderation` + `npx supabase functions deploy suggest-listing-from-photos` |
+| Prefill lab (`compare-suggest-from-photos`, `/mod/prefill-lab`) | `npx supabase functions deploy compare-suggest-from-photos` (+ sync pokud měníš `run-suggest-listing` / taxonomii) |
 | `.env.local` (jen lokál) | Nic na Supabase — jen restart `npm run dev` |
 | `CRON_SECRET` (Vercel) | Nastavit ve Vercelu, ne v Supabase — viz `vercel.json` |
 | Service role klíč | Jen server / Edge — **nikdy** `NEXT_PUBLIC_*` |
@@ -713,7 +732,7 @@ Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, a
 
 | Problém | Pravděpodobná příčina | Řešení |
 |---------|----------------------|--------|
-| Moderace vrací stará pravidla | Chybí krok 2 — deploy | Spusť znovu oba příkazy: `npm run sync:moderation` a `npx supabase functions deploy moderate-listing` |
+| Moderace / prefill vrací stará pravidla | Chybí deploy po syncu | `npm run sync:moderation` + deploy `moderate-listing` a/nebo `suggest-listing-from-photos` |
 | `Publishing requires moderation approval` | Publish gate (027) — chybí approval token | Normální flow přes AI modal |
 | `GEMINI_BLOCKED_*` | Google safety filtr | Viz `moderace-inzeratu.md` — `geminiSafe` prompt |
 | Migrace selže na `ADD VALUE` enum | Hodnota už existuje | `IF NOT EXISTS` (viz 036) nebo přeskoč řádek |

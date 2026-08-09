@@ -306,12 +306,13 @@ supabase functions deploy moderate-listing
 | Fáze | Secret | Default |
 |------|--------|---------|
 | **Prefill** (krok 0, `suggest-listing-from-photos`) | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
+| **Prefill lab** (staff `/mod/prefill-lab`, `compare-suggest-from-photos`) | request `armA`/`armB`; volitelně `COMPARE_SUGGEST_ARM_A_MODEL` / `COMPARE_SUGGEST_ARM_B_MODEL` | **A:** `gemini` / `gemini-3.5-flash-lite` · **B:** `openai` / `gpt-5.4-nano` |
 | **Preview** (hydratace, `issueApproval` vypnuto) | `GEMINI_MODEL` | `gemini-2.5-flash` |
 | **Final** (`issueApproval: true`) | `MODERATION_FINAL_PROVIDER` (`gemini` \| `openai`) + `MODERATION_FINAL_MODEL` | provider `gemini`, model **`gemini-3.5-flash-lite`** |
 | OpenAI fallback / final openai | `OPENAI_MODERATION_MODEL` | `gpt-4o-mini` |
 | NSFW pre-gate | Sightengine | `nudity-2.1` |
 
-Prefill **nepoužívá** `MODERATION_FINAL_*` a zatím nemá OpenAI fallback.
+Prefill **nepoužívá** `MODERATION_FINAL_*` a zatím nemá OpenAI fallback v produkci. Staff lab `compare-suggest-from-photos` volá Gemini i OpenAI jen pro ruční srovnání (bez DB logu, bez Sightengine); UI defaulty v `src/config/compare-suggest-from-photos.ts`.
 
 ```bash
 # Explicit final Lite (kód má stejně default):

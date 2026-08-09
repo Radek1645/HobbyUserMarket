@@ -3,7 +3,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 export type ModerationCheckStatus = "APPROVED" | "REJECTED" | "NEEDS_QUESTIONS";
 
 export type ModerationCheckLog = {
-  userId: string;
+  /** Auth uživatel; u guest flow může být null. */
+  userId?: string | null;
+  /** Návštěvnická relace (guest); alespoň userId nebo guestVisitorId. */
+  guestVisitorId?: string | null;
   intent?: string;
   status: ModerationCheckStatus;
   categoryType?: string;
@@ -40,6 +43,14 @@ function truncatePreview(text: string, max = 120): string {
 export async function logModerationCheck(
   entry: ModerationCheckLog,
 ): Promise<boolean> {
+  const userId = entry.userId?.trim() || null;
+  const guestVisitorId = entry.guestVisitorId?.trim() || null;
+
+  if (!userId && !guestVisitorId) {
+    console.warn("log-moderation-check: missing actor (userId/guestVisitorId)");
+    return false;
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -50,7 +61,8 @@ export async function logModerationCheck(
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
   const { error } = await admin.from("moderation_checks").insert({
-    user_id: entry.userId,
+    user_id: userId,
+    guest_visitor_id: guestVisitorId,
     intent: entry.intent?.trim() || null,
     status: entry.status,
     category_type: entry.categoryType?.trim() || null,

@@ -18,33 +18,33 @@ export const SUGGEST_FROM_PHOTOS_MAX_IMAGES = 2;
 export const SUGGEST_FROM_PHOTOS_CONFIDENCE_THRESHOLD = 0.7;
 
 export const SUGGEST_FROM_PHOTOS_UI = {
-  pageHint:
-    "Vyfoťte nebo vyberte fotky — AI vyplní název, popis i kategorii. Platnost 30 dní.",
-  aiCardTitle: "Vyfoťte věc a my vyplníme zbytek",
+  pageHint: "Stačí fotka. Připravíme název, popis i kategorii.",
+  /** Guest page hint — stejný benefit + kdy vznikne účet. */
+  pageHintGuest:
+    "Stačí fotka. Připravíme název, popis i kategorii. Účet založíte až při publikaci.",
+  aiCardTitle: "Stačí fotka. Zbytek připravíme za vás.",
   aiCardSubtitle:
-    "Hlavní fotka a detail stačí. Cenu, stav a lokalitu doplníte sami.",
-  dropzoneIdle: "Vyfoťte nebo vyberte 1–2 fotky",
-  dropzoneHint:
-    "Max. 2 fotky (hlavní + detail). AI z nich vytvoří název, popis a kategorii.",
-  ctaLabel: "Vytvořit inzerát s AI",
-  statusChecking: "Kontrola fotek…",
-  statusAnalyzing: "Analýza obsahu…",
-  statusPrefilling: "Předvyplňování…",
-  /** Sekundární banner — reality / služby / práce / události (ne AI zboží). */
-  manualTitle:
-    "Chcete inzerovat nemovitost, službu, práci nebo událost? Nebo inzerát chcete zadat ručně.",
+    "Nahrajte 1–2 fotky. Připravíme název, popis a kategorii. Cenu, stav a lokalitu doplníte sami.",
+  dropzoneIdle: "Přidat fotky",
+  dropzoneHint: "Maximálně 2 fotky",
+  ctaLabel: "Vytvořit inzerát",
+  statusChecking: "Kontrolujeme fotky…",
+  statusAnalyzing: "Připravujeme váš inzerát…",
+  statusPrefilling: "Doplňujeme údaje…",
+  /** Sekundární banner — reality / služby / práce / události. */
+  manualTitle: "Nebo raději ručně?",
   manualBody:
-    "Tyto kategorie potřebují specifické údaje, které AI z fotky nepozná.",
-  manualCtaLabel: "Vyplnit ručně bez AI →",
-  needPhotos: "Vyfoťte nebo vyberte alespoň jednu fotku.",
+    "Služby, události, práce a reality můžete vytvořit klasicky.",
+  manualCtaLabel: "Vyplnit inzerát ručně",
+  needPhotos: "Přidejte alespoň jednu fotku.",
   tooManyPhotos:
-    "Můžete nahrát nejvýše 2 fotky (hlavní + detail). Použili jsme první dvě — ostatní jsme vynechali.",
+    "Můžete mít nejvýše 2 fotky. Ponechali jsme poslední dvě — starší jsme vynechali.",
   rateLimitMessage:
-    "Dosáhli jste hodinového limitu AI předvyplnění. Zkuste to později, nebo vyplňte inzerát ručně.",
+    "Dosáhli jste hodinového limitu předvyplnění. Zkuste to později, nebo vyplňte inzerát ručně.",
   technicalError:
-    "AI předvyplnění teď selhalo. Zkuste to znovu, nebo vyplňte inzerát ručně.",
+    "Předvyplnění teď selhalo. Zkuste to znovu, nebo vyplňte inzerát ručně.",
   nsfwReject:
     "Fotografie porušuje podmínky webu. Nahrajte jiné snímky, nebo pokračujte ručně.",
   missingFieldsHint:
-    "AI vyplnila název, popis a kategorii. Doplňte cenu, stav a lokalitu.",
+    "Připravili jsme název, popis a kategorii. Doplňte cenu, stav a lokalitu.",
 } as const;
