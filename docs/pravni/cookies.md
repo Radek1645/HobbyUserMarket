@@ -1,7 +1,7 @@
 # Zásady používání souborů cookie
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.2 · **Datum účinnosti:** 06.08.2026
+**Verze:** 1.3 · **Datum účinnosti:** 10.08.2026
 
 ---
 
@@ -25,6 +25,13 @@ Využíváme cookies a obdobné technologie pro následující účely:
 
 Zajišťují přihlášení, bezpečnost, základní nastavení a správné zobrazení webu. **Bez nich by platforma nefungovala.** Tyto cookies nevyžadují souhlas dle platné legislativy.
 
+Patří sem zejména:
+
+- session / autentizační cookies pro přihlášení,
+- cookie lišta (uložení volby souhlasu),
+- **cookie identifikátoru návštěvníka** (`guest_moderation_id`) pro rate-limiting a dočasný staging při přípravě inzerátu bez účtu,
+- **local storage** s konceptem inzerátu (nejvýše 24 hodin) — viz [Zásady ochrany osobních údajů](/gdpr) §3.3.
+
 ### Analytické
 
 Pomáhají nám pochopit, jak web používáte (návštěvnost stránek, chování v agregované podobě). Používáme **Google Analytics 4 (GA4)** prostřednictvím **Google Tag Manageru (GTM)**. Aktivují se až po vašem souhlasu s analytikou v cookie liště.
@@ -45,7 +52,7 @@ V cookie liště můžete zvolit:
 
 Souhlas můžete kdykoli změnit nebo odvolat v nastavení cookie lišty na webu (CMP centrum) nebo omezením cookies v prohlížeči.
 
-Odvolání souhlasu neovlivní zákonnost zpracování před jeho odvoláním.
+Odvolání souhlasu neovlivní zákonnost zpracování před jeho odvoláním. Technické cookies a local storage nezbytné pro přípravu inzerátu bez účtu zůstávají aktivní, dokud funkci používáte (koncept můžete smazat vymazáním dat webu v prohlížeči).
 
 ---
 

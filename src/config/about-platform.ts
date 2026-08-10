@@ -10,7 +10,7 @@ export const ABOUT_PLATFORM_UI = {
   metaDescription: `${SITE_SHORT_NAME} — lokální inzerce s AI: z fotky a krátkého popisu připravíme inzerát, který jde dobře najít ve vyhledávačích i v okolí. Neprodáváme za vás — propojujeme lidi.`,
   pageTitle: "Co je zaPikolou?",
   lead:
-    "Jsme lokální inzertní nástěnka s misí: rychle propojit lidi ve vašem okolí — a připravit každý inzerát tak, aby byl srozumitelný lidem i vyhledávačům.",
+    "Jsme lokální inzertní nástěnka s misí: rychle a snadno propojit lidi ve vašem okolí — a připravit každý inzerát tak, aby byl srozumitelný lidem i vyhledávačům.",
   sections: [
     {
       title: "Proč existujeme",
@@ -31,6 +31,10 @@ export const ABOUT_PLATFORM_UI = {
     {
       title: "Kdo za obsah odpovídá",
       body: "Za text inzerátu, fotky, cenu a průběh dohody odpovídá inzerent. Zájemce si ověřuje podmínky sám. My technicky zajišťujeme zveřejnění, kontrolu obsahu podle pravidel a bezpečné zobrazení kontaktu.",
+    },
+    {
+      title: "Soukromí kontaktů inzerentů",
+      body: "E-mail ani telefon inzerenta na veřejném inzerátu nezobrazujeme napřímo. Kontakt se odhalí až po přihlášení zájemce (nebo zájemce napíše přes poptávkový formulář). Chráníme tak inzerenty před spamem a nechtěným šířením údajů — bez jejich vědomí kontakty nepředáváme.",
     },
     {
       title: "Lokálně a s kontrolou",

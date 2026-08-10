@@ -140,7 +140,7 @@ Na všech stránkách je společná hlavička (wordmark **zaPikolou.cz**, vyhled
 | **Kontakt** | Provozovatel webu (`/kontakt`) |
 | **Co je zaPikolou?** | O webu zaPikolou (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`), **Časté dotazy** (`/faq`), Pro AI (`/llms.txt`) |
 
-V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), krátký tagline, verze platformy (`0.1`) a rok (`2026`).
+V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), krátký tagline, verze platformy (`0.2`) a rok (`2026`).
 
 ### 2.8 Informační stránky
 
@@ -154,7 +154,7 @@ V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), 
 | `/gdpr` | Zásady ochrany osobních údajů (`docs/pravni/ochrana-osobnich-udaju-fo.md` / `-osvc.md` dle monetizace) |
 | `/marketingovy-souhlas` | Marketingový souhlas (stav „zatím nezasíláme“, odvolání e-mailem) |
 | `/dsa` | DSA kontaktní centrum |
-| `/vop` | Všeobecné obchodní podmínky |
+| `/vop` | Všeobecné obchodní podmínky (`CURRENT_VOP_VERSION` = `1.10-fo`, snapshoty v `docs/pravni/snapshots/`) |
 
 Stránky jsou veřejné, indexovatelné a v `sitemap.xml` (včetně `/gdpr`).
 

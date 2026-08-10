@@ -228,6 +228,7 @@ Moderace rozlišuje **dvě úrovně** — nesmí se zaměňovat:
    - Pravidla pro konkrétní podkategorii → `aiPrompt` u příslušné položky v `categories.ts`
    - Po změně: `npm run sync:moderation` → u změny `build-prompt.ts` ještě `node scripts/sync-build-prompt.mjs` → `supabase functions deploy moderate-listing`
    - SEO / hydratace textu: kanon [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)
+   - **Veřejná lokalita:** do AI user promptu jde `formatPublicListingLocation` (obec / MČ; u událost/nemovitost ulice bez čísla), ne plná adresa z formuláře — plná zůstává v DB / u majitele.
 
 ### Limity
 

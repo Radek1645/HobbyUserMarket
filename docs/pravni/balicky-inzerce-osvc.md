@@ -33,7 +33,7 @@
 | **Sčítání balíčků** | Kredity z více balíčků nebo grantů se **sčítají**. |
 | **Drafty** | Koncept (`draft`) kredit nespotřebovává, dokud není inzerát zveřejněn. |
 
-Aktuální stav kreditů uživatel vidí v účtu (Moje inzeráty / Nastavení profilu).
+Aktuální stav kreditů uživatel vidí v účtu ([Moje inzeráty](/moje-inzeraty) / [Nastavení profilu](/profil/nastaveni)).
 
 ---
 

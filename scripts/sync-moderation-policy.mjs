@@ -60,6 +60,20 @@ const boundUserContentTarget = join(
 copyFileSync(boundUserContentSource, boundUserContentTarget);
 console.log("Synced bound-user-content:", boundUserContentTarget);
 
+const formatPublicLocationSource = join(
+  root,
+  "src/lib/posts/format-public-location.ts",
+);
+const formatPublicLocationTarget = join(
+  root,
+  "supabase/functions/_shared/moderation/format-public-location.ts",
+);
+writeFileSync(
+  formatPublicLocationTarget,
+  `/** Auto-synced from src/lib/posts/format-public-location.ts — do not edit. */\n${readFileSync(formatPublicLocationSource, "utf8")}`,
+);
+console.log("Synced format-public-location:", formatPublicLocationTarget);
+
 const listingCtaSource = join(root, "src/config/moderation/listing-cta.ts");
 const listingCtaTarget = join(
   root,

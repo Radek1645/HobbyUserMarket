@@ -49,7 +49,8 @@ npx supabase functions deploy compare-suggest-from-photos
 
 - `src/config/moderation/prohibited-topics.ts`
 - `src/config/moderation/hard-hit-terms.ts`
-- `src/config/moderation/build-prompt.ts` (+ ručně stejná změna v `supabase/functions/_shared/moderation/build-prompt.ts`)
+- `src/config/moderation/build-prompt.ts` (+ `node scripts/sync-build-prompt.mjs` / ručně stejná změna v Edge)
+- `src/lib/posts/format-public-location.ts` (sync do `_shared/moderation/` — veřejná lokalita do AI promptu)
 - `src/config/moderation/bound-user-content.ts`
 - `src/lib/moderation/prohibited-scan.ts`
 - `src/config/app.ts` (délky popisu, QA reserve)

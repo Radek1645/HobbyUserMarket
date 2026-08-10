@@ -7,6 +7,7 @@ import {
   wrapListingUserField,
 } from "./bound-user-content.ts";
 import { getListingPlatformCta } from "./listing-cta.ts";
+import { formatPublicListingLocation } from "./format-public-location.ts";
 
 export type ModerationRequestBody = {
   intent?: string;
@@ -19,7 +20,10 @@ export type ModerationRequestBody = {
   conditionLabelText?: string;
   conditionFieldLabel?: string;
   eventDate?: string;
-  /** Lokalita z formuláře — lokální SEO / spádové město. */
+  /**
+   * Plná lokalita z formuláře (může obsahovat ulici + číslo).
+   * Do AI promptu jde jen veřejná varianta (`formatPublicListingLocation`).
+   */
   locationText?: string;
   latitude?: number;
   longitude?: number;
@@ -139,6 +143,10 @@ export function buildModerationUserPrompt(
   const needsQuestionsMax =
     LISTING_DESCRIPTION_MAX_LENGTH - MODERATION_DESCRIPTION_QA_RESERVE;
 
+  const publicLocation = body.locationText?.trim()
+    ? formatPublicListingLocation(body.locationText.trim(), body.categoryType)
+    : "";
+
   const sections = [
     "Úkol: moderuj inzerát (text + fotografie) a vrať JSON dle system promptu.",
     "Formát cleanedDescription: nejdřív úvod (až 6 vět), pak „---“, nadpis „Parametry“ a odrážky • Popisek: hodnota.",
@@ -165,8 +173,8 @@ export function buildModerationUserPrompt(
     body.priceType === "exchange" && body.exchangeFor?.trim()
       ? `Požadovaná výměna z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.exchangeFor, body.exchangeFor.trim())}`
       : null,
-    body.locationText?.trim()
-      ? `Lokalita z formuláře:\n${wrapListingUserField(LISTING_PROMPT_TAGS.location, body.locationText.trim())}`
+    publicLocation
+      ? `Veřejná lokalita (obec / městská část; u události a nemovitosti ulice bez čísla popisného):\n${wrapListingUserField(LISTING_PROMPT_TAGS.location, publicLocation)}`
       : null,
     `mainImageIndex (hlavní fotka — jen cross-validace textu s náhledem): ${mainIndex}`,
     imageCount > 0

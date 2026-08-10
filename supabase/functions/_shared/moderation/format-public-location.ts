@@ -1,3 +1,4 @@
+/** Auto-synced from src/lib/posts/format-public-location.ts — do not edit. */
 /**
  * Veřejná lokalita inzerátu.
  * - událost / nemovitost: ulice bez popisného čísla + obec

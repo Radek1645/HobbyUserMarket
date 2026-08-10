@@ -20,8 +20,14 @@ function parseTitle(raw: string): string {
 
 function parseMeta(raw: string): VopSnapshot["meta"] {
   const platform = raw.match(/\*\*Platforma:\*\*\s*(.+)/)?.[1]?.trim();
-  const version = raw.match(/\*\*Verze:\*\*\s*(.+)/)?.[1]?.trim();
-  const effectiveDate = raw.match(/\*\*Datum účinnosti:\*\*\s*(.+)/)?.[1]?.trim();
+  const versionLine = raw.match(/\*\*Verze:\*\*\s*(.+)/)?.[1]?.trim();
+  const version = versionLine
+    ?.split(/\s*·\s*/)[0]
+    ?.replace(/\*\*/g, "")
+    .trim();
+  const effectiveDate =
+    raw.match(/\*\*Datum účinnosti:\*\*\s*([^*\n·]+)/)?.[1]?.trim() ??
+    versionLine?.match(/\*\*Datum účinnosti:\*\*\s*(.+)/)?.[1]?.trim();
   const operator =
     raw.match(/\*\*Provozovatel:\*\*\s*(.+)/)?.[1]?.trim() ??
     raw.match(/\*\*Správce:\*\*\s*(.+)/)?.[1]?.trim();

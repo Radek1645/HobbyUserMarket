@@ -1,7 +1,7 @@
 # DSA kontaktní centrum (hlášení obsahu)
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.1 · **Datum účinnosti:** 13.07.2026
+**Verze:** 1.2 · **Datum účinnosti:** 10.08.2026
 
 ---
 
@@ -53,10 +53,8 @@ Provozovatel může zveřejňovat agregované přehledy o přijatých hlášení
 
 ---
 
-## 5. Kontakt pro tisk a orgány
+## 5. Kontakt pro tisk a úřady
 
-**Provozovatel:** Radek Horák, fyzická osoba  
-**Datová schránka:** fxetq2k  
-**IČO:** neuvedeno
+Údaje o provozovateli (jméno, e-mail, datová schránka) najdete na stránce [Provozovatel webu](/kontakt).
 
 ---

@@ -1,5 +1,6 @@
 import type { CategoryType, ConditionLabel, PostRow } from "@/types/post";
 import { SITE_DISPLAY_NAME } from "@/config/site";
+import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 
 export type ListingJsonLdInput = {
   post: Pick<
@@ -37,17 +38,26 @@ const EMPLOYMENT_TYPE: Partial<Record<ConditionLabel, string>> = {
   substitute: "TEMPORARY",
 };
 
-function buildPlace(locationText: string): JsonLd {
-  const name = locationText.trim();
+/** Place z veřejné lokality — bez čísla popisného / plné adresy. */
+function buildPlace(publicLocation: string): JsonLd {
+  const name = publicLocation.trim();
   return {
     "@type": "Place",
     name,
     address: {
       "@type": "PostalAddress",
-      streetAddress: name,
+      addressLocality: name,
       addressCountry: "CZ",
     },
   };
+}
+
+function publicPlaceFromPost(
+  post: Pick<ListingJsonLdInput["post"], "location_text" | "category_type">,
+): JsonLd {
+  return buildPlace(
+    formatPublicListingLocation(post.location_text, post.category_type),
+  );
 }
 
 function buildOffer(
@@ -121,7 +131,7 @@ function buildServiceJsonLd(input: ListingJsonLdInput): JsonLd {
     "@type": "Service",
     ...baseFields(input),
     serviceType: input.subcategoryLabel,
-    areaServed: buildPlace(post.location_text),
+    areaServed: publicPlaceFromPost(post),
     offers: buildOffer(post, input.pageUrl),
   };
 }
@@ -136,7 +146,7 @@ function buildEventJsonLd(input: ListingJsonLdInput): JsonLd {
     ...(post.event_date ? { startDate: post.event_date } : {}),
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: "https://schema.org/EventScheduled",
-    location: buildPlace(post.location_text),
+    location: publicPlaceFromPost(post),
     offers: buildOffer(post, input.pageUrl),
   };
 }
@@ -169,7 +179,7 @@ function buildJobPostingJsonLd(input: ListingJsonLdInput): JsonLd {
       "@type": "Organization",
       name: SITE_DISPLAY_NAME,
     },
-    jobLocation: buildPlace(post.location_text),
+    jobLocation: publicPlaceFromPost(post),
     ...(employmentType ? { employmentType } : {}),
   };
 

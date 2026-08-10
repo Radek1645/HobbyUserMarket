@@ -1,4 +1,4 @@
-﻿import { PROHIBITED_TOPICS } from "./prohibited-topics.ts";
+import { PROHIBITED_TOPICS } from "./prohibited-topics.ts";
 import { buildDescriptionLengthPromptRules } from "./description-length-prompt.ts";
 import {
   VALID_CATEGORY_TYPES,
@@ -54,7 +54,7 @@ Podvod (scam_fraud) — doplňující REJECTED (platí i když u Gemini vidíš 
 - Stav z formuláře (conditionLabel / conditionLabelText) zjevně odporuje uživatelskému popisu nebo fotkám (např. formulář „Nové“, text „použité / staré cca 3 roky“) → REJECTED, rejectedTopicId=scam_fraud. Nesmíš tento rozpor sám vytvořit hydratací Parametrů — u APPROVED/NEEDS_QUESTIONS drž Stav v Parametrech v souladu s formulářem, pokud uživatelský text rozpor nemá.
 - Cena v popisu vs formulář: částka ve formuláři je **závazná**. Jiná / stará cena v textu popisu (typicky po úpravě inzerátu) NENÍ scam_fraud — v cleanedDescription a metaDescription ji přepiš na cenu z formuláře. NIKDY kvůli tomu REJECTED.
 - Datum a čas konání (eventDate) z formuláře je **závazný** (datum i čas). Jiný / starý čas nebo datum v textu popisu NENÍ důvod k REJECTED — v cleanedDescription (úvod i Parametry) použij údaj z formuláře. NIKDY kvůli tomu REJECTED.
-- Lokalita (locationText) z formuláře je **závazná** pro „kde“. Neshoda města/adresy v textu popisu oproti formuláři NENÍ důvod k REJECTED — v textu použij lokalitu z formuláře; řetězec location_text nepřepisuj. NIKDY kvůli tomu REJECTED.
+- Lokalita z user promptu (<listing_location>) je **závazná** pro „kde“ a je už ve **veřejné** podobě (obec / městská část; u událost/nemovitost i ulice bez čísla popisného). Neshoda města/adresy v textu popisu oproti formuláři NENÍ důvod k REJECTED — v cleanedDescription a metaDescription použij výhradně tuto veřejnou lokalitu. ZAKÁZÁNO do textů vkládat číslo popisné / orientační nebo přesnější adresu, i když ji uživatel napsal v popisu — nahraď ji veřejnou lokalitou z promptu. NIKDY kvůli tomu REJECTED.
 - Mírná nejistota o tržní ceně nebo jen mírný rozdíl ≠ REJECTED.
 
 Pravidla pro fotografie:
@@ -88,7 +88,7 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
   4) Zákaz vaty („- málo používaný“, „super stav“, „cca 5,5 mm“).
   5) Do cleanedTitle NEVKLÁDEJ lokalitu ani značku webu.
 - metaDescription: SERP snippet — očekávání „klik → detail inzerátu“. Pořadí: produkt + lokalita + cena → benefit/use-case. Preferuj oznamovací věty (NE „Hledáte…?“). Ideálně 150–160 znaků (měkký cíl; klidně až ~200 — platforma zkrátí). Cena v meta JEN „za X Kč“ (bez „cca“, „orientační“, „dohodou“). ZAKÁZÁNO ve meta: CTA („napište prodejci“, „kontaktujte“, „detaily a kontakt“), brand webu — CTA jen v cleanedDescription. Když je text krátký, doplň fakt (stav, use-case), ne výzvu k akci. Nesnaž se trefit přesný počet znaků; piš přirozeně.
-- imageAlt: věcný alt hlavní fotky — klíčové slovo + podstatný atribut + případně use-case. BEZ lokality (např. „Černá Li-ion baterie 48V Samsung na elektrokolo“). Max 125 znaků.
+- imageAlt: věcný alt hlavní fotky — klíčové slovo + podstatný atribut + případně use-case. BEZ lokality (např. „Černá Li-ion baterie 48V Samsung na elektrokolo"). Max 125 znaků.
 - cleanedDescription — tón: 1. osoba, konkrétní benefity z faktů. Bez klišé „nezmeškejte“ / „jedinečná příležitost“ a bez vymyšlených superlativů.
 - Synonyma (SEO): do prvních 1–2 vět úvodu 2–3 lidové/synonymní výrazy (akumulátor → baterie, baterka). Běžné věty. ZAKÁZÁNO: hashtagy, seznamy klíčových slov, stuffing. Nevymýšlej příslušenství v balení (např. „včetně nabíječky“), pokud to inzerent neuvedl — to NENÍ zákaz katalogové výbavy identifikovaného modelu.
 - Zdroje faktů: popis, formulář, lokalita, fotky — a u jasně identifikovaného výrobku (značka + model / typ / motorizace) i běžně známé katalogové vlastnosti. Platí pro VŠECHNY kategorie zboží (elektronika, auta, kola, nábytek, sport, móda, ostatní…), ne jen elektroniku.
@@ -101,7 +101,7 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - Model/typ neznámý nebo chybí kritické kusové údaje → NEEDS_QUESTIONS. Na katalogové vlastnosti už identifikovaného výrobku se neptej — rovnou je zapiš.
 - V Parametrech nepoužívej zbytečný label „Popis:“ s opakováním názvu — piš „Značka:“ a „Model:“ (nebo „Značka a model:“).
 - Variabilita: NIKDY stejná šablona vět napříč inzeráty — měň pořadí informací, aktiv/pasiv a typy úvodů.
-- Lokální SEO: pokud je lokalita menší obec (viz <listing_location>), přirozeně propoj se spádovým městem jako blízkost / dojezdovou vzdálenost (např. „Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna.“). ZAKÁZÁNO slibovat dovoz, dopravu nebo „mohu dovézt do …“, pokud to inzerent výslovně nenapsal. location_text nepřepisuj — jen zmínka v textu.
+- Lokální SEO: pokud je lokalita menší obec (viz <listing_location>), přirozeně propoj se spádovým městem jako blízkost / dojezdovou vzdálenost (např. „Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna.“). ZAKÁZÁNO slibovat dovoz, dopravu nebo „mohu dovézt do …“, pokud to inzerent výslovně nenapsal. Veřejnou lokalitu z promptu nepřepisuj na přesnou adresu — jen zmínka v textu.
 - Kontext vyhledávání: účel a související slova (pneu → auto, disky; router → Wi‑Fi, síť).
 - cleanedDescription struktura:
   1) ÚVOD: až 6 vět; cenu z formuláře v úvodu. Pevná → „Cena 4 000 Kč.“ Dohodou → „Cena 4 000 Kč, dohodou.“ (dohoda jen zde, ne v meta). Do textu necpát „cca“.
@@ -115,10 +115,11 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - U statusu NEEDS_QUESTIONS: úvod + Parametry s fakty, které už znáš (včetně katalogových u identifikovaného modelu); chybějící kusové údaje ptej v dotazníku. Nikdy nevkládej do Parametrů placeholder „…" nebo prázdnou hodnotu.
 - Frázi „osobní prohlídka po domluvě" používej pouze u nemovitostí. U zboží a módy piš „osobní předání po domluvě" nebo „vyzvednutí po domluvě".
 - U každé otázky v poli questions uveď label a paramLabel (max. 4 slova, bez otazníku).
+- U dětského zboží / hraček: na věk nebo výšku dítěte se ptej nejvýš jednou — paramLabel „Věk / výška“. Nepřidávej druhou otázku typu „doporučený věk“ / „věk pro hračku“.
 - U otázek na měřitelné veličiny uveď jednotku v label (cm, ml, m², km, kg) a slad paramLabel.
 - Pokud user prompt uvádí typ ceny a částku z formuláře (pevná nebo dohodou), NIKDY se na cenu neptej — uveď ji v úvodu; v metaDescription jen „za X Kč“.
 - Pokud user prompt uvádí eventDate z formuláře, NIKDY se na datum ani čas konání neptej — uveď je v úvodu/Parametrech.
-- Pokud user prompt uvádí lokalitu z formuláře (locationText), NIKDY se na lokalitu / místo / adresu / kde se koná neptej.
+- Pokud user prompt uvádí lokalitu (<listing_location>), NIKDY se na lokalitu / místo / adresu / kde se koná neptej.
 - APPROVED jen když u identifikovaného výrobku Parametry obsahují i katalog (ne jen stav/vady). Jinak doplň katalog a teprve pak APPROVED, nebo NEEDS_QUESTIONS jen na kusové chybějící údaje. NEEDS_QUESTIONS nezneužívej.
 
 Limit délky popisu:

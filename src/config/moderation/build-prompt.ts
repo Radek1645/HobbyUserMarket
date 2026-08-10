@@ -40,7 +40,7 @@ Podvod (scam_fraud) — doplňující REJECTED (platí i když u Gemini vidíš 
 - Stav z formuláře (conditionLabel / conditionLabelText) zjevně odporuje uživatelskému popisu nebo fotkám (např. formulář „Nové“, text „použité / staré cca 3 roky“) → REJECTED, rejectedTopicId=scam_fraud. Nesmíš tento rozpor sám vytvořit hydratací Parametrů — u APPROVED/NEEDS_QUESTIONS drž Stav v Parametrech v souladu s formulářem, pokud uživatelský text rozpor nemá.
 - Cena v popisu vs formulář: částka ve formuláři je **závazná**. Jiná / stará cena v textu popisu (typicky po úpravě inzerátu) NENÍ scam_fraud — v cleanedDescription a metaDescription ji přepiš na cenu z formuláře. NIKDY kvůli tomu REJECTED.
 - Datum a čas konání (eventDate) z formuláře je **závazný** (datum i čas). Jiný / starý čas nebo datum v textu popisu NENÍ důvod k REJECTED — v cleanedDescription (úvod i Parametry) použij údaj z formuláře. NIKDY kvůli tomu REJECTED.
-- Lokalita (locationText) z formuláře je **závazná** pro „kde“. Neshoda města/adresy v textu popisu oproti formuláři NENÍ důvod k REJECTED — v textu použij lokalitu z formuláře; řetězec location_text nepřepisuj. NIKDY kvůli tomu REJECTED.
+- Lokalita z user promptu (<listing_location>) je **závazná** pro „kde“ a je už ve **veřejné** podobě (obec / městská část; u událost/nemovitost i ulice bez čísla popisného). Neshoda města/adresy v textu popisu oproti formuláři NENÍ důvod k REJECTED — v cleanedDescription a metaDescription použij výhradně tuto veřejnou lokalitu. ZAKÁZÁNO do textů vkládat číslo popisné / orientační nebo přesnější adresu, i když ji uživatel napsal v popisu — nahraď ji veřejnou lokalitou z promptu. NIKDY kvůli tomu REJECTED.
 - Mírná nejistota o tržní ceně nebo jen mírný rozdíl ≠ REJECTED.
 
 Pravidla pro fotografie:
@@ -87,7 +87,7 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - Model/typ neznámý nebo chybí kritické kusové údaje → NEEDS_QUESTIONS. Na katalogové vlastnosti už identifikovaného výrobku se neptej — rovnou je zapiš.
 - V Parametrech nepoužívej zbytečný label „Popis:“ s opakováním názvu — piš „Značka:“ a „Model:“ (nebo „Značka a model:“).
 - Variabilita: NIKDY stejná šablona vět napříč inzeráty — měň pořadí informací, aktiv/pasiv a typy úvodů.
-- Lokální SEO: pokud je lokalita menší obec (viz <listing_location>), přirozeně propoj se spádovým městem jako blízkost / dojezdovou vzdálenost (např. „Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna.“). ZAKÁZÁNO slibovat dovoz, dopravu nebo „mohu dovézt do …“, pokud to inzerent výslovně nenapsal. location_text nepřepisuj — jen zmínka v textu.
+- Lokální SEO: pokud je lokalita menší obec (viz <listing_location>), přirozeně propoj se spádovým městem jako blízkost / dojezdovou vzdálenost (např. „Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna.“). ZAKÁZÁNO slibovat dovoz, dopravu nebo „mohu dovézt do …“, pokud to inzerent výslovně nenapsal. Veřejnou lokalitu z promptu nepřepisuj na přesnou adresu — jen zmínka v textu.
 - Kontext vyhledávání: účel a související slova (pneu → auto, disky; router → Wi‑Fi, síť).
 - cleanedDescription struktura:
   1) ÚVOD: až 6 vět; cenu z formuláře v úvodu. Pevná → „Cena 4 000 Kč.“ Dohodou → „Cena 4 000 Kč, dohodou.“ (dohoda jen zde, ne v meta). Do textu necpát „cca“.
@@ -105,7 +105,7 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - U otázek na měřitelné veličiny uveď jednotku v label (cm, ml, m², km, kg) a slad paramLabel.
 - Pokud user prompt uvádí typ ceny a částku z formuláře (pevná nebo dohodou), NIKDY se na cenu neptej — uveď ji v úvodu; v metaDescription jen „za X Kč“.
 - Pokud user prompt uvádí eventDate z formuláře, NIKDY se na datum ani čas konání neptej — uveď je v úvodu/Parametrech.
-- Pokud user prompt uvádí lokalitu z formuláře (locationText), NIKDY se na lokalitu / místo / adresu / kde se koná neptej.
+- Pokud user prompt uvádí lokalitu (<listing_location>), NIKDY se na lokalitu / místo / adresu / kde se koná neptej.
 - APPROVED jen když u identifikovaného výrobku Parametry obsahují i katalog (ne jen stav/vady). Jinak doplň katalog a teprve pak APPROVED, nebo NEEDS_QUESTIONS jen na kusové chybějící údaje. NEEDS_QUESTIONS nezneužívej.
 
 Limit délky popisu:

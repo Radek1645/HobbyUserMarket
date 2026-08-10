@@ -8,7 +8,7 @@
 
 ## TL;DR — v čem je pointa
 
-Vaše údaje (e-mail, volitelně telefon) potřebujeme k provozu účtu a inzerce. IP u poptávek anonymizujeme do 7 dnů. Neaktivní účty bez přihlášení déle než 90 dní a bez aktivního inzerátu automaticky anonymizujeme (s předchozím upozorněním). Citlivé údaje nikomu neprodáváme.
+Vaše údaje (e-mail, přezdívka) potřebujeme k provozu účtu a inzerce. Občanské jméno ani telefon v profilu nevyžadujeme. IP u poptávek anonymizujeme do 7 dnů. Neaktivní účty bez přihlášení déle než 90 dní a bez aktivního inzerátu automaticky anonymizujeme (s předchozím upozorněním). Citlivé údaje nikomu neprodáváme.
 
 ---
 
@@ -22,7 +22,7 @@ Správcem osobních údajů je Provozovatel platformy HobbyUserMarket. Zpracová
 
 | Účel zpracování | Kategorie údajů | Právní základ dle GDPR | Doba uchování |
 |-----------------|-----------------|------------------------|---------------|
-| Správa účtu a inzerce | Jméno, e-mail, telefon (volitelný), text inzerátu, fotografie | Plnění smlouvy (čl. 6 odst. 1 písm. b) | Po dobu existence aktivního účtu; po vypršení inzerát skryjeme (archivace) a uchováme nejvýše **365 dní od založení**, poté soft-delete (viz VOP a §6.1) |
+| Správa účtu a inzerce | E-mail, přezdívka (nickname), text inzerátu, fotografie; u firemního profilu název firmy (a IČO, pokud je uvedeno); volitelně kontaktní telefon u konkrétního inzerátu — jen pokud ho inzerent sám vyplní | Plnění smlouvy (čl. 6 odst. 1 písm. b) | Po dobu existence aktivního účtu; po vypršení inzerát skryjeme (archivace) a uchováme nejvýše **365 dní od založení**, poté soft-delete (viz VOP a §6.1) |
 | Automatická anonymizace neaktivních účtů | Identifikační a kontaktní údaje v profilu | Oprávněný zájem — minimalizace údajů (čl. 6 odst. 1 písm. f) | Spuštění po **90 dnech** od posledního přihlášení, pokud uživatel nemá aktivní inzerát; viz §6.1 |
 | Novinky a tipy e-mailem (připravujeme) | E-mailová adresa | Souhlas (čl. 6 odst. 1 písm. a) | Souhlas můžeme uložit při registraci; obchodní sdělení zatím nezasíláme. Po spuštění do odvolání souhlasu — viz [Marketingový souhlas](/marketingovy-souhlas) |
 | Analytika webu (GA4) | Technické identifikátory, agregované údaje o chování na webu | Souhlas (čl. 6 odst. 1 písm. a) — aktivace až po souhlasu v cookie liště | Dle nastavení nástroje a do odvolání souhlasu |

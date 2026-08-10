@@ -1,7 +1,7 @@
 # Pravidla inzerce (kodex chování)
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.4 · **Datum účinnosti:** 17.07.2026
+**Verze:** 1.5 · **Datum účinnosti:** 10.08.2026
 
 ---
 
@@ -134,7 +134,7 @@ Uživatel odpovídá za to, že označení odpovídá skutečnosti, že obsah p�
 
 ## 4. Moderace a hlášení
 
-Každý inzerát před zveřejněním prochází automatizovanou kontrolou (viz [VOP §4.1](/vop)). Porušení pravidel může kdokoli nahlásit prostřednictvím [DSA kontaktního centra](/dsa) (viz [VOP §4.4](/vop)).
+Každý inzerát před zveřejněním prochází automatizovanou kontrolou (viz [VOP §4.1](/vop)). Porušení pravidel může kdokoli nahlásit prostřednictvím formuláře [Nahlásit inzerát](/nahlasit) (viz [VOP §4.4](/vop) a [DSA kontaktní centrum](/dsa)).
 
 ### Zablokování inzerátu
 

@@ -1,7 +1,7 @@
 # Všeobecné obchodní podmínky (VOP)
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.10-fo · **Datum účinnosti:** 10.08.2026  
+**Verze:** 1.9-fo · **Datum účinnosti:** 10.08.2026  
 **Provozovatel:** Radek Horák, fyzická osoba · kontaktní e-mail: info@zapikolou.cz · datová schránka: fxetq2k
 
 ---
@@ -170,7 +170,7 @@ Platforma neumožňuje Podnikatelům přímé placené ovlivňování (tzv. topo
 
 ### 7.5 Přístup k vygenerovaným datům
 
-Každý uživatel s aktivním účtem má u svých vlastních inzerátů přístup k **agregovaným statistikám** (zejména k celkovému počtu **zobrazení inzerátu** v sekci [Moje inzeráty](/moje-inzeraty)) — stejně soukromá osoba i Podnikatel. Poptávky od zájemců se doručují e-mailem. Uživatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
+Podnikatel má po dobu aktivního uživatelského účtu přístup k **agregovaným statistikám** u svých vlastních inzerátů (zejména k celkovému počtu **zobrazení inzerátu** v sekci [Moje inzeráty](/moje-inzeraty)). Poptávky od zájemců se doručují e-mailem. Podnikatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu Podnikatele jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
 
 ---
 

@@ -40,14 +40,8 @@ export default async function VopSnapshotPage({ params }: PageProps) {
           <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
             {doc.title}
           </h1>
-          {(doc.meta.version || doc.meta.effectiveDate || doc.meta.operator) && (
+          {(doc.meta.version || doc.meta.effectiveDate) && (
             <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
-              {doc.meta.operator ? (
-                <div>
-                  <dt className="sr-only">Provozovatel</dt>
-                  <dd>{doc.meta.operator}</dd>
-                </div>
-              ) : null}
               {doc.meta.version ? (
                 <div>
                   <dt className="sr-only">Verze</dt>

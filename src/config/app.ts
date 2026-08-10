@@ -83,10 +83,11 @@ export const LISTING_QUOTA_FREE_DEFAULT = 20;
 /** Slug balíčku zobrazeného v UI pro dokoupení kreditu. */
 export const LISTING_UPSELL_PACKAGE_SLUG = "standard_20";
 
-/** Kontakt provozovatele — dokoupení balíčků (jen při MONETIZATION_ENABLED). */
-export const OPERATOR_CONTACT_EMAIL =
-  process.env.NEXT_PUBLIC_OPERATOR_CONTACT_EMAIL?.trim() ||
-  SITE_OPERATOR_CONTACT_EMAIL;
+/**
+ * Veřejný kontakt provozovatele (UI, SoR, mailto).
+ * Vždy `info@…` — ne osobní gmail z env (to patří do serverového `OPERATOR_CONTACT_EMAIL` pro admin notifikace).
+ */
+export const OPERATOR_CONTACT_EMAIL = SITE_OPERATOR_CONTACT_EMAIL;
 
 /** Poptávkový formulář — PRD §5.3, docs/future_jobs.md */
 export const INQUIRY_MESSAGE_MIN_LENGTH = 10;

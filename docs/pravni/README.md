@@ -1,6 +1,6 @@
 # Právní dokumentace — draft (Legal Design)
 
-> **Stav:** Draft 1.4 (VOP) / 1.2 (Pravidla) / 1.0 (Balíčky) k revizi právníkem · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
+> **Stav:** Web FO VOP **1.10-fo** (účinnost 10.08.2026) · GDPR FO **1.4-fo** · cookies **1.3** · Pravidla **1.5** · Balíčky FO **1.2-fo** · OSVČ drafty k doplnění před monetizací · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
 > **Projekt:** HobbyUserMarket (specifikace [`PRD_v3.md`](../PRD_v3.md) §11.3)
 
 Modulární sada právních textů pro web. Každý dokument obsahuje srozumitelné shrnutí (TL;DR) a plné znění pro publikaci na samostatné URL.
@@ -58,8 +58,9 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 
 - V DB se ukládá `profiles.vop_accepted_at` a `profiles.vop_version` (migrace **044**).
 - `vop_version` musí odpovídat **verzovanému artefaktu**, který je dlouhodobě dostupný:
-  - PDF v `public/docs/` se verzí v názvu (např. `vop-v1.5-fo.pdf`, `vop-v1.5-osvc.pdf`)
+  - PDF v `public/docs/` se verzí v názvu (např. `vop-v1.8-fo.pdf`, `vop-v1.5-osvc.pdf`)
   - a/nebo HTML snapshot verze (nesmí se zpětně měnit)
+- Aktuální FO: `CURRENT_VOP_VERSION = "1.10-fo"` → snapshot [`snapshots/vop-v1.10-fo.md`](./snapshots/vop-v1.10-fo.md). Starší snapshoty (`vop-v1.5-fo` … `vop-v1.9-fo`) ponechány pro dříve odsouhlasené účty.
 - Jakmile je verze jednou v produkci a někdo ji odsouhlasí, **nesmí se přepsat** „na místě“ bez navýšení verze (jen nový soubor + nová verze).
 
 ## Data v EU / EHP — checklist (P33)
@@ -97,10 +98,10 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 
 | Bod | Stav draftu | Implementace v kódu |
 |-----|-------------|-------------------|
-| [VOP §4](./vop-fo.md) — AI moderace, God Mode, DSA | ✅ draft 1.3 | AI ✅ · God Mode inzerátů ⚠️ · SoR e-mail ❌ |
+| [VOP §4](./vop-fo.md) — AI moderace, God Mode, DSA | ✅ draft 1.3+ | AI ✅ · God Mode inzerátů ⚠️ · SoR e-mail ✅ |
 | [VOP §3](./vop-fo.md) — licence, vodoznak (volitelně), recyklace fotek | ✅ draft | vodoznak volitelný (není v plánu) · detekce recyklace ❌ |
 | [VOP §7](./vop-fo.md) — Podnikatel, IČO, štítek | ✅ draft | profil firma ✅ · badge ✅ · IČO volitelné ⚠️ |
-| [Pravidla §2.2](./podminky-inzerce.md) — seznam zakázaného obsahu | ✅ draft 1.2 | `prohibited-topics.ts` ✅ · web `/podminky-inzerce` stub ❌ |
+| [Pravidla §2.2](./podminky-inzerce.md) — seznam zakázaného obsahu | ✅ | `prohibited-topics.ts` ✅ · web `/podminky-inzerce` ✅ |
 | [Pravidla §2.4](./podminky-inzerce.md) + [VOP §4.5](./vop-fo.md) — CSAM hard stop | ✅ draft 2026-07-21 | hard-hit text ✅ · blacklist účtu ✅ (055, SoR e-mail) |
 | Checkbox věku 15+ | ✅ | `RegistrationConsentFields` ✅ |
 
@@ -108,9 +109,22 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 
 | Bod | Stav draftu | Implementace v kódu |
 |-----|-------------|-------------------|
-| [Balíčky inzerce](./balicky-inzerce-fo.md) — ceník mimo VOP | ✅ draft 1.0 | DB `038` ✅ · web `/balicky-inzerce` stub ❌ |
+| [Balíčky inzerce](./balicky-inzerce-fo.md) — ceník mimo VOP | ✅ | DB `038` ✅ · web `/balicky-inzerce` ✅ |
 | [VOP §2.3](./vop-fo.md) — odkaz na dynamický ceník | ✅ draft 1.4 | `/balicky-inzerce` ✅ |
 | [VOP §4.7, §8.1–8.2](./vop-fo.md) — stížnosti, související docs | ✅ draft 1.4 | `/vop` ✅ · `/podminky-inzerce` ✅ |
+
+## Sync 2026-08-10 (produkt vs. právní texty)
+
+| Bod | Stav |
+|-----|------|
+| VOP FO → **1.8-fo** + snapshot; `CURRENT_VOP_VERSION` | ✅ |
+| VOP §4.4 / Pravidla — odkaz na formulář `/nahlasit` | ✅ |
+| Guest draft (`NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED=true`) v GDPR FO + cookies | ✅ |
+| Meta Pixel + Cloudflare Turnstile v GDPR FO §5.1 | ✅ |
+| Veřejný profil `/uzivatel/[nickname]` v GDPR FO | ✅ |
+| Odkazy [Moje inzeráty](/moje-inzeraty) / [Nastavení](/profil/nastaveni) v Balíčcích | ✅ |
+| `REVIZE_PRAVNI/` FO kopie — **neaktualizováno** v tomto kroku (webové soubory jsou zdroj pravdy; před další syncem srovnat) | ⚠️ |
+| OSVČ GDPR / brand — před monetizací | ⏳ |
 
 ## K potvrzení právníkem
 

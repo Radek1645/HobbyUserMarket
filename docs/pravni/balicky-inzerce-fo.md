@@ -1,7 +1,7 @@
 # Balíčky inzerce a ceník
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.1-fo · **Datum účinnosti:** 16.07.2026  
+**Verze:** 1.2-fo · **Datum účinnosti:** 10.08.2026  
 **Provozovatel:** Radek Horák, fyzická osoba · kontaktní e-mail: info@zapikolou.cz
 
 ---
@@ -34,7 +34,7 @@
 | **Sčítání balíčků** | Kredity z více balíčků nebo grantů se **sčítají**. |
 | **Drafty** | Koncept (`draft`) kredit nespotřebovává, dokud není inzerát zveřejněn. |
 
-Aktuální stav kreditů uživatel vidí v účtu (Moje inzeráty / Nastavení profilu).
+Aktuální stav kreditů uživatel vidí v účtu ([Moje inzeráty](/moje-inzeraty) / [Nastavení profilu](/profil/nastaveni)).
 
 ---
 

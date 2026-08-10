@@ -1,7 +1,9 @@
 import { BackHomeLink } from "@/components/navigation/BackHomeLink";
-import { OPERATOR_CONTACT_EMAIL } from "@/config/app";
 import { KONTAKT_PAGE_UI, KONTAKT_PATH } from "@/config/footer";
-import { SITE_DISPLAY_NAME } from "@/config/site";
+import {
+  SITE_DISPLAY_NAME,
+  SITE_OPERATOR_CONTACT_EMAIL,
+} from "@/config/site";
 import { getSiteUrl } from "@/lib/supabase/env";
 import type { Metadata } from "next";
 
@@ -30,7 +32,7 @@ function buildOperatorContactJsonLd() {
     "@context": "https://schema.org",
     "@type": "Person",
     name: ui.providerName,
-    email: OPERATOR_CONTACT_EMAIL,
+    email: SITE_OPERATOR_CONTACT_EMAIL,
     identifier: {
       "@type": "PropertyValue",
       propertyID: ui.dataBoxLabel,
@@ -74,10 +76,10 @@ export default function KontaktPage() {
               {ui.emailLabel}
             </h2>
             <a
-              href={`mailto:${OPERATOR_CONTACT_EMAIL}`}
+              href={`mailto:${SITE_OPERATOR_CONTACT_EMAIL}`}
               className="mt-1 inline-block font-medium text-gray-900 underline-offset-2 hover:underline"
             >
-              {OPERATOR_CONTACT_EMAIL}
+              {SITE_OPERATOR_CONTACT_EMAIL}
             </a>
           </div>
 

@@ -16,7 +16,7 @@ Jsme **inzertní nástěnka, ne prodejce ani zprostředkovatel obchodu**. Za obs
 
 ### 1.1 Zprostředkovatelský charakter služeb
 
-Provozovatel provozuje platformu HobbyUserMarket jako hostingovou službu, která umožňuje registrovaným uživatelům zveřejňovat inzeráty — včetně nabídky a poptávky **zboží, služeb, pracovních příležitostí, nemovitostí a událostí**. Provozovatel **není** prodejcem, kupujícím, zaměstnavatelem, pronajímatelem ani jiným účastníkem transakcí mezi uživateli.
+Provozovatel provozuje platformu HobbyUserMarket jako hostingovou službu, která umožňuje registrovaným uživatelům zveřejňovat inzeráty — včetně nabídky a poptávky **zboží, služeb, pracovních příležitostí, nemovitostí a událostí**. Návštěvník bez účtu může připravit koncept inzerátu (včetně nahrání fotografií a náhledu automatické kontroly); **zveřejnění** inzerátu je možné až po registraci a přihlášení. Provozovatel **není** prodejcem, kupujícím, zaměstnavatelem, pronajímatelem ani jiným účastníkem transakcí mezi uživateli.
 
 ### 1.2 Vyloučení odpovědnosti
 
@@ -86,7 +86,7 @@ Každý inzerát před zveřejněním prochází **automatizovanou kontrolou obs
 
 Konkrétní kategorie zakázaného nebo omezeného obsahu (např. jednotlivé druhy zboží, služeb či klíčových slov) jsou vedeny v [Pravidlech inzerce](/podminky-inzerce) mimo tento dokument. Provozovatel je oprávněn tento seznam **kdykoli aktualizovat** s okamžitou účinností — typicky v reakci na nové způsoby zneužití platformy — bez nutnosti současné změny těchto VOP. Aktuální znění je vždy dostupné na uvedeném odkazu.
 
-**Absolutní zákaz (CSAM):** Jakýkoli obsah související se sexuálním zneužíváním dětí je zakázán bez výjimky. Sankce a postup jsou v [Pravidlech inzerce](/podminky-inzerce) čl. 2.4 a v čl. 4.5 těchto VOP.
+**Absolutní zákazy** včetně zvlášť závažného obsahu jsou v [Pravidlech inzerce](/podminky-inzerce) čl. 2.4; sankce a postup v čl. 4.5 těchto VOP.
 
 ### 4.3 Lidský přezkum (God Mode)
 
@@ -98,7 +98,7 @@ Automatizovaná kontrola je doplněna lidským dohledem. Moderátor nebo adminis
 
 ### 4.4 Hlášení obsahu
 
-Kdokoli může nahlásit nelegální inzerát přes formulář v sekci [DSA kontaktní centrum](/dsa).
+Kdokoli může nahlásit nelegální inzerát prostřednictvím formuláře [Nahlásit inzerát](/nahlasit). Postup a kontaktní údaje jsou popsány v [DSA kontaktním centru](/dsa).
 
 ### 4.5 Odstraňování a omezení viditelnosti
 
@@ -170,7 +170,7 @@ Platforma neumožňuje Podnikatelům přímé placené ovlivňování (tzv. topo
 
 ### 7.5 Přístup k vygenerovaným datům
 
-Podnikatel má po dobu aktivního uživatelského účtu přístup k **agregovaným statistikám** u svých vlastních inzerátů (zejména k celkovému počtu **zobrazení inzerátu** v klientské sekci). Poptávky od zájemců se doručují e-mailem. Podnikatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu Podnikatele jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
+Každý uživatel s aktivním účtem má u svých vlastních inzerátů přístup k **agregovaným statistikám** (zejména k celkovému počtu **zobrazení inzerátu** v sekci [Moje inzeráty](/moje-inzeraty)) — stejně soukromá osoba i Podnikatel. Poptávky od zájemců se doručují e-mailem. Uživatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
 
 ---
 

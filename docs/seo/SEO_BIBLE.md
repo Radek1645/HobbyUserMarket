@@ -51,7 +51,7 @@ S use-case (když se vejde): `Baterie Samsung 48V na elektrokolo`
 
 Formát ideál: `{H1} – {Lokalita} | zaPikolou.cz`
 
-- **Lokalita** = obec / město (`formatMetaTitleLocality`) — **ne ulice**. Ve veřejném UI (`formatPublicListingLocation`): u **událostí a nemovitostí** ulice bez čísla popisného + obec; u ostatních kategorií jen obec/město. Ulice v DB a u majitele na `/moje-inzeraty`.
+- **Lokalita** = obec / město (`formatMetaTitleLocality`) — **ne ulice**. Ve veřejném UI (`formatPublicListingLocation`): u **událostí a nemovitostí** ulice bez čísla popisného + obec; u ostatních kategorií jen obec/město. Ulice v DB a u majitele na `/moje-inzeraty`. Do AI hydratace a JSON-LD Place jde stejná **veřejná** lokalita (ne plná adresa z formuláře).
 - Max **60 znaků**. Priorita při přetečení (**lokalita > brand > specifikace H1**):
 
 1. **zkrať H1 zprava** na hranici slov (nesekat uprostřed čísla, např. `60 x 50` → ne `60 x 5`),
@@ -78,7 +78,7 @@ Snippet v organice nastavuje očekávání **klik → detail inzerátu** (fotky,
 
 1. **Synonyma** — do prvních 1–2 vět 2–3 lidové/synonymní výrazy (bez hashtagů a stuffing).
 2. **Variabilita** — nestřídat stejnou šablonu vět napříč inzeráty (pořadí info, aktiv/pasiv, typy úvodů).
-3. **Lokální SEO** — u menší obce přirozeně propojit lokalitu se spádovým městem **bez závazku dopravy** (*Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna.*). **Zákaz** slibovat dovoz/dopravu do města, pokud to inzerent výslovně nenapsal. Vyžaduje `locationText` ve vstupu AI.
+3. **Lokální SEO** — u menší obce přirozeně propojit lokalitu se spádovým městem **bez závazku dopravy** (*Osobní předání ve Slavkově u Brna — obec je v dojezdové vzdálenosti od Brna.*). **Zákaz** slibovat dovoz/dopravu do města, pokud to inzerent výslovně nenapsal. Vyžaduje veřejnou lokalitu ve vstupu AI (`formatPublicListingLocation` z `locationText`).
 4. **Kontext vyhledávání** — účel a související slova (pneu → auto, disky; router → Wi‑Fi, síť).
 5. **Parametry** — technika na konci v odrážkách po `---` / `Parametry`. U jasně identifikovaného výrobku (značka + model / typ / motorizace) v **jakékoli** kategorii zboží **doplň katalogové vlastnosti** s jistotou (auta, elektronika, kola, nábytek…). Kusové údaje (nájezd, vady, příslušenství v balení) jen z textu/fotek.
 6. **CTA** — jen kanály webu („…zprávu přes web“); oslovení podle kategorie (*prodejci* / *zadavateli* / *poskytovateli* / *pořadateli* / *inzerentovi* — `listing-cta.ts`). **Nikdy** telefon/e-mail v CTA, pokud nejsou u inzerátu explicitně dostupné jako kontaktní pole.
@@ -113,7 +113,8 @@ Snippet v organice nastavuje očekávání **klik → detail inzerátu** (fotky,
 
 - Neskládá finální `<title>` (dělá kód).
 - Nemění slug existujícího inzerátu.
-- Nepřepisuje `location_text` na spádové město (lže by to v UI) — jen zmínka v popisu.
+- Do AI jde veřejná lokalita (`formatPublicListingLocation`), ne plná adresa — přesné číslo popisné se do popisu nepropisuje.
+- Nepřepisuje veřejnou lokalitu na spádové město jako `location_text` (lže by to v UI) — spádové město jen zmínka v popisu.
 - Negeneruje telefon/e-mail do textu.
 
 ---
@@ -129,7 +130,7 @@ Snippet v organice nastavuje očekávání **klik → detail inzerátu** (fotky,
 ## 6. Implementační checklist (pro PR)
 
 - [ ] Prompt (`build-prompt.ts` + Edge `_shared`) odpovídá této verzi bible
-- [ ] `locationText` jde do user promptu
+- [x] `locationText` jde do user promptu jako veřejná lokalita (`formatPublicListingLocation`)
 - [ ] JSON: `cleanedTitle`, `metaDescription`, `imageAlt`, `cleanedDescription`
 - [ ] DB: `meta_description`, `image_alt`
 - [ ] `generateMetadata` používá builder + uloženou meta description
@@ -147,6 +148,7 @@ Není součástí AI hydratace — sledovat zvlášť:
 
 - `BreadcrumbList` JSON-LD na detailu
 - `noindex` u archived / neaktivních detailů (pokud zůstávají veřejně dostupné)
+- JSON-LD `Place` používá veřejnou lokalitu (`formatPublicListingLocation`), ne plnou adresu
 - Strukturované `Place` (obec vs. adresa), až bude lokalita v DB oddělená
 
 ---

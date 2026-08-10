@@ -184,6 +184,8 @@ Diskuse pod inzerátem se **nepoužívá**. Tabulka může zůstat; nové UI na 
 
 `id`, `inquiry_no`, `post_id`, `viewer_user_id`, `ip_address` (po čase anonymizováno), `delivered`, `created_at` — **bez textu poptávky**.
 
+IP anonymizace: cron `/api/cron/anonymize-inquiry-ips` → RPC `anonymize_old_inquiry_ips(7)` (migrace **050**). Ověřovací SELECT-y níže v [SQL — anonymizace IP u poptávek](#sql--anonymizace-ip-u-poptávek-inquiry_events).
+
 #### `listing_views`
 
 `id`, `view_no`, `post_id`, `viewer_user_id`, `viewer_key`, `ip_hash`, `viewed_at` — zobrazení detailu (dedup).
@@ -660,6 +662,39 @@ SELECT blacklist_no, email, source, reason, created_at, removed_at
 FROM public.account_blacklist
 WHERE email = lower(trim('TVUJ@EMAIL.cz'))
 ORDER BY created_at DESC;
+```
+
+### SQL — anonymizace IP u poptávek (`inquiry_events`)
+
+GDPR §3.2: po **7 dnech** IPv4 → `x.x.x.0`, jinak `anonymized`. Cron `/api/cron/anonymize-inquiry-ips`, RPC `anonymize_old_inquiry_ips`, migrace **050**, `IP_ANONYMIZE_AFTER_DAYS`.
+
+```sql
+-- Čerstvé (< 7 dní) — plná IPv4 je v pořádku (rate-limit)
+SELECT inquiry_no, ip_address, created_at,
+  now() - created_at AS age
+FROM public.inquiry_events
+WHERE created_at >= now() - interval '7 days'
+ORDER BY created_at DESC
+LIMIT 50;
+
+-- Starší než 7 dní — IPv4 má končit na .0, jinak 'anonymized'
+SELECT inquiry_no, ip_address, created_at
+FROM public.inquiry_events
+WHERE created_at < now() - interval '7 days'
+ORDER BY created_at DESC
+LIMIT 50;
+
+-- Kolik starých řádků ještě NENÍ anonymizovaných (po cronu = 0)
+SELECT count(*) AS still_raw
+FROM public.inquiry_events
+WHERE created_at < now() - interval '7 days'
+  AND ip_address IS NOT NULL
+  AND trim(ip_address) <> ''
+  AND ip_address <> 'anonymized'
+  AND ip_address !~ '^[0-9]{1,3}(\.[0-9]{1,3}){2}\.0$';
+
+-- Ruční spuštění (vrátí počet právě upravených řádků)
+-- SELECT public.anonymize_old_inquiry_ips(7);
 ```
 
 ### SQL — rate limity (AI moderace / prefill)

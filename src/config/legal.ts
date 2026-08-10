@@ -11,7 +11,7 @@ export const DSA_CONTACT_PATH = "/dsa";
 export const REPORT_LISTING_PATH = "/nahlasit";
 
 /** Verze VOP v okamžiku registrace — sync s docs/pravni/vop-*.md. */
-export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.5-osvc" : "1.5-fo";
+export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.5-osvc" : "1.10-fo";
 
 export const SAFETY_UI = {
   /** Fallback / zboží, móda, služby — osobní předání věci. */

@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-08-10 (večer) | [2026-08-10-vecer.md](./2026-08-10-vecer.md) — právní sync VOP 1.10 / GDPR 1.4, kontakt info@, site v0.2, PRD v3.67 |
 | 2026-08-10 | [2026-08-10.md](./2026-08-10.md) — Prefill lab, 076 guest log, DOPLNIT formát, category links, móda face rules, PRD v3.66; SQL/Edge ✅ |
 | 2026-08-09 | [2026-08-09.md](./2026-08-09.md) — FB guest funnel C + AI prefill, OAuth resume, krokovník, smoke § L, PRD v3.64; SQL/Edge ✅ |
 | 2026-08-06 (večer) | [2026-08-06-vecer.md](./2026-08-06-vecer.md) — Category SEO Vlna 1 (`072`, `/{slug}/`, cron), PRD v3.60; SQL ✅ |

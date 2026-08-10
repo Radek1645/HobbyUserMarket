@@ -1,7 +1,7 @@
 # Všeobecné obchodní podmínky (VOP)
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.10-fo · **Datum účinnosti:** 10.08.2026  
+**Verze:** 1.8-fo · **Datum účinnosti:** 10.08.2026  
 **Provozovatel:** Radek Horák, fyzická osoba · kontaktní e-mail: info@zapikolou.cz · datová schránka: fxetq2k
 
 ---
@@ -86,7 +86,7 @@ Každý inzerát před zveřejněním prochází **automatizovanou kontrolou obs
 
 Konkrétní kategorie zakázaného nebo omezeného obsahu (např. jednotlivé druhy zboží, služeb či klíčových slov) jsou vedeny v [Pravidlech inzerce](/podminky-inzerce) mimo tento dokument. Provozovatel je oprávněn tento seznam **kdykoli aktualizovat** s okamžitou účinností — typicky v reakci na nové způsoby zneužití platformy — bez nutnosti současné změny těchto VOP. Aktuální znění je vždy dostupné na uvedeném odkazu.
 
-**Absolutní zákazy** včetně zvlášť závažného obsahu jsou v [Pravidlech inzerce](/podminky-inzerce) čl. 2.4; sankce a postup v čl. 4.5 těchto VOP.
+**Absolutní zákaz (CSAM):** Jakýkoli obsah související se sexuálním zneužíváním dětí je zakázán bez výjimky. Sankce a postup jsou v [Pravidlech inzerce](/podminky-inzerce) čl. 2.4 a v čl. 4.5 těchto VOP.
 
 ### 4.3 Lidský přezkum (God Mode)
 
@@ -170,7 +170,7 @@ Platforma neumožňuje Podnikatelům přímé placené ovlivňování (tzv. topo
 
 ### 7.5 Přístup k vygenerovaným datům
 
-Každý uživatel s aktivním účtem má u svých vlastních inzerátů přístup k **agregovaným statistikám** (zejména k celkovému počtu **zobrazení inzerátu** v sekci [Moje inzeráty](/moje-inzeraty)) — stejně soukromá osoba i Podnikatel. Poptávky od zájemců se doručují e-mailem. Uživatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
+Podnikatel má po dobu aktivního uživatelského účtu přístup k **agregovaným statistikám** u svých vlastních inzerátů (zejména k celkovému počtu **zobrazení inzerátu** v sekci [Moje inzeráty](/moje-inzeraty)). Poptávky od zájemců se doručují e-mailem. Podnikatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu Podnikatele jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
 
 ---
 

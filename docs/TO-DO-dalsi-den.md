@@ -26,8 +26,29 @@
 **Aktualizace 2026-08-09:** Prefill lab — `/mod/prefill-lab` + Edge `compare-suggest-from-photos` (staff side-by-side modelů; bez DB). Default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`.
 **Aktualizace 2026-08-10:** Prefill `[DOPLNIT …]` — pod nabídkou, jeden na řádek (prompt + `formatDoplnitPlaceholders` v parse).
 **Aktualizace 2026-08-09:** OAuth resume po **Zpět** z Google (cookie + sessionStorage); krokovník + AI/Publikace; C3 + D2 smoke; PRD v3.64. FB ads odloženy — produkční test na mobilu.
+**Aktualizace 2026-08-10:** § M — stránka `/jak-vytvorit-inzerat` je zastaralá (guest draft, AI photo-first prefill, krokovník); aktualizovat copy/kroky.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
+
+---
+
+## M. Priorita — aktualizovat `/jak-vytvorit-inzerat`
+
+> **2026-08-10.** Stránka „Jak vytvořit inzerát“ (`src/config/` + `src/app/jak-vytvorit-inzerat`) **není aktuální** vůči současnému flow.
+
+**Co se od té doby změnilo (musí sedět text):**
+
+- Guest draft (`NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED`) — koncept před registrací, publish až po login
+- AI photo-first prefill (1–2 fotky → návrh title/desc/kategorie)
+- Krokovník / AI náhled / Publikace
+- Odhalení kontaktu až po přihlášení; poptávka e-mailem
+- Odkazy na `/vop`, `/podminky-inzerce`, `/co-je-zapikolou` kde dává smysl
+
+| # | Úkol | ✓ |
+|---|------|---|
+| M1 | Projít live `/inzerat/novy` (host + přihlášený) a sepsat skutečné kroky | ☐ |
+| M2 | Přepsat copy / sekce na `/jak-vytvorit-inzerat` (config + stránka) | ☐ |
+| M3 | Kontrola SEO meta (title/description) a odkazů z patičky / FAQ | ☐ |
 
 ---
 
