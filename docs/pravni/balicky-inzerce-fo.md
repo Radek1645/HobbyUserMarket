@@ -1,7 +1,7 @@
 # Limity inzerce
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.3-fo · **Datum účinnosti:** 15.08.2026  
+**Verze:** 1.4-fo · **Datum účinnosti:** 15.08.2026  
 **Provozovatel:** Radek Horák, fyzická osoba · kontaktní e-mail: info@zapikolou.cz
 
 ---
@@ -44,6 +44,8 @@ Provozovatel je oprávněn limity **kdykoli upravit** s účinností od zveřejn
 | Limit | Publikací | Poznámka |
 |-------|-----------|----------|
 | **Start zdarma** | 20 | Automaticky každému novému účtu |
+
+Potřebujete víc publikací, než je startovní limit? Napište na **info@zapikolou.cz**.
 
 ---
 
