@@ -1,3 +1,4 @@
+import { LISTING_QUOTA_FREE_DEFAULT } from "@/config/app";
 import type { CategoryType } from "@/types/post";
 import {
   Baby,
@@ -18,6 +19,9 @@ import {
 
 /** Filtr homepage — null = všechny kategorie */
 export type HomeBrowseCategory = CategoryType | "all";
+
+/** HP hero — cena inzerce pro nepřihlášené (číslo z `LISTING_QUOTA_FREE_DEFAULT`). */
+export const HOME_FREE_QUOTA_BADGE_LABEL = `Inzerce zdarma · ${LISTING_QUOTA_FREE_DEFAULT} na start`;
 
 export type HomeCategoryTabConfig = {
   id: HomeBrowseCategory;

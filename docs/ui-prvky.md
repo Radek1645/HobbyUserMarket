@@ -98,7 +98,17 @@ Panel používá neutrální stín `shadow-xl shadow-gray-900/10` — ne barevn�
 
 ---
 
-## 3. Pilulky kategorií (homepage)
+## 3. Pilulka „Inzerce zdarma“ (homepage)
+
+| Konstanta | Použití |
+|-----------|---------|
+| `homeFreeQuotaBadgeClass` | Skleněná pilulka „Inzerce zdarma · 20 na start“ těsně nad H1 v HP hero |
+
+Copy: `HOME_FREE_QUOTA_BADGE_LABEL` v `home-themes.ts` (číslo z `LISTING_QUOTA_FREE_DEFAULT`). Jen nepřihlášení; odkaz na `/balicky-inzerce`. Bílé sklo (`bg-white/70` + `backdrop-blur`) na hero gradientu; ikona `Sparkles` v `emeraldBrandAccentClass`, text `slate-900`.
+
+---
+
+## 3a. Dlaždice kategorií (homepage)
 
 | Konstanta | Použití |
 |-----------|---------|

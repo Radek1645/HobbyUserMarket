@@ -25,6 +25,7 @@ export const GTM_CTA = {
   // Homepage
   HOME_CREATE_LISTING: "cta_home_create_listing",
   HOME_CREATE_LISTING_GUIDE: "cta_home_create_listing_guide",
+  HOME_FREE_QUOTA_BADGE: "cta_home_free_quota_badge",
   HOME_SIGN_IN_LINK: "cta_home_sign_in_link",
   HOME_CATEGORY_TAB: "cta_home_category_tab",
   HOME_APPLY_LOCATION: "cta_home_apply_location",

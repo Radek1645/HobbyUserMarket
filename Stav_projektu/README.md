@@ -12,7 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
-| 2026-08-15 | [2026-08-15.md](./2026-08-15.md) — FO bez úmyslu placené inzerce, VOP 1.11-fo, limity 1.3-fo, PRD v3.68 |
+| 2026-08-15 | [2026-08-15.md](./2026-08-15.md) — FO bez úmyslu placené inzerce, VOP 1.11-fo, HP pilulka zdarma, PRD v3.69 |
 | 2026-08-10 (večer) | [2026-08-10-vecer.md](./2026-08-10-vecer.md) — právní sync VOP 1.10 / GDPR 1.4, kontakt info@, site v0.2, PRD v3.67 |
 | 2026-08-10 | [2026-08-10.md](./2026-08-10.md) — Prefill lab, 076 guest log, DOPLNIT formát, category links, móda face rules, PRD v3.66; SQL/Edge ✅ |
 | 2026-08-09 | [2026-08-09.md](./2026-08-09.md) — FB guest funnel C + AI prefill, OAuth resume, krokovník, smoke § L, PRD v3.64; SQL/Edge ✅ |

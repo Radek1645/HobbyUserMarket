@@ -46,7 +46,7 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 
 1. Návštěvník otevře úvodní stránku `/`.
 2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); subline s **vykáním** („z vašeho okolí“); značka **zaPikolou.cz** a tagline v hlavičce.
-3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání).
+3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání). Těsně nad H1 skleněná pilulka **„Inzerce zdarma · 20 na start“** (`HOME_FREE_QUOTA_BADGE_LABEL`, ikona Sparkles v brand zelené); odkaz na `/balicky-inzerce`. Přihlášeným se nezobrazuje.
 4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo). Mřížka: **mobil 2×4** (8 karet), **desktop lg+ 3×3** (9 karet); tlačítko **„Zobrazit další“** doplní stejnou dávku (až do načtených 36).
 5. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
 

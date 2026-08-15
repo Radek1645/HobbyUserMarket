@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.68  
+> **Verze dokumentu:** v3.69  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
@@ -733,6 +733,7 @@ Každé významné CTA v UI musí mít **stabilní identifikátor** pro Google T
 | `cta_header_sign_out` | Header menu — Odhlásit |
 | `cta_home_create_listing` | HP hero — Založit inzerát |
 | `cta_home_create_listing_guide` | HP hero (Vše) — odkaz „doptá na detaily“ → `/jak-vytvorit-inzerat` |
+| `cta_home_free_quota_badge` | HP hero — pilulka „Inzerce zdarma · 20 na start“ → `/balicky-inzerce` |
 | `cta_home_category_tab` | HP — záložka kategorie (+ `data-gtm-category`) |
 | `cta_listing_card_open` | Klik na kartu inzerátu (+ `data-gtm-listing-id`) |
 | `cta_inquiry_open` / `cta_inquiry_submit` | Poptávkový formulář |
@@ -823,6 +824,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.66 | 2026-08-10 | **Prefill log + UX:** migrace `076` (`moderation_checks.guest_visitor_id`, nullable `user_id`); `[DOPLNIT …]` pod nabídkou (jeden na řádek); odkazy kategorie/podkategorie na detailu inzerátu; móda/dětské — `identifiable_face` vs `sexual_services`; SEO landings Hračky/Miminka (`075`, už dříve) |
 | v3.67 | 2026-08-10 | **Právní sync + veřejný kontakt:** VOP FO **1.10-fo** (snapshoty 1.8–1.10), `CURRENT_VOP_VERSION`; GDPR FO **1.4-fo** (guest draft, Meta, bez jména/telefonu v profilu); cookies 1.3; DSA §5 → `/kontakt`; veřejný e-mail pevně `SITE_OPERATOR_CONTACT_EMAIL` (ne `NEXT_PUBLIC_OPERATOR_CONTACT_EMAIL`); site `v0.2`; O webu — soukromí kontaktů; TO-DO § M (`/jak-vytvorit-inzerat`) |
 | v3.68 | 2026-08-15 | **FO bez úmyslu placené inzerce:** VOP **1.11-fo** + snapshot; limity **1.3-fo** (bez ceníku / „zatím / po zavedení / individuální řešení“); FAQ, návod, `llms.txt`; `CURRENT_VOP_VERSION`; bez e-mailu o změně VOP (žádní podnikatelé). OSVČ drafty a admin +20 beze změny. |
+| v3.69 | 2026-08-15 | **HP pilulka „Inzerce zdarma · 20 na start“** pro nepřihlášené (odkaz `/balicky-inzerce`, GTM `cta_home_free_quota_badge`). |
 
 ---
 

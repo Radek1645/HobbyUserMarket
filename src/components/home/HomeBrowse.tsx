@@ -8,12 +8,20 @@ import { CREATE_LISTING_GUIDE_PATH } from "@/config/create-listing-guide";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { HOME_CATEGORY_GRID_TILES } from "@/config/home-category-grid";
 import {
+  HOME_FREE_QUOTA_BADGE_LABEL,
   HOME_THEMES,
   parseHomeBrowseCategory,
   type HomeBrowseCategory,
 } from "@/config/home-themes";
+import { LISTING_PACKAGES_PATH } from "@/config/legal";
+import {
+  emeraldBrandAccentClass,
+  homeFreeQuotaBadgeClass,
+  iconSmClass,
+} from "@/config/ui-primitives";
 import { normalizeSearchQuery } from "@/lib/posts/search-query";
 import type { PublicListingPreview } from "@/types/post";
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
@@ -120,6 +128,21 @@ export function HomeBrowse({
       <div className="px-4 py-8 sm:px-6">
         <section className="relative overflow-hidden rounded-2xl border border-orange-200/60 bg-gradient-to-r from-orange-200 via-amber-50 to-emerald-200 shadow-sm">
           <div className="p-6 sm:p-8">
+            {!user ? (
+              <Link
+                href={LISTING_PACKAGES_PATH}
+                className={homeFreeQuotaBadgeClass}
+                {...gtmCtaProps(GTM_CTA.HOME_FREE_QUOTA_BADGE)}
+              >
+                <Sparkles
+                  className={`${iconSmClass} shrink-0 ${emeraldBrandAccentClass}`}
+                  strokeWidth={2.5}
+                  aria-hidden
+                />
+                {HOME_FREE_QUOTA_BADGE_LABEL}
+              </Link>
+            ) : null}
+
             <HeroHeadline headline={theme.headline} />
             <HeroSubline
               subline={theme.subline}

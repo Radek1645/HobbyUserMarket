@@ -87,6 +87,13 @@ export const homeCategoryNavClass =
   "[&::-webkit-scrollbar-thumb]:bg-slate-400/80 " +
   "[&::-webkit-scrollbar-thumb]:hover:bg-slate-500";
 
+/**
+ * HP hero — skleněná pilulka „inzerce zdarma“ těsně nad H1.
+ * Bílé sklo na gradientu; zelená jen u ikony (brand CTA), text slate-900 jako „Vše“.
+ */
+export const homeFreeQuotaBadgeClass =
+  "mb-3 inline-flex w-fit items-center gap-2 rounded-full border border-black/10 bg-white/70 px-4 py-1.5 text-sm font-medium text-slate-900 shadow-sm backdrop-blur-[4px] transition hover:bg-white/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500";
+
 /** Pilulka kategorie na homepage — aktivní (fixní gradient hero). */
 export const homeCategoryTabActiveClass =
   "border-slate-900 bg-slate-900 text-white shadow-sm";
