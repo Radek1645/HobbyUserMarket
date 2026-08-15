@@ -1,6 +1,6 @@
 import { LISTING_QUOTA_FREE_DEFAULT } from "@/config/app";
 import { LISTING_AI_DISCLOSURE } from "@/config/moderation";
-import { SITE_DISPLAY_NAME, SITE_OPERATOR_CONTACT_EMAIL } from "@/config/site";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 
 /** Veřejné FAQ — PRD §11.3. */
 
@@ -84,9 +84,8 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
     id: "platba",
     question: "Platí se za inzerci?",
     answer:
-      `Nový účet dostane startovní balíček zdarma — ${LISTING_QUOTA_FREE_DEFAULT} lifetime publikací (každá první publikace spotřebuje 1 kredit; smazání kredit nevrací). ` +
-      `Aktuální limity jsou v sekci Balíčky / limity inzerce. Placené balíčky zatím nenabízíme. ` +
-      `Pokud vám současný startovní balíček nestačí, napište nám na ${SITE_OPERATOR_CONTACT_EMAIL} a domluvíme se na individuálním řešení. ` +
+      `Ne. Inzerce je zdarma v rámci limitu — nový účet dostane ${LISTING_QUOTA_FREE_DEFAULT} lifetime publikací (každá první publikace spotřebuje 1 kredit; smazání kredit nevrací). ` +
+      `Aktuální limity jsou v sekci Limity inzerce. ` +
       `Zprostředkování obchodu mezi vámi neřešíme a z prodeje si nebereme provizi.`,
   },
 ];

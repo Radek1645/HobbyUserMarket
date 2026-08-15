@@ -174,7 +174,7 @@ export const CREATE_LISTING_GUIDE_UI = {
     {
       question: "Kolik to stojí?",
       answer:
-        "Založení účtu je zdarma. Počet aktivních inzerátů závisí na balíčku — aktuální limity najdete v sekci Balíčky inzerce v patičce.",
+        "Založení účtu i inzerce jsou zdarma. Počet publikací je omezený — aktuální limity najdete v sekci Limity inzerce v patičce.",
     },
   ],
 } as const;

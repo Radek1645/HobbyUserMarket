@@ -154,7 +154,7 @@ V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), 
 | `/gdpr` | Zásady ochrany osobních údajů (`docs/pravni/ochrana-osobnich-udaju-fo.md` / `-osvc.md` dle monetizace) |
 | `/marketingovy-souhlas` | Marketingový souhlas (stav „zatím nezasíláme“, odvolání e-mailem) |
 | `/dsa` | DSA kontaktní centrum |
-| `/vop` | Všeobecné obchodní podmínky (`CURRENT_VOP_VERSION` = `1.10-fo`, snapshoty v `docs/pravni/snapshots/`) |
+| `/vop` | Všeobecné obchodní podmínky (`CURRENT_VOP_VERSION` = `1.11-fo`, snapshoty v `docs/pravni/snapshots/`) |
 
 Stránky jsou veřejné, indexovatelné a v `sitemap.xml` (včetně `/gdpr`).
 
@@ -204,17 +204,18 @@ Přihlášený uživatel může upravit:
 
 **E-mail nelze změnit** — je zobrazen jen ke čtení. Pro jinou adresu je nutné založit nový účet (po smazání lze stejnou adresu znovu registrovat).
 
-### 3.4 Limity inzerátů (balíčky)
+### 3.4 Limity inzerátů
 
 Každý nový účet dostane **20 lifetime publikací** zdarma (balíček `free`). Uživatel to vidí v **`/profil/nastaveni`**:
 
 - štítek plánu **Free**,
-- počítadlo **X / Y** (kolik publikací už spotřeboval / celkový limit),
-- dlaždice budoucích balíčků (zatím vedou na kontakt provozovatele).
+- počítadlo **X / Y** (kolik publikací už spotřeboval / celkový limit).
+
+Veřejně se **nenabízí** dokoupení ani ceník (`NEXT_PUBLIC_MONETIZATION_ENABLED=false`). Dlaždice upsellu se nezobrazuje.
 
 **Lifetime model:** každá **první publikace** inzerátu spotřebuje 1 kredit navždy. Smazání nebo expirace kredit **nevrátí**. Obnovení starého inzerátu kredit znovu nebere.
 
-**Vyčerpaný limit:** Na `/profil/nastaveni` a `/inzerat/novy` uživatel vidí upozornění. Tlačítko **Publikovat** je neaktivní; **AI moderace se nespouští** (šetření tokenů). Další publikace až po dokoupení balíčku v nastavení profilu.
+**Vyčerpaný limit:** Na `/profil/nastaveni` a `/inzerat/novy` uživatel vidí upozornění. Tlačítko **Publikovat** je neaktivní; **AI moderace se nespouští** (šetření tokenů).
 
 Zvýšení limitu pro konkrétního uživatele — viz [§11.6](#116-zvýšení-limitu-inzerátů-supabase).
 

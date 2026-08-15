@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.67  
+> **Verze dokumentu:** v3.68  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-10
+> **Datum:** 2026-08-15
 
 ---
 
@@ -822,6 +822,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.65 | 2026-08-09 | **Staff Prefill lab:** `/mod/prefill-lab` + Edge `compare-suggest-from-photos` — stejný suggest prompt/schema, dvě sekvenční volání (default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`); bez DB / Sightengine; hydratační lab odložen |
 | v3.66 | 2026-08-10 | **Prefill log + UX:** migrace `076` (`moderation_checks.guest_visitor_id`, nullable `user_id`); `[DOPLNIT …]` pod nabídkou (jeden na řádek); odkazy kategorie/podkategorie na detailu inzerátu; móda/dětské — `identifiable_face` vs `sexual_services`; SEO landings Hračky/Miminka (`075`, už dříve) |
 | v3.67 | 2026-08-10 | **Právní sync + veřejný kontakt:** VOP FO **1.10-fo** (snapshoty 1.8–1.10), `CURRENT_VOP_VERSION`; GDPR FO **1.4-fo** (guest draft, Meta, bez jména/telefonu v profilu); cookies 1.3; DSA §5 → `/kontakt`; veřejný e-mail pevně `SITE_OPERATOR_CONTACT_EMAIL` (ne `NEXT_PUBLIC_OPERATOR_CONTACT_EMAIL`); site `v0.2`; O webu — soukromí kontaktů; TO-DO § M (`/jak-vytvorit-inzerat`) |
+| v3.68 | 2026-08-15 | **FO bez úmyslu placené inzerce:** VOP **1.11-fo** + snapshot; limity **1.3-fo** (bez ceníku / „zatím / po zavedení / individuální řešení“); FAQ, návod, `llms.txt`; `CURRENT_VOP_VERSION`; bez e-mailu o změně VOP (žádní podnikatelé). OSVČ drafty a admin +20 beze změny. |
 
 ---
 

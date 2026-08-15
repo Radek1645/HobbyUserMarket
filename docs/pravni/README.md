@@ -1,6 +1,6 @@
 # Právní dokumentace — draft (Legal Design)
 
-> **Stav:** Web FO VOP **1.10-fo** (účinnost 10.08.2026) · GDPR FO **1.4-fo** · cookies **1.3** · Pravidla **1.5** · Balíčky FO **1.2-fo** · OSVČ drafty k doplnění před monetizací · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
+> **Stav:** Web FO VOP **1.11-fo** (účinnost 15.08.2026) · GDPR FO **1.4-fo** · cookies **1.3** · Pravidla **1.5** · Limity FO **1.3-fo** · OSVČ drafty k doplnění před monetizací · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
 > **Projekt:** HobbyUserMarket (specifikace [`PRD_v3.md`](../PRD_v3.md) §11.3)
 
 Modulární sada právních textů pro web. Každý dokument obsahuje srozumitelné shrnutí (TL;DR) a plné znění pro publikaci na samostatné URL.
@@ -14,7 +14,9 @@ Modulární sada právních textů pro web. Každý dokument obsahuje srozumitel
 | Zásady používání souborů cookie | [`cookies.md`](./cookies.md) | — | `/cookies` | Povinné |
 | DSA kontaktní centrum | [`dsa-kontaktni-centrum.md`](./dsa-kontaktni-centrum.md) | — | `/dsa` | Povinné |
 | Pravidla inzerce (kodex chování) | [`podminky-inzerce.md`](./podminky-inzerce.md) | — | `/podminky-inzerce` | Doporučené |
-| Balíčky inzerce / limity | [`balicky-inzerce-fo.md`](./balicky-inzerce-fo.md) | [`balicky-inzerce-osvc.md`](./balicky-inzerce-osvc.md) | `/balicky-inzerce` | Povinné |
+| Balíčky inzerce / limity | [`balicky-inzerce-fo.md`](./balicky-inzerce-fo.md) (veřejný titulek: Limity inzerce) | [`balicky-inzerce-osvc.md`](./balicky-inzerce-osvc.md) | `/balicky-inzerce` | Povinné |
+
+**Interní (ne na webu):** [`povinnosti-urady-fb-reklama.md`](./povinnosti-urady-fb-reklama.md) — IČO / DPH / ČSSZ / ZP před **reálnou** placenou Meta reklamou.
 
 ## Revize právníkem (`REVIZE_PRAVNI/`)
 
@@ -44,6 +46,8 @@ NEXT_PUBLIC_MONETIZATION_ENABLED=true
 3. V DB: `UPDATE listing_packages SET is_purchasable = true WHERE slug = 'standard_20'`.
 4. Spustit platební modul (Fio API) dle PRD §12.
 
+**FO texty na webu** nesmí slibovat budoucí placené balíčky, ceník ani „individuální řešení“, dokud není IČO a `NEXT_PUBLIC_MONETIZATION_ENABLED=true`. Ceník a reklamace placených služeb patří jen do `*-osvc.md`.
+
 ## Doplňovat před publikací
 
 - Identifikace provozovatele — FO: jméno + e-mail v `*-fo.md`; OSVČ: název, sídlo, IČO v `*-osvc.md`
@@ -60,7 +64,7 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 - `vop_version` musí odpovídat **verzovanému artefaktu**, který je dlouhodobě dostupný:
   - PDF v `public/docs/` se verzí v názvu (např. `vop-v1.8-fo.pdf`, `vop-v1.5-osvc.pdf`)
   - a/nebo HTML snapshot verze (nesmí se zpětně měnit)
-- Aktuální FO: `CURRENT_VOP_VERSION = "1.10-fo"` → snapshot [`snapshots/vop-v1.10-fo.md`](./snapshots/vop-v1.10-fo.md). Starší snapshoty (`vop-v1.5-fo` … `vop-v1.9-fo`) ponechány pro dříve odsouhlasené účty.
+- Aktuální FO: `CURRENT_VOP_VERSION = "1.11-fo"` → snapshot [`snapshots/vop-v1.11-fo.md`](./snapshots/vop-v1.11-fo.md). Starší snapshoty (`vop-v1.5-fo` … `vop-v1.10-fo`) ponechány pro dříve odsouhlasené účty.
 - Jakmile je verze jednou v produkci a někdo ji odsouhlasí, **nesmí se přepsat** „na místě“ bez navýšení verze (jen nový soubor + nová verze).
 
 ## Data v EU / EHP — checklist (P33)
@@ -125,6 +129,16 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 | Odkazy [Moje inzeráty](/moje-inzeraty) / [Nastavení](/profil/nastaveni) v Balíčcích | ✅ |
 | `REVIZE_PRAVNI/` FO kopie — **neaktualizováno** v tomto kroku (webové soubory jsou zdroj pravdy; před další syncem srovnat) | ⚠️ |
 | OSVČ GDPR / brand — před monetizací | ⏳ |
+
+## Sync 2026-08-15 — FO bez úmyslu placené inzerce
+
+| Bod | Stav |
+|-----|------|
+| VOP FO → **1.11-fo** + snapshot; `CURRENT_VOP_VERSION` | ✅ |
+| Limity FO → **1.3-fo** (bez ceníku, bez „zatím / po zavedení / individuální řešení“) | ✅ |
+| FAQ, návod, `llms.txt`, metadata `/balicky-inzerce` | ✅ |
+| Starší VOP snapshoty (1.5–1.10-fo) **beze změny** | ✅ |
+| OSVČ drafty v gitu, admin grant +20 — beze změny | ✅ |
 
 ## K potvrzení právníkem
 

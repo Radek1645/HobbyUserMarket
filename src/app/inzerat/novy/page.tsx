@@ -3,6 +3,7 @@ import {
   GUEST_LISTING_DRAFT_ENABLED,
   GUEST_LISTING_RESUME_QUERY,
 } from "@/config/guest-listing";
+import { LEGAL_UI } from "@/config/legal";
 import {
   SUGGEST_FROM_PHOTOS_ENABLED,
   SUGGEST_FROM_PHOTOS_UI,
@@ -90,7 +91,7 @@ export default async function NewListingPage({
             <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
               Vyčerpali jste limit publikací.{" "}
               <Link href="/balicky-inzerce" className="font-medium underline">
-                Balíčky inzerce
+                {LEGAL_UI.listingPackagesLinkLabel}
               </Link>
             </p>
           ) : null,
