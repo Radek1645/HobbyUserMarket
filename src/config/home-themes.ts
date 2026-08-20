@@ -21,7 +21,7 @@ import {
 export type HomeBrowseCategory = CategoryType | "all";
 
 /** HP hero — cena inzerce pro nepřihlášené (číslo z `LISTING_QUOTA_FREE_DEFAULT`). */
-export const HOME_FREE_QUOTA_BADGE_LABEL = `Inzerce zdarma · ${LISTING_QUOTA_FREE_DEFAULT} na start`;
+export const HOME_FREE_QUOTA_BADGE_LABEL = `${LISTING_QUOTA_FREE_DEFAULT} inzerátů zdarma`;
 
 export type HomeCategoryTabConfig = {
   id: HomeBrowseCategory;
@@ -88,7 +88,7 @@ export const HOME_THEMES: Record<HomeBrowseCategory, HomeTheme> = {
     label: "Vše",
     headline: "Online bazar, kde stačí fotka a pár slov.",
     subline:
-      "AI se doptá na detaily a vytvoří inzerát do 2 minut. Rovnou pro lidi z vašeho okolí.",
+      "Vyfotit, párkrát kliknout, hotovo. AI se postará o zbytek. Rovnou pro lidi z vašeho okolí.",
     shellClass: "bg-zinc-50",
     heroClass:
       "bg-gradient-to-r from-orange-200 via-amber-50 to-emerald-200",

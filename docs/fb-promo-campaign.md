@@ -4,6 +4,8 @@ Operační + technická dokumentace. Feature flag C: `NEXT_PUBLIC_GUEST_LISTING_
 
 > **Stav (2026-08-09):** migrace `073`/`074` + Edge nasazeny; localhost smoke § L většina happy path OK (včetně Google **Zpět** → resume a F5 bez duplicity). **FB ads zatím ne** — nejdřív produkční smoke na mobilu + Pixel E3/E4. Flag C na produkci jen vědomě (`NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED`).
 >
+> **Před první reálnou platbou za Meta Ads:** checklist úřadů (IČO, identifikovaná osoba DPH, ČSSZ, ZP) — [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/povinnosti-urady-fb-reklama.md).
+>
 > **Poznámka k rozsahu:** flag C **není unikátní FB URL** — zapne guest flow na stejné `/inzerat/novy` (header, FAB, přímý odkaz). Host uvidí AI formulář bez loginu **na celém webu**, nejen z reklamy. FB jen přivede traffic.
 
 ---
@@ -105,5 +107,6 @@ Až inventář v hlavních kategoriích — teprve potom reklama na prohlížen�
 
 ## Související docs
 
+- Kreativní brief + Ads Manager: [`navod-na-fb-reklamu.md`](./navod-na-fb-reklamu.md)
 - Moderace / guest pojistky: [`moderace-inzeratu.md`](./moderace-inzeratu.md) § Guest draft
 - Cookie policy: [`pravni/cookies.md`](./pravni/cookies.md)

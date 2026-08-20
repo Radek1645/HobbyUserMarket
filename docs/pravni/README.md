@@ -1,6 +1,6 @@
 # Právní dokumentace — draft (Legal Design)
 
-> **Stav:** Web FO VOP **1.11-fo** (účinnost 15.08.2026) · GDPR FO **1.4-fo** · cookies **1.3** · Pravidla **1.5** · Limity FO **1.4-fo** · OSVČ drafty k doplnění před monetizací · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
+> **Stav:** Web FO VOP **1.11-fo** (účinnost 15.08.2026) · GDPR FO **1.5-fo** · cookies **1.3** · Pravidla **1.5** · Limity FO **1.4-fo** · OSVČ drafty k doplnění před monetizací · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
 > **Projekt:** HobbyUserMarket (specifikace [`PRD_v3.md`](../PRD_v3.md) §11.3)
 
 Modulární sada právních textů pro web. Každý dokument obsahuje srozumitelné shrnutí (TL;DR) a plné znění pro publikaci na samostatné URL.
@@ -77,6 +77,7 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 - [x] **Sightengine** — popsán v GDPR §5.1 (předfiltrace fotek; routing může být mimo EHP; DPA u poskytovatele) (2026-07-21)
 - [x] **Tabulka zpracovatelů** v FO i OSVC §5.1 (2026-07-19)
 - [x] Ověřit **Resend** sending region — Ireland `eu-west-1`, doména `zapikolou.cz` Verified (2026-07-19); zapsáno v GDPR §5.1
+- [x] **Cloudflare** — DNS `zapikolou.cz` + Email Routing `info@` + Turnstile; zapsáno v GDPR FO **1.5-fo** §5.1 (2026-08-20)
 - [x] **Resend DPA** — staženo 2026-07-20 do [`resend-dpa-signed.pdf`](./resend-dpa-signed.pdf) (DocuSign `CC958417-…`, Updated 12/31/2025). Předpodepsaná Resendem; závazná od registrace účtu — bez countersign. Zahrnuje SCC / GDPR.
 - [ ] **Sightengine DPA** — podepsat / vrátit na support@sightengine.com (EU zákazník)
 - [ ] Revize právníkem před publikací finálního GDPR textu (vč. Sightengine + CSAM hard stop ve VOP/Pravidlech)
@@ -139,6 +140,14 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 | FAQ, návod, `llms.txt`, metadata `/balicky-inzerce` | ✅ |
 | Starší VOP snapshoty (1.5–1.10-fo) **beze změny** | ✅ |
 | OSVČ drafty v gitu, admin grant +20 — beze změny | ✅ |
+
+## Sync 2026-08-20 — DNS / mail (Cloudflare)
+
+| Bod | Stav |
+|-----|------|
+| GDPR FO → **1.5-fo** — Cloudflare: DNS + Email Routing `info@` + Turnstile | ✅ |
+| OSVČ GDPR §5.1 — stejný řádek Cloudflare (draft, před monetizací) | ✅ |
+| Ops: [`branding-a-domeny.md`](../branding-a-domeny.md) — Subreg = jen registrace | ✅ |
 
 ## K potvrzení právníkem
 

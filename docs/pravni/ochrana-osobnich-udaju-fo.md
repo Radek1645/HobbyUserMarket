@@ -1,7 +1,7 @@
 # Zásady ochrany osobních údajů
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.4-fo · **Datum účinnosti:** 10.08.2026  
+**Verze:** 1.5-fo · **Datum účinnosti:** 20.08.2026  
 **Správce:** Radek Horák, fyzická osoba · **Kontakt pro GDPR:** info@zapikolou.cz · datová schránka: fxetq2k
 
 ---
@@ -75,10 +75,10 @@ Pokud se u konkrétního analytického nebo marketingového nástroje uplatní *
 | OpenAI | záložní AI moderace (pokud je aktivní) | přenos mimo EHP (typicky USA) — DPA / SCC dle smlouvy s OpenAI |
 | Google | analytika webu (GA4 / GTM) — jen po souhlasu v cookie liště | dle služby Google |
 | Meta Platforms | marketingové měření (Meta Pixel) — jen po marketingovém souhlasu v cookie liště | přenos mimo EHP (typicky USA) — DPA / SCC / Data Privacy Framework dle smlouvy s Meta |
-| Cloudflare | ochrana proti zneužití (Turnstile) u guest / anonymních akcí | dle služby Cloudflare |
+| Cloudflare | DNS zóny `zapikolou.cz`; příjem `info@zapikolou.cz` (Email Routing — přeposílání, ne schránka); ochrana proti zneužití (Turnstile) u guest / anonymních akcí | dle služby Cloudflare |
 | Mapy.cz | geokódování a našeptávač lokality | CZ / EU |
 
-Odesílání e-mailů přes Resend běží v EU (`eu-west-1`). U služeb Google (včetně Gemini), Sightengine, OpenAI, Meta a u účetních/provozních údajů u Resend může docházet k přenosu mimo EHP; v takovém případě se uplatní odpovídající záruky (např. standardní smluvní doložky / Data Privacy Framework) dle smluv s daným poskytovatelem. Text a fotografie inzerátu se k moderaci (včetně předfiltrace fotografií a náhledu před registrací) odesílají jen za tímto účelem.
+Odesílání e-mailů webu přes Resend běží v EU (`eu-west-1`). Příchozí pošta na `info@zapikolou.cz` se doručuje přes Cloudflare Email Routing. U služeb Google (včetně Gemini), Sightengine, OpenAI, Meta, Cloudflare a u účetních/provozních údajů u Resend může docházet k přenosu mimo EHP; v takovém případě se uplatní odpovídající záruky (např. standardní smluvní doložky / Data Privacy Framework) dle smluv s daným poskytovatelem. Text a fotografie inzerátu se k moderaci (včetně předfiltrace fotografií a náhledu před registrací) odesílají jen za tímto účelem.
 
 ---
 

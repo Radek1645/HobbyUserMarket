@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.69  
+> **Verze dokumentu:** v3.72  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-15
+> **Datum:** 2026-08-20
 
 ---
 
@@ -133,6 +133,11 @@ Modul je hotový, když platí všechny body:
 |---------|---------|
 | Primární doména (produkce) | `zapikolou.cz` |
 | Redirect doména | `predpikolou.cz` → 301 na `https://zapikolou.cz` |
+| Registrátor | Subreg.CZ (jen vlastnictví jména — **ne** webhosting) |
+| DNS `zapikolou.cz` | Cloudflare (`meilani` / `sam.ns.cloudflare.com`) |
+| Web | Vercel (`A 76.76.21.21`) |
+| Příjem `info@zapikolou.cz` | Cloudflare Email Routing (forward, ne schránka) |
+| Odchozí mail webu | Resend / SES `eu-west-1` |
 | UI wordmark (header) | `zaPikolou.cz` — CamelCase, zelený rámeček (`AppLogo`, `appLogoFrameClass`) |
 | Krátký název (footer, copy) | `zaPikolou` |
 | Env canonical URL | `NEXT_PUBLIC_SITE_URL=https://zapikolou.cz` |
@@ -141,7 +146,7 @@ Modul je hotový, když platí všechny body:
 
 - [`src/config/site.ts`](../src/config/site.ts) — `SITE_DISPLAY_NAME`, `SITE_DOMAIN`, meta popis
 - [`src/components/brand/AppLogo.tsx`](../src/components/brand/AppLogo.tsx) — logo v headeru
-- [`docs/branding-a-domeny.md`](./branding-a-domeny.md) — checklist nasazení (Vercel, Supabase Auth, SEO, e-mail)
+- [`docs/branding-a-domeny.md`](./branding-a-domeny.md) — aktuální DNS/mail (Cloudflare, Vercel, Resend; Subreg = registrace)
 
 **Logo (schválený směr):** wordmark `za` + `Pikolou` + `.cz` v jednom bloku, `text-lg`, výška `h-10` (shodně s vyhledávačem), barva `emerald-600` (shodně s hlavním CTA).
 
@@ -164,7 +169,7 @@ V této verzi se **neimplementuje:**
 - Automatické překlady
 - Byznys logika limitů aktivních inzerátů na uživatele (jen připraveno v `profiles`)
 - SMS verifikace telefonu
-- Mapa s piny inzerátů
+- **Mapa s piny inzerátů na HP** — odloženo do dostatečné hustoty inzerce; návrh a otevřené otázky v [§5.1.1](#511-mapa-inzerátů-na-hp--odloženo)
 - A/B testování
 - Pokročilá anti-fraud ML vrstva nad rámec synchronního AI guardrailu
 - Logování IP adres pro moderování
@@ -479,6 +484,59 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   2. **Success:** Souřadnice návštěvníka se uloží do `localStorage`. PostGIS RPC `get_nearby_posts` kaskádově zkouší okruhy **15 → 30 → 50 → 60 km** (konfigurovatelné v `src/config/app.ts`), dokud nenajde alespoň **6** aktivních inzerátů. V Hero sekci se zobrazí **6–9** nejbližších. Pokud ani v **60 km** není dostatek obsahu, zobrazí se **nejnovější inzeráty celostátně** (`get_recent_posts`) s hláškou, že v okolí zatím nic není.
   3. **Fallback (Odmítnutí polohy / nepřesná IP):** Inzeráty se skryjí. Zobrazí se dominantní vyhledávací pole s integrovaným **adresním našeptávačem přes Mapy.cz API**. Uživatel musí vybrat validní obec/městskou část z nabídky. Vybrané souřadnice (WGS84) se uloží do `localStorage` pro další návštěvy.
   4. **Persistence:** Poloha návštěvníka se ukládá do `localStorage`. Do Supabase jdou souřadnice až u inzerátu (`posts.location`).
+* **Mapa inzerátů:** zatím **neimplementováno** — viz [§5.1.1](#511-mapa-inzerátů-na-hp--odloženo).
+
+#### 5.1.1 Mapa inzerátů na HP — odloženo
+
+> **Stav:** Odloženo (2026-08-20). Bez dostatečné hustoty inzerce mapa na HP nedává smysl (prázdná / jeden chumel).  
+> **Cursor plán (mimo repo):** `%USERPROFILE%\.cursor\plans\mapa_inzerátů_hp_8f3a1c2e.plan.md`  
+> **Předpoklad stacku:** stejný `NEXT_PUBLIC_MAPY_CZ_API_KEY`, PostGIS `posts.location`, RPC `get_nearby_posts` / `get_recent_posts`.
+
+**Směr kompromisního MVP (až bude hustota):**
+
+- Přepínač **Mapa / Dlaždice** vedle Filtru; URL `?pohled=mapa`.
+- **Dlaždice beze změny:** adaptivní okruh 15 → 30 → 50 → 60 km, min. 6 inzerátů.
+- **Mapa:** vždy načíst okruh **15 km** (strop ~100 bodů); kamera 5 / 10 / 15 km podle hustoty (≥9 pinů).
+- Bez polohy: mapa ČR + posledních ~100 + silné CTA na panel Poloha (prázdný stav, ne prohlížení).
+- **Karta / popup = obec** (jako dnes). Mapa může být přesnější; v náhledu špendlíku **ne** název ulice.
+- **Privacy = jitter kolem skutečného bodu** (adresa/GPS ±50–100 m; jen ulice ±200–300 m). **Ne** snap na centroid ulice (Strakonická ~15 km by shodila všechny piny na jeden bod).
+- Jen obec / městská část ve formuláři → **bez pinu**.
+- Podklad: Mapy.cz REST **basic** tiles + Leaflet (+ cluster); tiles až po otevření mapy; ne retina.
+
+##### Produktové otázky (rozhodnout před implementací)
+
+1. **Kdy spouštět?** Jaká minimální hustota (město / ČR), aby mapa dávala smysl?
+2. **Mapa vs. karta** — nechat rozpor (karta obec, mapa přesnější), nebo sjednotit veřejný text?
+3. **Bez polohy** — ČR + 100 jako nátlak na Polohu, nebo mapu bez polohy vůbec neukázat?
+4. **Okruh** — mapa 15 km (kamera 5/10/15) vs dlaždice 15–60: finální ano/ne?
+5. **Co smí pin prozradit?** Přibližné okolí; popup = obec. Stačí právně / uživatelsky?
+6. **Jen obec ve formuláři** — bez pinu (výpadek pokrytí), nebo později vynutit ulici/adresu?
+7. **Dlouhá ulice bez čísla** — jeden rozmazaný bod OK, nebo UX tlačit na adresu/GPS?
+8. **Mobil** — výška mapy vs. FAB vs. cookie lišta; tap → náhled → detail?
+9. **Právní copy** — GDPR (Mapy.cz = i zobrazení mapy) + Podmínky inzerce (přibližná mapa); kdo schválí?
+10. **Tarif Mapy.cz** — Základní (250k kreditů/měsíc) vs Zvýhodněný (10M); ochota platit při překročení?
+
+##### IT / technické otázky
+
+1. Podklad Mapy.cz `basic` + Leaflet + markercluster; atribuce Seznam.
+2. Sloupce `map_location` + `location_geocode_type`; RPC vrací jen jittered `latitude`/`longitude`.
+3. Jitter deterministicky z `post.id`; žádný snap na street centroid.
+4. Legacy inzeráty bez typu — jitter z `location` / backfill / bez pinu?
+5. Fetch mapy fix 15 km / max 100 vs později viewport (bbox) query.
+6. Cap 100 v hustém městě — stačí, nebo pagination?
+7. Schovat přesné `posts.location` před anon SELECT (dnes veřejný SELECT může GPS téct) — follow-up hned po MVP?
+8. Veřejný API klíč (`NEXT_PUBLIC_`): HTTP-referrer lock + měsíční limit v Mapy portálu; proxy dlaždic až později.
+9. Kvóta: 1 tile = 1 kredit; načítat až po otevření mapy; ne retina.
+10. `dynamic(..., { ssr: false })`; velikost Leaflet bundle.
+11. GTM: `cta_home_map_toggle`, `cta_home_map_pin`.
+12. Sync Metodika §2.2, ui-prvky, právní docs po nasazení.
+
+##### Záměrně ne v první verzi mapy
+
+- Vynucení ulice/adresy ve formuláři; geometrie celé ulice jako čára.
+- Slider okruhu / draw-to-search / mapa na detailu inzerátu.
+- Column-level hide `posts.location` a proxy dlaždic (follow-upy).
+
 * **Vyhledávání a filtrace:**
   * Fulltextové vyhledávání: PostgreSQL `tsvector` + GIN index na `posts.title` a `posts.description` (podmínka: minimálně 3 znaky, validace na frontendu i backendu). Prefix match; **bez ohledu na diakritiku** (`unaccent` — migrace [`071_search_unaccent.sql`](../supabase/071_search_unaccent.sql); např. `beh` najde „běh“).
   * Vyhledávání pouze v `status = 'active'` a neexpirovaných inzerátech.
@@ -732,8 +790,8 @@ Každé významné CTA v UI musí mít **stabilní identifikátor** pro Google T
 | `cta_header_sign_in` | Header menu — Přihlásit se |
 | `cta_header_sign_out` | Header menu — Odhlásit |
 | `cta_home_create_listing` | HP hero — Založit inzerát |
-| `cta_home_create_listing_guide` | HP hero (Vše) — odkaz „doptá na detaily“ → `/jak-vytvorit-inzerat` |
-| `cta_home_free_quota_badge` | HP hero — pilulka „Inzerce zdarma · 20 na start“ → `/balicky-inzerce` |
+| `cta_home_create_listing_guide` | HP hero (Vše) — odkaz „párkrát kliknout“ → `/jak-vytvorit-inzerat` |
+| `cta_home_free_quota_badge` | HP hero — pilulka „20 inzerátů zdarma“ → `/balicky-inzerce` |
 | `cta_home_category_tab` | HP — záložka kategorie (+ `data-gtm-category`) |
 | `cta_listing_card_open` | Klik na kartu inzerátu (+ `data-gtm-listing-id`) |
 | `cta_inquiry_open` / `cta_inquiry_submit` | Poptávkový formulář |
@@ -825,6 +883,9 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.67 | 2026-08-10 | **Právní sync + veřejný kontakt:** VOP FO **1.10-fo** (snapshoty 1.8–1.10), `CURRENT_VOP_VERSION`; GDPR FO **1.4-fo** (guest draft, Meta, bez jména/telefonu v profilu); cookies 1.3; DSA §5 → `/kontakt`; veřejný e-mail pevně `SITE_OPERATOR_CONTACT_EMAIL` (ne `NEXT_PUBLIC_OPERATOR_CONTACT_EMAIL`); site `v0.2`; O webu — soukromí kontaktů; TO-DO § M (`/jak-vytvorit-inzerat`) |
 | v3.68 | 2026-08-15 | **FO bez úmyslu placené inzerce:** VOP **1.11-fo** + snapshot; limity **1.3-fo** (bez ceníku / „zatím / po zavedení / individuální řešení“); FAQ, návod, `llms.txt`; `CURRENT_VOP_VERSION`; bez e-mailu o změně VOP (žádní podnikatelé). OSVČ drafty a admin +20 beze změny. |
 | v3.69 | 2026-08-15 | **HP pilulka „Inzerce zdarma · 20 na start“** pro nepřihlášené (odkaz `/balicky-inzerce`, GTM `cta_home_free_quota_badge`). |
+| v3.70 | 2026-08-20 | **§5.1.1 Mapa inzerátů na HP — odloženo** (čeká na hustotu inzerce): kompromisní směr + produktové vs IT otázky; Out of Scope §2 odkaz; Cursor plán `mapa_inzerátů_hp_8f3a1c2e.plan.md`. |
+| v3.71 | 2026-08-20 | **DNS/mail realita:** §1.8 + [`branding-a-domeny.md`](./branding-a-domeny.md) — Cloudflare DNS + Email Routing (`info@`), Vercel web, Resend odchozí; Subreg jen registrace (webhosting 18VW68 se nepoužívá). GDPR FO **1.5-fo** Cloudflare. |
+| v3.72 | 2026-08-20 | **HP copy:** subline Vše „Vyfotit, párkrát kliknout…“ (odkaz na průvodce); pilulka **„20 inzerátů zdarma“**. Kreativní brief FB ads: [`navod-na-fb-reklamu.md`](./navod-na-fb-reklamu.md) (konverze `ListingPublished`, Brno). |
 
 ---
 

@@ -1,0 +1,23 @@
+---
+description: Kam patří Cursor plány vs. dokumentace v repu
+alwaysApply: true
+---
+
+# Umístění plánů a dokumentace
+
+## Cursor Plan (Plan mode)
+
+Soubory `*.plan.md` ukládá Cursor **mimo repo**: `%USERPROFILE%\.cursor\plans\` (Windows: `C:\Users\HP\.cursor\plans\`).
+
+- **Nekopíruj** je do `docs/`, `.cursor/` ani `Stav_projektu/`.
+- Git je nesleduje — jsou globální pro tento počítač, ne pro projekt.
+- Jediná výjimka: výslovný archiv session plánu do `Stav_projektu/YYYY-MM-DD-plan.md`.
+
+## Co kam v repu
+
+| Účel | Kam |
+|------|-----|
+| Snapshot session | `Stav_projektu/YYYY-MM-DD.md` |
+| Produkt / DB / API | `docs/PRD_v3.md` |
+| UX flow | `docs/Metodika.md` |
+| Backlog na další den | `docs/TO-DO-dalsi-den.md` |

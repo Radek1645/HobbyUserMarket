@@ -53,20 +53,23 @@ function HeroSubline({
     return <p className={baseClass}>{subline}</p>;
   }
 
-  const detailMatch = subline.match(/^(AI)( se )(doptá na detaily)(.*)$/);
+  const detailMatch = subline.match(
+    /^(.*)(párkrát kliknout)(.*?)(AI)(.*)$/,
+  );
   if (detailMatch) {
     return (
       <p className={baseClass}>
-        <span className={aiHighlightClass}>{detailMatch[1]}</span>
-        {detailMatch[2]}
+        {detailMatch[1]}
         <Link
           href={CREATE_LISTING_GUIDE_PATH}
           className={guideLinkClass}
           {...gtmCtaProps(GTM_CTA.HOME_CREATE_LISTING_GUIDE)}
         >
-          {detailMatch[3]}
+          {detailMatch[2]}
         </Link>
-        {detailMatch[4]}
+        {detailMatch[3]}
+        <span className={aiHighlightClass}>{detailMatch[4]}</span>
+        {detailMatch[5]}
       </p>
     );
   }

@@ -3,12 +3,8 @@
 > **Primární doména:** `zapikolou.cz`  
 > **Redirect:** `predpikolou.cz` → `https://zapikolou.cz`  
 > **Na webu:** `zaPikolou.cz` (CamelCase wordmark)  
-> **PRD:** [`PRD_v3.md`](./PRD_v3.md) §1.8
-
-Tento dokument má dvě části:
-
-1. **Reference** — pojmenování, co zbývá v kódu (pro vývojáře).
-2. **Checklist na konci** — konkrétní kroky, které **provedeš ty** v Subregu, Vercelu, Supabase atd.
+> **PRD:** [`PRD_v3.md`](./PRD_v3.md) §1.8  
+> **Stav DNS/mailu ověřen:** 2026-08-20
 
 ---
 
@@ -20,29 +16,128 @@ Tento dokument má dvě části:
 | Logo / header | `zaPikolou.cz` |
 | Footer, krátký copy | `zaPikolou` |
 | Env proměnná | `NEXT_PUBLIC_SITE_URL=https://zapikolou.cz` (bez `/` na konci) |
+| Veřejný kontakt | `info@zapikolou.cz` (`SITE_OPERATOR_CONTACT_EMAIL`) |
 
-Konfigurace v kódu: [`src/config/site.ts`](../src/config/site.ts) — logo hotové v `AppLogo.tsx`.
+Konfigurace v kódu: [`src/config/site.ts`](../src/config/site.ts) — logo v `AppLogo.tsx`.
 
 ---
 
-## Pro vývoj — co je hotové / co zbývá
+## Kde co běží (zdroj pravdy)
+
+Tři různé služby — **nesměšovat**. E-mail od Subregu o expiraci **webhostingu** web neshodí.
+
+| Vrstva | Poskytovatel | Účel |
+|--------|----------------|------|
+| **Registrace domén** | Subreg.CZ | vlastnictví `zapikolou.cz` a `predpikolou.cz` — **toto se musí platit** |
+| **DNS + příchozí mail** `zapikolou.cz` | Cloudflare | nameservery, A/CNAME, Email Routing na `info@` |
+| **Web** | Vercel | Next.js produkce (`A 76.76.21.21`, `www` → `cname.vercel-dns.com`) |
+| **Odchozí transakční maily** | Resend (Amazon SES `eu-west-1`) | notifikace, poptávky, ověření účtu — `send.zapikolou.cz` |
+| **Captcha** | Cloudflare Turnstile | guest / rate-limit — **není** e-mail |
+| **Webhosting Subreg 18VW68** | — | **nepoužívá se**; expiroval 2026-08-13. Neprodlužovat kvůli webu ani `info@`. |
+
+**Nameservery**
+
+| Doména | NS |
+|--------|----|
+| `zapikolou.cz` | `meilani.ns.cloudflare.com`, `sam.ns.cloudflare.com` |
+| `predpikolou.cz` | stále Gransy (`ns`–`ns5.gransy.com`); A záznam míří na Vercel (`76.76.21.21`) |
+
+DNS záznamy `zapikolou.cz` se **upravují v Cloudflare**, ne v Subregu. Subreg drží jen registraci (a nameservery `predpikolou.cz`, dokud je nepřesuneme).
+
+---
+
+## E-mail — dva kanály
+
+| Směr | Adresa | Kam |
+|------|--------|-----|
+| **Příjem** | `info@zapikolou.cz` | Cloudflare **Email Routing** → MX `route1/2/3.mx.cloudflare.net`. Cloudflare schránku nehostuje; mail **přeposílá** na cílovou schránku nastavenou v Cloudflare dashboardu. |
+| **Odesílání webu** | Resend (`noreply` / FROM z env) | DKIM `resend._domainkey`, SPF na `send.zapikolou.cz` (`include:amazonses.com`) |
+
+SPF apexu: `v=spf1 include:_spf.mx.cloudflare.net ~all`  
+DMARC: `v=DMARC1; p=none;`
+
+Webmail `mail.gransy.com` u Subregu **není** aktuální příjem `info@`.
+
+---
+
+## DNS `zapikolou.cz` (Cloudflare, 2026-08-20)
+
+| Název | Typ | Hodnota |
+|-------|-----|---------|
+| `@` | A | `76.76.21.21` (Vercel) |
+| `www` | CNAME | `cname.vercel-dns.com` |
+| `@` | MX | `route1/2/3.mx.cloudflare.net` |
+| `@` | TXT | `v=spf1 include:_spf.mx.cloudflare.net ~all` |
+| `@` | TXT | Google Search Console verification |
+| `_dmarc` | TXT | `v=DMARC1; p=none;` |
+| `resend._domainkey` | TXT | Resend DKIM |
+| `send` | MX | `feedback-smtp.eu-west-1.amazonses.com` |
+| `send` | TXT | `v=spf1 include:amazonses.com ~all` |
+
+Změny jen v [Cloudflare DNS](https://dash.cloudflare.com) u zóny `zapikolou.cz`. Po změně MX/SPF ověřit doručení testovacím mailem na `info@`.
+
+---
+
+## Co platit (a co ne)
+
+1. **Subreg — registrace obou domén** — bez toho spadne jméno (i když web běží na Vercelu).
+2. **Cloudflare** — DNS + Email Routing + Turnstile na Free plánu; nic dalšího kvůli `info@`.
+3. **Vercel / Supabase / Resend** — provoz webu (mimo Subreg).
+4. **Subreg webhosting** — nechat propadnout. Data na tom hostingu mažou po grace periodě (~30 dní od expirace). Na Vercelu ani v Cloudflare to nemá vliv.
+
+E-mail Subregu typu „domény na tomto webhostingu přestaly fungovat“ = vypnutý **jejich** hosting, ne Vercel a ne Cloudflare mail.
+
+---
+
+## Nasazení — hotovo
+
+Launch checklist z července 2026 je splněný. Níže je stav, ne úkolovník.
+
+### DNS a web
+
+- [x] `zapikolou.cz` — A + `www` CNAME na Vercel (nyní v Cloudflare)
+- [x] `predpikolou.cz` → 301 na `https://zapikolou.cz` (A na Vercel; NS zatím Gransy)
+- [x] Vercel Production: `zapikolou.cz`; `www` redirect na apex
+- [x] `NEXT_PUBLIC_SITE_URL=https://zapikolou.cz`
+
+### Auth (Supabase)
+
+- [x] Site URL `https://zapikolou.cz`
+- [x] Redirect URLs: `https://zapikolou.cz/**`, `http://localhost:3000/**`
+
+### E-mail a SEO
+
+- [x] Resend ověřená doména `zapikolou.cz` (EU `eu-west-1`)
+- [x] Příjem `info@` přes Cloudflare Email Routing
+- [x] Google Search Console — property `zapikolou.cz`, DNS TXT
+- [x] Sitemap odeslaná; GTM `GTM-WGLNJRNK` + Consent Mode v2
+
+Ověření:
+
+```bash
+nslookup -type=NS zapikolou.cz
+nslookup -type=MX zapikolou.cz
+curl -I https://zapikolou.cz
+curl -I https://predpikolou.cz
+```
+
+---
+
+## Pro vývoj — co zbývá v kódu
 
 <details>
-<summary>Rozbalit technický přehled (nemusíš řešit, pokud neprogramuješ)</summary>
+<summary>Rozbalit technický přehled</summary>
 
 ### Hotovo
 
 - `src/config/site.ts`, logo, footer
-- PRD v3.25, `docs/ui-prvky.md`
+- PRD §1.8, `docs/ui-prvky.md`
 
-### Zbývá v kódu (vývoj)
+### Zbývá v kódu
 
-- Metadata stránek (`HobbyUserMarket` → `SITE_DISPLAY_NAME`)
+- Metadata stránek (`HobbyUserMarket` → `SITE_DISPLAY_NAME`) kde ještě zbývá
 - E-mailové šablony
-- Právní docs (`docs/pravni/*.md`)
-- ~~Favicon~~ — `public/favicon.ico`, `favicon-48.png`, `favicon-96.png`, `icon.png`, `apple-icon.png` (+ `scripts/generate-favicon.mjs`, značka zP)
 - Default OG obrázek
-- `/llms.txt` (dynamický route `src/app/llms.txt/`)
 
 Interní prefixy `hum_*` v localStorage **neměnit** — uživatel je nevidí.
 
@@ -50,154 +145,20 @@ Interní prefixy `hum_*` v localStorage **neměnit** — uživatel je nevidí.
 
 ---
 
-## Checklist — co musíš udělat ty
+## Otevřené body (neblokují provoz)
 
-Projdi body **shora dolů v tomto pořadí**. Zaškrtni, až je máš hotové.
-
-### Fáze 1 — DNS u Subregu
-
-- [ ] **1.1** Otevři DNS administraci domény **`zapikolou.cz`**
-- [ ] **1.2** Smaž výchozí A záznamy od Subregu (pokud tam jsou)
-- [ ] **1.3** Přidej záznam:
-
-  | Typ | Hostitel | Hodnota |
-  |-----|----------|---------|
-  | A | `@` (prázdné) | `76.76.21.21` |
-  | CNAME | `www` | `cname.vercel-dns.com.` |
-
-  Tečka na konci u CNAME u Subregu bývá důležitá — nech ji, pokud formulář vyžaduje.
-
-- [ ] **1.4** Doména **`predpikolou.cz`** — **nepřidávej** A/CNAME pro web. V menu **Přesměrování webu** nastav:
-  - typ: **301 Trvalé**
-  - cíl: **`https://zapikolou.cz`**
-
-  *(Alternativa: redirect ve Vercelu místo Subregu — stačí jedna z variant, ne obě.)*
-
----
-
-### Fáze 2 — Vercel (domény + env)
-
-- [ ] **2.1** [vercel.com](https://vercel.com) → tvůj projekt → **Settings → Domains**
-- [ ] **2.2** **Add** → `zapikolou.cz` → přiřadit k **Production**
-- [ ] **2.3** **Add** → `www.zapikolou.cz` → nastavit **Redirect** na `zapikolou.cz` (apex bez www)
-- [ ] **2.4** Počkej, až u domén svítí **Valid Configuration** (zelená). Červená = DNS ještě nepropadlo (5–30 min, někdy déle)
-- [ ] **2.5** **Settings → Environment Variables** → u scope **Production** nastav nebo uprav:
-
-  ```
-  NEXT_PUBLIC_SITE_URL=https://zapikolou.cz
-  ```
-
-  Bez lomítka na konci. Ostatní proměnné (Supabase, Resend, Mapy…) nech beze změny.
-
-- [ ] **2.6** **Deployments** → u posledního deploye **Redeploy** (aby se načetla nová env)
-
----
-
-### Fáze 3 — Supabase (auth — bez toho nepůjde přihlášení)
-
-- [ ] **3.1** [Supabase Dashboard](https://supabase.com/dashboard) → tvůj projekt → **Authentication → URL Configuration**
-- [ ] **3.2** **Site URL** nastav na:
-
-  ```
-  https://zapikolou.cz
-  ```
-
-- [ ] **3.3** Do **Redirect URLs** přidej (staré `*.vercel.app` můžeš nechat dočasně pro preview):
-
-  ```
-  https://zapikolou.cz/**
-  http://localhost:3000/**
-  ```
-
-  Wildcard `/**` povolí návrat na `/auth/callback` (Google OAuth), `/auth/dokoncit`
-  (ověření e-mailu / reset hesla) i `/auth/potvrdit`.
-
-- [ ] **3.4** **Save**
-
-- [ ] **3.5** (doporučeno) **Authentication → Email Templates → Confirm sign up** —
-  odkaz ať vede na stránku s tlačítkem (odolá prefetch schránky):
-
-  ```html
-  <h2>Potvrzení e-mailu</h2>
-  <p>Klikněte na odkaz a na webu potvrďte tlačítkem:</p>
-  <p><a href="{{ .SiteURL }}/auth/potvrdit?token_hash={{ .TokenHash }}&type=signup">Potvrdit e-mail</a></p>
-  ```
-
-  Bez této úpravy funguje i výchozí `{{ .ConfirmationURL }}` — po ověření
-  přesměruje na `/auth/dokoncit`, které umí `?code=` i `#access_token=`.
-
-> **Google OAuth:** V Google Cloud Console **nemusíš** měnit redirect — ten zůstává na `https://<projekt>.supabase.co/auth/v1/callback`. Mění se jen Site URL a Redirect URLs v Supabase.
-
----
-
-### Fáze 4 — Ověření, že web běží
-
-- [ ] **4.1** Otevři **`https://zapikolou.cz`** — homepage se načte
-- [ ] **4.2** Otevři **`https://predpikolou.cz`** — přesměruje na `zapikolou.cz`
-- [ ] **4.3** Zkontroluj **`https://zapikolou.cz/robots.txt`** a **`https://zapikolou.cz/sitemap.xml`**
-
-Volitelně v terminálu:
-
-```bash
-curl -I https://zapikolou.cz
-curl -I https://predpikolou.cz
-```
-
----
-
-### Fáze 5 — Ověření přihlášení (kritické)
-
-- [ ] **5.1** **Registrace e-mailem** — dorazí ověřovací mail, odkaz vede na `zapikolou.cz` (ne `*.vercel.app`)
-- [ ] **5.2** **Přihlášení Google** — po OAuth skončíš na `zapikolou.cz`, ne na chybě
-- [ ] **5.3** **Zapomenuté heslo** — odkaz v e-mailu vede na `zapikolou.cz/auth/…`
-
-Když auth spadne, nejčastěji chybí bod **2.5** (env) nebo **3.3** (Redirect URLs).
-
----
-
-### Fáze 6 — E-mail z vlastní domény (může počkat pár dní)
-
-- [ ] **6.1** U Resend / SMTP nastavit odesílatele např. `noreply@zapikolou.cz`
-- [ ] **6.2** V DNS `zapikolou.cz` přidat záznamy **SPF**, **DKIM**, **DMARC** (podle návodu poskytovatele e-mailu)
-- [ ] **6.3** Ve Vercelu aktualizovat env pro FROM adresu, pokud ji projekt používá
-
-Do té doby mohou maily chodit z provizorní domény poskytovatele — web funguje i bez toho.
-
----
-
-### Fáze 7 — SEO po launchu (až běží produkce)
-
-- [x] **7.1** [Google Search Console](https://search.google.com/search-console) — property **`zapikolou.cz`**, ověření **DNS TXT**
-- [x] **7.2** Odeslat sitemap: `https://zapikolou.cz/sitemap.xml`
-- [x] **7.3** GTM container **`GTM-WGLNJRNK`** + Consent Mode v2 + vlastní cookie lišta (GA4 tag v GTM containeru)
-
----
-
-## Rychlá tabulka — kam co patří
-
-| Kde | Co nastavit | Hodnota |
-|-----|-------------|---------|
-| Subreg `zapikolou.cz` | A + CNAME | viz fáze 1 |
-| Subreg `predpikolou.cz` | Web forward 301 | `https://zapikolou.cz` |
-| Vercel Domains | Production doména | `zapikolou.cz` |
-| Vercel Domains | www redirect | → apex |
-| Vercel Env (Production) | `NEXT_PUBLIC_SITE_URL` | `https://zapikolou.cz` |
-| Supabase | Site URL | `https://zapikolou.cz` |
-| Supabase | Redirect URLs | `https://zapikolou.cz/**` + localhost |
-
----
-
-## Otevřené body (neblokují launch)
-
-- [ ] Právní název provozovatele (IČO, sídlo) v patičce a VOP
-- [ ] Revize právních textů u právníka (název zaPikolou)
-- [x] Favicon (zelené zP) — po deployi ověřit v GSC URL Inspection
+- [ ] Právní název provozovatele (IČO, sídlo) v patičce a VOP — až OSVČ
+- [ ] Revize právních textů u právníka
+- [x] Favicon (zelené zP)
 - [ ] OG obrázek pro sdílení na sociálních sítích
 - [ ] Přejmenování GitHub repozitáře (volitelné)
+- [ ] Volitelně přesunout NS `predpikolou.cz` do Cloudflare (dnes Gransy; web už míří na Vercel)
 
 ---
 
-## Užitečné odkazy po nasazení
+## Užitečné odkazy
 
+- [Cloudflare dashboard](https://dash.cloudflare.com) — DNS, Email Routing, Turnstile
+- [Subreg](https://subreg.cz) — jen prodloužení **registrace** domén
 - [Google Rich Results Test](https://search.google.com/test/rich-results)
 - [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)

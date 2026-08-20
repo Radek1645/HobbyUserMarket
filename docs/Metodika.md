@@ -45,8 +45,8 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 ### 2.1 Zobrazení homepage (HP)
 
 1. Návštěvník otevře úvodní stránku `/`.
-2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); subline s **vykáním** („z vašeho okolí“); značka **zaPikolou.cz** a tagline v hlavičce.
-3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání). Těsně nad H1 skleněná pilulka **„Inzerce zdarma · 20 na start“** (`HOME_FREE_QUOTA_BADGE_LABEL`, ikona Sparkles v brand zelené); odkaz na `/balicky-inzerce`. Přihlášeným se nezobrazuje.
+2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); subline **„Vyfotit, párkrát kliknout, hotovo. AI se postará o zbytek. Rovnou pro lidi z vašeho okolí.“**; značka **zaPikolou.cz** a tagline v hlavičce.
+3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání). Těsně nad H1 skleněná pilulka **„20 inzerátů zdarma“** (`HOME_FREE_QUOTA_BADGE_LABEL`, ikona Sparkles v brand zelené); odkaz na `/balicky-inzerce`. Přihlášeným se nezobrazuje.
 4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo). Mřížka: **mobil 2×4** (8 karet), **desktop lg+ 3×3** (9 karet); tlačítko **„Zobrazit další“** doplní stejnou dávku (až do načtených 36).
 5. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
 
@@ -111,7 +111,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 - Na HP je **mřížka kategorií** (`CategoryGrid` + `HOME_CATEGORY_GRID_TILES`): **Vše**, zbožové domény, dlaždice **Služby, práce a reality** (bundle → volba typu), **Události**.
 - Bundle nemění `category_type` — po výběru zůstává `sluzby` / `prace` / `nemovitost` (stejné formuláře a RPC).
 - Deštník **Zboží** zrušen (migrace `070`); starý `?kategorie=zbozi` → **Vše**.
-- Hero copy dle aktivní kategorie (`HOME_THEMES`). U **Vše** odkaz **„doptá na detaily“** → `/jak-vytvorit-inzerat`.
+- Hero copy dle aktivní kategorie (`HOME_THEMES`). U **Vše** odkaz **„párkrát kliknout“** → `/jak-vytvorit-inzerat`.
 - Stejná mřížka (bez Vše) je v kroku 1 formuláře nového inzerátu.
 - **Další fáze:** progressive disclosure podkategorií, date čipy u Událostí.
 
@@ -1781,6 +1781,7 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 | [`docs/pravni/cookies.md`](./pravni/cookies.md) | Právní text zásad cookies |
 | [`docs/pravni/ochrana-osobnich-udaju-fo.md`](./pravni/ochrana-osobnich-udaju-fo.md) | GDPR — zásady ochrany osobních údajů (veřejně `/gdpr`) |
 | [`docs/pravni/README.md`](./pravni/README.md) | Přehled právních docs + checklist data v EU (P33) |
+| [`docs/branding-a-domeny.md`](./branding-a-domeny.md) | DNS, e-mail, Vercel — Cloudflare Email Routing + Subreg jen registrace |
 
 ---
 
