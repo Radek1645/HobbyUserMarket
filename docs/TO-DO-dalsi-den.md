@@ -27,7 +27,7 @@
 **Aktualizace 2026-08-10:** Prefill `[DOPLNIT …]` — pod nabídkou, jeden na řádek (prompt + `formatDoplnitPlaceholders` v parse).
 **Aktualizace 2026-08-09:** OAuth resume po **Zpět** z Google (cookie + sessionStorage); krokovník + AI/Publikace; C3 + D2 smoke; PRD v3.64. FB ads odloženy — produkční test na mobilu.
 **Aktualizace 2026-08-10:** § M — stránka `/jak-vytvorit-inzerat` je zastaralá (guest draft, AI photo-first prefill, krokovník); aktualizovat copy/kroky.  
-**Aktualizace 2026-08-22:** krok 0 **Vyfotit** + galerie (Android); HEIC decode na klientovi; po prefillu prázdný stav a `Doplňte …:`; PRD v3.73. Edge `suggest-listing-from-photos` ještě nasadit (prompt DOPLNIT).
+**Aktualizace 2026-08-22:** krok 0 **Vyfotit** + galerie (Android); HEIC decode na klientovi; po prefillu prázdný stav a `Doplňte …:`; PRD v3.73. Edge `suggest-listing-from-photos` **nasazeno**.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
 
