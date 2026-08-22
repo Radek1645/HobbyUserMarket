@@ -16,6 +16,7 @@ import {
   listingFormPrimaryButtonClass,
 } from "@/config/listing-form-ui";
 import { compressListingImage } from "@/lib/images/compress-listing-image";
+import { snapshotListingImageFiles } from "@/lib/images/read-listing-image-file";
 import {
   compareSuggestFromPhotos,
   type CompareSuggestArmError,
@@ -157,8 +158,14 @@ export function PrefillCompareLab() {
   const addFiles = useCallback(async (incoming: FileList | File[]) => {
     setError(null);
     const next: LocalPhoto[] = [];
+    const snapshots = await snapshotListingImageFiles(incoming);
 
-    for (const file of Array.from(incoming)) {
+    for (const snapshot of snapshots) {
+      if (!snapshot.ok) {
+        setError(snapshot.error);
+        continue;
+      }
+      const file = snapshot.file;
       const sourceError = validateListingImageSourceFile(file);
       if (sourceError) {
         setError(sourceError);
@@ -323,10 +330,12 @@ export function PrefillCompareLab() {
           className="sr-only"
           disabled={busy}
           onChange={(event) => {
-            if (event.target.files) {
-              void addFiles(event.target.files);
-            }
-            event.target.value = "";
+            const input = event.currentTarget;
+            if (!input.files?.length) return;
+            const list = Array.from(input.files);
+            void addFiles(list).finally(() => {
+              input.value = "";
+            });
           }}
         />
         <button

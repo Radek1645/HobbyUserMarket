@@ -23,6 +23,10 @@ import {
   SUGGEST_FROM_PHOTOS_UI,
 } from "@/config/suggest-from-photos";
 import { compressListingImage } from "@/lib/images/compress-listing-image";
+import {
+  listingImageUserError,
+  snapshotListingImageFiles,
+} from "@/lib/images/read-listing-image-file";
 import { suggestListingFromPhotos } from "@/lib/listing/suggest-listing-client";
 import {
   prepareModerationImages,
@@ -110,10 +114,16 @@ export function AiListingPrefillEntry({
 
   const addFiles = useCallback(async (incoming: FileList | File[]) => {
     setError(null);
-    const allIncoming = Array.from(incoming);
+    const snapshots = await snapshotListingImageFiles(incoming);
     const next: LocalPhoto[] = [];
 
-    for (const file of allIncoming) {
+    for (const snapshot of snapshots) {
+      if (!snapshot.ok) {
+        setError(snapshot.error);
+        continue;
+      }
+      const file = snapshot.file;
+
       const sourceError = validateListingImageSourceFile(file);
       if (sourceError) {
         setError(sourceError);
@@ -124,11 +134,7 @@ export function AiListingPrefillEntry({
       try {
         compressed = await compressListingImage(file);
       } catch (compressError) {
-        setError(
-          compressError instanceof Error
-            ? compressError.message
-            : "Zpracování fotky selhalo.",
-        );
+        setError(listingImageUserError(compressError));
         continue;
       }
 
@@ -158,7 +164,7 @@ export function AiListingPrefillEntry({
       const combined = [...prev, ...next];
       truncated =
         combined.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES ||
-        allIncoming.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES;
+        snapshots.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES;
       const kept = combined.slice(-SUGGEST_FROM_PHOTOS_MAX_IMAGES);
       const keptKeys = new Set(kept.map((photo) => photo.key));
       for (const photo of combined) {
@@ -315,10 +321,12 @@ export function AiListingPrefillEntry({
   }
 
   function handleFileInputChange(event: ChangeEvent<HTMLInputElement>) {
-    if (event.target.files?.length) {
-      void addFiles(event.target.files);
-    }
-    event.target.value = "";
+    const input = event.currentTarget;
+    if (!input.files?.length) return;
+    const list = Array.from(input.files);
+    void addFiles(list).finally(() => {
+      input.value = "";
+    });
   }
 
   return (

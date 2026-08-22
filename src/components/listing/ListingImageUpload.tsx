@@ -17,6 +17,10 @@ import {
 } from "@/config/listing-form-ui";
 import { compressListingImage } from "@/lib/images/compress-listing-image";
 import {
+  listingImageUserError,
+  snapshotListingImageFiles,
+} from "@/lib/images/read-listing-image-file";
+import {
   validateListingImageFile,
   validateListingImageSourceFile,
 } from "@/lib/posts/listing-images";
@@ -349,15 +353,24 @@ export const ListingImageUpload = forwardRef<
     setIsCompressing(true);
 
     try {
-      const list = Array.from(incoming);
+      const snapshots = await snapshotListingImageFiles(incoming);
       const nextItems = [...items];
       const skipped: string[] = [];
 
-      for (const file of list) {
+      for (const snapshot of snapshots) {
         if (nextItems.length >= LISTING_IMAGE_MAX_FILES) {
-          skipped.push(`${file.name} (limit fotek)`);
+          skipped.push(
+            `${snapshot.ok ? snapshot.file.name : snapshot.name} (limit fotek)`,
+          );
           continue;
         }
+
+        if (!snapshot.ok) {
+          skipped.push(`${snapshot.name}: ${snapshot.error}`);
+          continue;
+        }
+
+        const file = snapshot.file;
 
         const sourceError = validateListingImageSourceFile(file);
         if (sourceError) {
@@ -370,11 +383,7 @@ export const ListingImageUpload = forwardRef<
           compressed = await compressListingImage(file);
         } catch (compressError) {
           skipped.push(
-            `${file.name}: ${
-              compressError instanceof Error
-                ? compressError.message
-                : "zpracování selhalo"
-            }`,
+            `${file.name}: ${listingImageUserError(compressError)}`,
           );
           continue;
         }
@@ -433,10 +442,12 @@ export const ListingImageUpload = forwardRef<
   }
 
   function handleFileInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-    if (event.target.files?.length) {
-      void processFiles(event.target.files);
-    }
-    event.target.value = "";
+    const input = event.currentTarget;
+    if (!input.files?.length) return;
+    const list = Array.from(input.files);
+    void processFiles(list).finally(() => {
+      input.value = "";
+    });
   }
 
   const maxPhotoSizeMb = Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024));

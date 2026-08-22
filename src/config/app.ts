@@ -54,8 +54,8 @@ export const MODERATION_IMAGE_STAGING_BUCKET = "moderation-image-staging";
 export const MODERATION_IMAGE_RENDITION_BUCKET = "moderation-image-renditions";
 export const MODERATION_IMAGE_STAGING_RETENTION_HOURS = 24;
 export const LISTING_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
-/** Galerie — navíc HEIC/HEIF; komprese je na klientovi převede na JPEG/WebP. */
-export const LISTING_IMAGE_GALLERY_ACCEPT = `${LISTING_IMAGE_ACCEPT},image/heic,image/heif`;
+/** Galerie — `image/*` (Samsung Photo Picker). Úzký MIME seznam otevírá Správce souborů a URI ztratí oprávnění. */
+export const LISTING_IMAGE_GALLERY_ACCEPT = "image/*";
 /** Foťák — `image/*` + `capture`, jinak Android otevře jen galerii. */
 export const LISTING_IMAGE_CAMERA_ACCEPT = "image/*";
 export const LISTING_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"] as const;
