@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.74  
+> **Verze dokumentu:** v3.75  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
@@ -888,6 +888,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.72 | 2026-08-20 | **HP copy:** subline Vše „Vyfotit, párkrát kliknout…“ (odkaz na průvodce); pilulka **„20 inzerátů zdarma“**. Kreativní brief FB ads: [`navod-na-fb-reklamu.md`](./navod-na-fb-reklamu.md) (konverze `ListingPublished`, Brno). |
 | v3.73 | 2026-08-22 | **Prefill UX + fotky:** krok 0 na mobilu **Vyfotit** / **Vybrat z galerie**; klient dekóduje HEIC a dočte blob z Android galerie. Po AI prefillu prázdný stav + žlutý prstenec jen u nevyplněné ceny/stavu/lokality. Výzvy v popisu `Doplňte …:` (publish → `Značka: …` / prázdné pryč). |
 | v3.74 | 2026-08-22 | **Prefill copy + nahrávání:** krok 0 „Napíšeme název a popis“, CTA **Předvyplnit inzerát**; banner zve k dalším fotkám. Párové CTA v `ui-primitives`. Do paměti jdou jen fotky v limitu (Samsung OOM). |
+| v3.75 | 2026-08-22 | **Galerie UX:** anglické „Failed to fetch“ → česká hláška; při překročení limitu 6 fotek stručný souhrn místo seznamu souborů. |
 
 ---
 

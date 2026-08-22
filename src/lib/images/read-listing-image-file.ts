@@ -20,18 +20,32 @@ export type ListingImagePrepareResult = {
   truncated: boolean;
 };
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function isNotReadableError(error: unknown): boolean {
   if (error instanceof DOMException && error.name === "NotReadableError") {
     return true;
   }
-  const message = error instanceof Error ? error.message : String(error);
-  return /could not be read|permission problems/i.test(message);
+  return /could not be read|permission problems/i.test(errorMessage(error));
+}
+
+/** Cloud galerie / mrtvé content URI — `fetch(blob:)` hodí TypeError „Failed to fetch“. */
+function isGalleryFetchFailure(error: unknown): boolean {
+  const message = errorMessage(error);
+  return /failed to fetch|networkerror|load failed|the requested file/i.test(
+    message,
+  );
 }
 
 /** User-facing text — nikdy nepouštěj anglický DOMException do UI. */
 export function listingImageUserError(error: unknown): string {
-  if (isNotReadableError(error)) return LISTING_IMAGE_GALLERY_READ_FAILED;
-  if (error instanceof Error && error.message.trim()) return error.message;
+  if (isNotReadableError(error) || isGalleryFetchFailure(error)) {
+    return LISTING_IMAGE_GALLERY_READ_FAILED;
+  }
+  const message = errorMessage(error).trim();
+  if (message) return message;
   return LISTING_IMAGE_GALLERY_READ_FAILED;
 }
 
@@ -66,6 +80,8 @@ async function readBytes(file: File): Promise<ArrayBuffer> {
           throw arrayBufferError;
         }
         return await response.arrayBuffer();
+      } catch (fetchError) {
+        throw new Error(listingImageUserError(fetchError));
       } finally {
         URL.revokeObjectURL(url);
       }
@@ -95,7 +111,7 @@ function fileLabel(file: File): string {
 
 /**
  * 1) sync: MIME, 25 MB, kapacita flow
- * 2) souběžně: snapshot jen vybraných kandidátů
+ * 2) souběžně: snapshot jen vybraných kandidátů dřív, než Android zruší URI
  */
 export function prepareListingImageFiles(
   files: FileList | File[],

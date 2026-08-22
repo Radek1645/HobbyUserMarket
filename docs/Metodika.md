@@ -388,7 +388,7 @@ Pod nadpisem **Fotky** (pole je volitelné, ale doporučené) uživatel vidí:
 2. Max. 6 fotek (krok obsahu) / 1–2 u AI prefillu, automatická komprese pod 1 MB. Na mobilu **Vyfotit** a **Vybrat z galerie** (jeden input bez `capture` na Androidu otevře jen galerii).
 3. Hvězdičkou hlavní fotka na homepage.
 4. Bezpečnost fotek hlídá AI kontrola.
-5. HEIC/HEIF z telefonu se na klientovi převede na JPEG/WebP, pokud to prohlížeč umí dekódovat; jinak hláška ať použije **Vyfotit**. Samsung galerie: soubory se hned kopírují do paměti (jinak Chrome po chvíli odepře čtení — anglické „could not be read / permission problems“). Do paměti jdou jen fotky v limitu (prefill 1–2, formulář max. 6) a pod 25 MB; komprese běží po jedné. Chyba je v prohlížeči, ne ve Vercel/Supabase logu.
+5. HEIC/HEIF z telefonu se na klientovi převede na JPEG/WebP, pokud to prohlížeč umí dekódovat; jinak hláška ať použije **Vyfotit**. Samsung galerie: soubory se hned kopírují do paměti (jinak Chrome po chvíli odepře čtení — anglické „could not be read / permission problems“ nebo „Failed to fetch“; UI vždy česky). Do paměti jdou jen fotky v limitu (prefill 1–2, formulář max. 6) a pod 25 MB; komprese běží po jedné. Při výběru víc než 6 fotek najednou: krátká hláška „Přidali jsme N fotek. Kvůli limitu 6 jsme vynechali M fotek.“ — ne seznam názvů souborů. Chyba je v prohlížeči, ne ve Vercel/Supabase logu.
 
 Mapa příkladů: `src/config/listing-form-tips.ts` (`getListingFormTipExample`). Komponenta: `ListingImageUpload`.
 

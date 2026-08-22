@@ -351,18 +351,19 @@ export const ListingImageUpload = forwardRef<
   async function consumePreparedFiles(prepared: ListingImagePrepareResult) {
     const nextItems = [...items];
     const skipped: string[] = [];
+    let limitSkippedCount = 0;
 
     for (const item of prepared.skipped) {
-      skipped.push(
-        item.error === LISTING_IMAGE_LIMIT_SKIPPED
-          ? `${item.name} (limit fotek)`
-          : `${item.name}: ${item.error}`,
-      );
+      if (item.error === LISTING_IMAGE_LIMIT_SKIPPED) {
+        limitSkippedCount += 1;
+        continue;
+      }
+      skipped.push(`${item.name}: ${item.error}`);
     }
 
     for (const file of prepared.files) {
       if (nextItems.length >= LISTING_IMAGE_MAX_FILES) {
-        skipped.push(`${file.name} (limit fotek)`);
+        limitSkippedCount += 1;
         continue;
       }
 
@@ -392,12 +393,27 @@ export const ListingImageUpload = forwardRef<
     if (!mainKey && nextItems.length > 0) {
       setMainKey(nextItems[0]!.key);
     }
-    if (skipped.length > 0) {
-      setError(
-        skipped.length === 1
-          ? skipped[0]!
-          : `Některé fotky jsme přeskočili: ${skipped.join("; ")}`,
+
+    const messages: string[] = [];
+    if (limitSkippedCount > 0) {
+      const addedCount = nextItems.length - items.length;
+      const addedLabel =
+        addedCount === 1 ? "1 fotku" : `${addedCount} fotek`;
+      const skippedLabel =
+        limitSkippedCount === 1
+          ? "1 fotku"
+          : `${limitSkippedCount} fotek`;
+      messages.push(
+        `Přidali jsme ${addedLabel}. Kvůli limitu ${LISTING_IMAGE_MAX_FILES} jsme vynechali ${skippedLabel}.`,
       );
+    }
+    if (skipped.length === 1) {
+      messages.push(skipped[0]!);
+    } else if (skipped.length > 1) {
+      messages.push(`Některé fotky jsme přeskočili: ${skipped.join("; ")}`);
+    }
+    if (messages.length > 0) {
+      setError(messages.join(" "));
     }
   }
 
