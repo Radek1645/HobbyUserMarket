@@ -34,6 +34,10 @@ export const listingFormRequiredLegendClass =
 
 export const listingFormHintClass = "mt-1 text-xs text-neutral-600";
 
+/** Žlutý prstenec u polí, která AI prefill nevyplní (cena, stav, lokalita). */
+export const listingFormPrefillHighlightClass =
+  "rounded-xl ring-2 ring-amber-400/80 ring-offset-2";
+
 export const listingFormCardClass =
   "space-y-4 rounded-2xl border border-neutral-300 bg-white p-4 shadow-sm sm:p-6";
 

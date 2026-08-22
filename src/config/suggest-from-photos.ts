@@ -27,6 +27,8 @@ export const SUGGEST_FROM_PHOTOS_UI = {
     "Nahrajte 1–2 fotky. Připravíme název, popis a kategorii. Cenu, stav a lokalitu doplníte sami.",
   dropzoneIdle: "Přidat fotky",
   dropzoneHint: "Maximálně 2 fotky",
+  cameraCta: "Vyfotit",
+  galleryCta: "Vybrat z galerie",
   ctaLabel: "Vytvořit inzerát",
   statusChecking: "Kontrolujeme fotky…",
   statusAnalyzing: "Připravujeme váš inzerát…",
@@ -46,5 +48,5 @@ export const SUGGEST_FROM_PHOTOS_UI = {
   nsfwReject:
     "Fotografie porušuje podmínky webu. Nahrajte jiné snímky, nebo pokračujte ručně.",
   missingFieldsHint:
-    "Připravili jsme návrh názvu, popisu a kategorie. Zkontrolujte ho a doplňte cenu, stav a lokalitu.",
+    "Připravili jsme návrh názvu, popisu a kategorie. Zkontrolujte ho a doplňte cenu, stav a lokalitu. Řádky „Doplňte …:“ vyplňte za dvojtečku, nebo je smažte.",
 } as const;

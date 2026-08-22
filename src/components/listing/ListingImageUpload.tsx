@@ -1,7 +1,8 @@
 "use client";
 
 import {
-  LISTING_IMAGE_ACCEPT,
+  LISTING_IMAGE_CAMERA_ACCEPT,
+  LISTING_IMAGE_GALLERY_ACCEPT,
   LISTING_IMAGE_MAX_FILES,
   LISTING_IMAGE_MAX_FILE_BYTES,
   LISTING_IMAGE_MAX_SOURCE_BYTES,
@@ -598,7 +599,7 @@ export const ListingImageUpload = forwardRef<
       <input
         ref={galleryInputRef}
         type="file"
-        accept={LISTING_IMAGE_ACCEPT}
+        accept={LISTING_IMAGE_GALLERY_ACCEPT}
         multiple
         className="hidden"
         onChange={handleFileInputChange}
@@ -607,7 +608,7 @@ export const ListingImageUpload = forwardRef<
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/*"
+        accept={LISTING_IMAGE_CAMERA_ACCEPT}
         capture="environment"
         className="hidden"
         onChange={handleFileInputChange}

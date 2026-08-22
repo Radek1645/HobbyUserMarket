@@ -26,7 +26,8 @@
 **Aktualizace 2026-08-09:** Prefill lab — `/mod/prefill-lab` + Edge `compare-suggest-from-photos` (staff side-by-side modelů; bez DB). Default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`.
 **Aktualizace 2026-08-10:** Prefill `[DOPLNIT …]` — pod nabídkou, jeden na řádek (prompt + `formatDoplnitPlaceholders` v parse).
 **Aktualizace 2026-08-09:** OAuth resume po **Zpět** z Google (cookie + sessionStorage); krokovník + AI/Publikace; C3 + D2 smoke; PRD v3.64. FB ads odloženy — produkční test na mobilu.
-**Aktualizace 2026-08-10:** § M — stránka `/jak-vytvorit-inzerat` je zastaralá (guest draft, AI photo-first prefill, krokovník); aktualizovat copy/kroky.
+**Aktualizace 2026-08-10:** § M — stránka `/jak-vytvorit-inzerat` je zastaralá (guest draft, AI photo-first prefill, krokovník); aktualizovat copy/kroky.  
+**Aktualizace 2026-08-22:** krok 0 **Vyfotit** + galerie (Android); HEIC decode na klientovi; po prefillu prázdný stav a `Doplňte …:`; PRD v3.73. Edge `suggest-listing-from-photos` ještě nasadit (prompt DOPLNIT).
 
 Zaškrtávej `[x]` přímo v tomto souboru.
 
@@ -81,7 +82,7 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 | B3c | Edge / Gemini down | Technická chyba + manuál; lze dokončit bez prefillu | ☐ |
 | B3d | 0 fotek / 3+ fotek | Validace min 1, max 2 | ☑ 2026-08-09 (3+ → warning + první 2; 0 → needPhotos) |
 | B4 | Po prefillu změnit kategorii/text → publish | Formulář má pravdu; final AI respektuje formulář (cena/lokalita z formuláře) | ☑ 2026-08-09 (změna kategorie — fotky zůstaly) |
-| B5 | **Kvalita draftu (auto bez čitelného modelu)** — 1×: fotky Škoda bez nápisu modelu na kufru | Title obecné (např. „Bílé osobní auto Škoda“), **ne** tipovaný model (Rapid…); description „Nabízím…“; **`[DOPLNIT …]` pod nabídkou, každý na vlastním řádku** (ne slitý seznam v jedné větě); **žádná** výzva ke kontaktu; **žádná SPZ/tel/e-mail**; title ↔ description konzistentní | ☑ 2026-08-08 (Opel…); formát řádků 2026-08-10 (prompt + parse) |
+| B5 | **Kvalita draftu (auto bez čitelného modelu)** — 1×: fotky Škoda bez nápisu modelu na kufru | Title obecné (např. „Bílé osobní auto Škoda“), **ne** tipovaný model (Rapid…); description „Nabízím…“; **`Doplňte …:` pod nabídkou, každý na vlastním řádku** (ne slitý seznam; starý `[DOPLNIT …]` se ve formuláři převede); **žádná** výzva ke kontaktu; **žádná SPZ/tel/e-mail**; title ↔ description konzistentní | ☑ 2026-08-08 (Opel…); formát řádků 2026-08-10 (prompt + parse); UI `Doplňte` 2026-08-22 |
 | B6 | **Stabilita formátu** — stejné fotky jako B5, **3–4×** po sobě (nový prefill / refresh) | Každý běh splní kritéria B5. Pokud v ≥1/5 běhů „kontaktujte…“ nebo slitý placeholder → fail (flash-lite nedeterminismus); zapsat a řešit | ☑ |
 | B7 | **Jiná kategorie** — dětské oblečení **nebo** elektro (1–2 fotky) | Prefill generalizuje: category sedí; nejisté atributy jako oddělené `[DOPLNIT velikost]` / značka atd. (ne automobilový slovník rok/km); bez kontaktu / PII; title bez hádání | ☑ 2026-08-08 (odrážedlo → Sport/Kola; DOPLNIT značka/velikost/materiál) |
 | B8 | **Auto s čitelným modelem** na kufru/masce (Octavia, Fabia…) | Title i description mohou obsahovat model; **ne** `[DOPLNIT typ/model]` zároveň s konkrétním modelem v title | ☐ |

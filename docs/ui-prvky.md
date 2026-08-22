@@ -78,6 +78,7 @@ Krok 0 AI prefill (`/inzerat/novy`):
 | `listingFormStepInactiveClass` | Neaktivní krok (`text-slate-400`) |
 | `listingFormManualBannerClass` | Slate banner pod AI kartou (ruční cesta) |
 | `listingFormManualBannerButtonClass` | CTA v manuálním banneru |
+| `listingFormPrefillHighlightClass` | Žlutý prstenec u ceny / stavu / lokality po AI prefillu; zmizí po vyplnění pole |
 
 CTA prefillu se renderuje až po ≥1 fotce. Ruční cesta (reality / služby / práce / události) je **slate banner** pod AI kartou (`listingFormManualBannerClass`) — `onChooseManual` → `setStep(1)`, ne samostatná route.
 

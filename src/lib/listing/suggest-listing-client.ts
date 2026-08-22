@@ -5,6 +5,7 @@ import {
   SUGGEST_FROM_PHOTOS_RATE_LIMIT_PER_HOUR,
   SUGGEST_FROM_PHOTOS_UI,
 } from "@/config/suggest-from-photos";
+import { formatDoplnitPlaceholders } from "@/lib/listing/doplnit-prompts";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isGoodsCategoryType } from "@/config/goods-categories";
@@ -206,7 +207,9 @@ export async function suggestListingFromPhotos(params: {
     return {
       ok: true,
       title: String(okBody.title ?? "").trim(),
-      description: String(okBody.description ?? "").trim(),
+      description: formatDoplnitPlaceholders(
+        String(okBody.description ?? ""),
+      ),
       categoryType,
       subcategorySlug:
         typeof okBody.subcategorySlug === "string" &&

@@ -29,7 +29,8 @@ export type ParsedListingImagesForm = {
 };
 
 export function validateListingImageSourceFile(file: File): string | null {
-  if (!file.type.startsWith("image/")) {
+  // Android galerie občas pošle prázdný MIME; HEIC má image/heic i falešné image/jpeg.
+  if (file.type && !file.type.startsWith("image/")) {
     return "Nahraj jen obrázek (JPG, PNG nebo WebP).";
   }
 

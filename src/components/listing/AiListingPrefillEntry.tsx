@@ -4,7 +4,8 @@ import { uploadGuestModerationImages } from "@/app/actions/guest-moderation";
 import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/security/TurnstileWidget";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
-  LISTING_IMAGE_ACCEPT,
+  LISTING_IMAGE_CAMERA_ACCEPT,
+  LISTING_IMAGE_GALLERY_ACCEPT,
   LISTING_IMAGE_MAX_FILE_BYTES,
 } from "@/config/app";
 import { resolveTurnstileSiteKey } from "@/config/guest-listing";
@@ -14,6 +15,7 @@ import {
   listingFormManualBannerButtonClass,
   listingFormManualBannerClass,
   listingFormPrimaryButtonClass,
+  listingFormSecondaryButtonClass,
 } from "@/config/listing-form-ui";
 import {
   SUGGEST_FROM_PHOTOS_MAX_IMAGES,
@@ -31,8 +33,8 @@ import {
   validateListingImageSourceFile,
 } from "@/lib/posts/listing-images";
 import type { CategoryType } from "@/types/post";
-import { Camera, CloudUpload, Loader2, Sparkles, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { Camera, CloudUpload, ImageIcon, Loader2, Sparkles, X } from "lucide-react";
+import { useCallback, useRef, useState, type ChangeEvent } from "react";
 
 export type AiPrefillResult = {
   title: string;
@@ -82,7 +84,8 @@ export function AiListingPrefillEntry({
   onPrefillSuccess,
   onChooseManual,
 }: AiListingPrefillEntryProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const turnstileWidgetRef = useRef<TurnstileWidgetHandle | null>(null);
   const turnstileTokenRef = useRef<string | null>(null);
   const submitLockRef = useRef(false);
@@ -311,6 +314,13 @@ export function AiListingPrefillEntry({
     });
   }
 
+  function handleFileInputChange(event: ChangeEvent<HTMLInputElement>) {
+    if (event.target.files?.length) {
+      void addFiles(event.target.files);
+    }
+    event.target.value = "";
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-neutral-300 bg-white p-5 shadow-sm sm:p-8">
@@ -327,25 +337,53 @@ export function AiListingPrefillEntry({
         </div>
 
         <input
-          ref={inputRef}
+          ref={galleryInputRef}
           type="file"
-          accept={LISTING_IMAGE_ACCEPT}
+          accept={LISTING_IMAGE_GALLERY_ACCEPT}
           multiple
           className="sr-only"
           disabled={busy || guestBlocked}
-          // Bez `capture` — mobil nabídne galerii i foťák.
-          onChange={(event) => {
-            if (event.target.files?.length) {
-              void addFiles(event.target.files);
-            }
-            event.target.value = "";
-          }}
+          onChange={handleFileInputChange}
         />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept={LISTING_IMAGE_CAMERA_ACCEPT}
+          capture="environment"
+          className="sr-only"
+          disabled={busy || guestBlocked}
+          onChange={handleFileInputChange}
+        />
+
+        {/* Mobil — foťák zvlášť, jinak Android otevře jen galerii. */}
+        <div className="mt-6 space-y-2 sm:hidden">
+          <button
+            type="button"
+            disabled={busy || guestBlocked}
+            onClick={() => cameraInputRef.current?.click()}
+            className={`flex w-full ${listingFormSecondaryButtonClass} py-3.5`}
+          >
+            <Camera className="h-5 w-5" aria-hidden />
+            {SUGGEST_FROM_PHOTOS_UI.cameraCta}
+          </button>
+          <button
+            type="button"
+            disabled={busy || guestBlocked}
+            onClick={() => galleryInputRef.current?.click()}
+            className={`flex w-full ${listingFormSecondaryButtonClass} border-dashed py-3`}
+          >
+            <ImageIcon className="h-4 w-4" aria-hidden />
+            {SUGGEST_FROM_PHOTOS_UI.galleryCta}
+          </button>
+          <p className="text-center text-xs text-neutral-600">
+            {SUGGEST_FROM_PHOTOS_UI.dropzoneHint}
+          </p>
+        </div>
 
         <button
           type="button"
           disabled={busy || guestBlocked}
-          onClick={() => inputRef.current?.click()}
+          onClick={() => galleryInputRef.current?.click()}
           onDragEnter={(event) => {
             event.preventDefault();
             if (busy || guestBlocked) return;
@@ -368,7 +406,7 @@ export function AiListingPrefillEntry({
               void addFiles(event.dataTransfer.files);
             }
           }}
-          className={`mt-6 w-full ${listingFormDropzoneClass} ${
+          className={`mt-6 hidden w-full sm:block ${listingFormDropzoneClass} ${
             dragActive ? listingFormDropzoneActiveClass : ""
           } disabled:cursor-not-allowed disabled:opacity-60`}
         >

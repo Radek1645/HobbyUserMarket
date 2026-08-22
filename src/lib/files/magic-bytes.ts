@@ -85,6 +85,47 @@ export function mimeForDetectedKind(kind: DetectedFileKind): string {
   return KIND_TO_MIME[kind];
 }
 
+const HEIF_BRANDS = new Set([
+  "heic",
+  "heix",
+  "hevc",
+  "hevx",
+  "heim",
+  "heis",
+  "hevm",
+  "hevs",
+  "mif1",
+  "msf1",
+]);
+
+const AVIF_BRANDS = new Set(["avif", "avis"]);
+
+function isoBmffMajorBrand(bytes: Uint8Array): string | null {
+  if (bytes.length < 12) return null;
+  if (
+    bytes[4] !== 0x66 ||
+    bytes[5] !== 0x74 ||
+    bytes[6] !== 0x79 ||
+    bytes[7] !== 0x70
+  ) {
+    return null;
+  }
+  return String.fromCharCode(bytes[8]!, bytes[9]!, bytes[10]!, bytes[11]!);
+}
+
+/** HEIC/HEIF z foťáku (často jako `.jpg` s MIME image/jpeg). */
+export function looksLikeHeifBytes(bytes: Uint8Array | ArrayBuffer): boolean {
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const brand = isoBmffMajorBrand(view);
+  return brand !== null && HEIF_BRANDS.has(brand);
+}
+
+export function looksLikeAvifBytes(bytes: Uint8Array | ArrayBuffer): boolean {
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const brand = isoBmffMajorBrand(view);
+  return brand !== null && AVIF_BRANDS.has(brand);
+}
+
 /** Ověří, že deklarovaný MIME odpovídá obsahu souboru. */
 export function mimeMatchesMagicBytes(
   declaredMime: string,

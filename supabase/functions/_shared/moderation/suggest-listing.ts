@@ -13,8 +13,17 @@ export const SUGGEST_LISTING_TITLE_MAX_LENGTH = 80;
 export const SUGGEST_LISTING_DESCRIPTION_MAX_LENGTH = 2000;
 export const SUGGEST_LISTING_CONFIDENCE_THRESHOLD = 0.7;
 
-/** Placeholder pro nejistý údaj — extrakce a UX formátování. */
-const DOPLNIT_PLACEHOLDER_PATTERN = /\[DOPLNIT[^\]]*\]/gi;
+/** Strojový token z modelu — ve formuláři se převádí na „Doplňte …: “. */
+const DOPLNIT_BRACKET_LINE_PATTERN =
+  /^\s*\[DOPLNIT\s*([^\]]+)\]\s*(.*?)\s*$/i;
+const DOPLNIT_PROMPT_LINE_PATTERN =
+  /^\s*Dopl(?:ň|n)te\s+([^:\n]+):\s*(.*?)\s*$/i;
+
+function dopInitBracketGlobal(): RegExp {
+  return /\[DOPLNIT\s*([^\]]+)\]/gi;
+}
+const DOPLNIT_PROMPT_VERB = "Doplňte";
+const DOPLNIT_FIELD_MAX_LENGTH = 40;
 
 export function buildSuggestListingSystemPrompt(): string {
   return `Jsi draftér inzerátů a klasifikátor zboží pro český p2p bazar zaPikolou.cz.
@@ -30,31 +39,32 @@ PRAVIDLA PRO GENEROVÁNÍ:
 1. NÁZEV (title): Výstižný, max ${SUGGEST_LISTING_TITLE_MAX_LENGTH} znaků.
    - Pojmenuj produkt jen podle toho, co je na fotce **jednoznačně čitelné** (logo, nápis, embossovaný model na kufru/masce, štítek).
    - Typ/model/varianta (např. Rapid, Octavia, Fabia) uveď v title **jen** když je na fotce přímo a čitelně napsaný. Domýšlení z tvaru karoserie = ZAKÁZÁNO.
-   - Pokud typ/model není jistý, nech title obecnější (např. „Bílé osobní auto Škoda“) — **stejná přísnost jako u description**. V title nehádej; zástupné [DOPLNIT …] do title nedávej (tam raději kratší obecný název).
-   - Title a description musí být konzistentní: co není v description jisté (a je tam [DOPLNIT typ/model]), nesmí být v title jako konkrétní model.
+   - Pokud typ/model není jistý, nech title obecnější (např. „Bílé osobní auto Škoda“) — **stejná přísnost jako u description**. V title nehádej; výzvy „Doplňte …:“ do title nedávej (tam raději kratší obecný název).
+   - Title a description musí být konzistentní: co není v description jisté (a je tam „Doplňte typ/model:“), nesmí být v title jako konkrétní model.
    - Bez SPZ, telefonu, e-mailu, adresy a bez „scénických“ detailů (podlaha, pozadí, počasí).
 2. POPIS (description): Draft inzerátu, max ${SUGGEST_LISTING_DESCRIPTION_MAX_LENGTH} znaků.
    - Začni ve stylu „Nabízím k prodeji …“ (nebo ekvivalent pro daný typ zboží).
    - Piš o produktu a jeho užitečných viditelných vlastnostech (barva, typ, zjevný stav jen pokud je na fotce zřetelný a relevantní).
    - Nepiš, kde/jak je věc vyfocená (dláždění, stěna, stůl, místnost, krajina).
    - Bez ceny.
-   - ZÁKAZ výzev ke kontaktu / domluvě mimo formulář. Nikdy nepoužívej fráze jako: „kontaktujte mě“, „kontaktujte mne“, „napište mi“, „ozvěte se“, „volejte“, „zavolejte“, „pro bližší informace mne kontaktujte“, „zájemci pište“, „domluvíme se po telefonu“. Chybějící údaje = jen [DOPLNIT …], ne výzva k napsání prodejci.
+   - ZÁKAZ výzev ke kontaktu / domluvě mimo formulář. Nikdy nepoužívej fráze jako: „kontaktujte mě“, „kontaktujte mne“, „napište mi“, „ozvěte se“, „volejte“, „zavolejte“, „pro bližší informace mne kontaktujte“, „zájemci pište“, „domluvíme se po telefonu“. Chybějící údaje = jen řádek „Doplňte …:“, ne výzva k napsání prodejci.
 3. NEJISTÉ ÚDAJE — ZÁSTUPNÝ TEXT (title i description, stejná jistota):
    - Pokud typ/model/velikost/rok/materiál není na fotce jednoznačně čitelný, NEVYMÝŠLEJ ho.
-   - V description: každý nejistý údaj = **samostatný** placeholder, např. [DOPLNIT typ/model], [DOPLNIT rok], [DOPLNIT nájezd km]. NIKDY neslévej více položek do jednoho: špatně „[DOPLNIT typ/model, rok, km]“.
-   - FORMÁT [DOPLNIT] V DESCRIPTION (povinné):
-     1) Nejdřív souvislý odstavec nabídky **bez** placeholderů.
+   - V description: každý nejistý údaj = **samostatný** řádek, např. „Doplňte typ/model: “, „Doplňte rok: “, „Doplňte nájezd km: “. Za dvojtečkou nech mezeru a **žádnou hodnotu** (uživatel ji dopíše). NIKDY neslévej více položek do jednoho řádku: špatně „Doplňte typ/model, rok, km: “.
+   - FORMÁT VÝZEV V DESCRIPTION (povinné):
+     1) Nejdřív souvislý odstavec nabídky **bez** výzev.
      2) Pak prázdný řádek.
-     3) Pak každý [DOPLNIT …] **na vlastním řádku** (ne vedle sebe v jedné větě, ne „Součástí je: [DOPLNIT…]“ uprostřed textu).
-   - V title místo [DOPLNIT] uveď kratší obecný název bez tipovaného modelu.
+     3) Pak každý „Doplňte …:“ **na vlastním řádku** (ne vedle sebe v jedné větě, ne „Součástí je: Doplňte…“ uprostřed textu).
+   - V title místo výzvy uveď kratší obecný název bez tipovaného modelu.
    - Nepoužívej slova „pravděpodobně“, „asi“, „vypadá jako“.
-   - Nikdy: konkrétní model v title + [DOPLNIT typ/model] v description (nebo naopak).
+   - Nikdy: konkrétní model v title + „Doplňte typ/model:“ v description (nebo naopak).
+   - Nepoužívej starý token [DOPLNIT …].
 4. ZÁKAZ OSOBNÍCH A CITLIVÝCH ÚDAJŮ (PII):
    - NIKDY neuváděj registrační značku (SPZ), telefon, e-mail, číslo domu / přesnou adresu, jména osob, rodná čísla ani jiné identifikátory z fotky.
    - I když je SPZ na snímku čitelná, do title i description ji nevkládej.
 5. ZÁKAZ HALUCINACÍ ZNAČKY / ŠTÍTKŮ:
    - Značku, velikost, materiál uveď jen když jsou přímo a čitelně vidět (štítek, cedulka, obal, logo).
-   - Jinak je vynech, nebo použij [DOPLNIT …] dle bodu 3.
+   - Jinak je vynech, nebo použij „Doplňte …:“ dle bodu 3.
 6. KATEGORIZACE:
    - Vyber přesně jednu categoryType a jednu subcategorySlug z povolené taxonomie níže (closed vocabulary).
    - Používej jen slugy (např. auto, osobni-auta), ne české labely.
@@ -68,11 +78,11 @@ title: „Bílé osobní auto Škoda“
 description (v JSON jako jeden string s \\n):
 Nabízím k prodeji bílé osobní auto značky Škoda. Vůz má litá kola a černá zpětná zrcátka.
 
-[DOPLNIT typ/model]
-[DOPLNIT rok výroby]
-[DOPLNIT nájezd km]
-[DOPLNIT motorizaci]
-(Poznámka k příkladu: model na fotce nebyl čitelný → není v title; placeholdery jsou pod nabídkou, každý na vlastním řádku; žádná výzva ke kontaktu.)
+Doplňte typ/model: 
+Doplňte rok výroby: 
+Doplňte nájezd km: 
+Doplňte motorizaci: 
+(Poznámka k příkladu: model na fotce nebyl čitelný → není v title; výzvy jsou pod nabídkou, každá na vlastním řádku, za dvojtečkou prázdno; žádná výzva ke kontaktu.)
 
 POVOLENÁ TAXONOMIE (categoryType → subcategorySlug):
 ${GOODS_TAXONOMY_PROMPT_BLOCK}
@@ -82,7 +92,7 @@ ${GOODS_TAXONOMY_PROMPT_BLOCK}
 export function buildSuggestListingUserPrompt(imageCount: number): string {
   return `Připrav draft inzerátu z přiložených fotografií (${imageCount}).
 Vrať JSON: title, description, categoryType, subcategorySlug, confidenceScore (číslo 0–1).
-Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; nejisté [DOPLNIT …] až pod nabídkou, každý na vlastním řádku (ne v jedné větě).`;
+Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě).`;
 }
 
 export type SuggestListingParsed = {
@@ -109,31 +119,100 @@ function clampMultiline(value: string, max: number): string {
   return trimmed.slice(0, max).trim();
 }
 
+function foldDoplnitFieldKey(raw: string): string {
+  return raw
+    .trim()
+    .toLocaleLowerCase("cs")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ");
+}
+
+function isUsableFieldName(field: string): boolean {
+  const trimmed = field.trim();
+  return trimmed.length > 0 && trimmed.length <= DOPLNIT_FIELD_MAX_LENGTH;
+}
+
+function parseDoplnitPromptLine(
+  line: string,
+): { field: string; value: string } | null {
+  const promptMatch = line.match(DOPLNIT_PROMPT_LINE_PATTERN);
+  if (promptMatch) {
+    const field = promptMatch[1]?.trim() ?? "";
+    if (!isUsableFieldName(field)) return null;
+    return { field, value: promptMatch[2]?.trim() ?? "" };
+  }
+
+  const bracketMatch = line.match(DOPLNIT_BRACKET_LINE_PATTERN);
+  if (bracketMatch) {
+    const field = bracketMatch[1]?.replace(/\s+/g, " ").trim() ?? "";
+    if (!isUsableFieldName(field)) return null;
+    return { field, value: bracketMatch[2]?.trim() ?? "" };
+  }
+
+  return null;
+}
+
+function toDoplnitPromptLine(field: string, value = ""): string {
+  const name = field.replace(/\s+/g, " ").trim();
+  const answer = value.trim();
+  return answer
+    ? `${DOPLNIT_PROMPT_VERB} ${name}: ${answer}`
+    : `${DOPLNIT_PROMPT_VERB} ${name}: `;
+}
+
+function hasDoplnitScaffold(text: string): boolean {
+  return (
+    /\[DOPLNIT/i.test(text) || /^\s*Dopl(?:ň|n)te\s+[^:\n]+:/im.test(text)
+  );
+}
+
 /**
- * Vytáhne [DOPLNIT …] z textu a dá je pod nabídku — jeden placeholder na řádek.
- * Funguje i když model nechá placeholdery inline.
+ * Vytáhne výzvy z textu a dá je pod nabídku jako „Doplňte značku: “.
+ * Bere [DOPLNIT …] i už převedené řádky (i když model nechá token inline).
  */
 export function formatDoplnitPlaceholders(description: string): string {
-  const matches = description.match(DOPLNIT_PLACEHOLDER_PATTERN) ?? [];
-  if (matches.length === 0) {
+  if (!hasDoplnitScaffold(description)) {
     return description.trim();
   }
 
-  const seen = new Set<string>();
-  const placeholders: string[] = [];
-  for (const match of matches) {
-    const normalized = match.replace(/\s+/g, " ").trim();
-    const key = normalized.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    placeholders.push(normalized);
+  const seen = new Map<string, { field: string; value: string }>();
+  const order: string[] = [];
+
+  function addEntry(field: string, value: string) {
+    const key = foldDoplnitFieldKey(field);
+    if (!key) return;
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, { field, value });
+      order.push(key);
+      return;
+    }
+    if (!existing.value && value) {
+      seen.set(key, { field: existing.field, value });
+    }
   }
 
-  let prose = description
-    .replace(DOPLNIT_PLACEHOLDER_PATTERN, " ")
-    .replace(/\r\n/g, "\n");
+  const lines = description.replace(/\r\n/g, "\n").split("\n");
+  const keptLines: string[] = [];
+  for (const line of lines) {
+    const parsed = parseDoplnitPromptLine(line);
+    if (parsed) {
+      addEntry(parsed.field, parsed.value);
+      continue;
+    }
+    keptLines.push(line);
+  }
 
-  // Orphan lead-ins after removing placeholders (např. „Součástí je:“).
+  let prose = keptLines.join("\n");
+  for (const match of prose.matchAll(dopInitBracketGlobal())) {
+    const field = match[1]?.replace(/\s+/g, " ").trim() ?? "";
+    if (isUsableFieldName(field)) {
+      addEntry(field, "");
+    }
+  }
+
+  prose = prose.replace(dopInitBracketGlobal(), " ");
   prose = prose
     .replace(
       /\b(součástí je|soucasti je|obsahuje|včetně|vcetne)\s*[:–-]?\s*$/gim,
@@ -148,11 +227,20 @@ export function formatDoplnitPlaceholders(description: string): string {
     .replace(/[,;:\-–—]\s*$/g, "")
     .trim();
 
-  if (!prose) {
-    return placeholders.join("\n");
-  }
+  const promptLines = order
+    .map((key) => seen.get(key))
+    .filter((entry): entry is { field: string; value: string } =>
+      Boolean(entry),
+    )
+    .map((entry) => toDoplnitPromptLine(entry.field, entry.value));
 
-  return `${prose}\n\n${placeholders.join("\n")}`;
+  if (promptLines.length === 0) {
+    return prose || description.trim();
+  }
+  if (!prose) {
+    return promptLines.join("\n");
+  }
+  return `${prose}\n\n${promptLines.join("\n")}`;
 }
 
 function parseConfidenceScore(value: unknown): number {

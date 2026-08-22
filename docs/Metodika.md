@@ -288,9 +288,9 @@ flowchart TD
 
 **Vstupní obrazovka (krok 0):**
 
-- Dominantní karta: „Nahrajte fotky a my vyplníme zbytek“, dropzone 1–2 fotky, CTA **„Vytvořit inzerát s AI“**, loader (Kontrola → Analýza → Předvyplnění).
+- Dominantní karta: „Stačí fotka. Zbytek připravíme za vás.“ Na **mobilu** dvě akce **Vyfotit** (`capture=environment`, otevře foťák) a **Vybrat z galerie**; na desktopu dropzone. Max. 1–2 fotky (při třetí se nechá poslední dvojice). CTA **„Vytvořit inzerát“**, loader (Kontrola → Analýza → Předvyplnění).
 - Spodní blok (~1/3): „Služby, události, práce, reality — nebo raději ručně“ + CTA **„Vyplnit inzerát ručně“** → krok 1 (CategoryGrid).
-- Po úspěchu: skok na krok 2, fotky v uploadu, název/popis/kategorie vyplněné; cena/stav/lokalita prázdné a vizuálně „ještě doplň“.
+- Po úspěchu: skok na krok obsahu, fotky v uploadu, název/popis/kategorie vyplněné. **Cena, stav a lokalita** zůstanou prázdné — stav má „— vyberte —“, žlutý prstenec jen u ještě nevyplněného pole (`listingFormPrefillHighlightClass`). Publikovat nelze, dokud stav, lokalita a cena nesedí. V popisu řádky `Doplňte značku: ` (psát za dvojtečku, nebo smazat).
 - Nízká jistota podkategorie (`confidence < 0.7` nebo neplatný slug) → `subcategorySlug` null → krok 1 s kategorií a textem, uživatel vybere podkategorii.
 - Fail-soft (NSFW / timeout / rate limit): inline chyba, zůstává na kroku 0, manuál dostupný.
 
@@ -302,7 +302,7 @@ flowchart TD
 4. Gemini structured JSON (vlastní schema, ne moderační).
 5. Server validace goods páru; odpověď `{ title, description, categoryType, subcategorySlug, confidenceScore }` — **bez** approval tokenu a bez hydratace.
 
-Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence. Nejisté `[DOPLNIT …]` jdou **pod** odstavec nabídky (jeden na řádek) — prompt + normalizace v `parseSuggestListingResponse` / `formatDoplnitPlaceholders`.
+Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence. Nejisté údaje jdou **pod** odstavec nabídky jako `Doplňte značku: ` (jeden na řádek, psát za dvojtečku) — prompt + `formatDoplnitPlaceholders`. Při publikaci prázdné výzvy zmizí, vyplněné se změní na `Značka: …` (`stripDoplnitPlaceholders`).
 
 Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace + token). Prefill **nenahrazuje** publish gate. Dvě volání Gemini (prefill + publish) jsou záměr.
 
@@ -385,9 +385,10 @@ Pod nadpisem **Fotky** (pole je volitelné, ale doporučené) uživatel vidí:
    - Elektronika → „Prodám funkční mobil“
    - Auta a moto → „Prodám použité auto“
    - Služby → „Nabízím úklid bytu“
-2. Max. 6 fotek, automatická komprese pod 1 MB.
+2. Max. 6 fotek (krok obsahu) / 1–2 u AI prefillu, automatická komprese pod 1 MB. Na mobilu **Vyfotit** a **Vybrat z galerie** (jeden input bez `capture` na Androidu otevře jen galerii).
 3. Hvězdičkou hlavní fotka na homepage.
 4. Bezpečnost fotek hlídá AI kontrola.
+5. HEIC/HEIF z telefonu se na klientovi převede na JPEG/WebP, pokud to prohlížeč umí dekódovat; jinak hláška ať použije **Vyfotit**. Chyba „Fotku se nepodařilo načíst“ je v prohlížeči (ne ve Vercel/Supabase logu).
 
 Mapa příkladů: `src/config/listing-form-tips.ts` (`getListingFormTipExample`). Komponenta: `ListingImageUpload`.
 

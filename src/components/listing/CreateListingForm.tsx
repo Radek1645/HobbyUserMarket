@@ -66,7 +66,10 @@ import { listingNeedsModeration } from "@/lib/moderation/needs-moderation";
 import { invokeModerateListing } from "@/lib/moderation/moderate-listing-client";
 import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
-import { stripDoplnitPlaceholders } from "@/lib/listing/strip-doplnit-placeholders";
+import {
+  formatDoplnitPlaceholders,
+  stripDoplnitPlaceholders,
+} from "@/lib/listing/strip-doplnit-placeholders";
 import { appendQuestionAnswersToDescription } from "@/lib/moderation/append-question-answers";
 import {
   ModerationApprovedDialog,
@@ -120,6 +123,7 @@ import {
   listingFormHintClass,
   listingFormInputClass,
   listingFormLabelClass,
+  listingFormPrefillHighlightClass,
   listingFormPrimaryButtonClass,
   listingFormRequiredLegendClass,
   listingFormRequiredMarkClass,
@@ -322,7 +326,7 @@ export function CreateListingForm({
       }
 
       setTitle(draft.title);
-      setDescription(draft.description);
+      setDescription(formatDoplnitPlaceholders(draft.description));
       setCategoryType(draft.categoryType);
       setSubcategorySlug(draft.subcategorySlug);
       if (draft.conditionLabel) {
@@ -517,7 +521,7 @@ export function CreateListingForm({
   const [subcategorySlug, setSubcategorySlug] = useState(
     initialValues?.subcategorySlug ?? "",
   );
-  const [conditionLabel, setConditionLabel] = useState<ConditionLabel>(
+  const [conditionLabel, setConditionLabel] = useState<ConditionLabel | "">(
     initialValues?.conditionLabel ??
       getDefaultConditionLabel(initialValues?.categoryType ?? "ostatni"),
   );
@@ -763,6 +767,10 @@ export function CreateListingForm({
     latitude != null &&
     longitude != null &&
     locationText.trim().length > 0;
+  const selectedConditionLabel = category.conditionLabels.find(
+    (option) => option.value === conditionLabel,
+  )?.value;
+  const hasCondition = selectedConditionLabel != null;
   const isTitleValid = titleTrimmed.length >= 1 && title.length <= 80;
   const isDescriptionValid =
     descriptionTrimmed.length >= LISTING_DESCRIPTION_MIN_LENGTH &&
@@ -790,14 +798,27 @@ export function CreateListingForm({
   );
   const canPublish =
     hasLocation &&
+    hasCondition &&
     isTitleValid &&
     isDescriptionValid &&
     isPriceValid &&
     isEventDateValid;
 
+  const showPrefillConditionHighlight = fromAiPrefill && !hasCondition;
+  const showPrefillLocationHighlight = fromAiPrefill && !hasLocation;
+  const showPrefillPriceHighlight = fromAiPrefill && !isPriceValid;
+  const showPrefillMissingFieldsHint =
+    fromAiPrefill &&
+    (showPrefillConditionHighlight ||
+      showPrefillLocationHighlight ||
+      showPrefillPriceHighlight);
+
   const missingPublishFields = (() => {
     const missing: string[] = [];
     if (!hasLocation) missing.push("lokalitu (vyberte z našeptávače)");
+    if (!hasCondition) {
+      missing.push(getConditionFieldLabel(categoryType).toLowerCase());
+    }
     if (!isTitleValid) missing.push("název");
     if (!isDescriptionValid) missing.push("popis");
     if (!isPriceValid) missing.push("cenu");
@@ -822,7 +843,9 @@ export function CreateListingForm({
     setCategoryType(type);
     // U6: nevybírat automaticky první podkategorii — uživatel musí zvolit.
     setSubcategorySlug("");
-    setConditionLabel(getDefaultConditionLabel(type));
+    setConditionLabel(
+      fromAiPrefill ? "" : getDefaultConditionLabel(type),
+    );
     setPriceType(getDefaultPriceType(type));
     if (type !== "prace") {
       setJobCvRequired(false);
@@ -842,9 +865,11 @@ export function CreateListingForm({
     stagedPaths: string[];
   }) {
     setTitle(stripContactInfo(result.title));
-    setDescription(stripContactInfo(result.description));
+    setDescription(
+      formatDoplnitPlaceholders(stripContactInfo(result.description)),
+    );
     setCategoryType(result.categoryType);
-    setConditionLabel(getDefaultConditionLabel(result.categoryType));
+    setConditionLabel("");
     setPriceType(getDefaultPriceType(result.categoryType));
     setSubcategorySlug(result.subcategorySlug ?? "");
     setFromAiPrefill(true);
@@ -941,8 +966,10 @@ export function CreateListingForm({
         description: stripContactInfo(descriptionValue),
         categoryType,
         subcategorySlug,
-        conditionLabel,
-        conditionLabelText: getConditionLabel(categoryType, conditionLabel),
+        conditionLabel: selectedConditionLabel,
+        conditionLabelText: selectedConditionLabel
+          ? getConditionLabel(categoryType, selectedConditionLabel)
+          : undefined,
         conditionFieldLabel: getConditionFieldLabel(categoryType),
         eventDate: isEvent ? toModerationEventDateIso(eventDate) : undefined,
         priceType,
@@ -1168,8 +1195,10 @@ export function CreateListingForm({
         description: descriptionTrimmed,
         categoryType,
         subcategorySlug,
-        conditionLabel,
-        conditionLabelText: getConditionLabel(categoryType, conditionLabel),
+        conditionLabel: selectedConditionLabel,
+        conditionLabelText: selectedConditionLabel
+          ? getConditionLabel(categoryType, selectedConditionLabel)
+          : undefined,
         conditionFieldLabel: getConditionFieldLabel(categoryType),
         eventDate: isEvent ? toModerationEventDateIso(eventDate) : undefined,
         priceType,
@@ -1592,7 +1621,7 @@ export function CreateListingForm({
           }
           aria-hidden={step !== 2}
         >
-          {fromAiPrefill ? (
+          {showPrefillMissingFieldsHint ? (
             <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
               {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint}
             </p>
@@ -1720,7 +1749,7 @@ export function CreateListingForm({
             </div>
           ) : null}
 
-          <div className={fromAiPrefill ? "rounded-xl ring-2 ring-amber-400/80 ring-offset-2" : undefined}>
+          <div className={showPrefillConditionHighlight ? listingFormPrefillHighlightClass : undefined}>
             <label htmlFor="condition" className={labelClass}>
               {getConditionFieldLabel(categoryType)}
               {fromAiPrefill ? (
@@ -1733,10 +1762,14 @@ export function CreateListingForm({
               id="condition"
               className={inputClass}
               value={conditionLabel}
+              required={fromAiPrefill}
               onChange={(e) =>
-                setConditionLabel(e.target.value as ConditionLabel)
+                setConditionLabel(e.target.value as ConditionLabel | "")
               }
             >
+              {!hasCondition ? (
+                <option value="">— vyberte —</option>
+              ) : null}
               {category.conditionLabels.map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
@@ -1840,7 +1873,7 @@ export function CreateListingForm({
             </div>
           ) : null}
 
-          <div className={fromAiPrefill ? "rounded-xl ring-2 ring-amber-400/80 ring-offset-2" : undefined}>
+          <div className={showPrefillLocationHighlight ? listingFormPrefillHighlightClass : undefined}>
             <LocationInput
               value={{ locationText, latitude, longitude }}
               onChange={({ locationText: text, latitude: lat, longitude: lng }) => {
@@ -1854,7 +1887,7 @@ export function CreateListingForm({
             />
           </div>
 
-          <div className={`grid gap-4 sm:grid-cols-2 ${fromAiPrefill ? "rounded-xl ring-2 ring-amber-400/80 ring-offset-2 p-1" : ""}`}>
+          <div className={`grid gap-4 sm:grid-cols-2 ${showPrefillPriceHighlight ? `${listingFormPrefillHighlightClass} p-1` : ""}`}>
             <div>
               <label htmlFor="priceType" className={labelClass}>
                 Typ ceny
