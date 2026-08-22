@@ -9,6 +9,7 @@ alwaysApply: false
 Při stylování opakujících se prvků (CTA, modály, pilulky) importuj konstanty z `src/config/ui-primitives.ts`. Dokumentace: `docs/ui-prvky.md`.
 
 - Zelená CTA: `emeraldPrimaryButtonClass`, `headerCreateListingButtonClass` (flat `bg-emerald-600`, Sparkles), `emeraldPrimaryButtonCompactClass`
+- Pár (preferovaná + záložní, ne dvě plná zelená): `preferredSoftButtonClass` + `secondaryDashedButtonClass`
 - Modály: `modalOverlayClass`, `modalPanelClass`, tlačítka `modalCancel*` / `modalDangerButtonClass`
 - Homepage kategorie: `homeCategoryTabActiveClass`, `homeCategoryTabInactiveClass`, `iconSmClass`
 

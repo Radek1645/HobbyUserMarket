@@ -15,7 +15,8 @@ import {
   listingFormManualBannerButtonClass,
   listingFormManualBannerClass,
   listingFormPrimaryButtonClass,
-  listingFormSecondaryButtonClass,
+  listingFormCameraButtonClass,
+  listingFormSecondaryDashedButtonClass,
 } from "@/config/listing-form-ui";
 import {
   SUGGEST_FROM_PHOTOS_MAX_IMAGES,
@@ -25,17 +26,15 @@ import {
 import { compressListingImage } from "@/lib/images/compress-listing-image";
 import {
   listingImageUserError,
-  snapshotListingImageFiles,
+  prepareListingImageFiles,
+  type ListingImagePrepareResult,
 } from "@/lib/images/read-listing-image-file";
 import { suggestListingFromPhotos } from "@/lib/listing/suggest-listing-client";
 import {
   prepareModerationImages,
   type ModerationImageReference,
 } from "@/lib/moderation/prepare-moderation-images";
-import {
-  validateListingImageFile,
-  validateListingImageSourceFile,
-} from "@/lib/posts/listing-images";
+import { validateListingImageFile } from "@/lib/posts/listing-images";
 import type { CategoryType } from "@/types/post";
 import { Camera, CloudUpload, ImageIcon, Loader2, Sparkles, X } from "lucide-react";
 import { useCallback, useRef, useState, type ChangeEvent } from "react";
@@ -112,73 +111,77 @@ export function AiListingPrefillEntry({
     });
   }, []);
 
-  const addFiles = useCallback(async (incoming: FileList | File[]) => {
-    setError(null);
-    const snapshots = await snapshotListingImageFiles(incoming);
-    const next: LocalPhoto[] = [];
+  const consumePreparedPhotos = useCallback(
+    async (prepared: ListingImagePrepareResult) => {
+      const next: LocalPhoto[] = [];
 
-    for (const snapshot of snapshots) {
-      if (!snapshot.ok) {
-        setError(snapshot.error);
-        continue;
-      }
-      const file = snapshot.file;
-
-      const sourceError = validateListingImageSourceFile(file);
-      if (sourceError) {
-        setError(sourceError);
-        continue;
+      for (const skipped of prepared.skipped) {
+        setError(`${skipped.name}: ${skipped.error}`);
       }
 
-      let compressed: File;
-      try {
-        compressed = await compressListingImage(file);
-      } catch (compressError) {
-        setError(listingImageUserError(compressError));
-        continue;
-      }
-
-      const storedError = validateListingImageFile(compressed);
-      if (storedError) {
-        setError(storedError);
-        continue;
-      }
-
-      if (compressed.size > LISTING_IMAGE_MAX_FILE_BYTES) {
-        setError("Fotka je po kompresi stále příliš velká.");
-        continue;
-      }
-
-      next.push({
-        key: `n:${crypto.randomUUID()}`,
-        file: compressed,
-        previewUrl: URL.createObjectURL(compressed),
-      });
-    }
-
-    if (next.length === 0) return;
-
-    // Mobil foťák typicky vrací 1 soubor — přidej k existujícím, drž poslední 2.
-    let truncated = false;
-    setPhotos((prev) => {
-      const combined = [...prev, ...next];
-      truncated =
-        combined.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES ||
-        snapshots.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES;
-      const kept = combined.slice(-SUGGEST_FROM_PHOTOS_MAX_IMAGES);
-      const keptKeys = new Set(kept.map((photo) => photo.key));
-      for (const photo of combined) {
-        if (!keptKeys.has(photo.key)) {
-          URL.revokeObjectURL(photo.previewUrl);
+      for (const file of prepared.files) {
+        let compressed: File;
+        try {
+          compressed = await compressListingImage(file);
+        } catch (compressError) {
+          setError(listingImageUserError(compressError));
+          continue;
         }
-      }
-      return kept;
-    });
 
-    if (truncated) {
-      setError(SUGGEST_FROM_PHOTOS_UI.tooManyPhotos);
-    }
-  }, []);
+        const storedError = validateListingImageFile(compressed);
+        if (storedError) {
+          setError(storedError);
+          continue;
+        }
+
+        if (compressed.size > LISTING_IMAGE_MAX_FILE_BYTES) {
+          setError("Fotka je po kompresi stále příliš velká.");
+          continue;
+        }
+
+        next.push({
+          key: `n:${crypto.randomUUID()}`,
+          file: compressed,
+          previewUrl: URL.createObjectURL(compressed),
+        });
+      }
+
+      if (next.length === 0) return;
+
+      // Mobil foťák typicky vrací 1 soubor — přidej k existujícím, drž poslední 2.
+      let truncated = prepared.truncated;
+      setPhotos((prev) => {
+        const combined = [...prev, ...next];
+        truncated =
+          truncated || combined.length > SUGGEST_FROM_PHOTOS_MAX_IMAGES;
+        const kept = combined.slice(-SUGGEST_FROM_PHOTOS_MAX_IMAGES);
+        const keptKeys = new Set(kept.map((photo) => photo.key));
+        for (const photo of combined) {
+          if (!keptKeys.has(photo.key)) {
+            URL.revokeObjectURL(photo.previewUrl);
+          }
+        }
+        return kept;
+      });
+
+      if (truncated) {
+        setError(SUGGEST_FROM_PHOTOS_UI.tooManyPhotos);
+      }
+    },
+    [],
+  );
+
+  const addFiles = useCallback(
+    async (incoming: FileList | File[]) => {
+      setError(null);
+      const prepared = await prepareListingImageFiles(incoming, {
+        maxKeep: SUGGEST_FROM_PHOTOS_MAX_IMAGES,
+        keep: "last",
+      });
+      await consumePreparedPhotos(prepared);
+    },
+    [consumePreparedPhotos],
+  );
 
   function consumeTurnstileToken() {
     turnstileTokenRef.current = null;
@@ -324,9 +327,15 @@ export function AiListingPrefillEntry({
     const input = event.currentTarget;
     if (!input.files?.length) return;
     const list = Array.from(input.files);
-    void addFiles(list).finally(() => {
+    void (async () => {
+      setError(null);
+      const prepared = await prepareListingImageFiles(list, {
+        maxKeep: SUGGEST_FROM_PHOTOS_MAX_IMAGES,
+        keep: "last",
+      });
       input.value = "";
-    });
+      await consumePreparedPhotos(prepared);
+    })();
   }
 
   return (
@@ -369,7 +378,7 @@ export function AiListingPrefillEntry({
             type="button"
             disabled={busy || guestBlocked}
             onClick={() => cameraInputRef.current?.click()}
-            className={`flex w-full ${listingFormSecondaryButtonClass} py-3.5`}
+            className={`w-full ${listingFormCameraButtonClass}`}
           >
             <Camera className="h-5 w-5" aria-hidden />
             {SUGGEST_FROM_PHOTOS_UI.cameraCta}
@@ -378,7 +387,7 @@ export function AiListingPrefillEntry({
             type="button"
             disabled={busy || guestBlocked}
             onClick={() => galleryInputRef.current?.click()}
-            className={`flex w-full ${listingFormSecondaryButtonClass} border-dashed py-3`}
+            className={`w-full ${listingFormSecondaryDashedButtonClass}`}
           >
             <ImageIcon className="h-4 w-4" aria-hidden />
             {SUGGEST_FROM_PHOTOS_UI.galleryCta}

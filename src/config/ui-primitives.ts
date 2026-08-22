@@ -18,6 +18,20 @@ export const emeraldPrimaryButtonClass =
 export const emeraldPrimaryButtonCompactClass =
   `${emeraldPrimaryButtonClass} px-4 py-2 text-sm`;
 
+/**
+ * Preferovaná akce v páru (ne hlavní zelené CTA stránky).
+ * Světlý emerald podklad, plný rámeček — navede, aniž by konkurovalo „Vytvořit inzerát“.
+ */
+export const preferredSoftButtonClass =
+  "flex items-center justify-center gap-2 rounded-xl border border-emerald-600 bg-emerald-50 px-4 py-3.5 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+
+/**
+ * Záložní akce v páru s `preferredSoftButtonClass`.
+ * Bílé, čárkovaný rámeček, běžná váha písma.
+ */
+export const secondaryDashedButtonClass =
+  "flex items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-500 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+
 /** Header CTA povrch — flat zelená shodná s logem zaPikolou, hover ztmaví jako logo. */
 export const headerCreateListingSurfaceClass =
   "bg-emerald-600 text-white transition-colors duration-200 hover:bg-emerald-700";

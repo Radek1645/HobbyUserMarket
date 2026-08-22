@@ -1,4 +1,8 @@
-import { emeraldPrimaryButtonClass } from "@/config/ui-primitives";
+import {
+  emeraldPrimaryButtonClass,
+  preferredSoftButtonClass,
+  secondaryDashedButtonClass,
+} from "@/config/ui-primitives";
 
 /** Sdílené třídy formuláře inzerátu — kontrast WCAG 2.1 AA */
 
@@ -61,6 +65,12 @@ export const listingFormContactOptionIdleClass =
 
 export const listingFormSecondaryButtonClass =
   "flex items-center justify-center gap-2 rounded-xl border border-neutral-500 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+
+/** Mobilní „Vyfotit“ — alias `preferredSoftButtonClass`. */
+export const listingFormCameraButtonClass = preferredSoftButtonClass;
+
+/** Mobilní „Vybrat z galerie“ — alias `secondaryDashedButtonClass`. */
+export const listingFormSecondaryDashedButtonClass = secondaryDashedButtonClass;
 
 export const listingFormPrimaryButtonClass =
   `flex items-center justify-center px-4 py-3 text-sm ${emeraldPrimaryButtonClass} focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-neutral-400 disabled:text-white disabled:shadow-none`;

@@ -288,9 +288,9 @@ flowchart TD
 
 **Vstupní obrazovka (krok 0):**
 
-- Dominantní karta: „Stačí fotka. Zbytek připravíme za vás.“ Na **mobilu** dvě akce **Vyfotit** (`capture=environment`, otevře foťák) a **Vybrat z galerie**; na desktopu dropzone. Max. 1–2 fotky (při třetí se nechá poslední dvojice). CTA **„Vytvořit inzerát“**, loader (Kontrola → Analýza → Předvyplnění).
+- Dominantní karta: „Stačí fotka. Napíšeme název a popis.“ Podnadpis: „Nahrajte 1–2 fotky. Kategorii doplníme taky, cenu, stav a lokalitu přidáte vy.“ Na **mobilu** dvě akce **Vyfotit** (`capture=environment`, světle emerald tlačítko — preferovaná cesta) a **Vybrat z galerie** (čárkovaný obrys); na desktopu dropzone. Max. 1–2 fotky (při třetí se nechá poslední dvojice). CTA **„Předvyplnit inzerát“** (ne „Vytvořit inzerát“ — to je publikace), loader (Kontrola → Analýza → Předvyplnění).
 - Spodní blok (~1/3): „Služby, události, práce, reality — nebo raději ručně“ + CTA **„Vyplnit inzerát ručně“** → krok 1 (CategoryGrid).
-- Po úspěchu: skok na krok obsahu, fotky v uploadu, název/popis/kategorie vyplněné. **Cena, stav a lokalita** zůstanou prázdné — stav má „— vyberte —“, žlutý prstenec jen u ještě nevyplněného pole (`listingFormPrefillHighlightClass`). Publikovat nelze, dokud stav, lokalita a cena nesedí. V popisu řádky `Doplňte značku: ` (psát za dvojtečku, nebo smazat).
+- Po úspěchu: skok na krok obsahu, fotky v uploadu, název/popis/kategorie vyplněné. **Cena, stav a lokalita** zůstanou prázdné — stav má „— vyberte —“, žlutý prstenec jen u ještě nevyplněného pole (`listingFormPrefillHighlightClass`). Publikovat nelze, dokud stav, lokalita a cena nesedí. V popisu řádky `Doplňte značku: ` (psát za dvojtečku, nebo smazat). Banner zve k dalším fotkám a úpravě textu (prefill má 1–2 fotky, formulář až 6).
 - Nízká jistota podkategorie (`confidence < 0.7` nebo neplatný slug) → `subcategorySlug` null → krok 1 s kategorií a textem, uživatel vybere podkategorii.
 - Fail-soft (NSFW / timeout / rate limit): inline chyba, zůstává na kroku 0, manuál dostupný.
 
@@ -388,7 +388,7 @@ Pod nadpisem **Fotky** (pole je volitelné, ale doporučené) uživatel vidí:
 2. Max. 6 fotek (krok obsahu) / 1–2 u AI prefillu, automatická komprese pod 1 MB. Na mobilu **Vyfotit** a **Vybrat z galerie** (jeden input bez `capture` na Androidu otevře jen galerii).
 3. Hvězdičkou hlavní fotka na homepage.
 4. Bezpečnost fotek hlídá AI kontrola.
-5. HEIC/HEIF z telefonu se na klientovi převede na JPEG/WebP, pokud to prohlížeč umí dekódovat; jinak hláška ať použije **Vyfotit**. Samsung galerie: soubory se hned kopírují do paměti (jinak Chrome po chvíli odepře čtení — anglické „could not be read / permission problems“). Chyba je v prohlížeči, ne ve Vercel/Supabase logu.
+5. HEIC/HEIF z telefonu se na klientovi převede na JPEG/WebP, pokud to prohlížeč umí dekódovat; jinak hláška ať použije **Vyfotit**. Samsung galerie: soubory se hned kopírují do paměti (jinak Chrome po chvíli odepře čtení — anglické „could not be read / permission problems“). Do paměti jdou jen fotky v limitu (prefill 1–2, formulář max. 6) a pod 25 MB; komprese běží po jedné. Chyba je v prohlížeči, ne ve Vercel/Supabase logu.
 
 Mapa příkladů: `src/config/listing-form-tips.ts` (`getListingFormTipExample`). Komponenta: `ListingImageUpload`.
 

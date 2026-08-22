@@ -58,6 +58,20 @@ Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani
 
 Ostatní zelená CTA (`emeraldSurfaceClass`) používají `bg-emerald-600` / hover `bg-emerald-700` a jemný stín.
 
+### Párové CTA (preferovaná + záložní)
+
+Když na stránce už je plné zelené CTA (`emeraldPrimaryButtonClass` / header / FAB), druhá **doporučená** akce nesmí být další plná zelená. Pár je vždy naskládaný svisle, stejná šířka, `rounded-xl` (ne pill).
+
+| Konstanta | Vzhled | Kdy |
+|-----------|--------|-----|
+| `preferredSoftButtonClass` | `bg-emerald-50`, plný `border-emerald-600`, `font-semibold`, `text-emerald-950`; hover `bg-emerald-100` | Preferovaná cesta v páru (Vyfotit, „doporučujeme“) |
+| `secondaryDashedButtonClass` | Bílé, `border-dashed border-neutral-500`, `font-medium` | Záložní cesta v tomtéž páru (galerie, „nebo…“) |
+| `listingFormSecondaryButtonClass` | Bílé, plný `border-neutral-500` — **ne** čárkované | Samostatné sekundární tlačítko mimo pár (Zrušit, zpět) |
+
+**Zakázáno:** dva stacked `emeraldPrimaryButtonClass` na jedné kartě; plné zelené „Vyfotit“, když na stránce už je „Vytvořit inzerát“.
+
+Doménové aliasy ve formuláři: `listingFormCameraButtonClass` → `preferredSoftButtonClass`, `listingFormSecondaryDashedButtonClass` → `secondaryDashedButtonClass`.
+
 ### Stín a kontrast
 
 - Povolený stín: `shadow-md shadow-emerald-900/10` nebo `shadow-sm` (kromě header CTA — flat)
@@ -79,6 +93,8 @@ Krok 0 AI prefill (`/inzerat/novy`):
 | `listingFormManualBannerClass` | Slate banner pod AI kartou (ruční cesta) |
 | `listingFormManualBannerButtonClass` | CTA v manuálním banneru |
 | `listingFormPrefillHighlightClass` | Žlutý prstenec u ceny / stavu / lokality po AI prefillu; zmizí po vyplnění pole |
+| `listingFormCameraButtonClass` | Mobilní **Vyfotit** — alias `preferredSoftButtonClass` |
+| `listingFormSecondaryDashedButtonClass` | Mobilní **Vybrat z galerie** — alias `secondaryDashedButtonClass` |
 
 CTA prefillu se renderuje až po ≥1 fotce. Ruční cesta (reality / služby / práce / události) je **slate banner** pod AI kartou (`listingFormManualBannerClass`) — `onChooseManual` → `setStep(1)`, ne samostatná route.
 

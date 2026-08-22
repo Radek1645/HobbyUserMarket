@@ -5,12 +5,20 @@
  * Foťák (`capture`) vrací blob v paměti, proto Vyfotit funguje.
  */
 
+import { validateListingImageSourceFile } from "@/lib/posts/listing-images";
+
 export const LISTING_IMAGE_GALLERY_READ_FAILED =
   "Fotku z galerie se nepodařilo načíst. Zkuste ji vyfotit tlačítkem Vyfotit, nebo v galerii zvolte snímek uložený v telefonu.";
 
-export type ListingImageSnapshotResult =
-  | { ok: true; file: File }
-  | { ok: false; name: string; error: string };
+export const LISTING_IMAGE_LIMIT_SKIPPED = "limit fotek";
+
+export type ListingImagePrepareKeep = "first" | "last";
+
+export type ListingImagePrepareResult = {
+  files: File[];
+  skipped: { name: string; error: string }[];
+  truncated: boolean;
+};
 
 function isNotReadableError(error: unknown): boolean {
   if (error instanceof DOMException && error.name === "NotReadableError") {
@@ -81,23 +89,71 @@ export async function snapshotListingImageFile(file: File): Promise<File> {
   }
 }
 
+function fileLabel(file: File): string {
+  return file.name || "fotka";
+}
+
 /**
- * Spustí čtení všech fotek ve stejném ticku — nesmí se čekat na kompresi první.
+ * 1) sync: MIME, 25 MB, kapacita flow
+ * 2) souběžně: snapshot jen vybraných kandidátů
  */
-export function snapshotListingImageFiles(
+export function prepareListingImageFiles(
   files: FileList | File[],
-): Promise<ListingImageSnapshotResult[]> {
+  options: { maxKeep: number; keep: ListingImagePrepareKeep },
+): Promise<ListingImagePrepareResult> {
   const list = Array.from(files);
-  const pending = list.map(async (file): Promise<ListingImageSnapshotResult> => {
+  const skipped: { name: string; error: string }[] = [];
+  const valid: File[] = [];
+
+  for (const file of list) {
+    const sourceError = validateListingImageSourceFile(file);
+    if (sourceError) {
+      skipped.push({ name: fileLabel(file), error: sourceError });
+      continue;
+    }
+    valid.push(file);
+  }
+
+  const maxKeep = Math.max(0, options.maxKeep);
+  let truncated = false;
+  let toSnapshot: File[] = valid;
+
+  if (valid.length > maxKeep) {
+    truncated = true;
+    if (options.keep === "last") {
+      toSnapshot = valid.slice(-maxKeep);
+    } else {
+      toSnapshot = valid.slice(0, maxKeep);
+      for (const extra of valid.slice(maxKeep)) {
+        skipped.push({
+          name: fileLabel(extra),
+          error: LISTING_IMAGE_LIMIT_SKIPPED,
+        });
+      }
+    }
+  }
+
+  const pending = toSnapshot.map(async (file) => {
     try {
-      return { ok: true, file: await snapshotListingImageFile(file) };
+      return { ok: true as const, file: await snapshotListingImageFile(file) };
     } catch (error) {
       return {
-        ok: false,
-        name: file.name || "fotka",
+        ok: false as const,
+        name: fileLabel(file),
         error: listingImageUserError(error),
       };
     }
   });
-  return Promise.all(pending);
+
+  return Promise.all(pending).then((results) => {
+    const filesReady: File[] = [];
+    for (const result of results) {
+      if (result.ok) {
+        filesReady.push(result.file);
+        continue;
+      }
+      skipped.push({ name: result.name, error: result.error });
+    }
+    return { files: filesReady, skipped, truncated };
+  });
 }

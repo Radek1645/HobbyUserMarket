@@ -16,7 +16,11 @@ import {
   listingFormPrimaryButtonClass,
 } from "@/config/listing-form-ui";
 import { compressListingImage } from "@/lib/images/compress-listing-image";
-import { snapshotListingImageFiles } from "@/lib/images/read-listing-image-file";
+import {
+  listingImageUserError,
+  prepareListingImageFiles,
+  type ListingImagePrepareResult,
+} from "@/lib/images/read-listing-image-file";
 import {
   compareSuggestFromPhotos,
   type CompareSuggestArmError,
@@ -24,10 +28,7 @@ import {
   type CompareSuggestProvider,
 } from "@/lib/mod/compare-suggest-client";
 import { prepareModerationImages } from "@/lib/moderation/prepare-moderation-images";
-import {
-  validateListingImageFile,
-  validateListingImageSourceFile,
-} from "@/lib/posts/listing-images";
+import { validateListingImageFile } from "@/lib/posts/listing-images";
 import { Camera, CloudUpload, Loader2, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
@@ -155,62 +156,73 @@ export function PrefillCompareLab() {
     });
   }, []);
 
-  const addFiles = useCallback(async (incoming: FileList | File[]) => {
-    setError(null);
-    const next: LocalPhoto[] = [];
-    const snapshots = await snapshotListingImageFiles(incoming);
+  const consumePreparedPhotos = useCallback(
+    async (prepared: ListingImagePrepareResult) => {
+      const next: LocalPhoto[] = [];
 
-    for (const snapshot of snapshots) {
-      if (!snapshot.ok) {
-        setError(snapshot.error);
-        continue;
-      }
-      const file = snapshot.file;
-      const sourceError = validateListingImageSourceFile(file);
-      if (sourceError) {
-        setError(sourceError);
-        continue;
+      for (const skipped of prepared.skipped) {
+        setError(`${skipped.name}: ${skipped.error}`);
       }
 
-      let compressed: File;
-      try {
-        compressed = await compressListingImage(file);
-      } catch {
-        setError("Fotku se nepodařilo zpracovat.");
-        continue;
+      for (const file of prepared.files) {
+        let compressed: File;
+        try {
+          compressed = await compressListingImage(file);
+        } catch (compressError) {
+          setError(listingImageUserError(compressError));
+          continue;
+        }
+
+        if (compressed.size > LISTING_IMAGE_MAX_FILE_BYTES) {
+          setError("Fotka je po kompresi stále příliš velká.");
+          continue;
+        }
+
+        const fileError = validateListingImageFile(compressed);
+        if (fileError) {
+          setError(fileError);
+          continue;
+        }
+
+        next.push({
+          key: crypto.randomUUID(),
+          file: compressed,
+          previewUrl: URL.createObjectURL(compressed),
+        });
       }
 
-      if (compressed.size > LISTING_IMAGE_MAX_FILE_BYTES) {
-        setError("Fotka je po kompresi stále příliš velká.");
-        continue;
-      }
+      if (next.length === 0) return;
 
-      const fileError = validateListingImageFile(compressed);
-      if (fileError) {
-        setError(fileError);
-        continue;
-      }
-
-      next.push({
-        key: crypto.randomUUID(),
-        file: compressed,
-        previewUrl: URL.createObjectURL(compressed),
+      setPhotos((prev) => {
+        const merged = [...prev, ...next];
+        if (
+          !prepared.truncated &&
+          merged.length <= COMPARE_SUGGEST_MAX_IMAGES
+        ) {
+          return merged;
+        }
+        const kept = merged.slice(-COMPARE_SUGGEST_MAX_IMAGES);
+        for (const photo of merged.slice(0, merged.length - kept.length)) {
+          URL.revokeObjectURL(photo.previewUrl);
+        }
+        setError(COMPARE_SUGGEST_UI.tooManyPhotos);
+        return kept;
       });
-    }
+    },
+    [],
+  );
 
-    if (next.length === 0) return;
-
-    setPhotos((prev) => {
-      const merged = [...prev, ...next];
-      if (merged.length <= COMPARE_SUGGEST_MAX_IMAGES) return merged;
-      const kept = merged.slice(-COMPARE_SUGGEST_MAX_IMAGES);
-      for (const photo of merged.slice(0, merged.length - kept.length)) {
-        URL.revokeObjectURL(photo.previewUrl);
-      }
-      setError(COMPARE_SUGGEST_UI.tooManyPhotos);
-      return kept;
-    });
-  }, []);
+  const addFiles = useCallback(
+    async (incoming: FileList | File[]) => {
+      setError(null);
+      const prepared = await prepareListingImageFiles(incoming, {
+        maxKeep: COMPARE_SUGGEST_MAX_IMAGES,
+        keep: "last",
+      });
+      await consumePreparedPhotos(prepared);
+    },
+    [consumePreparedPhotos],
+  );
 
   function removePhoto(key: string) {
     setPhotos((prev) => {
@@ -333,9 +345,15 @@ export function PrefillCompareLab() {
             const input = event.currentTarget;
             if (!input.files?.length) return;
             const list = Array.from(input.files);
-            void addFiles(list).finally(() => {
+            void (async () => {
+              setError(null);
+              const prepared = await prepareListingImageFiles(list, {
+                maxKeep: COMPARE_SUGGEST_MAX_IMAGES,
+                keep: "last",
+              });
               input.value = "";
-            });
+              await consumePreparedPhotos(prepared);
+            })();
           }}
         />
         <button

@@ -10,20 +10,20 @@ import {
 } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
+  listingFormCameraButtonClass,
   listingFormDropzoneClass,
   listingFormHintClass,
   listingFormLabelClass,
-  listingFormSecondaryButtonClass,
+  listingFormSecondaryDashedButtonClass,
 } from "@/config/listing-form-ui";
 import { compressListingImage } from "@/lib/images/compress-listing-image";
 import {
   listingImageUserError,
-  snapshotListingImageFiles,
+  LISTING_IMAGE_LIMIT_SKIPPED,
+  prepareListingImageFiles,
+  type ListingImagePrepareResult,
 } from "@/lib/images/read-listing-image-file";
-import {
-  validateListingImageFile,
-  validateListingImageSourceFile,
-} from "@/lib/posts/listing-images";
+import { validateListingImageFile } from "@/lib/posts/listing-images";
 import type { ModerationImagePayload } from "@/lib/moderation/prepare-moderation-images";
 import {
   prepareModerationImages,
@@ -348,71 +348,70 @@ export const ListingImageUpload = forwardRef<
     ],
   );
 
+  async function consumePreparedFiles(prepared: ListingImagePrepareResult) {
+    const nextItems = [...items];
+    const skipped: string[] = [];
+
+    for (const item of prepared.skipped) {
+      skipped.push(
+        item.error === LISTING_IMAGE_LIMIT_SKIPPED
+          ? `${item.name} (limit fotek)`
+          : `${item.name}: ${item.error}`,
+      );
+    }
+
+    for (const file of prepared.files) {
+      if (nextItems.length >= LISTING_IMAGE_MAX_FILES) {
+        skipped.push(`${file.name} (limit fotek)`);
+        continue;
+      }
+
+      let compressed: File;
+      try {
+        compressed = await compressListingImage(file);
+      } catch (compressError) {
+        skipped.push(`${file.name}: ${listingImageUserError(compressError)}`);
+        continue;
+      }
+
+      const storedError = validateListingImageFile(compressed);
+      if (storedError) {
+        skipped.push(`${file.name}: ${storedError}`);
+        continue;
+      }
+
+      nextItems.push({
+        key: `n:${crypto.randomUUID()}`,
+        kind: "new",
+        file: compressed,
+        previewUrl: URL.createObjectURL(compressed),
+      });
+    }
+
+    setItems(nextItems);
+    if (!mainKey && nextItems.length > 0) {
+      setMainKey(nextItems[0]!.key);
+    }
+    if (skipped.length > 0) {
+      setError(
+        skipped.length === 1
+          ? skipped[0]!
+          : `Některé fotky jsme přeskočili: ${skipped.join("; ")}`,
+      );
+    }
+  }
+
   async function processFiles(incoming: FileList | File[]) {
     setError(null);
     setIsCompressing(true);
 
     try {
-      const snapshots = await snapshotListingImageFiles(incoming);
-      const nextItems = [...items];
-      const skipped: string[] = [];
-
-      for (const snapshot of snapshots) {
-        if (nextItems.length >= LISTING_IMAGE_MAX_FILES) {
-          skipped.push(
-            `${snapshot.ok ? snapshot.file.name : snapshot.name} (limit fotek)`,
-          );
-          continue;
-        }
-
-        if (!snapshot.ok) {
-          skipped.push(`${snapshot.name}: ${snapshot.error}`);
-          continue;
-        }
-
-        const file = snapshot.file;
-
-        const sourceError = validateListingImageSourceFile(file);
-        if (sourceError) {
-          skipped.push(`${file.name}: ${sourceError}`);
-          continue;
-        }
-
-        let compressed: File;
-        try {
-          compressed = await compressListingImage(file);
-        } catch (compressError) {
-          skipped.push(
-            `${file.name}: ${listingImageUserError(compressError)}`,
-          );
-          continue;
-        }
-
-        const storedError = validateListingImageFile(compressed);
-        if (storedError) {
-          skipped.push(`${file.name}: ${storedError}`);
-          continue;
-        }
-
-        nextItems.push({
-          key: `n:${crypto.randomUUID()}`,
-          kind: "new",
-          file: compressed,
-          previewUrl: URL.createObjectURL(compressed),
-        });
-      }
-
-      setItems(nextItems);
-      if (!mainKey && nextItems.length > 0) {
-        setMainKey(nextItems[0]!.key);
-      }
-      if (skipped.length > 0) {
-        setError(
-          skipped.length === 1
-            ? skipped[0]!
-            : `Některé fotky jsme přeskočili: ${skipped.join("; ")}`,
-        );
-      }
+      const remaining = Math.max(0, LISTING_IMAGE_MAX_FILES - items.length);
+      const prepared = await prepareListingImageFiles(incoming, {
+        maxKeep: remaining,
+        keep: "first",
+      });
+      await consumePreparedFiles(prepared);
     } finally {
       setIsCompressing(false);
     }
@@ -445,9 +444,21 @@ export const ListingImageUpload = forwardRef<
     const input = event.currentTarget;
     if (!input.files?.length) return;
     const list = Array.from(input.files);
-    void processFiles(list).finally(() => {
-      input.value = "";
-    });
+    void (async () => {
+      setError(null);
+      setIsCompressing(true);
+      try {
+        const remaining = Math.max(0, LISTING_IMAGE_MAX_FILES - items.length);
+        const prepared = await prepareListingImageFiles(list, {
+          maxKeep: remaining,
+          keep: "first",
+        });
+        input.value = "";
+        await consumePreparedFiles(prepared);
+      } finally {
+        setIsCompressing(false);
+      }
+    })();
   }
 
   const maxPhotoSizeMb = Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024));
@@ -547,7 +558,7 @@ export const ListingImageUpload = forwardRef<
               disabled={uploadBlocked}
               {...gtmCtaProps(GTM_CTA.LISTING_IMAGE_ADD)}
               onClick={() => cameraInputRef.current?.click()}
-              className={`flex w-full ${listingFormSecondaryButtonClass} py-3.5`}
+              className={`w-full ${listingFormCameraButtonClass}`}
             >
               <Camera className="h-5 w-5" aria-hidden="true" />
               Vyfotit
@@ -557,7 +568,7 @@ export const ListingImageUpload = forwardRef<
               disabled={uploadBlocked}
               {...gtmCtaProps(GTM_CTA.LISTING_IMAGE_ADD)}
               onClick={() => galleryInputRef.current?.click()}
-              className={`flex w-full ${listingFormSecondaryButtonClass} border-dashed py-3`}
+              className={`w-full ${listingFormSecondaryDashedButtonClass}`}
             >
               <ImageIcon className="h-4 w-4" aria-hidden="true" />
               Vybrat z galerie

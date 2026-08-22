@@ -8,7 +8,7 @@ import {
   looksLikeAvifBytes,
   looksLikeHeifBytes,
 } from "@/lib/files/magic-bytes";
-import { snapshotListingImageFile } from "@/lib/images/read-listing-image-file";
+import { listingImageUserError } from "@/lib/images/read-listing-image-file";
 
 const IMAGE_LOAD_FAILED =
   "Fotku se nepodařilo načíst. Zkuste ji vyfotit tlačítkem Vyfotit, nebo vyberte jiný snímek.";
@@ -79,17 +79,22 @@ async function createOrientedBitmap(blob: Blob): Promise<ImageBitmap> {
 }
 
 /**
- * Nejdřív dočte soubor (Android galerie jinak občas vrátí prázdný blob),
- * pak zkusí createImageBitmap a až potom Image().
+ * Očekává už paměťovou kopii z `prepareListingImageFiles`.
+ * Pak zkusí createImageBitmap a až potom Image().
  */
 async function decodeImageSource(file: File): Promise<DecodedImage> {
-  const localFile = await snapshotListingImageFile(file);
-  const bytes = new Uint8Array(await localFile.arrayBuffer());
+  let buffer: ArrayBuffer;
+  try {
+    buffer = await file.arrayBuffer();
+  } catch (error) {
+    throw new Error(listingImageUserError(error));
+  }
+  const bytes = new Uint8Array(buffer);
   if (bytes.byteLength === 0) {
     throw new Error(IMAGE_LOAD_FAILED);
   }
 
-  const blob = new Blob([bytes], { type: mimeForDecode(file, bytes) });
+  const blob = new Blob([buffer], { type: mimeForDecode(file, bytes) });
 
   if (typeof createImageBitmap === "function") {
     try {

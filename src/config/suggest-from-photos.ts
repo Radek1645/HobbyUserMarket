@@ -18,20 +18,20 @@ export const SUGGEST_FROM_PHOTOS_MAX_IMAGES = 2;
 export const SUGGEST_FROM_PHOTOS_CONFIDENCE_THRESHOLD = 0.7;
 
 export const SUGGEST_FROM_PHOTOS_UI = {
-  pageHint: "Stačí fotka. Připravíme název, popis i kategorii.",
+  pageHint: "Stačí fotka. Napíšeme název a popis.",
   /** Guest page hint — stejný benefit + kdy vznikne účet. */
   pageHintGuest:
-    "Stačí fotka. Připravíme název, popis i kategorii. Účet založíte až při publikaci.",
-  aiCardTitle: "Stačí fotka. Zbytek připravíme za vás.",
+    "Stačí fotka. Napíšeme název a popis. Účet založíte až při publikaci.",
+  aiCardTitle: "Stačí fotka. Napíšeme název a popis.",
   aiCardSubtitle:
-    "Nahrajte 1–2 fotky. Připravíme název, popis a kategorii. Cenu, stav a lokalitu doplníte sami.",
+    "Nahrajte 1–2 fotky. Kategorii doplníme taky, cenu, stav a lokalitu přidáte vy.",
   dropzoneIdle: "Přidat fotky",
   dropzoneHint: "Maximálně 2 fotky",
   cameraCta: "Vyfotit",
   galleryCta: "Vybrat z galerie",
-  ctaLabel: "Vytvořit inzerát",
+  ctaLabel: "Předvyplnit inzerát",
   statusChecking: "Kontrolujeme fotky…",
-  statusAnalyzing: "Připravujeme váš inzerát…",
+  statusAnalyzing: "Píšeme název a popis…",
   statusPrefilling: "Doplňujeme údaje…",
   /** Sekundární banner — reality / služby / práce / události. */
   manualTitle: "Nebo raději ručně?",
@@ -48,5 +48,5 @@ export const SUGGEST_FROM_PHOTOS_UI = {
   nsfwReject:
     "Fotografie porušuje podmínky webu. Nahrajte jiné snímky, nebo pokračujte ručně.",
   missingFieldsHint:
-    "Připravili jsme návrh názvu, popisu a kategorie. Zkontrolujte ho a doplňte cenu, stav a lokalitu. Řádky „Doplňte …:“ vyplňte za dvojtečku, nebo je smažte.",
+    "Připravili jsme návrh názvu, popisu a kategorie. Zkontrolujte ho a doplňte cenu, stav a lokalitu. Řádky „Doplňte …:“ vyplňte za dvojtečku, nebo je smažte. Přidejte klidně další fotky a upřesněte popis — čím víc informací, tím líp.",
 } as const;
