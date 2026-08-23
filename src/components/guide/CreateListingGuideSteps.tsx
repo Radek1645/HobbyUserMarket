@@ -5,7 +5,9 @@ import {
   CreateListingGuideStep2Screen,
   CreateListingGuideStep3Screen,
   CreateListingGuideStep4Screen,
+  CreateListingGuideStep5Screen,
 } from "@/components/guide/CreateListingGuideScreens";
+import { LegalLinkedText } from "@/components/legal/LegalLinkedText";
 import {
   CREATE_LISTING_GUIDE_DEFAULT_DEMO_ID,
   CREATE_LISTING_GUIDE_DEMOS,
@@ -68,11 +70,13 @@ export function CreateListingGuideSteps() {
             index === 0 ? (
               <CreateListingGuideStep1Screen demo={demo} />
             ) : index === 1 ? (
-              <CreateListingGuideStep2Screen />
+              <CreateListingGuideStep2Screen demo={demo} />
             ) : index === 2 ? (
-              <CreateListingGuideStep3Screen demo={demo} />
-            ) : (
+              <CreateListingGuideStep3Screen />
+            ) : index === 3 ? (
               <CreateListingGuideStep4Screen demo={demo} />
+            ) : (
+              <CreateListingGuideStep5Screen demo={demo} />
             );
 
           return (
@@ -88,7 +92,7 @@ export function CreateListingGuideSteps() {
                   {step.title}
                 </h2>
                 <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
-                  {step.body}
+                  <LegalLinkedText text={step.body} />
                 </p>
               </div>
 

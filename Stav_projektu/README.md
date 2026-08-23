@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-08-24 | [2026-08-24.md](./2026-08-24.md) — UT katalog, `external_url` (077) + adult denylist, God Mode self-grant, PRD v3.78 |
 | 2026-08-22 (večer) | [2026-08-22-vecer.md](./2026-08-22-vecer.md) — galerie české chyby, souhrn limitu 6 fotek, PRD v3.75 |
 | 2026-08-22 | [2026-08-22.md](./2026-08-22.md) — prefill Vyfotit/galerie, OOM-safe snapshot, copy Předvyplnit, PRD v3.74 |
 | 2026-08-20 | [2026-08-20.md](./2026-08-20.md) — HP copy, DNS/Cloudflare, GDPR 1.5-fo, FB ads brief, mapa odložena, PRD v3.72 |

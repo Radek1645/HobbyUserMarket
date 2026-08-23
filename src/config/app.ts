@@ -35,6 +35,8 @@ export const LISTING_DESCRIPTION_MAX_LENGTH = 2000;
 /** Rezerva znaků v cleanedDescription při NEEDS_QUESTIONS — doplní se odpovědi z dotazníku. */
 export const MODERATION_DESCRIPTION_QA_RESERVE = 400;
 export const LISTING_EXCHANGE_FOR_MAX_LENGTH = 100;
+/** Volitelný odkaz u události (FB / web). */
+export const EXTERNAL_URL_MAX_LENGTH = 500;
 
 /** Fotky inzerátu — PRD §5.4, max 6 */
 export const LISTING_IMAGE_MAX_FILES = 6;

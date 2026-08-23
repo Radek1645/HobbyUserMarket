@@ -11,6 +11,8 @@ import {
   formatContactPhoneForStorage,
   isValidContactPhone,
 } from "@/lib/posts/contact-phone";
+import { EXTERNAL_URL_FIELD_UI } from "@/config/listing-external-url";
+import { parseListingExternalUrl } from "@/lib/posts/external-url";
 import { parsePriceInput } from "@/lib/posts/price-input";
 import {
   clampListingImageAlt,
@@ -48,6 +50,8 @@ export type CreateListingInput = {
   contactPhone: string | null;
   /** Práce/brigády — vyžadovat CV při odpovědi uchazeče. */
   jobCvRequired: boolean;
+  /** Událost — volitelný https odkaz na web / sociální síť. */
+  externalUrl: string | null;
 };
 
 export type ValidationResult =
@@ -258,6 +262,25 @@ export function validateListingForm(
     const jobCvRequired =
       categoryType === "prace" && form.get("jobCvRequired") === "true";
 
+    let externalUrl: string | null = null;
+    if (categoryType === "udalost") {
+      const wantsExternalUrl = form.get("hasExternalUrl") === "true";
+      const rawExternalUrl = String(form.get("externalUrl") ?? "").trim();
+      if (wantsExternalUrl || rawExternalUrl) {
+        if (!rawExternalUrl) {
+          return {
+            ok: false,
+            error: EXTERNAL_URL_FIELD_UI.required,
+          };
+        }
+        const parsedUrl = parseListingExternalUrl(rawExternalUrl);
+        if (!parsedUrl.ok) {
+          return { ok: false, error: parsedUrl.error };
+        }
+        externalUrl = parsedUrl.url;
+      }
+    }
+
     const seoFieldsProvided = form.get("seoFieldsProvided") === "true";
     let metaDescription: string | null | undefined;
     let imageAlt: string | null | undefined;
@@ -304,6 +327,7 @@ export function validateListingForm(
         showContactPhone,
         contactPhone,
         jobCvRequired,
+        externalUrl,
       },
     };
   } catch (e) {

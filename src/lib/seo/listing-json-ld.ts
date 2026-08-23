@@ -17,6 +17,7 @@ export type ListingJsonLdInput = {
     | "event_date"
     | "created_at"
     | "slug"
+    | "external_url"
   >;
   pageUrl: string;
   imageUrls: string[];
@@ -148,6 +149,7 @@ function buildEventJsonLd(input: ListingJsonLdInput): JsonLd {
     eventStatus: "https://schema.org/EventScheduled",
     location: publicPlaceFromPost(post),
     offers: buildOffer(post, input.pageUrl),
+    ...(post.external_url ? { sameAs: [post.external_url] } : {}),
   };
 }
 

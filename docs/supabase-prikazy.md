@@ -134,7 +134,7 @@ Hlavní tabulka. Kategorie žijí jako textové sloupce — taxonomie je v kódu
 | Místo | `location_text`, `location` | Text lokality + PostGIS bod |
 | Kontakt | `show_contact_email`, `show_contact_phone`, `contact_phone` | Co smí odhalit „Zobrazit kontakt“ |
 | Práce | `job_cv_required` | Zda inzerát práce chce CV |
-| Životní cyklus | `status`, `status_reason_code`, `deletion_reason`, `expires_at`, `listing_duration_days`, `event_date`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, proč blocked, důvod smazání majitelem (`069`), expirace, událost |
+| Životní cyklus | `status`, `status_reason_code`, `deletion_reason`, `expires_at`, `listing_duration_days`, `event_date`, `external_url`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, proč blocked, důvod smazání majitelem (`069`), expirace, událost, volitelný https odkaz (`077`) |
 | Ostatní | `payment_status`, `view_count`, `created_at`, `updated_at` | Platba (free/paid), zobrazení |
 
 **`status`:** `draft` · `active` · `archived` · `hidden` · `blocked` · `deleted`  

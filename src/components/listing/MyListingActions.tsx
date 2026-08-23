@@ -1,39 +1,19 @@
 "use client";
 
 import {
-  deleteListing,
   extendListingBy30Days,
   pauseListing,
   publishListing,
 } from "@/app/actions/listing-management";
-import {
-  LISTING_DELETION_REASON,
-  LISTING_DELETION_REASON_LABELS,
-} from "@/config/listing-deletion-reasons";
 import { LISTING_EXTEND_DAYS } from "@/config/listing-lifetime";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
-import {
-  emeraldPrimaryButtonCompactClass,
-  modalCancelGhostButtonClass,
-  modalCancelOutlineButtonClass,
-  modalOverlayClass,
-  modalPanelClass,
-} from "@/config/ui-primitives";
+import { DeleteListingControl } from "@/components/listing/DeleteListingControl";
 import { canExtendListingLifetime } from "@/lib/posts/listing-lifetime";
 import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { getOwnerDisplayStatus } from "@/lib/posts/listing-status";
-import { isGoodsCategoryType } from "@/config/goods-categories";
 import type { CategoryType, PostStatus } from "@/types/post";
-import {
-  CalendarPlus,
-  Eye,
-  Pause,
-  Pencil,
-  Play,
-  Trash2,
-} from "lucide-react";
+import { CalendarPlus, Eye, Pause, Pencil, Play } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
 
 type MyListingActionsProps = {
   postId: number;
@@ -62,10 +42,6 @@ export function MyListingActions({
   createdAt,
 }: MyListingActionsProps) {
   const displayStatus = getOwnerDisplayStatus(status, expiresAt);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const dialogTitleId = useId();
-  const cancelButtonRef = useRef<HTMLButtonElement>(null);
-  const askSoldOnPlatform = isGoodsCategoryType(categoryType);
 
   // 'draft' = neúspěšně publikovaný inzerát (H1) — jde doupravit a znovu odeslat.
   // 'blocked' = skrytý moderací/nahlášením — ven jen přes úpravu + re-moderace.
@@ -83,31 +59,6 @@ export function MyListingActions({
     canManage || status === "blocked" || status === "draft";
   const isArchived = displayStatus === "archived";
   const canExtend = canExtendListingLifetime(createdAt, expiresAt);
-
-  useEffect(() => {
-    if (!deleteDialogOpen) return;
-
-    const previousFocus =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-
-    cancelButtonRef.current?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setDeleteDialogOpen(false);
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousFocus?.focus();
-    };
-  }, [deleteDialogOpen]);
 
   if (!canEdit && !canDelete) return null;
 
@@ -209,115 +160,11 @@ export function MyListingActions({
       ) : null}
 
       {canDelete ? (
-        askSoldOnPlatform ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setDeleteDialogOpen(true)}
-              {...gtmCtaProps(GTM_CTA.MY_LISTINGS_DELETE, {
-                "listing-id": postId,
-              })}
-              className={`ml-3 ${iconButtonClass} text-red-600 hover:bg-red-50`}
-              title="Smazat"
-              aria-label="Smazat"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden />
-            </button>
-
-            {deleteDialogOpen ? (
-              <div className={modalOverlayClass} role="presentation">
-                <button
-                  type="button"
-                  aria-label="Zavřít"
-                  className="absolute inset-0"
-                  onClick={() => setDeleteDialogOpen(false)}
-                />
-                <div
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby={dialogTitleId}
-                  className={`relative ${modalPanelClass}`}
-                >
-                  <h3
-                    id={dialogTitleId}
-                    className="text-lg font-semibold text-gray-900"
-                  >
-                    Proč inzerát mažete?
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Tuto akci nelze vrátit. Inzerát zmizí z veřejného webu.
-                  </p>
-
-                  <form action={deleteListing} className="mt-5 space-y-2">
-                    <input type="hidden" name="postId" value={postId} />
-                    <button
-                      type="submit"
-                      name="deletionReason"
-                      value={LISTING_DELETION_REASON.sold_on_platform}
-                      className={`w-full ${emeraldPrimaryButtonCompactClass}`}
-                    >
-                      {
-                        LISTING_DELETION_REASON_LABELS[
-                          LISTING_DELETION_REASON.sold_on_platform
-                        ]
-                      }
-                    </button>
-                    <button
-                      type="submit"
-                      name="deletionReason"
-                      value={LISTING_DELETION_REASON.other}
-                      className={`w-full ${modalCancelOutlineButtonClass}`}
-                    >
-                      {
-                        LISTING_DELETION_REASON_LABELS[
-                          LISTING_DELETION_REASON.other
-                        ]
-                      }
-                    </button>
-                  </form>
-
-                  <div className="mt-3 flex justify-end">
-                    <button
-                      ref={cancelButtonRef}
-                      type="button"
-                      onClick={() => setDeleteDialogOpen(false)}
-                      className={modalCancelGhostButtonClass}
-                    >
-                      Zrušit
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <form
-            action={deleteListing}
-            className="ml-3"
-            onSubmit={(event) => {
-              if (
-                !window.confirm(
-                  "Opravdu smazat inzerát? Tuto akci nelze vrátit.",
-                )
-              ) {
-                event.preventDefault();
-              }
-            }}
-          >
-            <input type="hidden" name="postId" value={postId} />
-            <button
-              type="submit"
-              {...gtmCtaProps(GTM_CTA.MY_LISTINGS_DELETE, {
-                "listing-id": postId,
-              })}
-              className={`${iconButtonClass} text-red-600 hover:bg-red-50`}
-              title="Smazat"
-              aria-label="Smazat"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden />
-            </button>
-          </form>
-        )
+        <DeleteListingControl
+          postId={postId}
+          categoryType={categoryType}
+          variant="icon"
+        />
       ) : null}
     </div>
   );

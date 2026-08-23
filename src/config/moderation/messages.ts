@@ -51,8 +51,12 @@ export const MODERATION_CHECKING_UI = {
 
 export const MODERATION_PREVIEW_UI = {
   title: "AI vám vylepšila inzerát!",
-  subtitle:
-    "AI může udělat chybu, proto text před publikací zkontrolujte. Je něco zásadně špatně? Klikněte na Zrušit a detaily doplňte sami. Jinak můžete publikovat vylepšený text, nebo ponechat původní – obojí je v pořádku.",
+  subtitleLead:
+    "AI může udělat chybu, proto text před publikací zkontrolujte.",
+  subtitleCancelLead: "Je něco zásadně špatně? Klikněte na ",
+  subtitleCancelRest: " a detaily doplňte sami.",
+  subtitleChoice:
+    "Můžete publikovat vylepšený text, nebo ponechat původní – obojí je v pořádku. Kontakty v původním textu se skryjí.",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
   seoSectionLabel: "Text pro vyhledávání",
@@ -71,11 +75,10 @@ export const MODERATION_PREVIEW_UI = {
     "Doplňte informace, které kupující nejčastěji potřebují. Ušetříte si zbytečné otázky v chatu.",
   questionsSkipHint:
     "Nevíte odpověď? Nechte prázdné — publikaci to nezdrží.",
-  publishAiLabel: "Publikovat vylepšený inzerát",
-  publishAiHint: "Doporučeno",
-  publishOriginalLabel: "Ponechat můj původní text",
-  publishOriginalHint:
-    "AI návrh se nepoužije. Kontakty v původním textu se skryjí.",
+  publishAiLabel: "Publikovat vylepšený text – zdarma",
+  publishAiKeepOriginalHint:
+    "Zveřejní se vylepšená verze. Popis můžete kdykoli později upravit.",
+  publishOriginalLabel: "Ponechat můj původní text bez AI vylepšení",
   descriptionLengthWarning: (current: number, max: number) =>
     `Popis včetně odpovědí má ${current} znaků — maximum je ${max}. Zkrácením textu nebo odpovědí to vejde.`,
   descriptionLengthCounter: (current: number, max: number) =>

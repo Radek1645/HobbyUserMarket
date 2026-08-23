@@ -26,6 +26,7 @@ export type ListingFormInitialValues = {
   showContactPhone: boolean;
   contactPhone: string;
   jobCvRequired: boolean;
+  externalUrl: string;
 };
 
 export function dateToDatetimeLocalValue(date: Date): string {
@@ -90,5 +91,6 @@ export function postToListingFormInitialValues(
         ? post.contact_phone.trim()
         : "",
     jobCvRequired: post.job_cv_required ?? false,
+    externalUrl: post.external_url ?? "",
   };
 }

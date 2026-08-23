@@ -26,7 +26,7 @@
 **Aktualizace 2026-08-09:** Prefill lab — `/mod/prefill-lab` + Edge `compare-suggest-from-photos` (staff side-by-side modelů; bez DB). Default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`.
 **Aktualizace 2026-08-10:** Prefill `[DOPLNIT …]` — pod nabídkou, jeden na řádek (prompt + `formatDoplnitPlaceholders` v parse).
 **Aktualizace 2026-08-09:** OAuth resume po **Zpět** z Google (cookie + sessionStorage); krokovník + AI/Publikace; C3 + D2 smoke; PRD v3.64. FB ads odloženy — produkční test na mobilu.
-**Aktualizace 2026-08-10:** § M — stránka `/jak-vytvorit-inzerat` je zastaralá (guest draft, AI photo-first prefill, krokovník); aktualizovat copy/kroky.  
+**Aktualizace 2026-08-23:** § M `/jak-vytvorit-inzerat` — 5 kroků + prefill, hotovo.  
 **Aktualizace 2026-08-22:** krok 0 **Vyfotit** + galerie (Android); HEIC decode; copy „Napíšeme název a popis“ / CTA **Předvyplnit inzerát**; snapshot jen fotek v limitu; PRD v3.74. Edge `suggest-listing-from-photos` **nasazeno**.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
@@ -35,7 +35,7 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 
 ## M. Priorita — aktualizovat `/jak-vytvorit-inzerat`
 
-> **2026-08-10.** Stránka „Jak vytvořit inzerát“ (`src/config/` + `src/app/jak-vytvorit-inzerat`) **není aktuální** vůči současnému flow.
+> **2026-08-23.** Copy a mocky sedí s photo-first flow: 5 kroků (prefill → doplnit údaje → kontrola → AI náhled → publikace).
 
 **Co se od té doby změnilo (musí sedět text):**
 
@@ -47,9 +47,9 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 
 | # | Úkol | ✓ |
 |---|------|---|
-| M1 | Projít live `/inzerat/novy` (host + přihlášený) a sepsat skutečné kroky | ☐ |
-| M2 | Přepsat copy / sekce na `/jak-vytvorit-inzerat` (config + stránka) | ☐ |
-| M3 | Kontrola SEO meta (title/description) a odkazů z patičky / FAQ | ☐ |
+| M1 | Projít live `/inzerat/novy` (host + přihlášený) a sepsat skutečné kroky | ☑ 2026-08-23 |
+| M2 | Přepsat copy / sekce na `/jak-vytvorit-inzerat` (config + stránka) | ☑ 2026-08-23 — 5 kroků, krok 0 prefill |
+| M3 | Kontrola SEO meta (title/description) a odkazů z patičky / FAQ | ☑ 2026-08-23 |
 
 ---
 

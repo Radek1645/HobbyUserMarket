@@ -147,7 +147,7 @@ V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), 
 | URL | Účel |
 |-----|------|
 | `/co-je-zapikolou` | Co web je a není (inzertní nástěnka, ne e-shop); patička **O webu zaPikolou** |
-| `/jak-vytvorit-inzerat` | Průvodce ve 4 krocích; přepínatelné demo scénáře (Elektronika / Kolo / Spotřebič) včetně fotek a OCR štítku |
+| `/jak-vytvorit-inzerat` | Průvodce v 5 krocích (photo-first prefill → doplnit údaje → kontrola → AI náhled → publikace); demo Elektronika / Kolo / Spotřebič včetně fotek a OCR štítku |
 | `/kontakt` | Provozovatel (jméno, e-mail, datová schránka) |
 | `/faq` | Časté dotazy — accordion, texty v `src/config/faq.ts` (PRD §11.3) |
 | `/cookies` | Zásady používání souborů cookie (právní text z `docs/pravni/cookies.md`) |
@@ -235,7 +235,7 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 | Založit nový inzerát | `/inzerat/novy` | Wizard (fotky/kategorie/obsah) + AI náhled; host může začít bez účtu |
 | Upravit vlastní inzerát | `/inzerat/[slug]/upravit` | Změna publikovaného obsahu nebo fotek vyžaduje finální AI kontrolu |
 | Obnovit expirovaný inzerát | `/moje-inzeraty` | Prodloužení platnosti |
-| Smazat inzerát | `/moje-inzeraty` | S povinným exit polem (důvod) |
+| Smazat inzerát | `/moje-inzeraty` i detail (owner panel) | Potvrzovací dialog; soft delete |
 | Zobrazit kontakt inzerenta | Detail cizího inzerátu | Max. 20× denně |
 | Napsat prodejci / pořadateli | Detail inzerátu | Anonymní e-mail |
 | Nahlásit inzerát | Detail | Inline tlačítko |
@@ -288,7 +288,7 @@ flowchart TD
 
 **Vstupní obrazovka (krok 0):**
 
-- Dominantní karta: „Stačí fotka. Napíšeme název a popis.“ Podnadpis: „Nahrajte 1–2 fotky. Kategorii doplníme taky, cenu, stav a lokalitu přidáte vy.“ Na **mobilu** dvě akce **Vyfotit** (`capture=environment`, světle emerald tlačítko — preferovaná cesta) a **Vybrat z galerie** (čárkovaný obrys); na desktopu dropzone. Max. 1–2 fotky (při třetí se nechá poslední dvojice). CTA **„Předvyplnit inzerát“** (ne „Vytvořit inzerát“ — to je publikace), loader (Kontrola → Analýza → Předvyplnění).
+- Dominantní karta: „Pro začátek stačí dvě fotky.“ Podnadpis: „Napíšeme základní název a popis, vy je pak doladíte a doplníte cenu, stav a lokalitu.“ Na **mobilu** dvě akce **Vyfotit** (`capture=environment`, světle emerald tlačítko — preferovaná cesta) a **Vybrat z galerie** (čárkovaný obrys); na desktopu dropzone. Max. 1–2 fotky (při třetí se nechá poslední dvojice). CTA **„Předvyplnit inzerát“** (ne „Vytvořit inzerát“ — to je publikace), loader (Kontrola → Analýza → Předvyplnění).
 - Spodní blok (~1/3): „Služby, události, práce, reality — nebo raději ručně“ + CTA **„Vyplnit inzerát ručně“** → krok 1 (CategoryGrid).
 - Po úspěchu: skok na krok obsahu, fotky v uploadu, název/popis/kategorie vyplněné. **Cena, stav a lokalita** zůstanou prázdné — stav má „— vyberte —“, žlutý prstenec jen u ještě nevyplněného pole (`listingFormPrefillHighlightClass`). Publikovat nelze, dokud stav, lokalita a cena nesedí. V popisu řádky `Doplňte značku: ` (psát za dvojtečku, nebo smazat). Banner zve k dalším fotkám a úpravě textu (prefill má 1–2 fotky, formulář až 6).
 - Nízká jistota podkategorie (`confidence < 0.7` nebo neplatný slug) → `subcategorySlug` null → krok 1 s kategorií a textem, uživatel vybere podkategorii.
@@ -357,6 +357,7 @@ Uživatel vybere (manuální cesta, nebo doplnění po AI):
 | Typ ceny | Podle kategorie — detail v [§12](#12-speciální-typy-inzerátů). U **zboží**: Pevná, Za odvoz, Dohodou, Výměnou, Nabídni. U **služeb**: Hodinová sazba, Cena za zakázku, Dohodou. |
 | Platnost | U zboží, služeb a nemovitostí: 1–365 dní (výchozí 30); u událostí se nevybírá — platí datum akce |
 | Datum akce | U událostí povinné; musí být v budoucnosti (při novém založení) |
+| Odkaz (událost) | Volitelný checkbox „Mám další informace na webu nebo sociálních sítích“ → pole URL. Server normalizuje na `https://`, odmítne mezery, IP, credentials a známé adult/tube/cam domény (`src/lib/posts/external-url.ts`). |
 | Kontaktní preference | Volitelné zobrazení e-mailu / telefonu po kliknutí na „Zobrazit kontakt“ |
 
 #### Povinná pole — hvězdička a legenda
@@ -963,7 +964,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - Název, galerie (až 6 fotek), strukturovaný popis (úvod + Parametry)
 - U inzerátů s AI textem: v sekci Parametry řádek **„Vytvořeno s pomocí AI: Ano“** s ikonou nápovědy (Podmínky inzerce §3, AI Act)
 - Cena (formát podle kategorie — u služeb např. `500 Kč/h` nebo `od 3 000 Kč za zakázku`), stav, lokalita, typ kategorie, datum **Vytvořeno** (`created_at`)
-- U událostí: datum konání
+- U událostí: datum konání; pokud je vyplněný `external_url`, výrazné CTA pod parametry — label podle domény (**Facebook** / **Instagram** / **Další informace online**), odkaz `target=_blank` + `rel=noopener noreferrer nofollow ugc`
 - U nemovitostí: Prodej / Pronájem
 - **Zadavatel** (přezdívka nebo název firmy) — klik vede na **`/uzivatel/[nickname]`** (aktivní inzeráty, 9 na stránku)
 - Štítek **Podnikatel** u firemního profilu (VOP §7.2); milník **Aktivní inzerent · N+** při 5 / 10 / 20 / 40 lifetime publikacích
@@ -1450,6 +1451,8 @@ Migrace: `supabase/038_listing_quota.sql` (+ `039_listing_quota_lifetime.sql`, p
 2. **`/mod/uzivatele`** → u uživatele **„+20 inzerátů“** → potvrdit.
 
 Přidá balíček `promo_partner`. Opakováním přidáš dalších +20.
+
+**Vlastní účet:** tlačítko **+20** je i na řádku přihlášeného admina (kvóta se u staff účtů počítá stejně jako u běžných uživatelů — UI ukazuje reálné X/Y, ne „bez limitu“). Smazání vlastního účtu z God Mode zůstává zakázané → odkaz do nastavení. Ověřeno 2026-08-24.
 
 #### B) SQL — přidělit +20 (existující balíček)
 

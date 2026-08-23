@@ -108,6 +108,8 @@ export type PostRow = {
   contact_phone?: string | null;
   /** Práce/brigády — uchazeč musí přiložit CV při poptávce. */
   job_cv_required?: boolean;
+  /** Volitelný odkaz na web / sociální síť (událost). */
+  external_url?: string | null;
   /** Počet započítaných zobrazení detailu (dedup 24 h). */
   view_count?: number;
   created_at: string;
@@ -160,5 +162,6 @@ export type PostInsert = Pick<
       | "show_contact_phone"
       | "contact_phone"
       | "job_cv_required"
+      | "external_url"
     >
   >;

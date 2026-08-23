@@ -1,7 +1,8 @@
 -- =============================================================================
--- HobbyUserMarket — Supabase PostgreSQL Schema (PRD v3.1)
+-- HobbyUserMarket — Supabase PostgreSQL Schema (snapshot tč. migrace 077)
 -- Čistý start: 1) supabase/000_reset_database.sql  2) tento soubor
 -- ⚠️  Spusť CELÝ soubor (Ctrl+A → Run)
+-- Produkční pravda = číslované migrace v supabase/; tento dump drží CREATE TABLE posts v souladu.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -138,10 +139,10 @@ AS $$
   );
 $$;
 
--- posts
+-- posts (sloupce a CHECK odpovídají produkci po migracích tč. 077)
 CREATE TABLE IF NOT EXISTS public.posts (
   id                BIGSERIAL PRIMARY KEY,
-  user_id           UUID NOT NULL REFERENCES auth.users (id) ON DELETE RESTRICT,
+  user_id           UUID REFERENCES auth.users (id) ON DELETE SET NULL,
   title             TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
   original_title    TEXT,
@@ -149,7 +150,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   description_ai_assisted BOOLEAN NOT NULL DEFAULT false,
   meta_description  TEXT,
   image_alt         TEXT,
-  category_type     VARCHAR(10) NOT NULL,
+  category_type     VARCHAR(20) NOT NULL,
   subcategory_slug  VARCHAR(50) NOT NULL,
   price_type        VARCHAR(20) NOT NULL,
   price_amount      INTEGER,
@@ -160,6 +161,15 @@ CREATE TABLE IF NOT EXISTS public.posts (
   status            public.post_status NOT NULL DEFAULT 'draft',
   status_reason_code TEXT,
   deletion_reason   TEXT,
+  listing_duration_days INTEGER NOT NULL DEFAULT 30,
+  event_date        TIMESTAMPTZ,
+  external_url      TEXT,
+  show_contact_email BOOLEAN NOT NULL DEFAULT false,
+  show_contact_phone BOOLEAN NOT NULL DEFAULT false,
+  contact_phone     TEXT,
+  job_cv_required   BOOLEAN NOT NULL DEFAULT false,
+  listing_quota_consumed BOOLEAN NOT NULL DEFAULT false,
+  expiry_warning_for_expires_at TIMESTAMPTZ,
   publish_request_id UUID,
   publish_started_at TIMESTAMPTZ,
   expires_at        TIMESTAMPTZ,
@@ -167,6 +177,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   payment_status    VARCHAR(20) NOT NULL DEFAULT 'free',
   main_image_url    TEXT,
   slug              VARCHAR(200) NOT NULL,
+  view_count        INTEGER NOT NULL DEFAULT 0,
   search_vector     TSVECTOR GENERATED ALWAYS AS (
     to_tsvector(
       'simple',
@@ -179,7 +190,10 @@ CREATE TABLE IF NOT EXISTS public.posts (
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT posts_category_type_check
-    CHECK (category_type IN ('zbozi', 'sluzby', 'udalost', 'nemovitost', 'prace')),
+    CHECK (category_type IN (
+      'auto', 'detsky', 'dum', 'elektro', 'moda', 'sport', 'hobby', 'ostatni',
+      'sluzby', 'udalost', 'nemovitost', 'prace'
+    )),
 
   CONSTRAINT posts_price_type_check
     CHECK (price_type IN ('fixed', 'free_pickup', 'negotiable', 'exchange', 'offer')),
@@ -193,16 +207,22 @@ CREATE TABLE IF NOT EXISTS public.posts (
 
   CONSTRAINT posts_condition_matches_category_check
     CHECK (
-      (category_type = 'zbozi' AND condition_label IN ('new', 'like_new', 'used', 'damaged'))
-      OR
-      (category_type = 'sluzby' AND condition_label IN ('one_time', 'long_term', 'substitute'))
-      OR
-      (category_type = 'udalost' AND condition_label IN ('one_time', 'long_term'))
-      OR
-      (category_type = 'nemovitost' AND condition_label IN ('sale', 'rent'))
-      OR
-      (category_type = 'prace' AND condition_label IN ('one_time', 'long_term', 'substitute'))
+      (category_type IN ('auto', 'detsky', 'dum', 'elektro', 'moda', 'sport', 'hobby', 'ostatni')
+        AND condition_label IN ('new', 'like_new', 'used', 'damaged'))
+      OR (category_type = 'sluzby' AND condition_label IN ('one_time', 'long_term', 'substitute'))
+      OR (category_type = 'udalost' AND condition_label IN ('one_time', 'long_term'))
+      OR (category_type = 'nemovitost' AND condition_label IN ('sale', 'rent'))
+      OR (category_type = 'prace' AND condition_label IN ('one_time', 'long_term', 'substitute'))
     ),
+
+  CONSTRAINT posts_event_date_by_category_check
+    CHECK (
+      (category_type = 'udalost' AND event_date IS NOT NULL)
+      OR (category_type <> 'udalost' AND event_date IS NULL)
+    ),
+
+  CONSTRAINT posts_listing_duration_days_check
+    CHECK (listing_duration_days BETWEEN 1 AND 365),
 
   CONSTRAINT posts_price_amount_fixed_check
     CHECK (
@@ -235,6 +255,30 @@ CREATE TABLE IF NOT EXISTS public.posts (
   CONSTRAINT posts_original_description_length_check
     CHECK (original_description IS NULL OR char_length(original_description) <= 2000),
 
+  CONSTRAINT posts_meta_description_length_check
+    CHECK (meta_description IS NULL OR char_length(meta_description) BETWEEN 1 AND 160),
+
+  CONSTRAINT posts_image_alt_length_check
+    CHECK (image_alt IS NULL OR char_length(image_alt) BETWEEN 1 AND 125),
+
+  CONSTRAINT posts_contact_phone_check
+    CHECK (
+      contact_phone IS NULL
+      OR (
+        char_length(trim(contact_phone)) >= 9
+        AND char_length(trim(contact_phone)) <= 30
+      )
+    ),
+
+  CONSTRAINT posts_external_url_https_check
+    CHECK (
+      external_url IS NULL
+      OR (
+        char_length(external_url) BETWEEN 12 AND 500
+        AND lower(external_url) LIKE 'https://%'
+      )
+    ),
+
   CONSTRAINT posts_subcategory_slug_not_empty
     CHECK (char_length(trim(subcategory_slug)) > 0),
 
@@ -247,15 +291,18 @@ CREATE TABLE IF NOT EXISTS public.posts (
   CONSTRAINT posts_renew_count_non_negative
     CHECK (renew_count >= 0),
 
-  view_count        INTEGER NOT NULL DEFAULT 0,
-
   CONSTRAINT posts_view_count_non_negative
     CHECK (view_count >= 0),
 
   CONSTRAINT posts_status_reason_code_check
     CHECK (
       status_reason_code IS NULL
-      OR status_reason_code IN ('reports_threshold', 'moderation')
+      OR status_reason_code IN (
+        'reports_threshold',
+        'moderation',
+        'lifetime_max',
+        'account_blacklist'
+      )
     ),
 
   CONSTRAINT posts_deletion_reason_check
@@ -264,6 +311,9 @@ CREATE TABLE IF NOT EXISTS public.posts (
       OR deletion_reason IN ('sold_on_platform', 'other')
     )
 );
+
+COMMENT ON COLUMN public.posts.external_url IS
+  'Volitelný https odkaz na web nebo sociální síť (typicky událost). NULL = nezobrazeno.';
 
 CREATE UNIQUE INDEX IF NOT EXISTS posts_slug_unique_idx ON public.posts (slug);
 
@@ -386,6 +436,9 @@ CREATE INDEX IF NOT EXISTS posts_category_idx ON public.posts (category_type, su
 CREATE INDEX IF NOT EXISTS posts_deletion_reason_idx
   ON public.posts (deletion_reason)
   WHERE deletion_reason IS NOT NULL;
+CREATE INDEX IF NOT EXISTS posts_event_date_idx
+  ON public.posts (event_date)
+  WHERE category_type = 'udalost' AND status = 'active';
 CREATE INDEX IF NOT EXISTS posts_search_vector_idx ON public.posts USING GIN (search_vector);
 CREATE INDEX IF NOT EXISTS posts_location_gist_idx ON public.posts USING GIST (location);
 CREATE UNIQUE INDEX IF NOT EXISTS posts_user_publish_request_unique_idx

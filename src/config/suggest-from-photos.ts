@@ -18,13 +18,13 @@ export const SUGGEST_FROM_PHOTOS_MAX_IMAGES = 2;
 export const SUGGEST_FROM_PHOTOS_CONFIDENCE_THRESHOLD = 0.7;
 
 export const SUGGEST_FROM_PHOTOS_UI = {
-  pageHint: "Stačí fotka. Napíšeme název a popis.",
+  pageHint: "Pro začátek stačí dvě fotky.",
   /** Guest page hint — stejný benefit + kdy vznikne účet. */
   pageHintGuest:
-    "Stačí fotka. Napíšeme název a popis. Účet založíte až při publikaci.",
-  aiCardTitle: "Stačí fotka. Napíšeme název a popis.",
+    "Pro začátek stačí dvě fotky. Účet založíte až při publikaci.",
+  aiCardTitle: "Pro začátek stačí dvě fotky.",
   aiCardSubtitle:
-    "Nahrajte 1–2 fotky. Kategorii doplníme taky, cenu, stav a lokalitu přidáte vy.",
+    "Napíšeme základní název a popis, vy je pak doladíte a doplníte cenu, stav a lokalitu.",
   dropzoneIdle: "Přidat fotky",
   dropzoneHint: "Maximálně 2 fotky",
   cameraCta: "Vyfotit",
@@ -47,6 +47,15 @@ export const SUGGEST_FROM_PHOTOS_UI = {
     "Předvyplnění teď selhalo. Zkuste to znovu, nebo vyplňte inzerát ručně.",
   nsfwReject:
     "Fotografie porušuje podmínky webu. Nahrajte jiné snímky, nebo pokračujte ručně.",
-  missingFieldsHint:
-    "Připravili jsme návrh názvu, popisu a kategorie. Zkontrolujte ho a doplňte cenu, stav a lokalitu. Řádky „Doplňte …:“ vyplňte za dvojtečku, nebo je smažte. Přidejte klidně další fotky a upřesněte popis — čím víc informací, tím líp.",
+  missingFieldsHint: {
+    beforeWorking:
+      "Připravili jsme návrh názvu, popisu a kategorie — ",
+    working: "zatím jde o pracovní verzi",
+    afterWorking:
+      ". Zkontrolujte ho a doplňte cenu, stav a lokalitu. ",
+    doplnte: "Řádky „Doplňte …:“ vyplňte za dvojtečku",
+    afterDoplnte:
+      ", nebo je smažte. Přidejte klidně další fotky a upřesněte popis — čím víc informací, tím líp. ",
+    nextStep: "V dalším kroku to AI zpracuje do finální podoby.",
+  },
 } as const;

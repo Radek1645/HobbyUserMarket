@@ -15,6 +15,8 @@ import { AdvertiserBadges } from "@/components/listing/AdvertiserBadges";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
 import { ListingDefaultCover } from "@/components/listing/ListingDefaultCover";
 import { ListingDescription } from "@/components/listing/ListingDescription";
+import { DeleteListingControl } from "@/components/listing/DeleteListingControl";
+import { ListingExternalLink } from "@/components/listing/ListingExternalLink";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
 import { ListingViewBeacon } from "@/components/listing/ListingViewBeacon";
 import { ReportListingButton } from "@/components/listing/ReportListingButton";
@@ -93,7 +95,7 @@ const POST_DETAIL_COLUMNS =
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
   "status, status_reason_code, expires_at, event_date, main_image_url, slug, " +
   "show_contact_email, show_contact_phone, created_at, updated_at, job_cv_required, " +
-  "view_count";
+  "view_count, external_url";
 
 async function getPostBySlug(slug: string): Promise<PostRow | null> {
   const supabase = await createClient();
@@ -469,6 +471,13 @@ export default async function ListingDetailPage({
         </dl>
       </div>
 
+      {post.external_url ? (
+        <ListingExternalLink
+          url={post.external_url}
+          category={post.category_type}
+        />
+      ) : null}
+
       <section className="mt-6">
         {isOwner ? (
           <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-700">
@@ -487,19 +496,25 @@ export default async function ListingDetailPage({
               </span>
               {" · "}
               Poptávky od zájemců vám přijdou na e-mail účtu, kterým jste se
-              přihlásili. Pro test otevřete odkaz na inzerát v{" "}
-              <strong>anonymním okně</strong> (nebo se odhlaste) a formulář
-              vyplňte jako zájemce.
+              přihlásili.
             </p>
-            <Link
-              href={getListingEditPath(post.slug)}
-              {...gtmCtaProps(GTM_CTA.DETAIL_EDIT_LISTING, {
-                listing_id: post.id,
-              })}
-              className="mt-4 inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
-            >
-              Upravit inzerát
-            </Link>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Link
+                href={getListingEditPath(post.slug)}
+                {...gtmCtaProps(GTM_CTA.DETAIL_EDIT_LISTING, {
+                  listing_id: post.id,
+                })}
+                className="inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+              >
+                Upravit inzerát
+              </Link>
+              <DeleteListingControl
+                postId={post.id}
+                categoryType={post.category_type}
+                variant="labeled"
+                gtmId={GTM_CTA.DETAIL_DELETE_LISTING}
+              />
+            </div>
           </div>
         ) : post.status === "active" ? (
           <>

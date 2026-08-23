@@ -28,6 +28,8 @@ export type GuestListingDraft = {
   showContactPhone: boolean;
   contactPhone: string;
   jobCvRequired: boolean;
+  /** Událost — volitelný odkaz (guest draft). */
+  externalUrl?: string;
   /** Guest staging paths — claim po auth. */
   stagingPaths: string[];
   mainImageIndex: number;

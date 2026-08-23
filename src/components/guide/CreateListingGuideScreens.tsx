@@ -1,8 +1,9 @@
-import type { CreateListingGuideDemo } from "@/config/create-listing-guide";
-import { SITE_SHORT_NAME } from "@/config/site";
-import { MODERATION_APPROVED_UI } from "@/config/moderation";
 import { MobileScreenFrame } from "@/components/guide/MobileScreenFrame";
-import { CircleCheck, MapPin, Sparkles } from "lucide-react";
+import type { CreateListingGuideDemo } from "@/config/create-listing-guide";
+import { MODERATION_APPROVED_UI, MODERATION_PREVIEW_UI } from "@/config/moderation";
+import { SUGGEST_FROM_PHOTOS_UI } from "@/config/suggest-from-photos";
+import { SITE_SHORT_NAME } from "@/config/site";
+import { Camera, CircleCheck, ImageIcon, MapPin, Sparkles } from "lucide-react";
 import Image from "next/image";
 
 function DemoListingPhoto({
@@ -54,84 +55,167 @@ function MockStatusBar() {
   );
 }
 
+function DemoPhotoPair({
+  demo,
+  emptyFallback,
+}: {
+  demo: CreateListingGuideDemo;
+  emptyFallback: string;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
+        <DemoListingPhoto demo={demo} alt={demo.imageAlt} sizes="140px" />
+        <span className="absolute left-1 top-1 rounded bg-gray-900/75 px-1 py-0.5 text-[8px] font-medium text-white">
+          Hlavní
+        </span>
+      </div>
+      {demo.labelImageSrc ? (
+        <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
+          <Image
+            src={demo.labelImageSrc}
+            alt={`Štítek s parametry — ${demo.tabLabel}`}
+            fill
+            sizes="140px"
+            className="object-cover"
+          />
+          <span className="absolute left-1 top-1 rounded bg-emerald-700/90 px-1 py-0.5 text-[8px] font-medium text-white">
+            Štítek
+          </span>
+        </div>
+      ) : (
+        <div className="flex aspect-[4/3] items-center justify-center rounded-lg border-2 border-dashed border-neutral-400 bg-neutral-50 text-[9px] text-neutral-600">
+          {emptyFallback}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function CreateListingGuideStep1Screen({
   demo,
 }: {
   demo: CreateListingGuideDemo;
 }) {
   return (
-    <MobileScreenFrame caption="Ukázka formuláře v mobilu">
+    <MobileScreenFrame caption="Krok 0 — fotky a předvyplnění">
       <MockStatusBar />
-      <div className="space-y-3 bg-white p-3 pb-4">
-        <p className="text-[11px] font-medium text-gray-500">2. Obsah</p>
-        <div className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-[10px] text-gray-700">
-          {demo.categoryLabel}
+      <div className="space-y-2.5 bg-white p-3 pb-4">
+        <p className="text-[10px] font-semibold text-emerald-800">
+          1. Fotky a předvyplnění
+        </p>
+        <div className="text-center">
+          <span className="mx-auto flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+          </span>
+          <p className="mt-1.5 text-[11px] font-semibold leading-snug text-gray-900">
+            {SUGGEST_FROM_PHOTOS_UI.aiCardTitle}
+          </p>
+          <p className="mt-1 text-[9px] leading-relaxed text-gray-600">
+            {SUGGEST_FROM_PHOTOS_UI.aiCardSubtitle}
+          </p>
         </div>
 
-        <div>
-          <p className="text-[10px] font-semibold text-gray-900">Název</p>
-          <div className="mt-1 rounded-lg border border-neutral-400 bg-white px-2 py-1.5 text-xs text-gray-900">
-            {demo.draftTitle}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-center gap-1.5 rounded-lg border border-emerald-600 bg-emerald-50 px-2 py-1.5 text-[10px] font-semibold text-emerald-950">
+            <Camera className="h-3 w-3" aria-hidden />
+            {SUGGEST_FROM_PHOTOS_UI.cameraCta}
+          </div>
+          <div className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-500 bg-white px-2 py-1.5 text-[10px] font-medium text-neutral-900">
+            <ImageIcon className="h-3 w-3" aria-hidden />
+            {SUGGEST_FROM_PHOTOS_UI.galleryCta}
           </div>
         </div>
 
-        <div>
-          <p className="text-[10px] font-semibold text-gray-900">Popis</p>
-          <div className="mt-1 rounded-lg border border-neutral-400 bg-white px-2 py-1.5 text-xs leading-relaxed text-gray-900">
-            {demo.draftDescription}
+        <DemoPhotoPair demo={demo} emptyFallback="+ druhá fotka" />
+
+        <div className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2 text-[10px] font-semibold text-white">
+          <Sparkles className="h-3 w-3" aria-hidden />
+          {SUGGEST_FROM_PHOTOS_UI.ctaLabel}
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
+          <p className="text-[9px] font-semibold text-slate-800">
+            {SUGGEST_FROM_PHOTOS_UI.manualTitle}
+          </p>
+          <p className="mt-0.5 text-[8px] leading-relaxed text-slate-500">
+            {SUGGEST_FROM_PHOTOS_UI.manualBody}
+          </p>
+          <div className="mt-1 rounded border border-slate-300 bg-white py-1 text-center text-[8px] font-medium text-slate-700">
+            {SUGGEST_FROM_PHOTOS_UI.manualCtaLabel}
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
-            <DemoListingPhoto
-              demo={demo}
-              alt={demo.imageAlt}
-              sizes="140px"
-            />
-            <span className="absolute left-1 top-1 rounded bg-gray-900/75 px-1 py-0.5 text-[8px] font-medium text-white">
-              Hlavní
-            </span>
-          </div>
-          {demo.labelImageSrc ? (
-            <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
-              <Image
-                src={demo.labelImageSrc}
-                alt={`Štítek s parametry — ${demo.tabLabel}`}
-                fill
-                sizes="140px"
-                className="object-cover"
-              />
-              <span className="absolute left-1 top-1 rounded bg-emerald-700/90 px-1 py-0.5 text-[8px] font-medium text-white">
-                Štítek
-              </span>
-            </div>
-          ) : (
-            <div className="flex aspect-[4/3] items-center justify-center rounded-lg border-2 border-dashed border-neutral-400 bg-neutral-50 text-[9px] text-neutral-600">
-              + další fotka
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between rounded-lg border border-gray-200 px-2 py-1.5 text-[10px]">
-          <span className="text-gray-600">Cena</span>
-          <span className="font-semibold text-gray-900">{demo.priceLabel}</span>
-        </div>
-
-        <div className="flex items-center gap-1 text-[10px] text-gray-600">
-          <MapPin className="h-3 w-3 shrink-0" />
-          {demo.locationLabel}
-        </div>
-
-        <div className="rounded-xl bg-emerald-600 py-2 text-center text-xs font-semibold text-white">
-          Publikovat
         </div>
       </div>
     </MobileScreenFrame>
   );
 }
 
-export function CreateListingGuideStep2Screen() {
+export function CreateListingGuideStep2Screen({
+  demo,
+}: {
+  demo: CreateListingGuideDemo;
+}) {
+  const descriptionLines = demo.draftDescription.split("\n");
+
+  return (
+    <MobileScreenFrame caption="Po předvyplnění — doplnit cenu a místo">
+      <MockStatusBar />
+      <div className="space-y-2.5 bg-white p-3 pb-4">
+        <p className="text-[10px] font-semibold text-emerald-800">3. Obsah</p>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-[10px] text-gray-700">
+          {demo.categoryLabel}
+        </div>
+
+        <div>
+          <p className="text-[10px] font-semibold text-gray-900">Název</p>
+          <div className="mt-1 rounded-lg border border-neutral-400 bg-white px-2 py-1.5 text-[10px] text-gray-900">
+            {demo.draftTitle}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-[10px] font-semibold text-gray-900">Popis</p>
+          <div className="mt-1 rounded-lg border border-neutral-400 bg-white px-2 py-1.5 text-[9px] leading-relaxed text-gray-900">
+            {descriptionLines.map((line, lineIndex) => (
+              <span key={lineIndex} className="block">
+                {line || "\u00a0"}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <DemoPhotoPair demo={demo} emptyFallback="+ další fotka" />
+
+        <div className="rounded-lg px-2 py-1.5 ring-2 ring-amber-400/80">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-gray-600">Stav</span>
+            <span className="text-gray-500">— vyberte —</span>
+          </div>
+        </div>
+
+        <div className="rounded-lg px-2 py-1.5 ring-2 ring-amber-400/80">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-gray-600">Cena</span>
+            <span className="text-gray-400">Kč</span>
+          </div>
+        </div>
+
+        <div className="rounded-lg px-2 py-1 ring-2 ring-amber-400/80">
+          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+            <MapPin className="h-3 w-3 shrink-0" />
+            Vyberte lokalitu
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-emerald-600 py-2 text-center text-[10px] font-semibold text-white">
+          Publikovat inzerát
+        </div>
+      </div>
+    </MobileScreenFrame>
+  );
+}
+
+export function CreateListingGuideStep3Screen() {
   return (
     <MobileScreenFrame caption="Kontrola obsahu před publikací">
       <MockStatusBar />
@@ -165,7 +249,7 @@ export function CreateListingGuideStep2Screen() {
   );
 }
 
-export function CreateListingGuideStep3Screen({
+export function CreateListingGuideStep4Screen({
   demo,
 }: {
   demo: CreateListingGuideDemo;
@@ -177,7 +261,7 @@ export function CreateListingGuideStep3Screen({
         <div className="absolute inset-0 bg-gray-900/30" />
         <div className="relative rounded-xl border border-gray-200 bg-white p-3 shadow-lg">
           <div className="flex items-center gap-1.5 text-emerald-700">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
             <p className="text-xs font-semibold text-gray-900">
               AI vám vylepšila inzerát!
             </p>
@@ -220,10 +304,10 @@ export function CreateListingGuideStep3Screen({
 
           <div className="mt-2 space-y-1">
             <div className="rounded-lg bg-emerald-600 py-1.5 text-center text-[10px] font-semibold text-white">
-              Publikovat vylepšený inzerát
+              {MODERATION_PREVIEW_UI.publishAiLabel}
             </div>
             <div className="rounded-lg border border-gray-200 py-1 text-center text-[9px] text-gray-600">
-              Ponechat můj původní text
+              {MODERATION_PREVIEW_UI.publishOriginalLabel}
             </div>
           </div>
         </div>
@@ -232,7 +316,7 @@ export function CreateListingGuideStep3Screen({
   );
 }
 
-export function CreateListingGuideStep4Screen({
+export function CreateListingGuideStep5Screen({
   demo,
 }: {
   demo: CreateListingGuideDemo;

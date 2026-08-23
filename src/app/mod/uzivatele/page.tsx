@@ -26,8 +26,6 @@ type ProfileRow = {
   created_at: string;
 };
 
-const QUOTA_BYPASS_ROLES: UserRole[] = ["admin", "moderator"];
-
 const ERROR_MESSAGES: Record<string, string> = {
   missing_user: "Chybí identifikátor uživatele.",
   missing_reason: "Vyberte důvod smazání.",
@@ -154,17 +152,15 @@ export default async function ModUsersPage({ searchParams }: ModUsersPageProps) 
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2">
+                      <AdminGrantPackageButton
+                        userId={row.id}
+                        profileNo={row.profileNo}
+                        nickname={row.nickname}
+                      />
                       {row.id === user.id ? (
                         <LinkToSettings />
                       ) : (
-                        <>
-                          <AdminGrantPackageButton
-                            userId={row.id}
-                            profileNo={row.profileNo}
-                            nickname={row.nickname}
-                          />
-                          <AdminDeleteUserButton user={row} />
-                        </>
+                        <AdminDeleteUserButton user={row} />
                       )}
                     </div>
                   </td>
@@ -196,10 +192,6 @@ function LinkToSettings() {
 }
 
 function UserQuotaPlanCell({ row }: { row: AdminUserRow }) {
-  if (QUOTA_BYPASS_ROLES.includes(row.role)) {
-    return <span className="text-gray-500">bez limitu</span>;
-  }
-
   if (!row.quota) {
     return <span className="text-gray-400">—</span>;
   }
@@ -219,10 +211,6 @@ function UserQuotaPlanCell({ row }: { row: AdminUserRow }) {
 }
 
 function UserQuotaUsageCell({ row }: { row: AdminUserRow }) {
-  if (QUOTA_BYPASS_ROLES.includes(row.role)) {
-    return <span className="text-gray-500">—</span>;
-  }
-
   if (!row.quota) {
     return <span className="text-gray-400">—</span>;
   }

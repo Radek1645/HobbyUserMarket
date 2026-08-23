@@ -1,5 +1,7 @@
 import { CreateListingGuideSteps } from "@/components/guide/CreateListingGuideSteps";
+import { LegalLinkedText } from "@/components/legal/LegalLinkedText";
 import { BackHomeLink } from "@/components/navigation/BackHomeLink";
+import { ABOUT_PLATFORM_PATH } from "@/config/about-platform";
 import {
   CREATE_LISTING_GUIDE_PATH,
   CREATE_LISTING_GUIDE_UI,
@@ -65,6 +67,15 @@ export default function CreateListingGuidePage() {
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
             {ui.pageTitle}
           </h1>
+          <p className="mt-4 text-base leading-relaxed text-gray-600">
+            {ui.intro}{" "}
+            <Link
+              href={ABOUT_PLATFORM_PATH}
+              className="font-medium text-gray-900 underline underline-offset-2 hover:text-gray-700"
+            >
+              Co je zaPikolou?
+            </Link>
+          </p>
         </header>
 
         <CreateListingGuideSteps />
@@ -100,7 +111,7 @@ export default function CreateListingGuidePage() {
               <div key={item.question}>
                 <dt className="font-medium text-gray-900">{item.question}</dt>
                 <dd className="mt-1 text-sm leading-relaxed text-gray-600">
-                  {item.answer}
+                  <LegalLinkedText text={item.answer} />
                 </dd>
               </div>
             ))}

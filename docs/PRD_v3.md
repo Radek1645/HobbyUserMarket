@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.75  
+> **Verze dokumentu:** v3.78  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql)  
+> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-22
+> **Datum:** 2026-08-24
 
 ---
 
@@ -300,6 +300,7 @@ posts
   - expiry_warning_for_expires_at (TIMESTAMPTZ, nullable — idempotence e-mailu před expirací; migrace `048`)
   - listing_duration_days (INTEGER, NOT NULL, DEFAULT 30 — od v0.1.1; viz §9; u `udalost` se nevyužívá)
   - event_date (TIMESTAMPTZ, NULL — od v0.2; povinné pokud `category_type = 'udalost'`)
+  - external_url (TEXT, NULL — volitelný https odkaz u `udalost`; migrace [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql); **není** v content fingerprint / publish gate)
   - show_contact_email, show_contact_phone (BOOLEAN), contact_phone (TEXT, nullable — migrace [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql))
   - main_image_url, slug
   - search_vector (TSVECTOR GENERATED — title+description přes `immutable_unaccent`; migrace [`071`](../supabase/071_search_unaccent.sql))
@@ -611,7 +612,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
      * Upload fotografií: max **6 ks**. Uložený formát JPEG/PNG/WebP. Vstup z galerie může být i HEIC/HEIF — klient ho dekóduje (`createImageBitmap` / `Image`) a zkomprimuje na WebP/JPEG. Mobil: samostatné **Vyfotit** (`capture=environment`, `preferredSoftButtonClass`) a **Vybrat z galerie** (`secondaryDashedButtonClass`). Před kompresí se do paměti kopírují **jen** fotky v limitu (prefill poslední 1–2, formulář zbývající sloty do 6) — celá dávka z galerie by na Androidu mohla spadnout na OOM. **Automatická komprese na klientovi** — každá fotka max **1 MB** po zmenšení (resize + WebP/JPEG) před odesláním do Supabase Storage. Vstupní soubor může být větší (až ~25 MB).
      * Uživatel **má možnost** u miniatur označit jedno foto jako **„Hlavní fotka (náhled)“** (radio button/hvězdička). Výchozí je první nahraná. Hlavní fotka určuje náhled na homepage a slouží pro cross-validaci textu a AI hydrataci — **ne** jako jediná kontrolovaná fotka.
 
-* **AI photo-first prefill (zboží, v3.61 / UX v3.74):** Na `/inzerat/novy` je krok 0 — karta „Stačí fotka. Napíšeme název a popis.“; CTA **Předvyplnit inzerát** (ne „Vytvořit inzerát“). Mobil **Vyfotit** + **Vybrat z galerie** (1–2 fotky), desktop dropzone; viditelná manuální cesta pro služby/události/práci/reality. Edge `suggest-listing-from-photos` (Sightengine NSFW → Gemini; closed vocabulary z `GOODS_CATEGORIES`) předvyplní `title` / `description` / `categoryType` / `subcategorySlug`. **Bez** odhadu ceny, stavu a lokality — po prefillu jsou prázdné a žlutě zvýrazněné, dokud je uživatel nevyplní (stav = „— vyberte —“). Banner zve k dalším fotkám (až 6) a úpravě textu. Nejisté atributy v popisu jako `Doplňte značku: ` (prázdné řádky při publishi zmizí, vyplněné → `Značka: …`). Model řídí samostatný `SUGGEST_LISTING_MODEL` (default `gemini-3.5-flash-lite`); `MODERATION_FINAL_*` patří pouze publish moderaci. Auth JWT nebo guest visitor (rate limit `suggest_from_photos` / `guest_suggest_from_photos`, Turnstile po soft limitu). Flag `SUGGEST_FROM_PHOTOS_ENABLED`. Publish gate zůstává `moderate-listing` beze změny. **Staff prefill lab (v3.65):** `/mod/prefill-lab` + Edge `compare-suggest-from-photos` — stejný prompt/schema, dvě sekvenční volání (default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`); bez DB / Sightengine / produkčních rate limitů.
+* **AI photo-first prefill (zboží, v3.61 / UX v3.74 / copy v3.77):** Na `/inzerat/novy` je krok 0 — karta „Pro začátek stačí dvě fotky.“; CTA **Předvyplnit inzerát** (ne „Vytvořit inzerát“). Mobil **Vyfotit** + **Vybrat z galerie** (1–2 fotky), desktop dropzone; viditelná manuální cesta pro služby/události/práci/reality. Edge `suggest-listing-from-photos` (Sightengine NSFW → Gemini; closed vocabulary z `GOODS_CATEGORIES`) předvyplní `title` / `description` / `categoryType` / `subcategorySlug`. **Bez** odhadu ceny, stavu a lokality — po prefillu jsou prázdné a žlutě zvýrazněné, dokud je uživatel nevyplní (stav = „— vyberte —“). Banner zve k dalším fotkám (až 6) a úpravě textu. Nejisté atributy v popisu jako `Doplňte značku: ` (prázdné řádky při publishi zmizí, vyplněné → `Značka: …`). Model řídí samostatný `SUGGEST_LISTING_MODEL` (default `gemini-3.5-flash-lite`); `MODERATION_FINAL_*` patří pouze publish moderaci. Auth JWT nebo guest visitor (rate limit `suggest_from_photos` / `guest_suggest_from_photos`, Turnstile po soft limitu). Flag `SUGGEST_FROM_PHOTOS_ENABLED`. Publish gate zůstává `moderate-listing` beze změny. **Staff prefill lab (v3.65):** `/mod/prefill-lab` + Edge `compare-suggest-from-photos` — stejný prompt/schema, dvě sekvenční volání (default A `gemini-3.5-flash-lite`, B `gpt-5.4-nano`); bez DB / Sightengine / produkčních rate limitů.
 
 * **Multimodální AI Guardrail & Interaktivní doplňování (Text + Foto cross-validace):**
   * Po kliknutí na **„Publikovat inzerát“** (create) / **„Uložit“** (edit): klient nejprve nahraje nové originály do privátního immutable stagingu (`moderation-image-staging`); Next.js Server Action přes **Sharp** vytvoří hash-addressed WebP varianty do `moderation-image-renditions` (**Gemini 1024 px**, **Sightengine 512 px**, `fit: inside` — zachovaný poměr stran, WebP kvalita 80). Pak klient zavolá **přímo** Edge Function `moderate-listing` přes `supabase.functions.invoke()` (JWT uživatele v hlavičce). Payload: `title`, surový popis, `categoryType`, `subcategory_slug`, metadata z formuláře (`conditionLabel`, `conditionLabelText`, `conditionFieldLabel`, `priceType`, `priceTypeLabel`, `priceAmount`, u událostí `eventDate`), **`imageReferences`** (max. 6 odkazů na staging objekty — **ne** base64) a `mainImageIndex`. Edge stáhne originály (SEC-H02 hashe), načte důvěryhodné varianty a provede **jedno** AI kolo — Sightengine NSFW na všech snímcích (512 px), cross-validace text ↔ hlavní fotka + hydratace z **všech** fotek přes Gemini (1024 px) / GPT-4o-mini fallback; výstup je striktní JSON. **Žádná Next.js API Route v AI volání** (Sharp Server Action jen připravuje varianty). Detail: [`moderace-inzeratu.md`](./moderace-inzeratu.md).
@@ -889,6 +890,9 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.73 | 2026-08-22 | **Prefill UX + fotky:** krok 0 na mobilu **Vyfotit** / **Vybrat z galerie**; klient dekóduje HEIC a dočte blob z Android galerie. Po AI prefillu prázdný stav + žlutý prstenec jen u nevyplněné ceny/stavu/lokality. Výzvy v popisu `Doplňte …:` (publish → `Značka: …` / prázdné pryč). |
 | v3.74 | 2026-08-22 | **Prefill copy + nahrávání:** krok 0 „Napíšeme název a popis“, CTA **Předvyplnit inzerát**; banner zve k dalším fotkám. Párové CTA v `ui-primitives`. Do paměti jdou jen fotky v limitu (Samsung OOM). |
 | v3.75 | 2026-08-22 | **Galerie UX:** anglické „Failed to fetch“ → česká hláška; při překročení limitu 6 fotek stručný souhrn místo seznamu souborů. |
+| v3.76 | 2026-08-23 | **Průvodce `/jak-vytvorit-inzerat`:** 5 kroků včetně photo-first prefillu (krok 0); guest účet až při publikaci; kategorie bez deštníku Zboží. |
+| v3.77 | 2026-08-23 | **UT katalog:** owner panel (smazat + copy); e-mail po první publikaci; `external_url` u událostí (077); AI preview CTA/copy/backdrop; prefill copy; **§12.13** add-on více fotek (backlog). |
+| v3.78 | 2026-08-24 | **`external_url` validace:** https + veřejný host + denylist adult/tube/cam (Pornhub, OnlyFans…); CTA label z domény (Facebook / Instagram / obecné). God Mode: **+20 i na vlastním řádku**, reálná kvóta místo „bez limitu“. |
 
 ---
 
@@ -936,7 +940,7 @@ U pravidelné akce: `event_date` = nejbližší termín; frekvence (např. každ
 
 #### Prezentace události
 
-- Chová se jako klasický post: název, fotka/galerie, popis, lokalita, štítek stavu, typ vstupu (zdarma / nabídni), **datum a čas konání** (`event_date`).
+- Chová se jako klasický post: název, fotka/galerie, popis, lokalita, štítek stavu, typ vstupu (zdarma / nabídni), **datum a čas konání** (`event_date`), volitelně **odkaz** (`external_url`) na web nebo sociální síť.
 - V popisu zadavatel uvede kapacitu (pokud ji chce limitovat) a doplňující informace; **strukturované datum konání** jde do sloupce `event_date`.
 - Fotka, geolokace, AI guardrail, moderování — beze změny oproti ostatním kategoriím.
 
@@ -957,7 +961,7 @@ U pravidelné akce: `event_date` = nejbližší termín; frekvence (např. každ
 | Krok | Chování pro `udalost` |
 |------|------------------------|
 | 1 — Kategorie | Výběr `udalost` + podsekce; pole **Opakování**: Jednorázová (`one_time`) / Pravidelná (`long_term`) |
-| 2 — Obsah | Povinný **datetime picker** `event_date` (u pravidelné: „nejbližší termín“); validace **datum v budoucnosti** (klient + server; při editaci projde nezměněné staré datum); hint kapacity a frekvence v popisu; cena: **Vstup zdarma** / **Pevná cena (vstupné)** / **Nabídni**; **pole platnosti (§9) se nezobrazuje** |
+| 2 — Obsah | Povinný **datetime picker** `event_date` (u pravidelné: „nejbližší termín“); validace **datum v budoucnosti** (klient + server; při editaci projde nezměněné staré datum); hint kapacity a frekvence v popisu; cena: **Vstup zdarma** / **Pevná cena (vstupné)** / **Nabídni**; **pole platnosti (§9) se nezobrazuje**; volitelný checkbox + `external_url` (https, veřejný host; denylist adult/tube/cam — UT-03) |
 | 3 — Média | Beze změny (max 6 fotek) |
 
 ### 8.4 Datový model a DB migrace
@@ -1761,6 +1765,7 @@ Tím se pokryje lidský faktor (uživatel smaže VS, pošle jinou částku).
 - Recurring / předplatné
 - Topování inzerátů a placené prodloužení (`posts.payment_status` — až později)
 - Multi-měna (jen CZK)
+- **Rozšíření limitu fotek nad 6** — viz [§12.13](#1213-doplňková-služba--více-fotek-backlog-ut-13)
 
 ### 12.12 Budoucí upgrade cesty
 
@@ -1769,3 +1774,11 @@ Pokud objem překročí ~50 plateb/měsíc nebo uživatelé požadují kartu:
 1. Ponechat `bank_payments` jako abstrakci — přidat sloupec `provider` (`fio` | `stripe`).
 2. Stripe webhook může volat stejný `grant_listing_package` + audit path jako Fio sync.
 3. QR převod zůstane jako levná alternativa v ceníku.
+
+### 12.13 Doplňková služba — více fotek (backlog, UT-13)
+
+Evidence z uživatelského testování: hard limit **6 fotek** (`LISTING_IMAGE_MAX_FILES`) nestačí u oblečení a dalších detailních položek („k obleku bych potřebovala ještě tak dvě“).
+
+**Plán (ne v aktuálním sprintu):** placený add-on na rozšíření počtu fotek na inzerát (např. +2 / +4 nad free limit). Stejný nákupní kanál jako balíčky publikací (§12.1) — až po v0.6.
+
+---

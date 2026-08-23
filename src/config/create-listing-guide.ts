@@ -18,7 +18,9 @@ export type CreateListingGuideDemo = {
   /** Tailwind pozadí placeholderu, když chybí fotka. */
   imagePlaceholderClass: string;
   imageAlt: string;
+  /** Název po AI předvyplnění (krok 2). */
   draftTitle: string;
+  /** Popis po AI předvyplnění — včetně řádků „Doplňte …:“. */
   draftDescription: string;
   categoryLabel: string;
   priceLabel: string;
@@ -36,14 +38,15 @@ export const CREATE_LISTING_GUIDE_DEMOS: readonly CreateListingGuideDemo[] = [
   {
     id: "router",
     tabLabel: "Elektronika",
-    hint: "Vyfoťte i štítek s parametry — AI je doplní do inzerátu.",
+    hint: "Vyfoťte i štítek s parametry — doplníme je do inzerátu.",
     imageSrc: "/images/guide/demo-router.png",
     labelImageSrc: "/images/guide/demo-router-stittek.png",
     imagePlaceholderClass: "bg-slate-200",
     imageAlt: "Ukázková fotka Wi‑Fi routeru se 4 anténami",
-    draftTitle: "Prodám Wi‑Fi router",
-    draftDescription: "Starý router, funguje",
-    categoryLabel: "Zboží · Elektronika",
+    draftTitle: "Wi‑Fi 6 router NL-AX3000 (4 antény)",
+    draftDescription:
+      "Nabízím černý Wi‑Fi 6 router se 4 anténami.\nDoplňte stáří: ",
+    categoryLabel: "Elektronika · Ostatní",
     priceLabel: "890 Kč",
     locationLabel: "Brno — Královo Pole",
     aiTitle: "Wi‑Fi 6 router NL-AX3000 (4 antény)",
@@ -62,14 +65,15 @@ export const CREATE_LISTING_GUIDE_DEMOS: readonly CreateListingGuideDemo[] = [
   {
     id: "bike",
     tabLabel: "Kolo",
-    hint: "Stačí fotka a krátký popis — AI doplní detaily z fotky.",
+    hint: "Stačí 1–2 fotky — název a popis navrhneme.",
     imageSrc: "/images/guide/demo-kolo.jpg",
     labelImageSrc: null,
     imagePlaceholderClass: "bg-sky-100",
     imageAlt: "Ukázková fotka dětského kola",
-    draftTitle: "Prodám kolo",
-    draftDescription: "Prodám dětské kolo v dobrém stavu",
-    categoryLabel: "Zboží · Sport a outdoor",
+    draftTitle: "Dětské kolo 20″",
+    draftDescription:
+      "Nabízím dětské kolo v dobrém stavu, velikost kol 20″.\nDoplňte značku: ",
+    categoryLabel: "Sport · Kola a koloběžky",
     priceLabel: "1 500 Kč",
     locationLabel: "Brno — Královo Pole",
     aiTitle: "Prodám dětské kolo 20″",
@@ -83,19 +87,20 @@ export const CREATE_LISTING_GUIDE_DEMOS: readonly CreateListingGuideDemo[] = [
       "Barva: modrá",
     ],
     publishedTitle: "Prodám dětské kolo 20″",
-    feedBadge: "Sport a outdoor",
+    feedBadge: "Sport",
   },
   {
     id: "appliance",
     tabLabel: "Spotřebič",
-    hint: "I text na zadním štítku AI umí převést do parametrů.",
+    hint: "I text na zadním štítku převedeme do parametrů.",
     imageSrc: "/images/guide/demo-mikrovlnka.png",
     labelImageSrc: "/images/guide/demo-mikrovlnka-stittek.png",
     imagePlaceholderClass: "bg-amber-100",
     imageAlt: "Ukázková fotka bílé mikrovlnné trouby",
-    draftTitle: "Prodám mikrovlnku",
-    draftDescription: "Funguje, odvoz ihned",
-    categoryLabel: "Zboží · Domácnost",
+    draftTitle: "Bílá mikrovlnná trouba 23 l / 800 W",
+    draftDescription:
+      "Nabízím bílou mikrovlnnou troubu s digitálním displejem.\nDoplňte značku: ",
+    categoryLabel: "Elektronika · Spotřebiče",
     priceLabel: "1 200 Kč",
     locationLabel: "Brno — Žabovřesky",
     aiTitle: "Bílá mikrovlnná trouba 23 l / 800 W",
@@ -109,7 +114,7 @@ export const CREATE_LISTING_GUIDE_DEMOS: readonly CreateListingGuideDemo[] = [
       "Gril: 1000 W",
     ],
     publishedTitle: "Bílá mikrovlnná trouba 23 l / 800 W",
-    feedBadge: "Domácnost",
+    feedBadge: "Elektronika",
   },
 ] as const;
 
@@ -128,53 +133,66 @@ export function getCreateListingGuideDemo(
 export const CREATE_LISTING_GUIDE_UI = {
   footerLinkLabel: "Jak vytvořit inzerát",
   metaTitle: `Jak vytvořit inzerát za 2 minuty | ${SITE_DISPLAY_NAME}`,
-  metaDescription: `Vyfoťte věc mobilem — klidně i štítek s parametry. AI na ${SITE_SHORT_NAME} doplní popis. Ukázka ve 4 krocích.`,
+  metaDescription: `Vyfoťte 1–2 fotky mobilem. ${SITE_SHORT_NAME} navrhne název, popis a kategorii. Doplníte cenu a lokalitu — účet až při publikaci.`,
   pageTitle: "Jak snadno lze vytvořit inzerát do dvou minut?",
+  intro:
+    "U zboží stačí 1–2 fotky. Navrhneme název, popis i kategorii. Cenu, stav a lokalitu doplníte vy. Služby, práci, reality a události vyplníte ručně.",
   scenariosLabel: "Ukázky podle typu věci",
   ctaLabel: "Vytvořit inzerát",
-  ctaHint: "Registrace zabere chvíli — pak rovnou fotíte a píšete.",
+  ctaHint:
+    "Na mobilu vyfoťte věc. Název a popis napíšeme. Účet založíte až když inzerát publikujete.",
   steps: [
     {
       number: 1,
-      title: "Vyfoťte nebo nahrajte fotku a napište krátký popisek",
-      body: "Vyberete kategorii, vyfotíte věc nebo nahrajete fotku z galerie a napíšete pár slov. Nemusíte psát román — stačí krátký název. Klidně přidejte i fotku štítku s parametry.",
+      title: "Vyfoťte 1–2 fotky a nechte si inzerát předvyplnit",
+      body: "Na mobilu zvolte Vyfotit nebo Vybrat z galerie. Po Předvyplnit inzerát navrhneme název, popis i kategorii. Služby, události, práci a reality založíte tlačítkem Vyplnit inzerát ručně.",
     },
     {
       number: 2,
-      title: "Zkontrolujeme, že obsah sedí",
-      body: "Po kliknutí na Publikovat ověříme, že text odpovídá fotkám a splňuje pravidla inzerce. Když něco nesedí, řekneme vám to hned.",
+      title: "Doplňte cenu, stav a lokalitu",
+      body: "Text a kategorii už máte připravené — zatím jde o pracovní verzi. Zkontrolujte je, doplňte prázdné údaje (žlutě orámované) a klidně přidejte další fotky. Řádky „Doplňte …:“ vyplňte za dvojtečku, nebo je smažte. V dalším kroku to AI zpracuje do finální podoby.",
     },
     {
       number: 3,
-      title: "AI upraví text za vás",
-      body: "Projde-li kontrola, AI navrhne popis, přečte i text na fotkách (např. štítek) a doplní parametry. Zeptá se jen na to, co chybí. Návrh si můžete ještě upravit.",
+      title: "Zkontrolujeme, že obsah sedí",
+      body: "Po kliknutí na Publikovat ověříme, že text odpovídá fotkám a splňuje Podmínky inzerce. Když něco nesedí, řekneme vám to hned.",
     },
     {
       number: 4,
+      title: "AI upraví text za vás",
+      body: "Navrhneme srozumitelný popis, doplníme parametry z fotek a zeptáme se jen na to, co chybí. Návrh můžete upravit, nebo ponechat svůj původní text.",
+    },
+    {
+      number: 5,
       title: "Inzerát je online",
-      body: "Hotovo — inzerát se zobrazí ve vašem okolí s fotkou, cenou a přehledným popisem. Kontakt zůstane chráněný, dokud se někdo neozve.",
+      body: "Zobrazí se lidem v okolí. Telefon a e-mail zůstanou skryté, dokud se zájemce nepřihlásí. Poptávku můžete dostat i e-mailem.",
     },
   ],
   faq: [
     {
-      question: "Musím mít dlouhý popis?",
+      question: "Musím nejdřív napsat popis?",
       answer:
-        "Ne. Stačí krátký popis — AI z fotek a kategorie doplní strukturovaný popis. Původní text můžete kdykoli publikovat i bez úprav.",
+        "Ne. U zboží stačí 1–2 fotky — název, popis a kategorii navrhneme. Původní text můžete kdykoli publikovat i bez úprav AI.",
+    },
+    {
+      question: "Musím mít účet, než začnu?",
+      answer:
+        "Fotit a vyplňovat můžete hned. Účet (Google nebo e-mail) založíte až při publikaci. Zájemce uvidí váš kontakt až po svém přihlášení.",
     },
     {
       question: "Musím přepisovat údaje ze štítku?",
       answer:
-        "Ne. Vyfoťte i štítek s parametry — AI je často doplní sama. Před publikací si text vždy zkontrolujte; AI může udělat chybu.",
+        "Ne. Vyfoťte i štítek s parametry — často je doplníme sami. Před publikací si text vždy zkontrolujte; AI může udělat chybu.",
     },
     {
-      question: "Funguje to i na počítači?",
+      question: "Co když inzeruji službu, práci nebo událost?",
       answer:
-        "Ano. Formulář je stejný, jen většina uživatelů fotí přímo mobilem — proto ukázka vypadá jako telefon.",
+        "Zvolte Vyplnit inzerát ručně — vyberete kategorii a napíšete text klasicky. Předvyplnění z fotek je určené hlavně pro zboží.",
     },
     {
       question: "Kolik to stojí?",
       answer:
-        "Založení účtu i inzerce jsou zdarma. Počet publikací je omezený — aktuální limity najdete v sekci Limity inzerce v patičce.",
+        "Založení účtu i inzerce jsou zdarma. Počet publikací je omezený — aktuální limity najdete v sekci Limity inzerce.",
     },
   ],
 } as const;

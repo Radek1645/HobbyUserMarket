@@ -239,12 +239,9 @@ export function ModerationPreviewDialog({
       className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center"
       role="presentation"
     >
-      <button
-        type="button"
-        aria-label="Zavřít"
-        disabled={publishing}
-        className="absolute inset-0 bg-gray-900/50 backdrop-blur-[1px] disabled:cursor-not-allowed"
-        onClick={onClose}
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gray-900/50 backdrop-blur-[1px]"
       />
 
       <div
@@ -261,7 +258,20 @@ export function ModerationPreviewDialog({
             {MODERATION_PREVIEW_UI.title}
           </h2>
           <p className="mt-1.5 text-xs leading-relaxed text-neutral-600">
-            {MODERATION_PREVIEW_UI.subtitle}
+            {MODERATION_PREVIEW_UI.subtitleLead}{" "}
+            <strong>
+              {MODERATION_PREVIEW_UI.subtitleCancelLead}
+              <button
+                type="button"
+                disabled={publishing}
+                onClick={onClose}
+                className="font-semibold text-blue-700 underline decoration-blue-700/40 underline-offset-2 hover:text-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {MODERATION_PREVIEW_UI.cancelLabel}
+              </button>
+              {MODERATION_PREVIEW_UI.subtitleCancelRest}
+            </strong>{" "}
+            {MODERATION_PREVIEW_UI.subtitleChoice}
           </p>
         </div>
 
@@ -560,14 +570,12 @@ export function ModerationPreviewDialog({
                 Ukládám…
               </span>
             ) : (
-              <span>
-                {MODERATION_PREVIEW_UI.publishAiLabel}
-                <span className="ml-1.5 font-normal text-white/80">
-                  · {MODERATION_PREVIEW_UI.publishAiHint}
-                </span>
-              </span>
+              MODERATION_PREVIEW_UI.publishAiLabel
             )}
           </button>
+          <p className="px-1 text-center text-[11px] leading-snug text-neutral-500">
+            {MODERATION_PREVIEW_UI.publishAiKeepOriginalHint}
+          </p>
 
           <button
             type="button"
@@ -577,9 +585,6 @@ export function ModerationPreviewDialog({
           >
             {MODERATION_PREVIEW_UI.publishOriginalLabel}
           </button>
-          <p className="px-1 text-center text-[11px] leading-snug text-neutral-500">
-            {MODERATION_PREVIEW_UI.publishOriginalHint}
-          </p>
 
           <button
             type="button"

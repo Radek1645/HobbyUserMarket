@@ -34,6 +34,7 @@ import {
   LISTING_DESCRIPTION_MAX_LENGTH,
   LISTING_DESCRIPTION_MIN_LENGTH,
   LISTING_EXCHANGE_FOR_MAX_LENGTH,
+  EXTERNAL_URL_MAX_LENGTH,
   MODERATION_IMAGE_STAGING_BUCKET,
 } from "@/config/app";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
@@ -136,6 +137,8 @@ import {
   LISTING_FORM_STEPPER_MANUAL,
   LISTING_FORM_STEPPER_PHOTO_FIRST,
 } from "@/config/listing-form-ui";
+import { EXTERNAL_URL_FIELD_UI } from "@/config/listing-external-url";
+import { parseListingExternalUrl } from "@/lib/posts/external-url";
 import type { CategoryType, ConditionLabel, ListingImagePreview, PriceType } from "@/types/post";
 import Link from "next/link";
 
@@ -340,6 +343,8 @@ export function CreateListingForm({
       setLongitude(draft.longitude);
       setEventDate(draft.eventDate);
       setListingDurationDays(draft.listingDurationDays);
+      setHasExternalUrl(Boolean(draft.externalUrl?.trim()));
+      setExternalUrl(draft.externalUrl ?? "");
       setShowContactEmail(draft.showContactEmail);
       setShowContactPhone(draft.showContactPhone);
       setContactPhone(draft.contactPhone);
@@ -469,6 +474,13 @@ export function CreateListingForm({
         formData.set("eventDate", draft.eventDate);
         formData.set("listingDurationDays", String(draft.listingDurationDays));
         formData.set(
+          "hasExternalUrl",
+          draft.categoryType === "udalost" && Boolean(draft.externalUrl?.trim())
+            ? "true"
+            : "false",
+        );
+        formData.set("externalUrl", draft.externalUrl ?? "");
+        formData.set(
           "showContactEmail",
           draft.showContactEmail ? "true" : "false",
         );
@@ -547,6 +559,12 @@ export function CreateListingForm({
     initialValues?.customDuration ?? false,
   );
   const [eventDate, setEventDate] = useState(initialValues?.eventDate ?? "");
+  const [hasExternalUrl, setHasExternalUrl] = useState(
+    Boolean(initialValues?.externalUrl?.trim()),
+  );
+  const [externalUrl, setExternalUrl] = useState(
+    initialValues?.externalUrl ?? "",
+  );
   const [showContactEmail, setShowContactEmail] = useState(
     initialValues?.showContactEmail ?? false,
   );
@@ -638,6 +656,10 @@ export function CreateListingForm({
       showContactPhone,
       contactPhone,
       jobCvRequired,
+      externalUrl:
+        categoryType === "udalost" && hasExternalUrl
+          ? externalUrl.trim()
+          : "",
       stagingPaths: imageUploadRef.current?.getGuestStagingPaths() ?? [],
       mainImageIndex: imageUploadRef.current?.getMainImageIndex() ?? 0,
       aiTitle: overrides?.aiTitle,
@@ -796,13 +818,28 @@ export function CreateListingForm({
     () => (mode === "create" ? dateToDatetimeLocalValue(new Date()) : undefined),
     [mode],
   );
+  const externalUrlCheck = (() => {
+    if (!isEvent || !hasExternalUrl) {
+      return { ok: true as const, error: null as string | null };
+    }
+    const parsed = parseListingExternalUrl(externalUrl);
+    if (!parsed.ok) {
+      return { ok: false as const, error: parsed.error };
+    }
+    if (!parsed.url) {
+      return { ok: false as const, error: EXTERNAL_URL_FIELD_UI.required };
+    }
+    return { ok: true as const, error: null as string | null };
+  })();
+  const isExternalUrlValid = externalUrlCheck.ok;
   const canPublish =
     hasLocation &&
     hasCondition &&
     isTitleValid &&
     isDescriptionValid &&
     isPriceValid &&
-    isEventDateValid;
+    isEventDateValid &&
+    isExternalUrlValid;
 
   const showPrefillConditionHighlight = fromAiPrefill && !hasCondition;
   const showPrefillLocationHighlight = fromAiPrefill && !hasLocation;
@@ -823,6 +860,7 @@ export function CreateListingForm({
     if (!isDescriptionValid) missing.push("popis");
     if (!isPriceValid) missing.push("cenu");
     if (!isEventDateValid) missing.push("datum události");
+    if (!isExternalUrlValid) missing.push("odkaz na web nebo sociální síť");
     return missing;
   })();
 
@@ -1623,7 +1661,18 @@ export function CreateListingForm({
         >
           {showPrefillMissingFieldsHint ? (
             <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
-              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint}
+              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.beforeWorking}
+              <strong>
+                {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.working}
+              </strong>
+              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.afterWorking}
+              <strong>
+                {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.doplnte}
+              </strong>
+              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.afterDoplnte}
+              <strong>
+                {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.nextStep}
+              </strong>
             </p>
           ) : null}
 
@@ -1867,7 +1916,7 @@ export function CreateListingForm({
               )}
               {expiresPreview ? (
                 <p className={hintClass}>
-                  Platí do cca {expiresPreview}
+                  Platí do {expiresPreview}
                 </p>
               ) : null}
             </div>
@@ -2023,6 +2072,97 @@ export function CreateListingForm({
                   </span>
                 </span>
               </label>
+            </div>
+          ) : null}
+
+          {isEvent ? (
+            <div className={listingFormContactSectionClass}>
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-900">
+                  Další informace online
+                </h3>
+                <p className={`${hintClass} mt-1`}>
+                  Odkaz se zobrazí zájemcům na detailu inzerátu — nemusí vám
+                  psát, když hledají jen více info.
+                </p>
+              </div>
+
+              <input
+                type="hidden"
+                name="hasExternalUrl"
+                value={hasExternalUrl ? "true" : "false"}
+              />
+              <input
+                type="hidden"
+                name="externalUrl"
+                value={hasExternalUrl ? externalUrl : ""}
+              />
+
+              <label
+                className={`${listingFormContactOptionBaseClass} ${
+                  hasExternalUrl
+                    ? listingFormContactOptionActiveClass
+                    : listingFormContactOptionIdleClass
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={hasExternalUrl}
+                  onChange={(event) =>
+                    setHasExternalUrl(event.target.checked)
+                  }
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-400 text-blue-600 focus:ring-blue-600"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-neutral-900">
+                    Mám další informace na webu nebo sociálních sítích
+                  </span>
+                </span>
+              </label>
+
+              {hasExternalUrl ? (
+                <div>
+                  <label htmlFor="externalUrl" className={listingFormLabelClass}>
+                    Odkaz
+                    <span
+                      className={listingFormRequiredMarkClass}
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
+                  </label>
+                  <input
+                    id="externalUrl"
+                    type="text"
+                    inputMode="url"
+                    autoComplete="url"
+                    maxLength={EXTERNAL_URL_MAX_LENGTH}
+                    placeholder="https://facebook.com/…"
+                    value={externalUrl}
+                    required={hasExternalUrl}
+                    onChange={(event) => setExternalUrl(event.target.value)}
+                    aria-invalid={
+                      externalUrl.trim().length > 0 &&
+                      Boolean(externalUrlCheck.error)
+                    }
+                    aria-describedby={
+                      externalUrl.trim().length > 0 && externalUrlCheck.error
+                        ? "externalUrl-error"
+                        : undefined
+                    }
+                    className={inputClass}
+                  />
+                  {externalUrl.trim().length > 0 && externalUrlCheck.error ? (
+                    <p
+                      id="externalUrl-error"
+                      className="mt-1 text-xs text-red-600"
+                      role="alert"
+                    >
+                      {externalUrlCheck.error}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
 

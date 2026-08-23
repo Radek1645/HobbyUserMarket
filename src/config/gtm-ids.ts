@@ -38,6 +38,8 @@ export const GTM_CTA = {
   LISTING_CARD_OPEN: "cta_listing_card_open",
   DETAIL_BACK_HOME: "cta_detail_back_home",
   DETAIL_EDIT_LISTING: "cta_detail_edit_listing",
+  DETAIL_DELETE_LISTING: "cta_detail_delete_listing",
+  DETAIL_EXTERNAL_URL: "cta_detail_external_url",
   MY_LISTINGS_EDIT: "cta_my_listings_edit",
   MY_LISTINGS_VIEW: "cta_my_listings_view",
   MY_LISTINGS_DELETE: "cta_my_listings_delete",
@@ -89,6 +91,11 @@ export const GTM_CTA = {
   HEADER_ACCOUNT_SETTINGS: "cta_header_account_settings",
   ACCOUNT_DELETE_OPEN: "cta_account_delete_open",
   ACCOUNT_DELETE_SUBMIT: "cta_account_delete_submit",
+
+  // 404
+  NOT_FOUND_HOME: "cta_not_found_home",
+  NOT_FOUND_CREATE_LISTING: "cta_not_found_create_listing",
+  NOT_FOUND_CONTACT: "cta_not_found_contact",
 
   // God Mode
   MOD_USER_DELETE_OPEN: "cta_mod_user_delete_open",

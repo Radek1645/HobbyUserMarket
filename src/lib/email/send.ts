@@ -18,22 +18,31 @@ export async function sendTransactionalEmail(
   }
 
   const resend = new Resend(config.resendKey);
-  const { error } = await resend.emails.send({
-    from: config.fromEmail,
-    to: email.to,
-    subject: email.subject,
-    text: email.text,
-  });
+  try {
+    const { error } = await resend.emails.send({
+      from: config.fromEmail,
+      to: email.to,
+      subject: email.subject,
+      text: email.text,
+    });
 
-  if (error) {
-    console.error("email send failed:", {
+    if (error) {
+      console.error("email send failed:", {
+        to: email.to,
+        subject: email.subject,
+        error,
+      });
+      return false;
+    }
+
+    console.info("email sent:", { to: email.to, subject: email.subject });
+    return true;
+  } catch (error) {
+    console.error("email send threw:", {
       to: email.to,
       subject: email.subject,
       error,
     });
     return false;
   }
-
-  console.info("email sent:", { to: email.to, subject: email.subject });
-  return true;
 }

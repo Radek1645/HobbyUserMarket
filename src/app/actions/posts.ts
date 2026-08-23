@@ -14,6 +14,8 @@ import {
 import { findProhibitedKeyword } from "@/lib/moderation/prohibited-scan";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
 import { stripDoplnitPlaceholders } from "@/lib/listing/strip-doplnit-placeholders";
+import { notifyListingPublished } from "@/lib/email/notify-listing-published";
+import { getSiteUrl } from "@/lib/supabase/env";
 import {
   getUserListingQuota,
   isListingQuotaExceededError,
@@ -184,6 +186,9 @@ function buildListingPayload(data: CreateListingInput) {
 
   payload.job_cv_required =
     data.categoryType === "prace" ? data.jobCvRequired : false;
+
+  payload.external_url =
+    data.categoryType === "udalost" ? data.externalUrl : null;
 
   return payload;
 }
@@ -388,6 +393,12 @@ export async function createListing(
   }
 
   revalidatePath("/");
+  await notifyListingPublished({
+    recipientEmail: user.email,
+    postTitle: String(data.title),
+    listingUrl: `${getSiteUrl()}${getListingPath(row.slug)}`,
+    myListingsUrl: `${getSiteUrl()}/moje-inzeraty`,
+  });
   redirect(`${getListingPath(row.slug)}?published=${row.id}`);
 }
 
@@ -521,6 +532,19 @@ export async function updateListing(
   revalidatePath("/moje-inzeraty", "page");
   revalidatePath(getListingPath(slug));
   revalidatePath(getListingEditPath(slug));
+
+  const isFirstPublication =
+    existing.status === "draft" &&
+    !existing.listing_quota_consumed &&
+    finalStatus === "active";
+  if (isFirstPublication) {
+    await notifyListingPublished({
+      recipientEmail: user.email,
+      postTitle: validated.data.title,
+      listingUrl: `${getSiteUrl()}${getListingPath(slug)}`,
+      myListingsUrl: `${getSiteUrl()}/moje-inzeraty`,
+    });
+  }
 
   if (finalStatus === "active") {
     redirect(getListingPath(slug));
