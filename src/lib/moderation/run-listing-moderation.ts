@@ -94,6 +94,7 @@ export async function runListingModeration(
     conditionLabelText: params.conditionLabelText,
     conditionFieldLabel: params.conditionFieldLabel,
     eventDate: params.eventDate,
+    externalUrl: params.externalUrl,
     priceType: params.priceType,
     priceTypeLabel: params.priceTypeLabel,
     priceAmount: params.priceAmount,

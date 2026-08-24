@@ -6,7 +6,10 @@ import {
   LISTING_PROMPT_TAGS,
   wrapListingUserField,
 } from "./bound-user-content.ts";
-import { getListingPlatformCta } from "./listing-cta.ts";
+import {
+  getListingExternalUrlChannelLabel,
+  getListingPlatformCta,
+} from "./listing-cta.ts";
 import { formatPublicListingLocation } from "./format-public-location.ts";
 
 export type ModerationRequestBody = {
@@ -20,6 +23,11 @@ export type ModerationRequestBody = {
   conditionLabelText?: string;
   conditionFieldLabel?: string;
   eventDate?: string;
+  /**
+   * Volitelný odkaz u události (`posts.external_url`).
+   * Do promptu jde jen kanál (Facebook / Instagram / web), ne plné URL.
+   */
+  externalUrl?: string;
   /**
    * Plná lokalita z formuláře (může obsahovat ulici + číslo).
    * Do AI promptu jde jen veřejná varianta (`formatPublicListingLocation`).
@@ -120,6 +128,27 @@ export function formatEventDateForDisplay(value: string): string {
   });
 }
 
+function formatCtaInstruction(body: ModerationRequestBody): string | null {
+  if (!body.categoryType) return null;
+
+  const channel = getListingExternalUrlChannelLabel(body.externalUrl);
+  if (channel) {
+    const buttonLabel =
+      channel === "web" ? "Další informace online" : channel;
+    return (
+      `Inzerát má vyplněný odkaz v samostatném poli (${channel}). ` +
+      `V UI bude tlačítko „${buttonLabel}“. ` +
+      `Do cleanedDescription NEVKLÁDEJ větu „Pro více informací napište … zprávu přes web“ ` +
+      `ani variantu přes Facebook/Instagram. URL do popisu nepiš.`
+    );
+  }
+
+  return (
+    `CTA věta na konec úvodu cleanedDescription (před ---), doslovně:\n` +
+    getListingPlatformCta(body.categoryType)
+  );
+}
+
 function formatEventDateFromForm(eventDate: string): string {
   const formatted = formatEventDateForDisplay(eventDate);
   return (
@@ -155,9 +184,7 @@ export function buildModerationUserPrompt(
     body.categoryType
       ? `Kategorie: ${body.categoryType}${body.subcategorySlug ? ` / ${body.subcategorySlug}` : ""}`
       : null,
-    body.categoryType
-      ? `CTA věta na konec úvodu cleanedDescription (před ---), doslovně:\n${getListingPlatformCta(body.categoryType)}`
-      : null,
+    formatCtaInstruction(body),
     categoryAiPrompt
       ? `Kontext kategorie pro hydrataci a doplňující otázky:\n${categoryAiPrompt}`
       : null,

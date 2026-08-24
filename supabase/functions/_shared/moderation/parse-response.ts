@@ -2,7 +2,10 @@ import {
   VALID_CATEGORY_TYPES,
   VALID_SUBCATEGORY_SLUGS,
 } from "./category-prompts.ts";
-import { applyListingPlatformCta } from "./listing-cta.ts";
+import {
+  applyListingPlatformCta,
+  listingPlatformCtaPattern,
+} from "./listing-cta.ts";
 import { formatEventDateForDisplay } from "./build-user-prompt.ts";
 
 export type ModerationStatus = "APPROVED" | "REJECTED" | "NEEDS_QUESTIONS";
@@ -501,8 +504,7 @@ function insertEventDateSentenceBeforeCta(
   display: string,
 ): string {
   const sentence = `Koná se ${display}.`;
-  const ctaPattern =
-    /Pro více informací napište \S+ zprávu přes (?:platformu|web)\.?/i;
+  const ctaPattern = listingPlatformCtaPattern("i");
   const ctaMatch = intro.match(ctaPattern);
 
   if (ctaMatch && ctaMatch.index != null) {
@@ -677,6 +679,7 @@ export function normalizeModerationResult(
   priceAmount?: number,
   categoryType?: string,
   eventDate?: string,
+  omitPlatformCta?: boolean,
 ): ModerationResult {
   if (result.status === "REJECTED") {
     return {
@@ -703,6 +706,7 @@ export function normalizeModerationResult(
       eventDate,
     ),
     categoryType,
+    { omitCta: omitPlatformCta === true },
   );
   const metaDescription = clampMetaDescription(result.metaDescription);
   const imageAlt = clampImageAlt(result.imageAlt);

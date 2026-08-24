@@ -19,6 +19,8 @@ export type ModerateListingRequest = {
   conditionFieldLabel?: string;
   /** U událostí — datetime z formuláře (ISO nebo datetime-local). */
   eventDate?: string;
+  /** Volitelný odkaz u události — AI nesmí vnutit CTA „přes web“. */
+  externalUrl?: string;
   /** Typ ceny z formuláře — AI se na cenu znovu neptá, pokud je pevná/orientační. */
   priceType?: PriceType;
   /** Lidsky čitelný popisek typu ceny (Pevná cena, Dohodou…). */
@@ -86,6 +88,8 @@ export type ListingModerationInput = {
   conditionLabelText?: string;
   conditionFieldLabel?: string;
   eventDate?: string;
+  /** Volitelný odkaz u události — AI nesmí vnutit CTA „přes web“. */
+  externalUrl?: string;
   priceType?: PriceType;
   priceTypeLabel?: string;
   priceAmount?: number;

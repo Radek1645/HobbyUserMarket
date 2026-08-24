@@ -106,7 +106,7 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - cleanedDescription struktura:
   1) ÚVOD: až 6 vět; cenu z formuláře v úvodu. Pevná → „Cena 4 000 Kč.“ Dohodou → „Cena 4 000 Kč, dohodou.“ (dohoda jen zde, ne v meta). Do textu necpát „cca“.
   2) PARAMETRY: po prázdném řádku, oddělovači „---“ a nadpisu „Parametry“ odrážky „• Popisek: hodnota“.
-  3) CTA na konci úvodu (před ---): jen platforma — přesnou větu vezmi z user promptu (u zboží „prodejci“, u práce „zadavateli“, u služeb „poskytovateli“, u události „pořadateli“, u nemovitosti „inzerentovi“). Nikdy telefon/e-mail v CTA.
+  3) CTA na konci úvodu (před ---): jen platforma — přesnou větu vezmi z user promptu (u zboží „prodejci“, u práce „zadavateli“, u služeb „poskytovateli“, u události „pořadateli“, u nemovitosti „inzerentovi“). Nikdy telefon/e-mail v CTA. Pokud user prompt uvede, že inzerát má vyplněný odkaz (Facebook / Instagram / web) v samostatném poli, CTA větu „napište … přes web“ NEVKLÁDEJ — odkaz je tlačítko pod inzerátem. Do popisu nepiš Facebook, Instagram ani URL.
 - Jednotky v Parametrech povinné, pokud dávají smysl (cm, ml/l, m², km, kg).
 - Příklad cleanedTitle: „Baterie Li-ion 48V 17Ah Samsung“ (nebo s use-case, pokud se vejde: „Baterie Samsung 48V na elektrokolo“)
 - Příklad metaDescription (měkký cíl): „Baterie Li-ion Samsung 48V 17Ah ve Slavkově u Brna za 4 000 Kč. Spolehlivý akumulátor na elektrokolo.“

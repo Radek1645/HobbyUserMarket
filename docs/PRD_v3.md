@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.78  
+> **Verze dokumentu:** v3.79  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
@@ -893,6 +893,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.76 | 2026-08-23 | **Průvodce `/jak-vytvorit-inzerat`:** 5 kroků včetně photo-first prefillu (krok 0); guest účet až při publikaci; kategorie bez deštníku Zboží. |
 | v3.77 | 2026-08-23 | **UT katalog:** owner panel (smazat + copy); e-mail po první publikaci; `external_url` u událostí (077); AI preview CTA/copy/backdrop; prefill copy; **§12.13** add-on více fotek (backlog). |
 | v3.78 | 2026-08-24 | **`external_url` validace:** https + veřejný host + denylist adult/tube/cam (Pornhub, OnlyFans…); CTA label z domény (Facebook / Instagram / obecné). God Mode: **+20 i na vlastním řádku**, reálná kvóta místo „bez limitu“. |
+| v3.79 | 2026-08-24 | **Událost + AI:** `external_url` jde do Edge moderace (jen kanál Facebook/Instagram/web, ne plné URL). S vyplněným odkazem AI **nevkládá** CTA „napište pořadateli zprávu přes web“. |
 
 ---
 

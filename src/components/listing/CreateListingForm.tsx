@@ -188,6 +188,15 @@ const technicalErrorAlertClass =
 const hardGateErrorAlertClass =
   "rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-950";
 
+function moderationExternalUrl(
+  categoryType: CategoryType,
+  rawUrl: string | undefined,
+): string | undefined {
+  if (categoryType !== "udalost" || !rawUrl?.trim()) return undefined;
+  const parsed = parseListingExternalUrl(rawUrl);
+  return parsed.ok && parsed.url ? parsed.url : undefined;
+}
+
 const initialState: FormState = {};
 
 export function CreateListingForm({
@@ -410,6 +419,10 @@ export function CreateListingForm({
             draft.categoryType === "udalost" && draft.eventDate
               ? toModerationEventDateIso(draft.eventDate)
               : undefined,
+          externalUrl: moderationExternalUrl(
+            draft.categoryType,
+            draft.externalUrl,
+          ),
           priceType: draft.priceType,
           priceTypeLabel: getPriceTypeLabel(draft.categoryType, draft.priceType),
           priceAmount: parsePriceInput(draft.priceAmount) ?? undefined,
@@ -1010,6 +1023,10 @@ export function CreateListingForm({
           : undefined,
         conditionFieldLabel: getConditionFieldLabel(categoryType),
         eventDate: isEvent ? toModerationEventDateIso(eventDate) : undefined,
+        externalUrl: moderationExternalUrl(
+          categoryType,
+          hasExternalUrl ? externalUrl : undefined,
+        ),
         priceType,
         priceTypeLabel: getPriceTypeLabel(categoryType, priceType),
         priceAmount:
@@ -1239,6 +1256,10 @@ export function CreateListingForm({
           : undefined,
         conditionFieldLabel: getConditionFieldLabel(categoryType),
         eventDate: isEvent ? toModerationEventDateIso(eventDate) : undefined,
+        externalUrl: moderationExternalUrl(
+          categoryType,
+          hasExternalUrl ? externalUrl : undefined,
+        ),
         priceType,
         priceTypeLabel: getPriceTypeLabel(categoryType, priceType),
         priceAmount:

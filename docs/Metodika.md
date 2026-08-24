@@ -584,11 +584,11 @@ Hydratace vychází z:
 
 - textu, který uživatel napsal,
 - kategorie a podkategorie (každá má vlastní AI pokyny v `categories.ts`),
-- metadat z formuláře (cena, stav, datum akce, **lokalita** — na cenu/stav/datum se AI znovu neptá, pokud už jsou vyplněná),
+- metadat z formuláře (cena, stav, datum akce, **lokalita**, u události volitelný **odkaz** — na cenu/stav/datum se AI znovu neptá, pokud už jsou vyplněná),
 - **všech** nahraných fotografií (vizuální kontext; hlavní fotka navíc pro shodu text ↔ náhled),
 - u jasně identifikovaného výrobku (značka + model / typ / motorizace) v **jakékoli** kategorii zboží i **katalogových vlastností** s jistotou. Kusové údaje (nájezd, vady, příslušenství v balení) jen z textu/fotek.
 
-**Formulář má při hydrataci přednost** (cena, `eventDate`, lokalita): neshoda volného textu s polem formuláře **není** důvod k `REJECTED`; Edge přepíše údaj do `cleanedDescription` / Parametrů. Technický detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) → *Filtr redundantních otázek (formulář má pravdu)*. Po ruční úpravě textu v modalu už to neplatí stejně — viz §6.8.1.
+**Formulář má při hydrataci přednost** (cena, `eventDate`, lokalita, u události `external_url`): neshoda volného textu s polem formuláře **není** důvod k `REJECTED`; Edge přepíše údaj do `cleanedDescription` / Parametrů. U události s vyplněným odkazem (Facebook / Instagram / web) AI **nevkládá** CTA „napište pořadateli zprávu přes web“ — odkaz je samostatné tlačítko pod inzerátem. Technický detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) → *Filtr redundantních otázek (formulář má pravdu)*. Po ruční úpravě textu v modalu už to neplatí stejně — viz §6.8.1.
 
 ### 6.7 Stav NEEDS_QUESTIONS — doplňující dotazník
 

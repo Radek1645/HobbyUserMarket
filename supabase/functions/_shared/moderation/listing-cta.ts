@@ -19,9 +19,15 @@ const LISTING_PLATFORM_CTA_BY_CATEGORY: Record<string, string> = {
 
 const DEFAULT_CTA = GOODS_CTA;
 
-/** Match i starší CTA „přes platformu“ — při normalize se přepíše. */
-function platformCtaPattern(): RegExp {
-  return /Pro více informací napište \S+ zprávu přes (?:platformu|web)\.?/gi;
+/**
+ * Platformní CTA včetně staršího „přes platformu“ a off-platform variant
+ * (Facebook / Instagram), které AI občas doplní u událostí.
+ */
+export function listingPlatformCtaPattern(flags = "gi"): RegExp {
+  return new RegExp(
+    String.raw`Pro více informací napište \S+ zprávu přes (?:platformu|web|Facebook|Instagram)\.?`,
+    flags,
+  );
 }
 
 export function getListingPlatformCta(categoryType?: string | null): string {
@@ -37,20 +43,70 @@ export function getListingPlatformCta(categoryType?: string | null): string {
   return DEFAULT_CTA;
 }
 
+/**
+ * Kanál z `external_url` pro AI prompt — plné URL do Gemini neposíláme
+ * (zkopírovala by ho do popisu).
+ */
+export function getListingExternalUrlChannelLabel(
+  url?: string | null,
+): "Facebook" | "Instagram" | "web" | null {
+  const trimmed = url?.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "https:") return null;
+    const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+    if (
+      host === "facebook.com" ||
+      host.endsWith(".facebook.com") ||
+      host === "fb.com" ||
+      host.endsWith(".fb.com") ||
+      host === "fb.me"
+    ) {
+      return "Facebook";
+    }
+    if (host === "instagram.com" || host.endsWith(".instagram.com")) {
+      return "Instagram";
+    }
+    return "web";
+  } catch {
+    return null;
+  }
+}
+
+export type ApplyListingPlatformCtaOptions = {
+  /**
+   * Událost s vyplněným `external_url` — CTA „přes web“ je duplicitní
+   * k tlačítku Facebook / Instagram / Další informace online.
+   */
+  omitCta?: boolean;
+};
+
+function collapseCtaSpacing(text: string): string {
+  return text.replace(/ {2,}/g, " ").replace(/ \n/g, "\n").trim();
+}
+
 /** Nahradí špatnou CTA větu (např. „prodejci“ u práce) správnou podle kategorie. */
 export function applyListingPlatformCta(
   description: string,
   categoryType?: string | null,
+  options?: ApplyListingPlatformCtaOptions,
 ): string {
-  const cta = getListingPlatformCta(categoryType);
   const trimmed = description.trim();
   if (!trimmed) return trimmed;
 
-  const pattern = platformCtaPattern();
-  if (!pattern.test(trimmed)) return trimmed;
+  const hasCta = listingPlatformCtaPattern().test(trimmed);
+  if (!hasCta) return trimmed;
 
-  return trimmed
-    .replace(platformCtaPattern(), cta)
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  if (options?.omitCta) {
+    return collapseCtaSpacing(
+      trimmed.replace(listingPlatformCtaPattern(), ""),
+    );
+  }
+
+  const cta = getListingPlatformCta(categoryType);
+  return collapseCtaSpacing(
+    trimmed.replace(listingPlatformCtaPattern(), cta),
+  );
 }

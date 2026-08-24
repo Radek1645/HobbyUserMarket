@@ -29,6 +29,7 @@ import {
   normalizeModerationResult,
   parseModerationResponse,
 } from "../_shared/moderation/parse-response.ts";
+import { getListingExternalUrlChannelLabel } from "../_shared/moderation/listing-cta.ts";
 import { ensureRequiredCategoryQuestions } from "../_shared/moderation/required-category-questions.ts";
 import {
   applyPostModerationSafetyChecks,
@@ -931,6 +932,7 @@ serve(async (req) => {
         conditionFieldLabel:
           String(body?.conditionFieldLabel ?? "").trim() || undefined,
         eventDate: String(body?.eventDate ?? "").trim() || undefined,
+        externalUrl: String(body?.externalUrl ?? "").trim() || undefined,
         priceType,
         priceTypeLabel,
         priceAmount,
@@ -981,6 +983,7 @@ serve(async (req) => {
       priceAmount,
       categoryType,
       eventDate,
+      Boolean(getListingExternalUrlChannelLabel(String(body?.externalUrl ?? ""))),
     );
     const withRequiredQuestions = ensureRequiredCategoryQuestions(normalized, {
       categoryType,

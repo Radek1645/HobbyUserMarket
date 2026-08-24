@@ -225,6 +225,9 @@ async function invokeModerateListingOnce(
           ? { conditionFieldLabel: input.conditionFieldLabel }
           : {}),
         ...(input.eventDate ? { eventDate: input.eventDate } : {}),
+        ...(input.externalUrl?.trim()
+          ? { externalUrl: input.externalUrl.trim() }
+          : {}),
         ...(input.priceType ? { priceType: input.priceType } : {}),
         ...(input.priceTypeLabel
           ? { priceTypeLabel: input.priceTypeLabel }
