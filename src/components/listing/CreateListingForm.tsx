@@ -484,7 +484,10 @@ export function CreateListingForm({
         if (draft.longitude != null) {
           formData.set("longitude", String(draft.longitude));
         }
-        formData.set("eventDate", draft.eventDate);
+        formData.set(
+          "eventDate",
+          toModerationEventDateIso(draft.eventDate) ?? draft.eventDate,
+        );
         formData.set("listingDurationDays", String(draft.listingDurationDays));
         formData.set(
           "hasExternalUrl",
@@ -1538,7 +1541,11 @@ export function CreateListingForm({
         />
       ) : null}
       {isEvent ? (
-        <input type="hidden" name="eventDate" value={eventDate} />
+        <input
+          type="hidden"
+          name="eventDate"
+          value={toModerationEventDateIso(eventDate) ?? eventDate}
+        />
       ) : null}
 
       <nav aria-label="Kroky formuláře" className="flex items-center gap-2 text-sm">

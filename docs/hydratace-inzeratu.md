@@ -147,7 +147,7 @@ Edge Function dostane z klienta payload (viz `moderate-listing-client.ts`):
 | Kategorie | `categoryType`, `subcategorySlug` | Výběr `aiPrompt` z `category-prompts.ts` |
 | Stav / typ | `conditionLabel`, `conditionLabelText`, `conditionFieldLabel` | Např. „Použité“, „Prodej“, „Jednorázová akce“ — **neptat se znovu** |
 | Cena | `priceType`, `priceTypeLabel`, `priceAmount` | Pevná/orientační cena → do úvodu; na cenu se **neptat**; neshoda text↔formulář ≠ REJECTED |
-| Událost | `eventDate` | Datum **i čas** z formuláře jsou závazné — AI se **neptá**; starý čas v popisu se přepíše, ≠ REJECTED; formátování v TZ `Europe/Prague` (ne UTC) |
+| Událost | `eventDate` | Datum **i čas** z formuláře jsou závazné — AI se **neptá**; starý čas v popisu se přepíše, ≠ REJECTED; do Edge i Server Action jde ISO UTC (zeď `Europe/Prague`), zobrazení v TZ `Europe/Prague` (ne naivní UTC) |
 | Fotky | `imagesBase64[]`, `mainImageIndex` | Všechny pro bezpečnost a hydrataci; `mainImageIndex` jen pro cross-validaci text ↔ náhled |
 
 User prompt sestavuje `buildModerationUserPrompt()` — sekce oddělené prázdnými řádky: úkol, limity délky, kategorie, `aiPrompt`, stav, datum, cena, index hlavní fotky (cross-validace), počet fotek (hydratace ze všech), název a popis.

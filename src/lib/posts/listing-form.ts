@@ -5,6 +5,10 @@ import type {
   PostRow,
   PriceType,
 } from "@/types/post";
+import {
+  LISTING_DISPLAY_TIME_ZONE,
+  parseListingEventDateInput,
+} from "@/lib/posts/format-event-date";
 import { parsePostLocation } from "@/lib/posts/parse-location";
 
 export type ListingFormInitialValues = {
@@ -30,9 +34,19 @@ export type ListingFormInitialValues = {
 };
 
 export function dateToDatetimeLocalValue(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: LISTING_DISPLAY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
 
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${value("year")}-${value("month")}-${value("day")}T${value("hour")}:${value("minute")}`;
 }
 
 export function toDatetimeLocalValue(iso: string | null): string {
@@ -45,16 +59,15 @@ export function toDatetimeLocalValue(iso: string | null): string {
 }
 
 /**
- * Převod `datetime-local` z prohlížeče na ISO UTC před odesláním do Edge.
- * Edge běží v UTC a naive `2026-07-31T09:05` by hashoval jinak než Server Action/DB.
+ * Převod `datetime-local` z prohlížeče na ISO UTC.
+ * Stejný řetězec musí jít do Edge (fingerprint) i do hidden `eventDate`
+ * (Server Action na Vercelu je taky UTC — naive `15:00` by uložilo 15:00Z).
  */
 export function toModerationEventDateIso(
   value: string | null | undefined,
 ): string | undefined {
-  const trimmed = String(value ?? "").trim();
-  if (!trimmed) return undefined;
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.getTime())) return undefined;
+  const parsed = parseListingEventDateInput(value);
+  if (!parsed) return undefined;
   return parsed.toISOString();
 }
 

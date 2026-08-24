@@ -11,6 +11,7 @@ import {
   formatContactPhoneForStorage,
   isValidContactPhone,
 } from "@/lib/posts/contact-phone";
+import { parseListingEventDateInput } from "@/lib/posts/format-event-date";
 import { EXTERNAL_URL_FIELD_UI } from "@/config/listing-external-url";
 import { parseListingExternalUrl } from "@/lib/posts/external-url";
 import { parsePriceInput } from "@/lib/posts/price-input";
@@ -78,16 +79,15 @@ export function validateFutureEventDate(
     return { ok: false, error: "Zadejte datum a čas akce." };
   }
 
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.getTime())) {
+  const parsed = parseListingEventDateInput(trimmed);
+  if (!parsed) {
     return { ok: false, error: "Neplatné datum akce." };
   }
 
   const existingRaw = options?.existingEventDate;
-  const existing = existingRaw ? new Date(existingRaw) : null;
+  const existing = parseListingEventDateInput(existingRaw);
   const isUnchanged =
     existing != null &&
-    !Number.isNaN(existing.getTime()) &&
     parsed.getTime() === existing.getTime();
 
   if (!isUnchanged && parsed <= now) {

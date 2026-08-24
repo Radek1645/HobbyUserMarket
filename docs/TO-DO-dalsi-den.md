@@ -187,6 +187,7 @@ Související: plán IA, [`src/config/categories-goods.ts`](../src/config/catego
 | F1 | Prompt + server: datum/čas akce z formuláře má přednost před textem | Změna `eventDate` ve formuláři → publikace OK i při starém čase v popisu; výstupní text bere čas z formuláře | ☑ kód |
 | F2 | Stejná logika pro cenu (a případně lokalitu) — sjednotit s existující `applyFormPrice…` | Neshoda text ↔ formulář ≠ REJECTED | ☑ kód |
 | F3 | Manuální smoke: událost — upravit čas ve formuláři, nechat starý čas v popisu, publikovat | Schváleno / publikováno; v popisu nový čas | ☑ (+ TZ Europe/Prague) |
+| F4 | Publish gate: stejný okamžik `eventDate` na Edge i v DB (ISO UTC, ne naive datetime-local na Vercel UTC) | Editace události 15:00 CEST projde; v popisu i Parametrech 15:00 | ☑ 2026-08-24 (`hura-do-skoly-v-kavarne-v-rokli-t2e6`) |
 
 Související kód (orientačně): `build-user-prompt.ts`, `build-prompt.ts`, `parse-response.ts` (`applyFormPriceToCleanedDescription`), Edge `moderate-listing`.
 
