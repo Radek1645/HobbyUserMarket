@@ -24,13 +24,17 @@ import {
   checkImageNudity,
   SightengineUnavailableError,
 } from "../_shared/moderation/sightengine.ts";
-import { runSuggestListingInference } from "../_shared/moderation/run-suggest-listing.ts";
-import type { SuggestListingParsed } from "../_shared/moderation/suggest-listing.ts";
+import {
+  runSuggestListingWithFallback,
+  SuggestListingInferenceError,
+  type SuggestListingWithFallbackResult,
+} from "../_shared/moderation/run-suggest-listing.ts";
 import { isEmailBlacklisted } from "../_shared/moderation/account-blacklist.ts";
 import { verifyTurnstileToken } from "../_shared/moderation/turnstile.ts";
 
 const SUGGEST_MAX_IMAGES = 2;
 const SUGGEST_LOG_INTENT = "suggest_from_photos";
+const SUGGEST_REQUEST_BUDGET_MS = 28_000;
 
 type SightengineResponseEntry = {
   imageIndex: number;
@@ -114,14 +118,9 @@ async function resolveAuthUser(
   return { userId: user.id, email: user.email ?? null };
 }
 
-function resolveSuggestModel(): string {
-  return (
-    Deno.env.get("SUGGEST_LISTING_MODEL")?.trim() ||
-    "gemini-3.5-flash-lite"
-  );
-}
-
 serve(async (req) => {
+  const requestDeadlineAt = Date.now() + SUGGEST_REQUEST_BUDGET_MS;
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -382,62 +381,50 @@ serve(async (req) => {
       }
     }
 
-    const model = resolveSuggestModel();
-
-    let suggestion: SuggestListingParsed;
+    let inference: SuggestListingWithFallbackResult;
     try {
-      const inference = await runSuggestListingInference({
-        provider: "gemini",
-        model,
+      inference = await runSuggestListingWithFallback({
         imagesBase64: geminiImagesBase64,
         imageMimeTypes: geminiImageMimeTypes,
+        deadlineAtMs: requestDeadlineAt,
       });
-      suggestion = inference.suggestion;
     } catch (aiError) {
-      const code = aiError instanceof Error ? aiError.message : "GEMINI_ERROR";
-      console.error("suggest-listing gemini:", code);
-      if (code.startsWith("GEMINI_BLOCKED_")) {
-        await logModerationCheck({
-          userId: logUserId,
-          guestVisitorId: logGuestVisitorId,
-          intent: SUGGEST_LOG_INTENT,
-          status: "REJECTED",
-          imageCount: geminiImagesBase64.length,
-          rejectionReason: NSFW_IMAGE_REASON,
-          errorCode: "NSFW_IMAGE",
-          sightengineResponses,
-          aiProvider: "gemini",
-          aiModel: model,
-        });
-        return jsonResponse(
-          {
-            status: "REJECTED",
-            reason: NSFW_IMAGE_REASON,
-            errorCode: "NSFW_IMAGE",
-          },
-          200,
+      const code =
+        aiError instanceof Error ? aiError.message : "SUGGEST_PROVIDER_FAILED";
+      let aiProvider: string | undefined;
+      let aiModel: string | undefined;
+      let usedFallback = false;
+
+      if (aiError instanceof SuggestListingInferenceError) {
+        aiProvider = aiError.primaryTarget.provider;
+        aiModel = aiError.primaryTarget.model;
+        usedFallback = aiError.fallbackTarget !== null;
+        console.error(
+          "suggest-listing inference failed:",
+          JSON.stringify({
+            errorCode: code,
+            primary: {
+              ...aiError.primaryTarget,
+              errorCode:
+                aiError.primaryError instanceof Error
+                  ? aiError.primaryError.message
+                  : "UNKNOWN_AI_ERROR",
+            },
+            fallback: aiError.fallbackTarget
+              ? {
+                  ...aiError.fallbackTarget,
+                  errorCode:
+                    aiError.fallbackError instanceof Error
+                      ? aiError.fallbackError.message
+                      : "UNKNOWN_AI_ERROR",
+                }
+              : null,
+          }),
         );
+      } else {
+        console.error("suggest-listing inference failed:", code);
       }
-      if (code === "SUGGEST_PARSE_ERROR") {
-        await logModerationCheck({
-          userId: logUserId,
-          guestVisitorId: logGuestVisitorId,
-          intent: SUGGEST_LOG_INTENT,
-          status: "REJECTED",
-          imageCount: geminiImagesBase64.length,
-          rejectionReason:
-            "AI vrátila neplatnou odpověď. Zkuste to znovu, nebo vyplňte inzerát ručně.",
-          errorCode: "SUGGEST_PARSE_ERROR",
-          sightengineResponses,
-          aiProvider: "gemini",
-          aiModel: model,
-        });
-        return technicalErrorResponse(
-          "AI vrátila neplatnou odpověď. Zkuste to znovu, nebo vyplňte inzerát ručně.",
-          503,
-          "SUGGEST_PARSE_ERROR",
-        );
-      }
+
       await logModerationCheck({
         userId: logUserId,
         guestVisitorId: logGuestVisitorId,
@@ -448,8 +435,9 @@ serve(async (req) => {
           "AI předvyplnění teď selhalo. Zkuste to znovu, nebo vyplňte inzerát ručně.",
         errorCode: code,
         sightengineResponses,
-        aiProvider: "gemini",
-        aiModel: model,
+        aiProvider,
+        aiModel,
+        usedFallback,
       });
       return technicalErrorResponse(
         "AI předvyplnění teď selhalo. Zkuste to znovu, nebo vyplňte inzerát ručně.",
@@ -457,6 +445,8 @@ serve(async (req) => {
         code,
       );
     }
+
+    const suggestion = inference.suggestion;
 
     console.log(
       "suggest-listing:",
@@ -467,7 +457,10 @@ serve(async (req) => {
         categoryType: suggestion.categoryType,
         subcategorySlug: suggestion.subcategorySlug,
         confidenceScore: suggestion.confidenceScore,
-        model,
+        aiProvider: inference.provider,
+        aiModel: inference.model,
+        usedFallback: inference.usedFallback,
+        latencyMs: inference.latencyMs,
       }),
     );
 
@@ -481,8 +474,9 @@ serve(async (req) => {
       imageCount: geminiImagesBase64.length,
       titlePreview: suggestion.title,
       sightengineResponses,
-      aiProvider: "gemini",
-      aiModel: model,
+      aiProvider: inference.provider,
+      aiModel: inference.model,
+      usedFallback: inference.usedFallback,
     });
 
     return jsonResponse({

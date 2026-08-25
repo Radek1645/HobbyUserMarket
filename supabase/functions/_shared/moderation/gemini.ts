@@ -24,6 +24,8 @@ export async function callGeminiModeration(params: {
    * Suggest-from-photos předává vlastní schema; moderate-listing beze změny.
    */
   responseSchema?: unknown;
+  /** Vlastní timeout pro workload; bez parametru zůstává sdílených 25 s. */
+  timeoutMs?: number;
 }): Promise<string> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
@@ -51,36 +53,40 @@ export async function callGeminiModeration(params: {
 
   let response: Response;
   try {
-    response = await fetchWithTimeout(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: params.systemPrompt }],
-        },
-        contents: [{ role: "user", parts }],
-        // Moderační workload: model MÁ posuzovat hraniční obsah, ne být jím
-        // blokován. Vypíná jen konfigurovatelné kategorie; nevypnutelný filtr
-        // Google (CSAM apod.) zůstává aktivní.
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_NONE",
+    response = await fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: params.systemPrompt }],
           },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_NONE",
+          contents: [{ role: "user", parts }],
+          // Moderační workload: model MÁ posuzovat hraniční obsah, ne být jím
+          // blokován. Vypíná jen konfigurovatelné kategorie; nevypnutelný filtr
+          // Google (CSAM apod.) zůstává aktivní.
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_NONE",
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_NONE",
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+            responseSchema,
           },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-          responseSchema,
-        },
-      }),
-    });
+        }),
+      },
+      params.timeoutMs,
+    );
   } catch (error) {
     if (isFetchTimeoutError(error)) {
       throw new Error("GEMINI_TIMEOUT");

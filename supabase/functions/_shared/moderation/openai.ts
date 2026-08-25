@@ -26,6 +26,8 @@ export async function callOpenAiModeration(params: {
   responseSchema?: unknown;
   /** json_schema.name — musí být unikátní per schema tvar. */
   responseSchemaName?: string;
+  /** Vlastní timeout pro workload; bez parametru zůstává sdílených 25 s. */
+  timeoutMs?: number;
 }): Promise<string> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) {
@@ -77,6 +79,7 @@ export async function callOpenAiModeration(params: {
           ],
         }),
       },
+      params.timeoutMs,
     );
   } catch (error) {
     if (isFetchTimeoutError(error)) {

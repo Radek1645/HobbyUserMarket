@@ -51,7 +51,7 @@ Feature flag `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED` (default **vypnuto**). Ho
 Pokud AI dočasně nefunguje (kvóta, výpadek poskytovatele, chybné klíče, timeout), **nesmí se to tvářit jako zamítnutí obsahu**.
 
 - Edge Function vrací **HTTP 503** (nebo 429 u rate limitu) a JSON `{ error: "TECHNICAL_ERROR", message, errorCode }` (bez `status`).
-- Gemini/OpenAI volání mají **timeout 25 s** (`fetch-with-timeout.ts`) — jinak by hung fetch neumožnil OpenAI fallback.
+- Moderace a lab používají timeout **25 s**. Produkční Prefill má celkový request deadline **28 s**; v něm Gemini dostane nejvýše **12 s** a OpenAI nejvýše **8 s**. Už spotřebovaný čas za načtení fotek a Sightengine primary limit zkrátí, aby zůstala rezerva pro fallback.
 - Klient zobrazí inline chybu ve formuláři a při technické chybě **automaticky zkusí až 3×** (backoff 500 ms / 1,5 s; ne při rate limitu ani vypršení sezení).
 - `REJECTED` je vyhrazené jen pro obsahové důvody (zakázaný obsah, shoda text/foto, špatná kategorie, prompt injection…).
 
@@ -302,18 +302,19 @@ supabase functions deploy moderate-listing
 
 ## Volba Gemini modelu (rozhodnutí 2026-07-30)
 
-**Aktuálně (od 2026-08-08):** tři Gemini cíle + OpenAI + Sightengine. Kanonická tabulka s datem: [`PRD_v3.md`](./PRD_v3.md) §5.4 · [`Metodika.md`](./Metodika.md) §6.
+**Aktuálně (od 2026-08-25):** tři Gemini cíle + OpenAI + Sightengine. Kanonická tabulka s datem: [`PRD_v3.md`](./PRD_v3.md) §5.4 · [`Metodika.md`](./Metodika.md) §6.
 
 | Fáze | Secret | Default |
 |------|--------|---------|
-| **Prefill** (krok 0, `suggest-listing-from-photos`) | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
+| **Prefill primary** (`suggest-listing-from-photos`) | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
+| **Prefill fallback** | `SUGGEST_FALLBACK_MODEL` | `gpt-5.4-nano` |
 | **Prefill lab** (staff `/mod/prefill-lab`, `compare-suggest-from-photos`) | request `armA`/`armB`; volitelně `COMPARE_SUGGEST_ARM_A_MODEL` / `COMPARE_SUGGEST_ARM_B_MODEL` | **A:** `gemini` / `gemini-3.5-flash-lite` · **B:** `openai` / `gpt-5.4-nano` |
 | **Preview** (hydratace, `issueApproval` vypnuto) | `GEMINI_MODEL` | `gemini-2.5-flash` |
 | **Final** (`issueApproval: true`) | `MODERATION_FINAL_PROVIDER` (`gemini` \| `openai`) + `MODERATION_FINAL_MODEL` | provider `gemini`, model **`gemini-3.5-flash-lite`** |
 | OpenAI fallback / final openai | `OPENAI_MODERATION_MODEL` | `gpt-4o-mini` |
 | NSFW pre-gate | Sightengine | `nudity-2.1` |
 
-Prefill **nepoužívá** `MODERATION_FINAL_*` a zatím nemá OpenAI fallback v produkci. Staff lab `compare-suggest-from-photos` volá Gemini i OpenAI jen pro ruční srovnání (bez DB logu, bez Sightengine); UI defaulty v `src/config/compare-suggest-from-photos.ts`.
+Prefill **nepoužívá** `MODERATION_FINAL_*` ani `OPENAI_MODERATION_MODEL`. Po úspěšném Sightengine volá Gemini (max. 12 s); při timeoutu, HTTP chybě, blokaci nebo chybě parse zkusí OpenAI (max. 8 s). Pokud chybí Gemini klíč, OpenAI je aktuální primary (`used_fallback = false`). Oba neúspěchy jsou technická 503, ne obsahové `REJECTED`. Staff lab `compare-suggest-from-photos` zůstává samostatné ruční srovnání.
 
 ```bash
 # Explicit final Lite (kód má stejně default):
@@ -323,6 +324,9 @@ npx supabase secrets set MODERATION_FINAL_MODEL=gemini-3.5-flash-lite
 # A/B final na OpenAI:
 npx supabase secrets set MODERATION_FINAL_PROVIDER=openai
 # npx supabase secrets set MODERATION_FINAL_MODEL=gpt-4o-mini
+
+# Volitelný override produkčního Prefill fallbacku:
+npx supabase secrets set SUGGEST_FALLBACK_MODEL=gpt-5.4-nano
 
 # Návrat final na stejný model jako preview:
 npx supabase secrets set MODERATION_FINAL_MODEL=gemini-2.5-flash

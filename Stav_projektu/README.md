@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-08-25 (večer) | [2026-08-25-vecer.md](./2026-08-25-vecer.md) — Prefill OpenAI fallback, Edge deploy v16+, smoke Gemini/fallback/NSFW, PRD v3.81 |
 | 2026-08-24 (odpoledne) | [2026-08-24-vecer.md](./2026-08-24-vecer.md) — `event_date` ISO UTC / Prague, publish gate u událostí, PRD v3.80 |
 | 2026-08-24 | [2026-08-24.md](./2026-08-24.md) — UT katalog, `external_url` (077) + adult denylist, God Mode self-grant, PRD v3.78 |
 | 2026-08-22 (večer) | [2026-08-22-vecer.md](./2026-08-22-vecer.md) — galerie české chyby, souhrn limitu 6 fotek, PRD v3.75 |

@@ -128,6 +128,22 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 
 ---
 
+## N. Priorita — OpenAI fallback pro photo-first Prefill
+
+> **Kód 2026-08-25.** Po úspěšném Sightengine zkusí Prefill Gemini a při jeho technickém selhání OpenAI. Rate limit zůstává 1× na request.
+
+| # | Úkol | Očekávání | ✓ |
+|---|------|-----------|---|
+| PFB1 | Resolver + sdílený inference wrapper | Gemini primary, OpenAI `gpt-5.4-nano` fallback; chybějící Gemini → OpenAI jako primary | ☑ kód |
+| PFB2 | Samostatný časový rozpočet | Request deadline 28 s; Gemini max. 12 s, OpenAI max. 8 s; hydratace/lab dál 25 s | ☑ kód |
+| PFB3 | Auditní logování | Vítězný provider/model + `used_fallback`; dvojí selhání `SUGGEST_BOTH_PROVIDERS_FAILED` | ☑ kód |
+| PFB4 | Deploy `suggest-listing-from-photos` | Edge v16 ACTIVE; auth-boundary smoke vrací očekávané 401 bez JWT | ☑ 2026-08-25 |
+| PFB5 | Smoke všech větví | Gemini OK; fallback OK; OpenAI primary; oba fail; NSFW bez LLM; timeout pod ~30 s | ☑ 2026-08-25 (Gemini, fallback 2×, NSFW; double-fail volitelně ne) |
+
+Související: `resolve-suggest-ai-target.ts`, `run-suggest-listing.ts`, Metodika §5/§6, PRD §5.4.
+
+---
+
 ## K. Priorita — AI photo-first prefill (zboží)
 
 > **Kód 2026-08-08.** Flag `SUGGEST_FROM_PHOTOS_ENABLED`. Edge oddělená od `moderate-listing`. Deploy checklist; smoke detaily v § L.
@@ -143,7 +159,6 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 Související: [`src/config/suggest-from-photos.ts`](../src/config/suggest-from-photos.ts), Metodika §5 krok 0, PRD v3.61, § L.
 
 **Odloženo (ne teď):**
-- Provider fallback OpenAI u photo-prefillu (jako u `moderate-listing`) — zatím UX fail-soft.
 - Cache Sightengine verdiktu podle image hash (prefill + preview + final dnes volají API znovu na stejné fotky) — dává smysl costově; realizace později. Detail v plánu `ai_photo_prefill`.
 
 **Rozpor 2 fotek (2026-08-08):** Prefill **N/A**. Final pojistka jen u zboží: **dva vzájemně vylučující se hlavní produkty** (2 auta) → REJECTED `scam_fraud`. Set/příslušenství (notebook+myš+nabíječka), nemovitost/udalost ≠ REJECT. Smoke: Zafira+Corsa = REJECT; set / hlavní+detail = ne REJECT.

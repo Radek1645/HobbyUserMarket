@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **Hydratace / kvalita inzerátu:** [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) · **NSFW / hard-hit brána:** [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
-> **Datum:** 2026-08-08 (poslední sync s kódem — AI modely včetně prefillu)
+> **Datum:** 2026-08-25 (poslední sync s kódem — OpenAI fallback pro Prefill)
 
 ---
 
@@ -32,7 +32,9 @@
 |-------|--------|
 | **Klient / uživatel** | Návštěvník nebo přihlášený člověk používající web |
 | **Inzerát** | Řádek v databázi (`posts`) — zboží, služba, událost nebo nemovitost |
-| **Hydratace** | AI doplnění a úprava textu inzerátu (ne technický termín pro uživatele) |
+| **Hydratace** | AI doplnění a úprava textu inzerátu (ne technický termín pro uživatele). Ve formuláři = dialog po **Kontrole** (čip „AI vylepšení“) — viz [§5](#5-založení-inzerátu) |
+| **Kontrola** | Overlay „Probíhá AI kontrola inzerátu“ — čekání na model, často tu visí. Není to URL. Viz [§5](#5-založení-inzerátu) |
+| **Prefill / Kategorie / Obsah** | Pracovní názvy obrazovek založení inzerátu (ne holé „krok 1“). Tabulka v [§5](#5-založení-inzerátu) |
 | **God Mode** | Moderátorské nástroje přímo na produkčním webu |
 | **`*_no` (inkrementální ID)** | Lidsky čitelné číslo řádku (1, 2, 3…) vedle UUID — v SQL Editoru / Table Editoru hledej podle něj (`log_no`, `evidence_no`, `report_no`, `profile_no`…). Konvence: [`.cursor/rules/db-table-ids.mdc`](../.cursor/rules/db-table-ids.mdc) |
 
@@ -245,26 +247,50 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 
 ## 5. Založení inzerátu
 
-Cesta (přihlášený): **`/inzerat/novy` → (volitelně AI fotky) → kategorie / obsah → AI kontrola při publikaci**.
+Cesta (přihlášený): **`/inzerat/novy` → (volitelně Prefill) → Kategorie / Obsah → Kontrola → Hydratace → Publikace**.
 
 Cesta (host, flag `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED`): stejný formulář **bez loginu** → při Publikovat login/registrace → návrat na `/inzerat/novy?resume=1` → claim staging + finální AI → publikace. Draft je v **localStorage**; cíl po OAuth drží `sessionStorage` + httpOnly cookie `pending_auth_return_path` (přežije **Zpět** z Google výběru účtu). Detail: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
 
-**Krokovník** (jen orientace, ne samostatné obrazovky): photo-first `1. Fotky a AI prefill → 2. Kategorie → 3. Obsah → 4. AI vylepšení → 5. Publikace`; ruční cesta bez prefillu začíná kategorií (čísla 1–4). Chip „AI vylepšení“ / „Publikace“ se zvýrazní při modalu kontroly resp. finálním uložení.
+### Pracovní názvy kroků
 
-### Krok 0 — AI předvyplnění ze fotek (zboží)
+V chatu a v docs **nepoužívej holé „krok 1/2/3“** — čísla čipů a kód `step` se neshodují. Agent: [`.cursor/rules/listing-form-steps.mdc`](../.cursor/rules/listing-form-steps.mdc). Čipy: `LISTING_FORM_STEPPER_*` v `src/config/listing-form-ui.ts`.
 
-Flag: `SUGGEST_FROM_PHOTOS_ENABLED` (`src/config/suggest-from-photos.ts`). Jen **create** (`/inzerat/novy`); edit (`/upravit`) krok 0 nemá.
+**Obrazovky** (uživatel něco vyplňuje):
+
+| Říkáme | Čip (photo-first) | Kód `step` | Co tam je |
+|--------|-------------------|------------|-----------|
+| **Prefill** | 1. Fotky a předvyplnění | `0` | 1–2 fotky, *Předvyplnit inzerát* |
+| **Kategorie** | 2. Kategorie | `1` | výběr kategorie (po prefillu se často přeskočí) |
+| **Obsah** | 3. Obsah | `2` | název, popis, fotky, cena, stav, lokalita |
+
+Ruční cesta a edit (`/upravit`) začínají na **Kategorie** — Prefill tam není. Čipy pak 1–4.
+
+**Po *Publikovat*** (není samostatná URL):
+
+| Říkáme | Čip | Co to je |
+|--------|-----|----------|
+| **Kontrola** | 4. AI vylepšení | Overlay „Probíhá AI kontrola inzerátu“ (`MODERATION_CHECKING_UI`) — čekání na preview model. Sem to často visí / timeout (~25–30 s Edge). |
+| **Hydratace** | 4. AI vylepšení | Až po odpovědi: dialog náhledu / otázek |
+| **Publikace** | 5. Publikace | Druhá kontrola + zápis. Overlay „Ukládám inzerát…“ (`LISTING_FORM_SAVING_UI`) — zase čekání na model. |
+
+**Kontrola** i overlay u **Publikace** jsou pseudo-stránky: `fixed inset-0` v `CreateListingForm` (`isCheckingAi` / `pending`). Žádný route.
+
+Podstavy Hydratace: **Otázky AI**, **Schválení**, **Zamítnutí**.
+
+### Prefill — AI předvyplnění ze fotek (zboží)
+
+Flag: `SUGGEST_FROM_PHOTOS_ENABLED` (`src/config/suggest-from-photos.ts`). Jen **create** (`/inzerat/novy`); edit (`/upravit`) Prefill nemá.
 
 **Cíl:** urychlit založení zbožového inzerátu — uživatel nahraje 1–2 fotky, AI navrhne název, popis a kategorii; cenu, stav a lokalitu doplní sám. Služby / práce / reality / události jdou **ruční** cestou.
 
 #### Rozhodnutí (produkt)
 
 - Taxonomie jen reálné zbožové slugy z `GOODS_CATEGORIES` (`auto`, `detsky`, `dum`, `elektro`, `moda`, `sport`, `hobby`, `ostatni` + podkategorie) — closed vocabulary, žádné vymyšlené slugy.
-- Prefill jen zboží. Non-goods → manuální wizard (krok 1 → 2).
+- Prefill jen zboží. Non-goods → manuální wizard (Kategorie → Obsah).
 - Žádný pop-up „AI vs ručně“. Jedna stránka: primární AI dropzone (~2/3) + viditelný manuální blok (~1/3).
 - Oddělená Edge funkce `suggest-listing-from-photos` — `moderate-listing` (publish gate) beze změny.
 - Prefilluje: `title`, `description`, `categoryType`, `subcategorySlug`. **Ne** cena, stav, lokalita.
-- Sightengine = jen NSFW gate; klasifikace = Gemini (`SUGGEST_LISTING_MODEL`, default `gemini-3.5-flash-lite`). `MODERATION_FINAL_*` se na prefill nepoužívá.
+- Sightengine = autoritativní NSFW gate. Draft generuje Gemini (`SUGGEST_LISTING_MODEL`, default `gemini-3.5-flash-lite`), při technickém selhání OpenAI (`SUGGEST_FALLBACK_MODEL`, default `gpt-5.4-nano`). `MODERATION_FINAL_*` se na Prefill nepoužívá.
 - Staff srovnání modelů: Edge `compare-suggest-from-photos` + `/mod/prefill-lab` (stejný prompt/schema, bez DB).
 - Hosté: stejný flow (guest visitor + podpis, rate limit `guest_suggest_from_photos`, Turnstile po soft limitu).
 
@@ -272,39 +298,42 @@ Flag: `SUGGEST_FROM_PHOTOS_ENABLED` (`src/config/suggest-from-photos.ts`). Jen *
 
 ```mermaid
 flowchart TD
-  HP["HP CTA /inzerat/novy"] --> Entry["Krok 0: vstupní obrazovka"]
+  HP["HP CTA /inzerat/novy"] --> Entry["Prefill: vstupní obrazovka"]
   Entry --> AI["AI dropzone 1-2 fotky"]
-  Entry --> Manual["Manuální cesta: kategorie grid"]
+  Entry --> Manual["Manuální cesta: Kategorie"]
   AI --> Upload["Staging + Sharp renditions"]
   Upload --> NSFW["Sightengine NSFW"]
-  NSFW -->|OK| Gemini["Gemini suggest JSON"]
+  NSFW -->|OK| Gemini["Gemini suggest JSON (max 12 s)"]
   NSFW -->|REJECT| FailSoft["Chyba + nabídka ručně"]
-  Gemini --> Prefill["Krok 2 formulář: title/desc/cat vyplněné"]
-  Prefill --> Publish["Publikovat = stávající moderate-listing"]
-  Manual --> CatStep["Krok 1 kategorie"]
-  CatStep --> ContentStep["Krok 2 obsah"]
+  Gemini --> Content["Obsah: title/desc/cat vyplněné"]
+  Gemini -->|selhání| OpenAI["OpenAI suggest JSON (max 8 s)"]
+  OpenAI --> Content
+  OpenAI -->|selhání| FailSoft
+  Content --> Publish["Publikovat = stávající moderate-listing"]
+  Manual --> CatStep["Kategorie"]
+  CatStep --> ContentStep["Obsah"]
   ContentStep --> Publish
 ```
 
-**Vstupní obrazovka (krok 0):**
+**Vstupní obrazovka (Prefill):**
 
 - Dominantní karta: „Pro začátek stačí dvě fotky.“ Podnadpis: „Napíšeme základní název a popis, vy je pak doladíte a doplníte cenu, stav a lokalitu.“ Na **mobilu** dvě akce **Vyfotit** (`capture=environment`, světle emerald tlačítko — preferovaná cesta) a **Vybrat z galerie** (čárkovaný obrys); na desktopu dropzone. Max. 1–2 fotky (při třetí se nechá poslední dvojice). CTA **„Předvyplnit inzerát“** (ne „Vytvořit inzerát“ — to je publikace), loader (Kontrola → Analýza → Předvyplnění).
-- Spodní blok (~1/3): „Služby, události, práce, reality — nebo raději ručně“ + CTA **„Vyplnit inzerát ručně“** → krok 1 (CategoryGrid).
-- Po úspěchu: skok na krok obsahu, fotky v uploadu, název/popis/kategorie vyplněné. **Cena, stav a lokalita** zůstanou prázdné — stav má „— vyberte —“, žlutý prstenec jen u ještě nevyplněného pole (`listingFormPrefillHighlightClass`). Publikovat nelze, dokud stav, lokalita a cena nesedí. V popisu řádky `Doplňte značku: ` (psát za dvojtečku, nebo smazat). Banner zve k dalším fotkám a úpravě textu (prefill má 1–2 fotky, formulář až 6).
-- Nízká jistota podkategorie (`confidence < 0.7` nebo neplatný slug) → `subcategorySlug` null → krok 1 s kategorií a textem, uživatel vybere podkategorii.
-- Fail-soft (NSFW / timeout / rate limit): inline chyba, zůstává na kroku 0, manuál dostupný.
+- Spodní blok (~1/3): „Služby, události, práce, reality — nebo raději ručně“ + CTA **„Vyplnit inzerát ručně“** → **Kategorie** (CategoryGrid).
+- Po úspěchu: skok na **Obsah**, fotky v uploadu, název/popis/kategorie vyplněné. **Cena, stav a lokalita** zůstanou prázdné — stav má „— vyberte —“, žlutý prstenec jen u ještě nevyplněného pole (`listingFormPrefillHighlightClass`). Publikovat nelze, dokud stav, lokalita a cena nesedí. V popisu řádky `Doplňte značku: ` (psát za dvojtečku, nebo smazat) — ne stav/cena/lokalita, ty mají pole formuláře. Banner zve k dalším fotkám a úpravě textu (Prefill má 1–2 fotky, Obsah až 6).
+- Nízká jistota podkategorie (`confidence < 0.7` nebo neplatný slug) → `subcategorySlug` null → **Kategorie** s textem, uživatel vybere podkategorii.
+- Fail-soft (NSFW / timeout / rate limit): inline chyba, zůstává na **Prefill**, manuál dostupný.
 
 #### Backend `suggest-listing-from-photos` (stručně)
 
 1. Auth JWT **nebo** guest visitor + token; rate limit `suggest_from_photos` (20/h) / `guest_suggest_from_photos` (5/h, soft=hard).
 2. Staging + Sharp renditions (512 Sightengine / 1024 Gemini) — stejné buckety jako u moderace.
 3. Sightengine NSFW na všech fotkách.
-4. Gemini structured JSON (vlastní schema, ne moderační).
+4. Gemini structured JSON (max. 12 s); při technickém selhání OpenAI fallback (max. 8 s). Celý request má deadline 28 s, takže čas spotřebovaný načtením fotek a Sightenginem může limit primary zkrátit. Blokace Gemini po úspěšném Sightengine je technické selhání generátoru, ne NSFW verdikt.
 5. Server validace goods páru; odpověď `{ title, description, categoryType, subcategorySlug, confidenceScore }` — **bez** approval tokenu a bez hydratace.
 
-Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence. Nejisté údaje jdou **pod** odstavec nabídky jako `Doplňte značku: ` (jeden na řádek, psát za dvojtečku) — prompt + `formatDoplnitPlaceholders`. Při publikaci prázdné výzvy zmizí, vyplněné se změní na `Značka: …` (`stripDoplnitPlaceholders`).
+Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence. Nejisté údaje jdou **pod** odstavec nabídky jako `Doplňte značku: ` (jeden na řádek, psát za dvojtečku) — prompt + `formatDoplnitPlaceholders` (řádky na stav/cenu/lokalitu se zahodí, mají pole formuláře). Při publikaci prázdné výzvy zmizí, vyplněné se změní na `Značka: …` (`stripDoplnitPlaceholders`).
 
-Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace + token). Prefill **nenahrazuje** publish gate. Dvě volání Gemini (prefill + publish) jsou záměr.
+Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace + token). Prefill **nenahrazuje** publish gate. Samostatná AI inference pro Prefill a publish je záměr.
 
 #### DB
 
@@ -313,7 +342,6 @@ Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace +
 #### Co v MVP záměrně není
 
 - Odhad ceny / prefill stavu a lokality.
-- Provider fallback OpenAI u prefillu (u moderace ano; zde zatím UX fail-soft) — odloženo.
 - Cache verdiktu Sightengine podle image hash (prefill + preview + final dnes volají API znovu) — dává smysl costově, realizace později.
 - Auto-zařazení služeb/událostí z fotky.
 
@@ -335,19 +363,19 @@ Ruční A/B bez zásahu do produkčního trafficu. Cíl: často měnit kandidát
 
 Konfig UI defaultů: `src/config/compare-suggest-from-photos.ts`. Deploy labu: `npx supabase functions deploy compare-suggest-from-photos`. Hydratační lab (preview model) = **samostatný** budoucí scope, stejný pattern.
 
-### Krok 1 — Kategorie a stav
+### Kategorie
 
-Uživatel vybere (manuální cesta, nebo doplnění po AI):
+Uživatel vybere (manuální cesta, nebo doplnění po Prefillu):
 
 - **Typ:** zbožová doména / Služby / Událost / Nemovitost / Práce
 - **Podkategorii**
-- **Stav nebo typ nabídky** podle kategorie (ve formuláři až v kroku obsahu):
+- **Stav nebo typ nabídky** podle kategorie (ve formuláři až na **Obsahu**):
   - Zboží: Nové, Jako nové, Použité, Poškozené / na díly
   - Služby: Jednorázově, Dlouhodobě, Záskok
   - Události: Jednorázová / Pravidelná akce
   - Nemovitosti: Prodej / Pronájem
 
-### Krok 2 — Obsah, cena a lokalita
+### Obsah — název, popis, cena, stav a lokalita
 
 | Pole | Pravidla |
 |------|----------|
@@ -370,7 +398,7 @@ Povinná pole označuje **červená hvězdička** v labelu (Název, Popis, Lokal
 
 Konfigurace: `src/config/listing-form-ui.ts` (`listingFormRequiredMarkClass`, `LISTING_FORM_REQUIRED_LEGEND`).
 
-### Krok 3 — Fotografie
+### Fotografie (na obrazovce Obsah)
 
 - Max. **6 fotek** (JPEG, PNG, WebP).
 - Každá se před nahráním zkomprimuje na max. **1 MB** (nejdelší strana max. 1920 px).
@@ -386,21 +414,21 @@ Pod nadpisem **Fotky** (pole je volitelné, ale doporučené) uživatel vidí:
    - Elektronika → „Prodám funkční mobil“
    - Auta a moto → „Prodám použité auto“
    - Služby → „Nabízím úklid bytu“
-2. Max. 6 fotek (krok obsahu) / 1–2 u AI prefillu, automatická komprese pod 1 MB. Na mobilu **Vyfotit** a **Vybrat z galerie** (jeden input bez `capture` na Androidu otevře jen galerii).
+2. Max. 6 fotek (**Obsah**) / 1–2 u **Prefillu**, automatická komprese pod 1 MB. Na mobilu **Vyfotit** a **Vybrat z galerie** (jeden input bez `capture` na Androidu otevře jen galerii).
 3. Hvězdičkou hlavní fotka na homepage.
 4. Bezpečnost fotek hlídá AI kontrola.
 5. HEIC/HEIF z telefonu se na klientovi převede na JPEG/WebP, pokud to prohlížeč umí dekódovat; jinak hláška ať použije **Vyfotit**. Samsung galerie: soubory se hned kopírují do paměti (jinak Chrome po chvíli odepře čtení — anglické „could not be read / permission problems“ nebo „Failed to fetch“; UI vždy česky). Do paměti jdou jen fotky v limitu (prefill 1–2, formulář max. 6) a pod 25 MB; komprese běží po jedné. Při výběru víc než 6 fotek najednou: krátká hláška „Přidali jsme N fotek. Kvůli limitu 6 jsme vynechali M fotek.“ — ne seznam názvů souborů. Chyba je v prohlížeči, ne ve Vercel/Supabase logu.
 
 Mapa příkladů: `src/config/listing-form-tips.ts` (`getListingFormTipExample`). Komponenta: `ListingImageUpload`.
 
-### Publikace
+### Hydratace a Publikace
 
 Po kliknutí na **„Publikovat inzerát“** (pokud má uživatel **zbývající kredit**):
 
-1. Zobrazí se celoobrazovkové načítání (AI běží).
-2. Proběhne [AI moderace a hydratace](#6-ai-moderace-a-hydratace) (viz detailní popis níže) — **první kontrola**: náhled / úprava textu. Approval token ještě **nevzniká**.
+1. **Kontrola** — celoobrazovkový overlay „Probíhá AI kontrola inzerátu“ (spinner, „Může to trvat i 15 sekund.“). Uživatel nemá kam kliknout; když model visí, visí tady.
+2. Proběhne [AI moderace a hydratace](#6-ai-moderace-a-hydratace) (viz detailní popis níže) — **první kontrola**: náhled / úprava textu. Approval token ještě **nevzniká**. Overlay zmizí, až Edge odpoví (nebo timeout / technická chyba).
 3. Uživatel v modalu potvrdí finální text (může ho i celý přepsat, nebo zvolit původní bez AI úprav).
-4. Proběhne **druhá kontrola** přesného textu a fotografií, které se opravdu odesílají. Teprve pak Edge vydá jednorázový approval token.
+4. **Publikace** — overlay „Ukládám inzerát…“; **druhá kontrola** přesného textu a fotografií. Teprve pak Edge vydá jednorázový approval token. Zase čekání na model.
 5. Server Action uloží inzerát nejprve jako **`draft`**, nahraje fotky a přes service-role RPC **`publish_approved_post`** přepne na **`active`** jen při shodě tokenu s uloženým obsahem.
 6. URL má tvar `/inzerat/[slug]` — slug se generuje při první publikaci a **nemění se** při editaci.
 
@@ -416,11 +444,12 @@ Toto je klíčový proces při založení i úpravě inzerátu. Uživatel ho vn�
 
 ### AI modely — aktuální defaults
 
-> **Aktualizace: 2026-08-09.** Modely se mohou měnit přes Supabase secrets (bez redeploye kódu u většiny override). Zdroj pravdy v kódu: `resolve-moderation-ai-target.ts`, `suggest-listing-from-photos` (`resolveSuggestModel`), prefill lab UI `compare-suggest-from-photos.ts`. Detail A/B: [`moderace-inzeratu.md`](./moderace-inzeratu.md) → Volba Gemini modelu.
+> **Aktualizace: 2026-08-25.** Modely se mohou měnit přes Supabase secrets. Zdroj pravdy v kódu: `resolve-moderation-ai-target.ts`, `resolve-suggest-ai-target.ts`, prefill lab UI `compare-suggest-from-photos.ts`. Detail A/B: [`moderace-inzeratu.md`](./moderace-inzeratu.md) → Volba Gemini modelu.
 
 | Použití | Edge / fáze | Secret | Default |
 |---------|-------------|--------|---------|
-| **Photo-first prefill** (krok 0, zboží) | `suggest-listing-from-photos` | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
+| **Photo-first Prefill primary** (zboží) | `suggest-listing-from-photos` | `SUGGEST_LISTING_MODEL` | `gemini-3.5-flash-lite` |
+| **Photo-first Prefill fallback** | `suggest-listing-from-photos` | `SUGGEST_FALLBACK_MODEL` | `gpt-5.4-nano` |
 | **Prefill lab** (staff `/mod/prefill-lab`) | `compare-suggest-from-photos` | request `armA`/`armB` (volitelně `COMPARE_SUGGEST_ARM_*_MODEL`) | A: flash-lite, B: `gpt-5.4-nano` |
 | **Moderace — preview** (hydratace, náhled) | `moderate-listing`, `issueApproval` vypnuto | `GEMINI_MODEL` | `gemini-2.5-flash` |
 | **Moderace — final** (approval token) | `moderate-listing`, `issueApproval: true` | `MODERATION_FINAL_PROVIDER` + `MODERATION_FINAL_MODEL` | provider `gemini`, model `gemini-3.5-flash-lite` |
@@ -428,9 +457,9 @@ Toto je klíčový proces při založení i úpravě inzerátu. Uživatel ho vn�
 | **NSFW fotky** (pre-Gemini) | obě Edge funkce | Sightengine API | model `nudity-2.1` |
 
 Poznámky:
-- Prefill **nepoužívá** `MODERATION_FINAL_*` (final může být OpenAI při A/B).
-- Prefill zatím **nemá** OpenAI fallback — při selhání Gemini UX fail-soft + ruční cesta.
-- Timeout Edge AI volání: ~25–30 s (viz PRD / Edge).
+- Prefill **nepoužívá** `MODERATION_FINAL_*` ani `OPENAI_MODERATION_MODEL`.
+- Pokud chybí Gemini klíč, OpenAI je primary a `used_fallback = false`; pokud chybí OpenAI klíč, zůstává Gemini-only fail-soft.
+- Timeout Prefillu: celý request 28 s, uvnitř Gemini nejvýše 12 s + OpenAI nejvýše 8 s; moderace a lab bez override používají 25 s.
 
 ### 6.1 Proč to existuje
 
@@ -919,7 +948,7 @@ Cesta: **`/moje-inzeraty` → Upravit → `/inzerat/[slug]/upravit`**.
 
 ### 7.1 Co uživatel může měnit
 
-Stejný create formulář jako při založení (bez kroku 0 prefill), předvyplněný aktuálními daty.
+Stejný create formulář jako při založení (bez **Prefillu**), předvyplněný aktuálními daty.
 
 ### 7.2 Kdy znovu proběhne AI
 
