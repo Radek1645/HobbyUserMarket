@@ -28,6 +28,18 @@ type QueuedMetaPixelEvent = {
 };
 
 const META_PIXEL_SCRIPT_ID = "meta-pixel-fbevents";
+const META_PIXEL_STUB_SCRIPT_ID = "meta-pixel-fbq-stub";
+
+/**
+ * Oficiální Meta stub. fbevents.js bere frontu jen jako `arguments` + `apply`,
+ * ne jako rest pole z TypeScriptu (to nechá version 2.0 a init viset v queue).
+ */
+const META_PIXEL_FBQ_STUB = `
+!function(f){if(f.fbq)return;var n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];}(window);
+`.trim();
 
 let initializedPixelId: string | null = null;
 let lastPageViewPath: string | null = null;
@@ -97,25 +109,10 @@ function installFbqStub(): void {
     return;
   }
 
-  const stub = function stubFn(...args: unknown[]) {
-    const fbqStub = window.fbq;
-    if (!fbqStub) {
-      return;
-    }
-    if (fbqStub.callMethod) {
-      fbqStub.callMethod(...args);
-    } else {
-      fbqStub.queue.push(args);
-    }
-  } as FbqFn;
-  stub.queue = [];
-  stub.loaded = true;
-  stub.version = "2.0";
-  stub.push = stub;
-  window.fbq = stub;
-  if (!window._fbq) {
-    window._fbq = stub;
-  }
+  const stubScript = document.createElement("script");
+  stubScript.id = META_PIXEL_STUB_SCRIPT_ID;
+  stubScript.textContent = META_PIXEL_FBQ_STUB;
+  document.head.appendChild(stubScript);
 }
 
 function loadFbeventsScript(): void {
@@ -165,6 +162,7 @@ export function revokeMetaPixel(): void {
   }
 
   document.getElementById(META_PIXEL_SCRIPT_ID)?.remove();
+  document.getElementById(META_PIXEL_STUB_SCRIPT_ID)?.remove();
   delete window.fbq;
   delete window._fbq;
   initializedPixelId = null;
