@@ -98,10 +98,14 @@ function installFbqStub(): void {
   }
 
   const stub = function stubFn(...args: unknown[]) {
-    if (stubFn.callMethod) {
-      stubFn.callMethod(...args);
+    const fbqStub = window.fbq;
+    if (!fbqStub) {
+      return;
+    }
+    if (fbqStub.callMethod) {
+      fbqStub.callMethod(...args);
     } else {
-      stubFn.queue.push(args);
+      fbqStub.queue.push(args);
     }
   } as FbqFn;
   stub.queue = [];
