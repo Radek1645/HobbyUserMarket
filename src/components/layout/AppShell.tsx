@@ -11,7 +11,9 @@ import { Header } from "@/components/layout/Header";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteNoticeBar } from "@/components/layout/SiteNoticeBar";
 import { VisitorLocationProvider } from "@/components/location/VisitorLocationProvider";
+import { isFbPromoLandingPath } from "@/config/fb-promo-landing";
 import type { AppUser } from "@/types/auth";
+import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 
 type AppShellProps = {
@@ -20,6 +22,12 @@ type AppShellProps = {
 };
 
 export function AppShell({ user, children }: AppShellProps) {
+  const pathname = usePathname();
+  const hideSiteHeader = isFbPromoLandingPath(pathname);
+  const mainClassName = hideSiteHeader
+    ? "w-full flex-1"
+    : "mx-auto w-full max-w-5xl flex-1";
+
   return (
     <UserProvider user={user}>
       <CookieConsentProvider>
@@ -30,8 +38,8 @@ export function AppShell({ user, children }: AppShellProps) {
             <RegistrationConversionBeacon userId={user?.id ?? null} />
           </Suspense>
           <SiteNoticeBar />
-          <Header user={user} />
-          <main className="mx-auto w-full max-w-5xl flex-1">{children}</main>
+          {hideSiteHeader ? null : <Header user={user} />}
+          <main className={mainClassName}>{children}</main>
           <CreateListingFab user={user} />
           <SiteFooter />
           <CookieConsentBanner />

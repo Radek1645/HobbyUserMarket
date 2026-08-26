@@ -1,6 +1,6 @@
 "use client";
 
-import { trackMetaPixelEvent } from "@/components/analytics/MetaPixelLoader";
+import { trackEvent } from "@/lib/analytics/meta-pixel";
 import { useCookieConsent } from "@/components/consent/CookieConsentProvider";
 import {
   LISTING_PUBLISHED_QUERY,
@@ -11,9 +11,16 @@ import {
   REGISTERED_CONVERSION_QUERY,
   REGISTRATION_CONVERSION_SENT_KEY,
 } from "@/config/meta-pixel";
+import { campaignParamsToEventData } from "@/lib/promo/campaign-storage";
 import { clearGuestListingDraft } from "@/lib/guest/listing-draft";
+import type { CategoryType } from "@/types/post";
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+
+type PendingListingPublished = {
+  postId: string;
+  contentCategory?: string;
+};
 
 function registrationSentKey(userId: string): string {
   return `${REGISTRATION_CONVERSION_SENT_KEY}:${userId}`;
@@ -65,17 +72,41 @@ function listingPublishedSentKey(postId: string): string {
   return `${LISTING_PUBLISHED_SENT_KEY}:${postId}`;
 }
 
-function setPendingListingPublished(postId: string): void {
+function setPendingListingPublished(
+  postId: string,
+  contentCategory?: string,
+): void {
+  const payload: PendingListingPublished = { postId, contentCategory };
   try {
-    localStorage.setItem(PENDING_LISTING_PUBLISHED_KEY, postId);
+    localStorage.setItem(PENDING_LISTING_PUBLISHED_KEY, JSON.stringify(payload));
   } catch {
     /* ignore */
   }
 }
 
-function readPendingListingPublished(): string | null {
+function readPendingListingPublished(): PendingListingPublished | null {
   try {
-    return localStorage.getItem(PENDING_LISTING_PUBLISHED_KEY);
+    const raw = localStorage.getItem(PENDING_LISTING_PUBLISHED_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    if (/^\d+$/.test(raw)) {
+      return { postId: raw };
+    }
+
+    const parsed = JSON.parse(raw) as Partial<PendingListingPublished>;
+    if (typeof parsed.postId !== "string" || parsed.postId === "") {
+      return null;
+    }
+
+    return {
+      postId: parsed.postId,
+      contentCategory:
+        typeof parsed.contentCategory === "string"
+          ? parsed.contentCategory
+          : undefined,
+    };
   } catch {
     return null;
   }
@@ -90,10 +121,10 @@ function clearPendingListingPublished(): void {
 }
 
 function trackPendingListingPublished(): void {
-  const postId = readPendingListingPublished();
-  if (!postId) return;
+  const pending = readPendingListingPublished();
+  if (!pending) return;
 
-  const sentKey = listingPublishedSentKey(postId);
+  const sentKey = listingPublishedSentKey(pending.postId);
   try {
     if (localStorage.getItem(sentKey) === "1") {
       clearPendingListingPublished();
@@ -105,9 +136,15 @@ function trackPendingListingPublished(): void {
   }
 
   clearPendingListingPublished();
-  trackMetaPixelEvent(META_PIXEL_EVENTS.LISTING_PUBLISHED, {
-    listing_id: postId,
-  });
+
+  const params: Record<string, unknown> = {
+    ...campaignParamsToEventData(),
+  };
+  if (pending.contentCategory) {
+    params.content_category = pending.contentCategory;
+  }
+
+  trackEvent(META_PIXEL_EVENTS.LEAD, params);
 }
 
 /**
@@ -162,7 +199,9 @@ export function RegistrationConversionBeacon({
     fired.current = true;
     clearPendingRegistrationConversion();
     markRegistrationConversionSent(userId);
-    trackMetaPixelEvent(META_PIXEL_EVENTS.COMPLETE_REGISTRATION);
+    trackEvent(META_PIXEL_EVENTS.COMPLETE_REGISTRATION, {
+      ...campaignParamsToEventData(),
+    });
   }, [consent?.marketing, isReady, userId]);
 
   // Pending publish může vzniknout na detailu a souhlas přijít až na jiné stránce.
@@ -174,11 +213,13 @@ export function RegistrationConversionBeacon({
   return null;
 }
 
-/** Po redirectu `?published=1` vypálí ListingPublished (jednou). */
+/** Po redirectu `?published=<id>` vypálí Lead (jednou, až po serverovém zápisu). */
 export function ListingPublishedConversionBeacon({
   postId,
+  contentCategory,
 }: {
   postId: number;
+  contentCategory?: CategoryType;
 }) {
   const searchParams = useSearchParams();
   const { consent, isReady } = useCookieConsent();
@@ -191,7 +232,7 @@ export function ListingPublishedConversionBeacon({
     }
 
     clearGuestListingDraft();
-    setPendingListingPublished(publishedId);
+    setPendingListingPublished(publishedId, contentCategory);
 
     const url = new URL(window.location.href);
     url.searchParams.delete(LISTING_PUBLISHED_QUERY);
@@ -200,14 +241,14 @@ export function ListingPublishedConversionBeacon({
       "",
       `${url.pathname}${url.search}${url.hash}`,
     );
-  }, [postId, searchParams]);
+  }, [contentCategory, postId, searchParams]);
 
   useEffect(() => {
     if (!isReady || fired.current || !consent?.marketing) {
       return;
     }
 
-    if (readPendingListingPublished() !== String(postId)) {
+    if (readPendingListingPublished()?.postId !== String(postId)) {
       return;
     }
 

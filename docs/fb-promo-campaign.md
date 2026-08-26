@@ -4,7 +4,7 @@ Operační + technická dokumentace. Feature flag C: `NEXT_PUBLIC_GUEST_LISTING_
 
 > **Stav (2026-08-09):** migrace `073`/`074` + Edge nasazeny; localhost smoke § L většina happy path OK (včetně Google **Zpět** → resume a F5 bez duplicity). **FB ads zatím ne** — nejdřív produkční smoke na mobilu + Pixel E3/E4. Flag C na produkci jen vědomě (`NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED`).
 >
-> **Před první reálnou platbou za Meta Ads:** checklist úřadů (IČO, identifikovaná osoba DPH, ČSSZ, ZP) — [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/povinnosti-urady-fb-reklama.md).
+> **Před první reálnou platbou za Meta Ads:** povinnosti vůči úřadům (IČO, IO/DPH, ČSSZ, ZP) — [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/povinnosti-urady-fb-reklama.md).
 >
 > **Poznámka k rozsahu:** flag C **není unikátní FB URL** — zapne guest flow na stejné `/inzerat/novy` (header, FAB, přímý odkaz). Host uvidí AI formulář bez loginu **na celém webu**, nejen z reklamy. FB jen přivede traffic.
 
@@ -18,7 +18,7 @@ FB ad → /inzerat/novy (guest)
   → Publikovat → login/register (draft v localStorage)
   → /inzerat/novy?resume=1
   → claim staging → final AI (issueApproval: true) → publish_approved_post
-  → detail?published=<postId> → Pixel ListingPublished
+  → detail?published=<postId> → Pixel Lead
 ```
 
 Must: bez auth nejde publikovat. Guest nikdy nedostane approval token.
@@ -51,11 +51,11 @@ Klíčové soubory: `src/app/inzerat/novy/page.tsx`, `CreateListingForm.tsx`, `g
 
 ### Funnel A (test 5–10 tis. Kč) — může jet teď
 
-- [ ] Env: `NEXT_PUBLIC_META_PIXEL_ID`
-- [ ] Cookie lišta v2 (analytics / marketing)
-- [ ] GTM **nebo** přímý Pixel — **ne obojí** na stejné eventy
-- [ ] Ads: Conversions → `CompleteRegistration`
-- [ ] Landing: `/login?next=/inzerat/novy&message=create_listing&tab=register`
+- [x] Pixel ID `1774699993535627` v kódu (`NEXT_PUBLIC_META_PIXEL_ID` umí přepsat / vypnout)
+- [x] Cookie lišta v2 (analytics / marketing) — Pixel až po marketingovém souhlasu
+- [x] Přímý Pixel v appce — **v GTM ho nepřidávat**
+- [ ] Ads: Conversions → **`Lead`** (publikace); funnel login → `CompleteRegistration`
+- [ ] Landing: `/prodejte-snadno` (CTA → `/inzerat/novy`, UTM se zachová)
 
 ### Zapnutí C — až po migraci + secrets
 
@@ -97,7 +97,7 @@ Klíčové soubory: `src/app/inzerat/novy/page.tsx`, `CreateListingForm.tsx`, `g
 Ad switch po smoke:
 
 - [ ] Landing → `/inzerat/novy` (vědomě site-wide guest)
-- [ ] Optimalizace na `ListingPublished` (nová publikace, ne republish)
+- [ ] Optimalizace na `Lead` (nová publikace, ne republish)
 
 ### Vlna 2 (kupující)
 

@@ -23,17 +23,22 @@ Hlavní akce (vytvořit inzerát, potvrdit formulář, modál).
 | `headerCreateListingButtonClass` | Header CTA — od `sm`, nebo při nízké výšce (zoom) |
 | `headerCreateListingLabelClass` | Text CTA — skrytý pod ~480 px (jen ikona + `aria-label`) |
 | `createListingFabClass` | Mobilní FAB — jen `< sm` a výška viewportu > 36 rem |
+| `landingPrimaryCtaClass` | FB landing `/prodejte-snadno` — velké pill CTA (hero, závěr) |
+| `landingHeaderCtaClass` | FB landing — menší pill v lokální liště stránky |
+| `landingSecondaryCtaClass` | FB landing — outline pill (dětský bazar) |
 | `headerInputHeightClass` | Sdílená výška vyhledávače a loga (`h-10`) |
 | `headerBrandControlHeightClass` | Výška header CTA (`h-11`) |
 | `headerBrandControlPaddingXClass` | Horizontální padding header CTA na `sm+` (`px-6`) |
-| `emeraldBrandAccentClass` | Brand zelená pro logo wordmark — `text-emerald-600`, shodná s header CTA |
-| `appLogoFrameClass` | Wordmark loga — `text-lg`, `h-10`, bez rámečku, viz `AppLogo` |
+| `emeraldBrandAccentClass` | Brand zelená — `Pikolou` ve wordmarku a ikony (`!text-emerald-600`) |
+| `appLogoInkClass` | `za` ve wordmarku — `!text-[#0C2A1B]` |
+| `appLogoTldClass` | `.cz` ve wordmarku — `!text-[#6B7F73]` |
+| `appLogoFrameClass` | Rám loga — `text-lg`, `h-10`, bez rámečku, viz `AppLogo` |
 
 ### Header CTA (hlavní akce)
 
 Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani tloušťkou písma. Na telefonu (`< sm`) je místo něj FAB; v headeru zůstává jen při nízké výšce viewportu (browser zoom), kdy je FAB skrytý.
 
-- Povrch: `headerCreateListingSurfaceClass` — `bg-emerald-600`, hover `bg-emerald-700` (stejná zelená jako wordmark loga)
+- Povrch: `headerCreateListingSurfaceClass` — `bg-emerald-600`, hover `bg-emerald-700` (stejná zelená jako `Pikolou` ve wordmarku)
 - Viditelnost: `hidden` → `sm:inline-flex` + `[@media(max-height:36rem)]:inline-flex`
 - Text: `headerCreateListingLabelClass` — `hidden` pod 480 px
 - Přechod: `transition-colors duration-200`
@@ -51,7 +56,7 @@ Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani
 - Extended při načtení (plný text `createListingCtaLabel`), po scrollu > 80 px jen ikona
 - Viditelnost: `max-sm:flex` + skryté při `max-height: 36rem` — desktop s 150–200 % zoomem nesmí překrýt hero (pro seniory / zvětšené písmo)
 - `whitespace-nowrap`, horizontální padding `px-6` (24px)
-- Skrytý na `/inzerat/novy`, stránkách úpravy inzerátu, `/onboarding`, `/login` a dokud uživatel nemá dokončený profil (`needsNicknameSetup`) — zabrání stale prefetch redirectu po registraci
+- Skrytý na `/inzerat/novy`, stránkách úpravy inzerátu, `/onboarding`, `/login`, `/prodejte-snadno` a dokud uživatel nemá dokončený profil (`needsNicknameSetup`) — zabrání stale prefetch redirectu po registraci
 - `prefetch={false}` — auth-gated cíl nesmí zůstat v Router Cache jako redirect na onboarding
 - Safe area: `bottom-[max(1rem,env(safe-area-inset-bottom))]`
 - GTM: `GTM_CTA.FAB_CREATE_LISTING`

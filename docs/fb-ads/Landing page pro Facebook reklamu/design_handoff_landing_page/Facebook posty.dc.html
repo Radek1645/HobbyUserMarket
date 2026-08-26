@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #f4f6f4; font-family: Manrope, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #0f7a45; }
+  a:hover { color: #0a5730; }
+</style>
+</helmet>
+
+<section style="padding: 64px; display: flex; flex-direction: column; gap: 40px">
+  <div style="display: flex; flex-direction: column; gap: 10px; max-width: 900px">
+    <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7a70">Turn 1 · ZaPikolou.cz</div>
+    <h1 style="margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.02em; color: #14261c">Startovní sada postů pro Facebook</h1>
+    <p style="margin: 0; font-size: 17px; line-height: 1.6; color: #4a5a50; text-wrap: pretty">Šest čtvercových grafik 1080×1080 ve zelené identitě z vaší cover fotky, každá s hotovým textem příspěvku. Publikujte v uvedeném pořadí, jeden post za dva až tři dny. Šedé pruhované plochy jsou místa pro reálné screenshoty aplikace.</p>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 56px">
+
+    <div id="1a" style="display: flex; flex-direction: column; gap: 16px; width: 540px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; background: #14261c; color: #fff; padding: 4px 9px; border-radius: 4px">1a</span>
+        <span style="font-size: 14px; font-weight: 600; color: #4a5a50">Post 1 — Uvedení</span>
+      </div>
+      <div style="width: 540px; height: 540px; background: linear-gradient(160deg, #e9f4ed 0%, #dcefe3 100%); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 54px; box-sizing: border-box; border-radius: 6px">
+        <div style="position: absolute; width: 300px; height: 300px; background: #cfe7d8; transform: rotate(45deg); right: -140px; top: -110px"></div>
+        <div style="position: absolute; width: 180px; height: 180px; background: #cfe7d8; transform: rotate(45deg); left: -100px; bottom: 40px"></div>
+        <div style="position: relative; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; color: #0f7a45">zaPikolou<span style="color: #14261c">.cz</span></div>
+        <div style="position: relative; display: flex; flex-direction: column; gap: 20px">
+          <div style="font-size: 52px; line-height: 1.06; font-weight: 800; letter-spacing: -0.035em; color: #14261c; text-wrap: balance">Fotka a pár slov.<br>Inzerát máte<br>za dvě minuty.</div>
+          <div style="font-size: 19px; line-height: 1.5; color: #3c5346; max-width: 380px; text-wrap: pretty">Zbytek dopíše AI — doplní parametry, popis i cenu podle fotky.</div>
+        </div>
+        <div style="position: relative; align-self: flex-start; background: #0f7a45; color: #fff; font-size: 18px; font-weight: 700; padding: 16px 30px; border-radius: 100px">Vyzkoušet zdarma</div>
+      </div>
+      <div style="background: #fff; border: 1px solid #e2e8e3; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a9990">Text příspěvku</div>
+        <div style="font-size: 15px; line-height: 1.65; color: #26382e; text-wrap: pretty">Prodat věc, kterou už nepotřebujete, by mělo trvat minuty — ne půl večera.<br><br>Vyfotíte, napíšete pár slov a naše AI se doptá na to podstatné a sestaví hotový inzerát. Model, stav, rozměry, cena.<br><br>Spouštíme ZaPikolou.cz. Zkuste to a napište nám, co vám chybí. → zapikolou.cz</div>
+      </div>
+    </div>
+
+    <div id="1b" style="display: flex; flex-direction: column; gap: 16px; width: 540px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; background: #14261c; color: #fff; padding: 4px 9px; border-radius: 4px">1b</span>
+        <span style="font-size: 14px; font-weight: 600; color: #4a5a50">Post 2 — Jak to funguje</span>
+      </div>
+      <div style="width: 540px; height: 540px; background: #fbfdfb; display: flex; flex-direction: column; padding: 50px; box-sizing: border-box; border-radius: 6px; border: 1px solid #e2e8e3; gap: 30px">
+        <div style="font-size: 34px; font-weight: 800; letter-spacing: -0.03em; color: #14261c">Tři kroky k inzerátu</div>
+        <div style="display: flex; flex-direction: column; gap: 18px; flex: 1">
+          <div style="display: flex; gap: 18px; align-items: center">
+            <div style="width: 46px; height: 46px; flex: none; border-radius: 100px; background: #0f7a45; color: #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center">1</div>
+            <div style="display: flex; flex-direction: column; gap: 3px">
+              <div style="font-size: 21px; font-weight: 700; color: #14261c">Vyfotíte věc</div>
+              <div style="font-size: 16px; color: #55685c">Klidně mobilem, na stole u okna.</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 18px; align-items: center">
+            <div style="width: 46px; height: 46px; flex: none; border-radius: 100px; background: #0f7a45; color: #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center">2</div>
+            <div style="display: flex; flex-direction: column; gap: 3px">
+              <div style="font-size: 21px; font-weight: 700; color: #14261c">Napíšete pár slov</div>
+              <div style="font-size: 16px; color: #55685c">„Starý router, funguje.“ Stačí.</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 18px; align-items: center">
+            <div style="width: 46px; height: 46px; flex: none; border-radius: 100px; background: #0f7a45; color: #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center">3</div>
+            <div style="display: flex; flex-direction: column; gap: 3px">
+              <div style="font-size: 21px; font-weight: 700; color: #14261c">AI dopíše inzerát</div>
+              <div style="font-size: 16px; color: #55685c">Název, popis, parametry, cena.</div>
+            </div>
+          </div>
+        </div>
+        <div style="background: #e9f4ed; border-radius: 6px; padding: 18px 22px; font-size: 18px; font-weight: 700; color: #0f7a45; text-align: center">Publikovat → hotovo</div>
+      </div>
+      <div style="background: #fff; border: 1px solid #e2e8e3; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a9990">Text příspěvku</div>
+        <div style="font-size: 15px; line-height: 1.65; color: #26382e; text-wrap: pretty">Jak to u nás chodí:<br><br>1. Vyfotíte věc<br>2. Napíšete pár slov<br>3. AI se doptá na detaily a sestaví inzerát<br><br>Žádné vyplňování dvaceti políček. Zkuste to na jedné věci, kterou máte doma ležet. → zapikolou.cz</div>
+      </div>
+    </div>
+
+    <div id="1c" style="display: flex; flex-direction: column; gap: 16px; width: 540px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; background: #14261c; color: #fff; padding: 4px 9px; border-radius: 4px">1c</span>
+        <span style="font-size: 14px; font-weight: 600; color: #4a5a50">Post 3 — Před / po</span>
+      </div>
+      <div style="width: 540px; height: 540px; background: #14261c; display: flex; flex-direction: column; padding: 46px; box-sizing: border-box; border-radius: 6px; gap: 22px">
+        <div style="font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: #fff">Takhle vypadá rozdíl</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1">
+          <div style="background: #1f3428; border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+            <div style="font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; color: #7f9689">CO NAPÍŠETE</div>
+            <div style="font-size: 19px; line-height: 1.45; color: #e6efe9">„Starý router, funguje“</div>
+            <div style="margin-top: auto; font-size: 14px; color: #7f9689">2 sekundy psaní</div>
+          </div>
+          <div style="background: #0f7a45; border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+            <div style="font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; color: #b6e2c9">CO VZNIKNE</div>
+            <div style="font-size: 19px; line-height: 1.3; font-weight: 700; color: #fff">Wi-Fi 6 router NL-AX3000</div>
+            <div style="font-size: 15px; line-height: 1.6; color: #e2f2e9">• Dual-band, 4 antény<br>• Plně funkční<br>• Bez originálního balení</div>
+            <div style="margin-top: auto; font-size: 22px; font-weight: 800; color: #fff">890 Kč</div>
+          </div>
+        </div>
+        <div style="font-size: 17px; color: #b6c8bd; text-wrap: pretty">Lepší inzerát = víc zhlédnutí = rychlejší prodej.</div>
+      </div>
+      <div style="background: #fff; border: 1px solid #e2e8e3; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a9990">Text příspěvku</div>
+        <div style="font-size: 15px; line-height: 1.65; color: #26382e; text-wrap: pretty">„Starý router, funguje“ → „Wi-Fi 6 router NL-AX3000, dual-band, plně funkční, 890 Kč“<br><br>Kupující kliká na inzeráty, kterým rozumí. AI z vaší jedné věty udělá popis, který dává smysl — a vy nemusíte hledat, jaký model to vlastně máte.<br><br>Zkuste to na čemkoliv, co máte doma. → zapikolou.cz</div>
+      </div>
+    </div>
+
+    <div id="1d" style="display: flex; flex-direction: column; gap: 16px; width: 540px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; background: #14261c; color: #fff; padding: 4px 9px; border-radius: 4px">1d</span>
+        <span style="font-size: 14px; font-weight: 600; color: #4a5a50">Post 4 — Ukázka v appce</span>
+      </div>
+      <div style="width: 540px; height: 540px; background: linear-gradient(160deg, #e9f4ed 0%, #dcefe3 100%); display: flex; flex-direction: column; padding: 46px; box-sizing: border-box; border-radius: 6px; gap: 26px">
+        <div style="font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: #14261c; text-wrap: balance">Vypadá to takhle jednoduše</div>
+        <div style="flex: 1; border-radius: 8px; overflow: hidden; position: relative; background: repeating-linear-gradient(135deg, #cfdcd4 0 8px, #dae5de 8px 16px); display: flex; align-items: center; justify-content: center">
+          <div style="font-family: ui-monospace, monospace; font-size: 13px; letter-spacing: 0.06em; color: #46584d; background: #f4f8f5; padding: 10px 16px; border-radius: 4px; text-align: center">screenshot appky —<br>formulář nového inzerátu</div>
+        </div>
+        <div style="align-self: flex-start; background: #14261c; color: #fff; font-size: 17px; font-weight: 700; padding: 15px 28px; border-radius: 100px">zapikolou.cz</div>
+      </div>
+      <div style="background: #fff; border: 1px solid #e2e8e3; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a9990">Text příspěvku</div>
+        <div style="font-size: 15px; line-height: 1.65; color: #26382e; text-wrap: pretty">Nahlédnutí dovnitř. Takhle vypadá vkládání inzerátu od začátku do konce.<br><br>Vejde se to na jednu obrazovku a na jedno prohlédnutí. Kdyby vám něco přišlo zbytečné, napište to do komentářů — díváme se na to. → zapikolou.cz</div>
+      </div>
+    </div>
+
+    <div id="1e" style="display: flex; flex-direction: column; gap: 16px; width: 540px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; background: #14261c; color: #fff; padding: 4px 9px; border-radius: 4px">1e</span>
+        <span style="font-size: 14px; font-weight: 600; color: #4a5a50">Post 5 — Co prodat</span>
+      </div>
+      <div style="width: 540px; height: 540px; background: #fbfdfb; border: 1px solid #e2e8e3; display: flex; flex-direction: column; padding: 46px; box-sizing: border-box; border-radius: 6px; gap: 24px">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: #14261c">Co máte doma ležet?</div>
+          <div style="font-size: 17px; color: #55685c; text-wrap: pretty">Nejčastěji se u nás prodává tohle.</div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; flex: 1">
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Elektronika</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Dětské věci</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Nábytek</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Sport</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Oblečení</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Kola</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Zahrada</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Knihy</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Nástroje</div>
+          <div style="background: #e9f4ed; color: #0f7a45; font-size: 18px; font-weight: 600; padding: 12px 20px; border-radius: 100px">Hudba</div>
+        </div>
+        <div style="border-top: 1px solid #e2e8e3; padding-top: 20px; font-size: 20px; font-weight: 700; color: #14261c">Vyfoťte to a nechte AI psát.</div>
+      </div>
+      <div style="background: #fff; border: 1px solid #e2e8e3; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a9990">Text příspěvku</div>
+        <div style="font-size: 15px; line-height: 1.65; color: #26382e; text-wrap: pretty">Router v šuplíku. Kolo, na kterém nikdo nejezdí. Autosedačka, ze které dítě vyrostlo.<br><br>Napište do komentářů, co u vás doma leží nejdéle — a co byste prodali, kdyby to nedalo tolik práce. → zapikolou.cz</div>
+      </div>
+    </div>
+
+    <div id="1f" style="display: flex; flex-direction: column; gap: 16px; width: 540px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; background: #14261c; color: #fff; padding: 4px 9px; border-radius: 4px">1f</span>
+        <span style="font-size: 14px; font-weight: 600; color: #4a5a50">Post 6 — Výzva k akci</span>
+      </div>
+      <div style="width: 540px; height: 540px; background: #0f7a45; display: flex; flex-direction: column; justify-content: space-between; padding: 50px; box-sizing: border-box; border-radius: 6px; position: relative; overflow: hidden">
+        <div style="position: absolute; width: 340px; height: 340px; border: 2px solid rgba(255,255,255,0.16); transform: rotate(45deg); right: -150px; bottom: -150px"></div>
+        <div style="position: relative; font-size: 19px; font-weight: 800; color: #fff">zaPikolou<span style="color: #a8dbc0">.cz</span></div>
+        <div style="position: relative; display: flex; flex-direction: column; gap: 18px">
+          <div style="font-size: 50px; line-height: 1.06; font-weight: 800; letter-spacing: -0.035em; color: #fff; text-wrap: balance">Vložte první inzerát ještě dnes</div>
+          <div style="font-size: 19px; line-height: 1.5; color: #d9efe3; max-width: 400px; text-wrap: pretty">Registrace i vložení jsou zdarma. Trvá to méně, než hledat, kam jste dali účtenku.</div>
+        </div>
+        <div style="position: relative; align-self: flex-start; background: #fff; color: #0f7a45; font-size: 18px; font-weight: 700; padding: 16px 30px; border-radius: 100px">zapikolou.cz</div>
+      </div>
+      <div style="background: #fff; border: 1px solid #e2e8e3; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a9990">Text příspěvku</div>
+        <div style="font-size: 15px; line-height: 1.65; color: #26382e; text-wrap: pretty">Jedna věc. Jedna fotka. Dvě minuty.<br><br>Vložení inzerátu je zdarma a AI za vás napíše popis. Vyberte si doma jednu věc, kterou už nepoužíváte, a zkuste to. → zapikolou.cz<br><br>A kdyby něco nešlo, napište nám sem — odpovídáme.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="max-width: 900px; background: #fff; border: 1px solid #e2e8e3; border-radius: 6px; padding: 26px 28px; display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 20px; font-weight: 700; color: #14261c">Co dál</div>
+    <div style="font-size: 16px; line-height: 1.7; color: #46584d; text-wrap: pretty">Můžu z toho vyrobit i cover fotku (1640×624) a profilový obrázek, přesázet grafiky do formátů pro Centrum reklam (1:1, 4:5, 9:16), doplnit obsahový plán na měsíc nebo vstupní stránku pro reklamu. Pošlete screenshoty appky a logo v PNG a nahradím placeholdery za reálné.</div>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}"></script>
+</body>
+</html>

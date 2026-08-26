@@ -43,21 +43,21 @@ Před první platbou Meta: [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/po
 
 - **Struktura Ad Setů:** Statika a Karusel nejdou do jednoho Ad Setu bez rozmyslu. Buď CBO napříč Ad Sety, nebo přímý A/B test měřící CPA na "podání inzerátu".
 - **Cíl kampaně:** Konverze, ne kliknutí/traffic.
-- **Optimalizace:** Custom event přes Meta Pixel — `ListingPublished` (v kódu už existuje; nepoužívat nové názvy `Inzerat_Vytvoren` / `Post_Ad_Success`) — spouštěný až po úspěšném podání inzerátu, ne na kliknutí.
+- **Optimalizace:** standardní event Meta Pixel — **`Lead`** (publikace inzerátu; nepoužívat `Inzerat_Vytvoren` / `Post_Ad_Success`) — spouštěný až po úspěšném podání inzerátu, ne na kliknutí.
 
 ### Thank you page (blocker před spuštěním)
 
 Na webu **není samostatná thank-you stránka**. Konverze se má spustit až po úspěšném vytvoření inzerátu (ne na odeslání formuláře, které může selhat validací).
 
-Aktuální trigger: redirect na detail inzerátu s `?published=<postId>` → klientský beacon `ListingPublished`. To je správný moment (po `publish_approved_post`, ne po kliknutí na Publikovat).
+Aktuální trigger: redirect na detail inzerátu s `?published=<postId>` → klientský beacon `Lead`. To je správný moment (po `publish_approved_post`, ne po kliknutí na Publikovat).
 
 Před kampaní ověřit na **produkci** (ne jen localhost):
-- Pixel ID v env (`NEXT_PUBLIC_META_PIXEL_ID`)
+- Pixel Helper vidí `1774699993535627` po marketingovém souhlasu
 - marketingový souhlas v cookie liště (bez něj se Pixel nenačte)
-- event `ListingPublished` 1×, bez duplicity při refresh
+- event `Lead` 1×, bez duplicity při refresh
 - event se neposílá u republish / editace
 
-Hodnotu inzerátu (cenu) do eventu **zatím nedávat** — optimalizace na value by tlačila algoritmus k drahým věcem, ne k počtu nových inzerentů. Volume na `ListingPublished` stačí.
+Hodnotu inzerátu (cenu) do eventu **zatím nedávat** — optimalizace na value by tlačila algoritmus k drahým věcem, ne k počtu nových inzerentů. Volume na `Lead` stačí.
 
 Pokud E3/E4 na produkci neprojde, kampaň nespouštět — bez konverze nejde optimalizovat na Konverze. Checklist: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
 

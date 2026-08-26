@@ -25,6 +25,35 @@ function dopInitBracketGlobal(): RegExp {
 const DOPLNIT_PROMPT_VERB = "Doplňte";
 const DOPLNIT_FIELD_MAX_LENGTH = 40;
 
+/** Cena, stav a lokalita mají pole formuláře — výzva v popisu je duplicitní. */
+const DOPLNIT_FORM_FIELD_KEYS = new Set([
+  "cena",
+  "cenu",
+  "cena v kc",
+  "cenu v kc",
+  "prodejni cenu",
+  "lokalitu",
+  "lokalita",
+  "lokaci",
+  "lokace",
+  "misto",
+  "misto predani",
+  "misto vyzvednuti",
+  "adresu",
+  "adresa",
+  "mesto",
+  "obec",
+  "stav",
+  "stav zarizeni",
+  "stav zbozi",
+  "stav kusu",
+  "stav veci",
+  "stav produktu",
+  "stav predmetu",
+  "celkovy stav",
+  "aktualni stav",
+]);
+
 export function buildSuggestListingSystemPrompt(): string {
   return `Jsi draftér inzerátů a klasifikátor zboží pro český p2p bazar zaPikolou.cz.
 Z 1–2 fotek připravíš návrh inzerátu (title + description) a zařadíš ho do taxonomie. Nepíšeš popis fotografie — píšeš text, který může jít rovnou do formuláře inzerátu.
@@ -33,7 +62,7 @@ Vždy piš title i description v češtině (i když je na produktu anglický n�
 ROLE A CÍL:
 - Dominantní produkt na fotce = předmět prodeje.
 - Popis je nabídka k prodeji, ne vizuální reportáž scény.
-- Uživatel doplní cenu, stav a lokalitu — ty je neuvádíš.
+- Uživatel doplní cenu, stav a lokalitu ve vlastních polích formuláře — ty je neuvádíš a na ně se v description neptej.
 
 PRAVIDLA PRO GENEROVÁNÍ:
 1. NÁZEV (title): Výstižný, max ${SUGGEST_LISTING_TITLE_MAX_LENGTH} znaků.
@@ -51,6 +80,7 @@ PRAVIDLA PRO GENEROVÁNÍ:
 3. NEJISTÉ ÚDAJE — ZÁSTUPNÝ TEXT (title i description, stejná jistota):
    - Pokud typ/model/velikost/rok/materiál není na fotce jednoznačně čitelný, NEVYMÝŠLEJ ho.
    - V description: každý nejistý údaj = **samostatný** řádek, např. „Doplňte typ/model: “, „Doplňte rok: “, „Doplňte nájezd km: “. Za dvojtečkou nech mezeru a **žádnou hodnotu** (uživatel ji dopíše). NIKDY neslévej více položek do jednoho řádku: špatně „Doplňte typ/model, rok, km: “.
+   - ZÁKAZ výzev na pole formuláře. NIKDY nepiš „Doplňte stav:“, „Doplňte stav zařízení:“, „Doplňte cenu:“, „Doplňte lokalitu:“ ani obdobu. Stav (nové/použité), cena a lokalita mají vlastní pole — výzvy jen na atributy, které ve formuláři nejsou (značka, typ/model, rok, nájezd, velikost, materiál, motorizace).
    - FORMÁT VÝZEV V DESCRIPTION (povinné):
      1) Nejdřív souvislý odstavec nabídky **bez** výzev.
      2) Pak prázdný řádek.
@@ -70,7 +100,7 @@ PRAVIDLA PRO GENEROVÁNÍ:
    - Používej jen slugy (např. auto, osobni-auta), ne české labely.
    - Pokud si nejsi jistý přesnou podkategorií, nastav confidenceScore < ${SUGGEST_LISTING_CONFIDENCE_THRESHOLD} a vrať subcategorySlug jako null.
 7. ROZSAH: Jen fyzické zboží. Pokud fotka vypadá jako služba, práce, nemovitost nebo událost, vrať categoryType „ostatni“, subcategorySlug null a nízké confidenceScore.
-8. NIKDY neodhaduj cenu ani formulářový stav (nové/použité jako enum) — to vyplní uživatel.
+8. NIKDY neodhaduj cenu ani formulářový stav (nové/použité jako enum) — to vyplní uživatel. Do description kvůli nim nedávej „Doplňte …:“.
 9. JAZYK: title i description vždy česky.
 
 PŘÍKLAD VÝSTUPU (styl a formát — napodob; obsah přizpůsob fotce):
@@ -92,7 +122,7 @@ ${GOODS_TAXONOMY_PROMPT_BLOCK}
 export function buildSuggestListingUserPrompt(imageCount: number): string {
   return `Připrav draft inzerátu z přiložených fotografií (${imageCount}).
 Vrať JSON: title, description, categoryType, subcategorySlug, confidenceScore (číslo 0–1).
-Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě).`;
+Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; bez „Doplňte stav/cenu/lokalitu:“ (to jsou pole formuláře); nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě).`;
 }
 
 export type SuggestListingParsed = {
@@ -131,6 +161,10 @@ function foldDoplnitFieldKey(raw: string): string {
 function isUsableFieldName(field: string): boolean {
   const trimmed = field.trim();
   return trimmed.length > 0 && trimmed.length <= DOPLNIT_FIELD_MAX_LENGTH;
+}
+
+function isDoplnitFormFieldPrompt(field: string): boolean {
+  return DOPLNIT_FORM_FIELD_KEYS.has(foldDoplnitFieldKey(field));
 }
 
 function parseDoplnitPromptLine(
@@ -180,6 +214,7 @@ export function formatDoplnitPlaceholders(description: string): string {
   const order: string[] = [];
 
   function addEntry(field: string, value: string) {
+    if (isDoplnitFormFieldPrompt(field)) return;
     const key = foldDoplnitFieldKey(field);
     if (!key) return;
     const existing = seen.get(key);

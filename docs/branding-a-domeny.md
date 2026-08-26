@@ -69,6 +69,7 @@ Webmail `mail.gransy.com` u Subregu **není** aktuální příjem `info@`.
 | `@` | MX | `route1/2/3.mx.cloudflare.net` |
 | `@` | TXT | `v=spf1 include:_spf.mx.cloudflare.net ~all` |
 | `@` | TXT | Google Search Console verification |
+| `@` | TXT | `facebook-domain-verification=m2oqxp2xbsthv8soz29qzz3x0ohsib` (Meta, ověřeno 2026-08-26) |
 | `_dmarc` | TXT | `v=DMARC1; p=none;` |
 | `resend._domainkey` | TXT | Resend DKIM |
 | `send` | MX | `feedback-smtp.eu-west-1.amazonses.com` |

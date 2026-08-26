@@ -6,6 +6,10 @@ import {
   CREATE_LISTING_GUIDE_PATH,
   CREATE_LISTING_GUIDE_UI,
 } from "@/config/create-listing-guide";
+import {
+  FB_PROMO_LANDING_PATH,
+  FB_PROMO_LANDING_UI,
+} from "@/config/fb-promo-landing";
 import { FAQ_PATH, FAQ_UI } from "@/config/faq";
 import {
   COOKIES_PATH,
@@ -60,6 +64,10 @@ export const FOOTER_ABOUT_LINKS = [
   {
     href: ABOUT_PLATFORM_PATH,
     label: ABOUT_PLATFORM_UI.footerLinkLabel,
+  },
+  {
+    href: FB_PROMO_LANDING_PATH,
+    label: FB_PROMO_LANDING_UI.footerLinkLabel,
   },
   {
     href: CREATE_LISTING_GUIDE_PATH,

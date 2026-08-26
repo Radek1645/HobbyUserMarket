@@ -73,6 +73,15 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 
 **Při přidání nové kategorie nebo podkategorie** vždy doplň záznam do `listing-default-covers.ts` (podkategorie v `SUBCATEGORY_COVERS`, jinak spadne na fallback kategorie). Bez toho nová podkategorie dostane jen obecnou ikonu kategorie — vizuální styl přestane sedět.
 
+### 2.1.3 Landing page pro Facebook reklamu (`/prodejte-snadno`)
+
+1. Kampaň míří na **`/prodejte-snadno`**, ne na homepage. Cíl: první inzerát (CTA → `/inzerat/novy`).
+2. Globální **header (vyhledávání, poloha, účet) je skrytý**. Stránka má vlastní lištu (logo + Jak to funguje + Vložit inzerát). **Patička webu zůstává** (`SiteFooter`). Mobilní FAB je skrytý — stránka má vlastní CTA.
+3. Cookie lišta, GTM a Pixel zůstávají. Po analytickém souhlasu jde do `dataLayer` event `lp_view`. Po **marketingovém** souhlasu Pixel pošle `ViewContent` (`content_name: landing_fb`). CTA mají `data-gtm-id` `cta_lp_header` / `cta_lp_hero` / `cta_lp_footer` a `data-gtm-position`.
+4. UTM a `fbclid` se uloží do `localStorage` a přenesou na `/inzerat/novy`. Pokud guest flag C není zapnutý, login wall je zachová v `next`. Přiloží se k Pixel události `Lead`.
+5. V patičce (sloupec **Co je zaPikolou?**) je odkaz **Prodejte snadno**.
+6. Texty: vykání, žádné časové claimy, AI nedoplňuje cenu, registrace před publikací je zmíněná. Copy: [`src/config/fb-promo-landing.ts`](../src/config/fb-promo-landing.ts). Design: [`docs/fb-ads/Landing page pro Facebook reklamu/`](./fb-ads/Landing%20page%20pro%20Facebook%20reklamu/).
+
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
 
 **Krok 1 — poloha návštěvníka (volitelná, bez vynucení)**
@@ -106,7 +115,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 - Na mobilu (`md` breakpoint) je vpravo dole plovoucí zelené tlačítko (FAB).
 - Když je otevřená **cookie lišta**, FAB se posune **nad lištu** (výška banneru se měří dynamicky), aby nebylo utopené a zůstalo klikatelné.
 - Po souhlasu / odmítnutí cookies se FAB vrátí na standardní pozici u spodního okraje.
-- FAB (a desktop header CTA) se **nezobrazuje** na `/onboarding`, `/login` a dokud profil nemá přezdívku — jinak by Next.js prefetch `/inzerat/novy` nakešoval redirect na onboarding a po dokončení registrace by tlačítko „nefungovalo“ do obnovení stránky. Po `completeOnboarding` / přihlášení se volá `revalidatePath("/", "layout")`.
+- FAB (a desktop header CTA) se **nezobrazuje** na `/onboarding`, `/login`, `/prodejte-snadno` a dokud profil nemá přezdívku — jinak by Next.js prefetch `/inzerat/novy` nakešoval redirect na onboarding a po dokončení registrace by tlačítko „nefungovalo“ do obnovení stránky. Po `completeOnboarding` / přihlášení se volá `revalidatePath("/", "layout")`.
 
 ### 2.4 Filtrování podle kategorie
 
@@ -140,7 +149,7 @@ Na všech stránkách je společná hlavička (wordmark **zaPikolou.cz**, vyhled
 |---------|--------|
 | **Dokumenty** | VOP, **Zásady ochrany osobních údajů** (`/gdpr`), Podmínky inzerce, Zásady cookies, Marketingový souhlas, Limity/Balíčky inzerce, DSA kontaktní centrum, Nahlásit inzerát |
 | **Kontakt** | Provozovatel webu (`/kontakt`) |
-| **Co je zaPikolou?** | O webu zaPikolou (`/co-je-zapikolou`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`), **Časté dotazy** (`/faq`), Pro AI (`/llms.txt`) |
+| **Co je zaPikolou?** | O webu zaPikolou (`/co-je-zapikolou`), Prodejte snadno (`/prodejte-snadno`), Jak vytvořit inzerát (`/jak-vytvorit-inzerat`), **Časté dotazy** (`/faq`), Pro AI (`/llms.txt`) |
 
 V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), krátký tagline, verze platformy (`0.2`) a rok (`2026`).
 
@@ -149,6 +158,7 @@ V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), 
 | URL | Účel |
 |-----|------|
 | `/co-je-zapikolou` | Co web je a není (inzertní nástěnka, ne e-shop); patička **O webu zaPikolou** |
+| `/prodejte-snadno` | Landing pro FB reklamu (CTA → `/inzerat/novy`); patička **Prodejte snadno** |
 | `/jak-vytvorit-inzerat` | Průvodce v 5 krocích (photo-first prefill → doplnit údaje → kontrola → AI náhled → publikace); demo Elektronika / Kolo / Spotřebič včetně fotek a OCR štítku |
 | `/kontakt` | Provozovatel (jméno, e-mail, datová schránka) |
 | `/faq` | Časté dotazy — accordion, texty v `src/config/faq.ts` (PRD §11.3) |
@@ -1769,6 +1779,12 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 | `src/components/analytics/GoogleTagManager.tsx` | Consent bootstrap + GTM snippet |
 | `src/components/consent/*` | Lišta, provider, odkaz v patičce |
 | `src/config/gtm-ids.ts` | `data-gtm-id` na CTA pro GTM click triggery |
+| `src/config/fb-promo-landing.ts` | Copy a cesta FB landing `/prodejte-snadno` |
+| `src/config/meta-pixel.ts` | Pixel ID `1774699993535627`, názvy eventů, klíče úložiště |
+| `src/components/analytics/MetaPixelLoader.tsx` | Pixel po marketingovém souhlasu; SPA `PageView`; `ViewContent`; `InitiateCheckout` |
+| `src/components/analytics/ConversionBeacons.tsx` | `Lead` po publikaci; `CompleteRegistration` po novém účtu |
+| `src/lib/promo/campaign-storage.ts` | UTM / `fbclid` v localStorage (30 dní) |
+| `src/components/promo/FbPromoViewBeacon.tsx` | `lp_view` do dataLayer po analytickém souhlasu |
 | `src/lib/analytics/virtual-pageview.ts` | SPA `virtual_pageview` do `dataLayer` (P35) |
 | `src/components/analytics/VirtualPageviewTracker.tsx` | Client navigace → page view po souhlasu |
 | `src/config/listing-form-ui.ts` | Povinná pole — hvězdička, legenda |
@@ -1782,6 +1798,8 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 
 V GTM adminu: zapnutý **Consent Overview**; GA4 tag s **Require consent** → `analytics_storage`; click trigger `[data-gtm-id^="cta_"]`.
 
+**FB landing:** Custom Event `lp_view` (po analytickém souhlasu). Kliky `cta_lp_*` stejný click trigger; parametr `data-gtm-position` (header / hero / footer).
+
 **SPA page views (P35):** Custom Event trigger `virtual_pageview` → GA4 Event tag typu **page_view** (nebo Configuration s přepsanými poli). Mapovat Data Layer proměnné:
 - `page_path` → page_location / page_path
 - `page_title` → page_title
@@ -1789,6 +1807,22 @@ V GTM adminu: zapnutý **Consent Overview**; GA4 tag s **Require consent** → `
 Web pushuje event jen po client navigaci (např. HP → detail inzerátu) a jen když je analytický souhlas udělen. První načtení stránky měří standardní GA4 Configuration tag.
 
 Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí stavy; po souhlasu **Příkaz Update pro souhlas**; po kliknutí na kartu inzerátu event **`virtual_pageview`**.
+
+**Meta Pixel** se v GTM nenačítá (běží v appce, viz §14.4). V GTM ho nepřidávejte.
+
+### 14.4 Meta Pixel
+
+Pixel ID `1774699993535627` — `src/config/meta-pixel.ts` (env `NEXT_PUBLIC_META_PIXEL_ID` přepíše; prázdný string vypne). Načte se až po marketingovém souhlasu.
+
+| Event | Trigger |
+|---|---|
+| `PageView` | první hit + SPA změna `pathname` |
+| `ViewContent` | `/prodejte-snadno` (`content_name: landing_fb`) |
+| `InitiateCheckout` | `/inzerat/novy` |
+| `Lead` | `?published=<postId>` po úspěšném `createListing` (`content_category` + UTM) |
+| `CompleteRegistration` | `?registered=1` u nového účtu |
+
+Zadání: [`fb-ads/MERENI-pixel.md`](./fb-ads/MERENI-pixel.md). Příkazy do konzole: [`fb-ads/MERENI-console.md`](./fb-ads/MERENI-console.md). Ads optimalizace na **`Lead`**, ne na vlastní `ListingPublished`.
 
 ---
 
@@ -1815,6 +1849,8 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 | [`docs/pravni/ochrana-osobnich-udaju-fo.md`](./pravni/ochrana-osobnich-udaju-fo.md) | GDPR — zásady ochrany osobních údajů (veřejně `/gdpr`) |
 | [`docs/pravni/README.md`](./pravni/README.md) | Přehled právních docs + checklist data v EU (P33) |
 | [`docs/branding-a-domeny.md`](./branding-a-domeny.md) | DNS, e-mail, Vercel — Cloudflare Email Routing + Subreg jen registrace |
+| [`fb-ads/MERENI-pixel.md`](./fb-ads/MERENI-pixel.md) | Meta Pixel — eventy, UTM, consent |
+| [`fb-ads/MERENI-console.md`](./fb-ads/MERENI-console.md) | Příkazy do DevTools konzole pro kontrolu měření |
 
 ---
 

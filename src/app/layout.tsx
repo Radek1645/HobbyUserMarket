@@ -3,9 +3,8 @@ import {
   GoogleTagManagerScript,
 } from "@/components/analytics/GoogleTagManager";
 import { AppShell } from "@/components/layout/AppShell";
-import { SITE_DISPLAY_NAME, SITE_DESCRIPTION, SITE_SEO_TITLE } from "@/config/site";
+import { SITE_CANONICAL_URL, SITE_DISPLAY_NAME, SITE_DESCRIPTION, SITE_SEO_TITLE } from "@/config/site";
 import { getCurrentUser } from "@/lib/auth/get-user";
-import { getSiteUrl } from "@/lib/supabase/env";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
@@ -15,7 +14,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(getSiteUrl()),
+  metadataBase: new URL(SITE_CANONICAL_URL),
   title: SITE_SEO_TITLE,
   description: SITE_DESCRIPTION,
   icons: {

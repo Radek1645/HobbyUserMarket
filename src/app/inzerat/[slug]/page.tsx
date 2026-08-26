@@ -272,7 +272,10 @@ export default async function ListingDetailPage({
   return (
     <article className="px-4 py-8 sm:px-6">
       <Suspense fallback={null}>
-        <ListingPublishedConversionBeacon postId={post.id} />
+        <ListingPublishedConversionBeacon
+          postId={post.id}
+          contentCategory={post.category_type}
+        />
       </Suspense>
       {post.status === "active" ? (
         <ListingViewBeacon postId={post.id} />

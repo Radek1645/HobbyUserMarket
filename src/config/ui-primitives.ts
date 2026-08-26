@@ -32,7 +32,7 @@ export const preferredSoftButtonClass =
 export const secondaryDashedButtonClass =
   "flex items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-500 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
-/** Header CTA povrch — flat zelená shodná s logem zaPikolou, hover ztmaví jako logo. */
+/** Header CTA povrch — flat zelená shodná s `Pikolou` ve wordmarku, hover ztmaví. */
 export const headerCreateListingSurfaceClass =
   "bg-emerald-600 text-white transition-colors duration-200 hover:bg-emerald-700";
 
@@ -57,6 +57,15 @@ export const headerCreateListingButtonClass =
 /** Text header CTA — na úzkém/zoomed viewportu jen ikona + aria-label. */
 export const headerCreateListingLabelClass = "ml-2 hidden min-[480px]:inline";
 
+/** FB landing — primární CTA v hero a závěru (pill, větší než header). */
+export const landingPrimaryCtaClass = `inline-flex items-center justify-center rounded-full px-[34px] py-[18px] text-lg font-bold ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+
+/** FB landing — CTA v lokální liště stránky. */
+export const landingHeaderCtaClass = `inline-flex items-center justify-center rounded-full px-[22px] py-3 text-[15px] font-bold ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+
+/** FB landing — sekundární outline pill (dětský bazar). */
+export const landingSecondaryCtaClass = `inline-flex w-fit items-center justify-center rounded-full border-[1.5px] border-emerald-600 px-6 py-[13px] text-base font-bold text-emerald-800 transition hover:bg-emerald-50 ${emeraldFocusRingClass}`;
+
 /**
  * Mobilní FAB — jen úzký a dostatečně vysoký viewport.
  * Skrytý od `sm` a při nízké výšce (desktop + 150–200 % zoom).
@@ -64,12 +73,18 @@ export const headerCreateListingLabelClass = "ml-2 hidden min-[480px]:inline";
 export const createListingFabClass =
   `fixed right-4 z-[95] hidden h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 max-sm:flex [@media(max-height:36rem)]:!hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
 
-/** Primární brand zelená — logo wordmark, shodná s `headerCreateListingSurfaceClass`. */
-export const emeraldBrandAccentClass = "text-emerald-600";
+/** Primární brand zelená — `Pikolou` ve wordmarku a ikony. `!` přebije dědění barvy z odkazu. */
+export const emeraldBrandAccentClass = "!text-emerald-600";
+
+/** Logo ink — `za` ve wordmarku. */
+export const appLogoInkClass = "!text-[#0C2A1B]";
+
+/** Tlumené `.cz` ve wordmarku. */
+export const appLogoTldClass = "!text-[#6B7F73]";
 
 /** Logo zaPikolou.cz — výška jako vyhledávač, wordmark bez rámečku. */
 export const appLogoFrameClass =
-  `inline-flex shrink-0 ${headerInputHeightClass} items-center whitespace-nowrap font-sans text-lg leading-none tracking-tight select-none ${emeraldBrandAccentClass}`;
+  `inline-flex shrink-0 ${headerInputHeightClass} items-center whitespace-nowrap font-sans text-lg leading-none tracking-tight select-none`;
 
 /** Modální overlay — centrovaný dialog nad stránkou. */
 export const modalOverlayClass =

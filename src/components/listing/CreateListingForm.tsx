@@ -18,6 +18,8 @@ import {
   type GuestListingDraft,
 } from "@/lib/guest/listing-draft";
 import type { ModerationImageReference } from "@/lib/moderation/prepare-moderation-images";
+import { withCampaignQuery } from "@/lib/promo/campaign-query";
+import { readStoredCampaignParams } from "@/lib/promo/campaign-storage";
 import {
   MODERATION_CHECKING_UI,
   MODERATION_ENABLED,
@@ -531,7 +533,7 @@ export function CreateListingForm({
           formData.append("stagedImagePath", path);
         }
 
-        // Draft maže až ListingPublished beacon po redirectu (?published=1).
+        // Draft maže až Lead beacon po redirectu (?published=1).
         startModerationTransition(() => {
           boundAction(formData);
         });
@@ -688,7 +690,8 @@ export function CreateListingForm({
   }
 
   function redirectGuestToAuth() {
-    const next = `/inzerat/novy?${GUEST_LISTING_RESUME_QUERY}=1`;
+    const resume = `/inzerat/novy?${GUEST_LISTING_RESUME_QUERY}=1`;
+    const next = withCampaignQuery(resume, readStoredCampaignParams());
     storeAuthReturnPath(next);
     window.location.assign(
       `/login?next=${encodeURIComponent(next)}&message=create_listing&tab=register`,

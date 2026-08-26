@@ -1,3 +1,4 @@
+import { FB_PROMO_LANDING_PATH } from "@/config/fb-promo-landing";
 import { getSitemapListings } from "@/lib/seo/get-sitemap-listings";
 import { getIndexedCategorySeoPaths } from "@/lib/seo/get-category-seo-page";
 import { getSiteUrl } from "@/lib/supabase/env";
@@ -20,6 +21,11 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
     url: "/jak-vytvorit-inzerat",
     changeFrequency: "monthly",
     priority: 0.5,
+  },
+  {
+    url: FB_PROMO_LANDING_PATH,
+    changeFrequency: "monthly",
+    priority: 0.6,
   },
   {
     url: "/kontakt",

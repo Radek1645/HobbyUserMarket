@@ -92,6 +92,14 @@ export const GTM_CTA = {
   ACCOUNT_DELETE_OPEN: "cta_account_delete_open",
   ACCOUNT_DELETE_SUBMIT: "cta_account_delete_submit",
 
+  // FB landing `/prodejte-snadno` — position v data-gtm-position
+  LP_CTA_HEADER: "cta_lp_header",
+  LP_CTA_HERO: "cta_lp_hero",
+  LP_CTA_FOOTER: "cta_lp_footer",
+  LP_HOW_IT_WORKS: "cta_lp_how_it_works",
+  LP_KIDS_BAZAAR: "cta_lp_kids_bazaar",
+  LP_CATEGORY: "cta_lp_category",
+
   // 404
   NOT_FOUND_HOME: "cta_not_found_home",
   NOT_FOUND_CREATE_LISTING: "cta_not_found_create_listing",

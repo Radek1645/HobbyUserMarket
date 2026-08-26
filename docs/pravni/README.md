@@ -16,7 +16,7 @@ Modulární sada právních textů pro web. Každý dokument obsahuje srozumitel
 | Pravidla inzerce (kodex chování) | [`podminky-inzerce.md`](./podminky-inzerce.md) | — | `/podminky-inzerce` | Doporučené |
 | Balíčky inzerce / limity | [`balicky-inzerce-fo.md`](./balicky-inzerce-fo.md) (veřejný titulek: Limity inzerce) | [`balicky-inzerce-osvc.md`](./balicky-inzerce-osvc.md) | `/balicky-inzerce` | Povinné |
 
-**Interní (ne na webu):** [`povinnosti-urady-fb-reklama.md`](./povinnosti-urady-fb-reklama.md) — IČO / DPH / ČSSZ / ZP před **reálnou** placenou Meta reklamou.
+**Interní (ne na webu):** [`povinnosti-urady-fb-reklama.md`](./povinnosti-urady-fb-reklama.md) — IČO / identifikovaná osoba (DPH) / ČSSZ / ZP před **reálnou** Meta reklamou (+ IO vs. plátce, potvrzení specialistky).
 
 ## Revize právníkem (`REVIZE_PRAVNI/`)
 

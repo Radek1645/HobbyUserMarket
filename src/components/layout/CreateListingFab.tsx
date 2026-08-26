@@ -1,6 +1,7 @@
 "use client";
 
 import { useCookieConsent } from "@/components/consent/CookieConsentProvider";
+import { isFbPromoLandingPath } from "@/config/fb-promo-landing";
 import { GUEST_LISTING_DRAFT_ENABLED } from "@/config/guest-listing";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
@@ -28,6 +29,7 @@ function shouldHideFab(pathname: string, user: AppUser | null): boolean {
     pathname.endsWith("/upravit") ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/login") ||
+    isFbPromoLandingPath(pathname) ||
     Boolean(user?.needsNicknameSetup)
   );
 }

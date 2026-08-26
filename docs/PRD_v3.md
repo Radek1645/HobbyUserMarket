@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.80  
+> **Verze dokumentu:** v3.82  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-24
+> **Datum:** 2026-08-26
 
 ---
 
@@ -138,7 +138,7 @@ Modul je hotový, když platí všechny body:
 | Web | Vercel (`A 76.76.21.21`) |
 | Příjem `info@zapikolou.cz` | Cloudflare Email Routing (forward, ne schránka) |
 | Odchozí mail webu | Resend / SES `eu-west-1` |
-| UI wordmark (header) | `zaPikolou.cz` — CamelCase, zelený rámeček (`AppLogo`, `appLogoFrameClass`) |
+| UI wordmark (header) | `zaPikolou.cz` — CamelCase: ink `za` + emerald `Pikolou` + tlumené `.cz` (`AppLogo`) |
 | Krátký název (footer, copy) | `zaPikolou` |
 | Env canonical URL | `NEXT_PUBLIC_SITE_URL=https://zapikolou.cz` |
 
@@ -148,7 +148,7 @@ Modul je hotový, když platí všechny body:
 - [`src/components/brand/AppLogo.tsx`](../src/components/brand/AppLogo.tsx) — logo v headeru
 - [`docs/branding-a-domeny.md`](./branding-a-domeny.md) — aktuální DNS/mail (Cloudflare, Vercel, Resend; Subreg = registrace)
 
-**Logo (schválený směr):** wordmark `za` + `Pikolou` + `.cz` v jednom bloku, `text-lg`, výška `h-10` (shodně s vyhledávačem), barva `emerald-600` (shodně s hlavním CTA).
+**Logo (schválený směr):** wordmark `za` (`#0C2A1B`) + `Pikolou` (`emerald-600`) + `.cz` (`#6B7F73`) v jednom bloku, `text-lg`, výška `h-10` (shodně s vyhledávačem).
 
 **Migrace copy:** Metadata stránek, e-mailové šablony a právní dokumenty se sjednocují na `zaPikolou` / `zaPikolou.cz` — stav viz checklist v `branding-a-domeny.md`.
 
@@ -897,6 +897,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.79 | 2026-08-24 | **Událost + AI:** `external_url` jde do Edge moderace (jen kanál Facebook/Instagram/web, ne plné URL). S vyplněným odkazem AI **nevkládá** CTA „napište pořadateli zprávu přes web“. |
 | v3.80 | 2026-08-24 | **`event_date` TZ:** `datetime-local` se na Edge i do Server Action posílá jako ISO UTC (`Europe/Prague` zeď). Vercel UTC už neuloží 15:00 jako 15:00Z; fingerprint publish gate sedí. Načtení do formuláře taky v `Europe/Prague`. |
 | v3.81 | 2026-08-25 | **Prefill OpenAI fallback:** po úspěšném Sightengine Gemini (max. 12 s) → při technickém selhání OpenAI `gpt-5.4-nano` (max. 8 s); celý request deadline 28 s. Samostatný `SUGGEST_FALLBACK_MODEL`, audit `used_fallback`, dvojí selhání = technická 503. |
+| v3.82 | 2026-08-26 | **FB landing + Meta Pixel:** `/prodejte-snadno`; pixel `1774699993535627` v appce (ne GTM) — `PageView` SPA, `ViewContent`, `InitiateCheckout`, `Lead` po publikaci + UTM v `localStorage`. Ads optimalizace na `Lead`. Doména `zapikolou.cz` ověřená TXT v Cloudflare. Kuchařka [`fb-ads/MERENI-console.md`](./fb-ads/MERENI-console.md). |
 
 ---
 

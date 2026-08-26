@@ -1,0 +1,34 @@
+---
+description: Pracovní názvy kroků formuláře založení inzerátu (Prefill, Kategorie, Obsah, Kontrola, Hydratace, Publikace)
+alwaysApply: true
+---
+
+# Kroky formuláře inzerátu
+
+V chatu **nepoužívej holé „krok 1/2/3“** — čísla čipů a kód `step` se neshodují. Vždy název níže.
+
+UX detail: `docs/Metodika.md` §5. Čipy: `LISTING_FORM_STEPPER_*` v `src/config/listing-form-ui.ts`.
+
+## Obrazovky
+
+| Říkáme | Čip (photo-first) | Kód `step` | Co tam je |
+|--------|-------------------|------------|-----------|
+| **Prefill** | 1. Fotky a předvyplnění | `0` | 1–2 fotky, *Předvyplnit inzerát* |
+| **Kategorie** | 2. Kategorie | `1` | výběr kategorie (po prefillu se často přeskočí) |
+| **Obsah** | 3. Obsah | `2` | název, popis, fotky, cena, stav, lokalita |
+
+Ruční cesta a edit (`/upravit`) začínají na **Kategorie** — Prefill tam není. Čipy pak 1–4 (Kategorie → Obsah → Hydratace → Publikace).
+
+## Po Publikovat (není samostatná URL)
+
+| Říkáme | Čip | Co to je |
+|--------|-----|----------|
+| **Kontrola** | 4. AI vylepšení | Overlay „Probíhá AI kontrola inzerátu“ — čekání na model. Sem to často visí / timeout. |
+| **Hydratace** | 4. AI vylepšení | Až po odpovědi: dialog náhledu / otázek |
+| **Publikace** | 5. Publikace | Druhá kontrola + zápis. Overlay „Ukládám inzerát…“ — zase čekání na model. |
+
+**Kontrola** i overlay u **Publikace** jsou pseudo-stránky (`fixed inset-0` v `CreateListingForm`, `isCheckingAi` / `pending`). Žádný route.
+
+Podstavy Hydratace: **Otázky AI**, **Schválení**, **Zamítnutí**.
+
+Příklad: `Doplňte stav:` v popisu = **Prefill → Obsah**. Zásek „točí se 15 s+“ = **Kontrola** (preview) nebo **Publikace** (final).

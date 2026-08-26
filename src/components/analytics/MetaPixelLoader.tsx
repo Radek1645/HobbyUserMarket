@@ -2,89 +2,107 @@
 
 import { useCookieConsent } from "@/components/consent/CookieConsentProvider";
 import {
+  FB_PROMO_CREATE_LISTING_PATH,
+  FB_PROMO_LANDING_PATH,
+} from "@/config/fb-promo-landing";
+import {
+  INITIATE_CHECKOUT_SENT_KEY,
   META_PIXEL_EVENTS,
+  META_PIXEL_VIEW_CONTENT_NAME,
+  PENDING_INITIATE_CHECKOUT_KEY,
+  PENDING_VIEW_CONTENT_KEY,
+  VIEW_CONTENT_SENT_KEY,
   resolveMetaPixelId,
-  type MetaPixelEventName,
 } from "@/config/meta-pixel";
-import { useEffect, useRef } from "react";
+import {
+  ensureMetaPixel,
+  revokeMetaPixel,
+  trackEvent,
+  trackPageView,
+} from "@/lib/analytics/meta-pixel";
+import {
+  campaignParamsToEventData,
+  persistCampaignQuery,
+} from "@/lib/promo/campaign-storage";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef } from "react";
 
-declare global {
-  interface Window {
-    fbq?: FbqFn;
-    _fbq?: FbqFn;
-  }
-}
-
-type FbqFn = ((...args: unknown[]) => void) & {
-  callMethod?: (...args: unknown[]) => void;
-  queue: unknown[];
-  loaded: boolean;
-  version: string;
-  push: (...args: unknown[]) => void;
-  disablePushState?: boolean;
-};
-
-const META_PIXEL_SCRIPT_ID = "meta-pixel-fbevents";
-
-/** Oficiální stub — fronta se flushne, až fbevents.js nastaví callMethod. */
-function ensureMetaPixel(pixelId: string): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  if (!window.fbq) {
-    const stub = function (...args: unknown[]) {
-      if (stub.callMethod) {
-        stub.callMethod(...args);
-      } else {
-        stub.queue.push(args);
-      }
-    } as FbqFn;
-    stub.queue = [];
-    stub.loaded = true;
-    stub.version = "2.0";
-    stub.push = stub;
-    window.fbq = stub;
-    if (!window._fbq) {
-      window._fbq = stub;
-    }
-  }
-
-  if (!document.getElementById(META_PIXEL_SCRIPT_ID)) {
-    const script = document.createElement("script");
-    script.id = META_PIXEL_SCRIPT_ID;
-    script.async = true;
-    script.src = "https://connect.facebook.net/en_US/fbevents.js";
-    document.head.appendChild(script);
-  }
-
-  window.fbq("init", pixelId);
-  window.fbq("track", "PageView");
-}
-
-/** Odvolání marketing souhlasu — zastaví další trackování. */
-function revokeMetaPixel(): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
+function readFlag(key: string): boolean {
   try {
-    window.fbq?.("consent", "revoke");
+    return sessionStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeFlag(key: string): void {
+  try {
+    sessionStorage.setItem(key, "1");
   } catch {
     /* ignore */
   }
-
-  const script = document.getElementById(META_PIXEL_SCRIPT_ID);
-  script?.remove();
-
-  delete window.fbq;
-  delete window._fbq;
 }
 
-/** Načte Meta Pixel jen při marketingovém souhlasu; při opt-out unload. */
-export function MetaPixelLoader() {
+function clearFlag(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    /* ignore */
+  }
+}
+
+function flushPendingViewContent(): void {
+  if (!readFlag(PENDING_VIEW_CONTENT_KEY) || readFlag(VIEW_CONTENT_SENT_KEY)) {
+    if (readFlag(VIEW_CONTENT_SENT_KEY)) {
+      clearFlag(PENDING_VIEW_CONTENT_KEY);
+    }
+    return;
+  }
+
+  writeFlag(VIEW_CONTENT_SENT_KEY);
+  clearFlag(PENDING_VIEW_CONTENT_KEY);
+  trackEvent(META_PIXEL_EVENTS.VIEW_CONTENT, {
+    content_name: META_PIXEL_VIEW_CONTENT_NAME,
+    ...campaignParamsToEventData(),
+  });
+}
+
+function flushPendingInitiateCheckout(): void {
+  if (
+    !readFlag(PENDING_INITIATE_CHECKOUT_KEY) ||
+    readFlag(INITIATE_CHECKOUT_SENT_KEY)
+  ) {
+    if (readFlag(INITIATE_CHECKOUT_SENT_KEY)) {
+      clearFlag(PENDING_INITIATE_CHECKOUT_KEY);
+    }
+    return;
+  }
+
+  writeFlag(INITIATE_CHECKOUT_SENT_KEY);
+  clearFlag(PENDING_INITIATE_CHECKOUT_KEY);
+  trackEvent(META_PIXEL_EVENTS.INITIATE_CHECKOUT, {
+    ...campaignParamsToEventData(),
+  });
+}
+
+function MetaPixelLoaderInner() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { consent, isReady } = useCookieConsent();
   const initializedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    persistCampaignQuery(searchParams);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (pathname === FB_PROMO_LANDING_PATH) {
+      writeFlag(PENDING_VIEW_CONTENT_KEY);
+    }
+    if (pathname === FB_PROMO_CREATE_LISTING_PATH) {
+      writeFlag(PENDING_INITIATE_CHECKOUT_KEY);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     if (!isReady) {
@@ -93,7 +111,7 @@ export function MetaPixelLoader() {
 
     const pixelId = resolveMetaPixelId();
 
-    if (!consent?.marketing || !pixelId) {
+    if (!consent?.marketing) {
       if (initializedFor.current) {
         revokeMetaPixel();
         initializedFor.current = null;
@@ -101,54 +119,32 @@ export function MetaPixelLoader() {
       return;
     }
 
-    if (initializedFor.current === pixelId) {
-      return;
+    if (pixelId && initializedFor.current !== pixelId) {
+      ensureMetaPixel(pixelId);
+      initializedFor.current = pixelId;
     }
 
-    ensureMetaPixel(pixelId);
-    initializedFor.current = pixelId;
-  }, [consent?.marketing, isReady]);
+    if (!pixelId && initializedFor.current) {
+      revokeMetaPixel();
+      initializedFor.current = null;
+    }
+
+    trackPageView(pathname);
+    flushPendingViewContent();
+    flushPendingInitiateCheckout();
+  }, [consent?.marketing, isReady, pathname]);
 
   return null;
 }
 
 /**
- * Conversion event — přímý `fbq` když Pixel běží; jinak dataLayer (GTM-only).
- * Nikdy obojí najednou (dvojité konverze).
+ * Načte Meta Pixel jen při marketingovém souhlasu; při opt-out unload.
+ * SPA PageView, ViewContent (landing) a InitiateCheckout (/inzerat/novy).
  */
-export function trackMetaPixelEvent(
-  eventName: MetaPixelEventName,
-  params?: Record<string, unknown>,
-): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  if (typeof window.fbq === "function") {
-    if (eventName === META_PIXEL_EVENTS.COMPLETE_REGISTRATION) {
-      if (params) {
-        window.fbq("track", "CompleteRegistration", params);
-      } else {
-        window.fbq("track", "CompleteRegistration");
-      }
-      return;
-    }
-
-    if (params) {
-      window.fbq("trackCustom", eventName, params);
-    } else {
-      window.fbq("trackCustom", eventName);
-    }
-    return;
-  }
-
-  window.dataLayer = window.dataLayer ?? [];
-  window.dataLayer.push({
-    event:
-      eventName === META_PIXEL_EVENTS.COMPLETE_REGISTRATION
-        ? "registration_completed"
-        : "listing_published",
-    meta_event: eventName,
-    ...(params ?? {}),
-  });
+export function MetaPixelLoader() {
+  return (
+    <Suspense fallback={null}>
+      <MetaPixelLoaderInner />
+    </Suspense>
+  );
 }

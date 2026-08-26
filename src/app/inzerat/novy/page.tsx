@@ -3,6 +3,10 @@ import {
   GUEST_LISTING_DRAFT_ENABLED,
   GUEST_LISTING_RESUME_QUERY,
 } from "@/config/guest-listing";
+import {
+  loginRedirectForCreateListing,
+  pickCampaignSearchParams,
+} from "@/lib/promo/campaign-query";
 import { LEGAL_UI } from "@/config/legal";
 import {
   SUGGEST_FROM_PHOTOS_ENABLED,
@@ -24,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 type NewListingPageProps = {
-  searchParams: Promise<{ resume?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function NewListingPage({
@@ -32,11 +36,13 @@ export default async function NewListingPage({
 }: NewListingPageProps) {
   const user = await getCurrentUser();
   const query = await searchParams;
-  const resumeGuestDraft = query[GUEST_LISTING_RESUME_QUERY] === "1";
+  const resumeRaw = query[GUEST_LISTING_RESUME_QUERY];
+  const resumeGuestDraft =
+    (Array.isArray(resumeRaw) ? resumeRaw[0] : resumeRaw) === "1";
 
   if (!user) {
     if (!GUEST_LISTING_DRAFT_ENABLED) {
-      redirect("/login?next=/inzerat/novy&message=create_listing&tab=register");
+      redirect(loginRedirectForCreateListing(pickCampaignSearchParams(query)));
     }
 
     // Cookie se smí založit jen ze Server Action — formulář si ji bootstrapne.

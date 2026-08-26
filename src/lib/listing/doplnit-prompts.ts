@@ -1,5 +1,6 @@
 import {
   DOPLNIT_FIELD_MAX_LENGTH,
+  DOPLNIT_FORM_FIELD_KEYS,
   DOPLNIT_PROMPT_VERB,
   DOPLNIT_PUBLISH_LABELS,
 } from "@/config/doplnit-prompts";
@@ -26,6 +27,11 @@ export function foldDoplnitFieldKey(raw: string): string {
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .replace(/\s+/g, " ");
+}
+
+/** Cena, stav a lokalita mají pole formuláře — výzva v popisu je duplicitní. */
+export function isDoplnitFormFieldPrompt(field: string): boolean {
+  return DOPLNIT_FORM_FIELD_KEYS.has(foldDoplnitFieldKey(field));
 }
 
 function isUsableFieldName(field: string): boolean {
@@ -77,6 +83,7 @@ function collectPromptEntries(description: string): {
   const order: string[] = [];
 
   function addEntry(entry: DoplnitPromptEntry) {
+    if (isDoplnitFormFieldPrompt(entry.field)) return;
     const key = foldDoplnitFieldKey(entry.field);
     if (!key) return;
     const existing = seen.get(key);
@@ -186,7 +193,7 @@ export function stripDoplnitPlaceholders(text: string): string {
   for (const line of lines) {
     const parsed = parsePromptLine(line);
     if (parsed) {
-      if (!parsed.value) continue;
+      if (isDoplnitFormFieldPrompt(parsed.field) || !parsed.value) continue;
       out.push(`${publishLabel(parsed.field)}: ${parsed.value}`);
       continue;
     }

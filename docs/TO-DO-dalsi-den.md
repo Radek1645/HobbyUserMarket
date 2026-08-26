@@ -115,7 +115,7 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 | E1 | Landing A: `/login?next=/inzerat/novy&message=create_listing&tab=register` | Zelený box (profil + 20 inzerátů); po registraci → create | ☐ |
 | E2 | Landing C: přímo `/inzerat/novy` | Guest + prefill (site-wide) | ☐ |
 | E3 | Nová registrace z funnelu | Pixel CompleteRegistration / `registered=1` jen u **nové** registrace | ☐ |
-| E4 | Publish | `ListingPublished` s `published=<postId>`; bez duplicity při refresh | ☐ |
+| E4 | Publish | `Lead` s `published=<postId>` + `content_category`; bez duplicity při refresh | ☐ |
 | E5 | Logo / „Zpět“ z onboardingu | HP, bez smyčky login↔onboarding | ☐ |
 
 ### T. Rychlý smoke — Prefill lab / 076 / odkazy (2026-08-10)
