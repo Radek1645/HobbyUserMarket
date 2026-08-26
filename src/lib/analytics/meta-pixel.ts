@@ -97,13 +97,11 @@ function installFbqStub(): void {
     return;
   }
 
-  const stub = function stubFn() {
+  const stub = function stubFn(...args: unknown[]) {
     if (stubFn.callMethod) {
-      // eslint-disable-next-line prefer-rest-params
-      stubFn.callMethod.apply(stubFn, arguments as unknown as []);
+      stubFn.callMethod(...args);
     } else {
-      // eslint-disable-next-line prefer-rest-params
-      stubFn.queue.push(arguments);
+      stubFn.queue.push(args);
     }
   } as FbqFn;
   stub.queue = [];
