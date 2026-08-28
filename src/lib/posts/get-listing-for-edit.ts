@@ -13,15 +13,47 @@ export type GetListingForEditOptions = {
   asStaff?: boolean;
 };
 
-// contact_phone je odebraný z veřejného SELECT (C2) — vlastníkovi ho pro
-// předvyplnění vrací dedikované RPC get_owned_post_contact_phone.
+type EditPrivateFields = {
+  original_title: string | null;
+  original_description: string | null;
+  latitude: number;
+  longitude: number;
+};
+
+// contact_phone / location / original_* nejsou v SELECT grantu — RPC.
 const EDIT_COLUMNS =
-  "id, user_id, title, description, original_title, original_description, " +
+  "id, user_id, title, description, " +
   "category_type, subcategory_slug, price_type, price_amount, exchange_for, " +
   "condition_label, location_text, status, status_reason_code, expires_at, listing_duration_days, " +
   "event_date, renew_count, payment_status, listing_quota_consumed, main_image_url, slug, " +
-  "show_contact_email, show_contact_phone, created_at, updated_at, location, job_cv_required, " +
+  "show_contact_email, show_contact_phone, created_at, updated_at, job_cv_required, " +
   "external_url";
+
+function geoJsonPoint(longitude: number, latitude: number): unknown {
+  return { type: "Point", coordinates: [longitude, latitude] };
+}
+
+function readEditPrivateFields(data: unknown): EditPrivateFields | null {
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row !== "object") return null;
+  const record = row as Partial<EditPrivateFields>;
+  if (
+    typeof record.latitude !== "number" ||
+    typeof record.longitude !== "number"
+  ) {
+    return null;
+  }
+  return {
+    original_title:
+      typeof record.original_title === "string" ? record.original_title : null,
+    original_description:
+      typeof record.original_description === "string"
+        ? record.original_description
+        : null,
+    latitude: record.latitude,
+    longitude: record.longitude,
+  };
+}
 
 async function loadContactPhoneForEdit(
   postId: number,
@@ -45,6 +77,20 @@ async function loadContactPhoneForEdit(
   return typeof phone === "string" ? phone : null;
 }
 
+async function loadEditPrivateFields(
+  postId: number,
+): Promise<EditPrivateFields | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_post_edit_private_fields", {
+    p_post_id: postId,
+  });
+  if (error) {
+    console.error("get_post_edit_private_fields:", error);
+    return null;
+  }
+  return readEditPrivateFields(data);
+}
+
 export async function getListingForEdit(
   slug: string,
   userId: string,
@@ -65,12 +111,14 @@ export async function getListingForEdit(
     query = query.eq("user_id", userId);
   }
 
-  const { data, error } =
-    await query.maybeSingle<PostRow & { location: unknown }>();
+  const { data, error } = await query.maybeSingle<PostRow>();
 
   if (error || !data) return null;
 
-  const phone = await loadContactPhoneForEdit(data.id, asStaff);
+  const [phone, privateFields] = await Promise.all([
+    loadContactPhoneForEdit(data.id, asStaff),
+    loadEditPrivateFields(data.id),
+  ]);
 
   const rows = await getListingImages(supabase, data.id);
   const images: ListingImagePreview[] = rows.map((row) => ({
@@ -83,6 +131,11 @@ export async function getListingForEdit(
 
   return {
     ...data,
+    original_title: privateFields?.original_title ?? null,
+    original_description: privateFields?.original_description ?? null,
+    location: privateFields
+      ? geoJsonPoint(privateFields.longitude, privateFields.latitude)
+      : null,
     contact_phone: phone,
     images,
   };

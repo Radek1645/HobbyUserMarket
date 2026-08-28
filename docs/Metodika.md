@@ -102,6 +102,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 - Okruh se postupně zvětšuje: **15 → 30 → 50 → 60 km**, dokud nenajde alespoň **6** inzerátů.
 - Výsledky se řadí primárně podle **vzdálenosti** (nejbližší první).
 - U **událostí** má přednost **datum konání** — nejbližší akce jsou nahoře.
+- RPC `get_nearby_posts` je **SECURITY DEFINER** (migrace `078`) — RLS na `posts` nefiltruje. Do výpisu patří jen řádky, kde v těle funkce platí `is_post_publicly_visible`. Ten `WHERE` z funkce **nesmí vypadnout**.
 
 **Krok 3 — celostátní fallback**
 
@@ -130,7 +131,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 ### 2.5 Vyhledávání na HP
 
 - Uživatel může zadat hledaný výraz (min. **3 znaky**).
-- Vyhledávání probíhá v názvu a popisu aktivních inzerátů (RPC `search_posts`, prefix match).
+- Vyhledávání probíhá v názvu a popisu aktivních inzerátů (RPC `search_posts`, prefix match). Stejně jako nearby je `search_posts` od `078` **SECURITY DEFINER** — viditelnost drží `is_post_publicly_visible` v těle, ne RLS.
 - **Bez ohledu na diakritiku** (migrace `071`): např. `beh` najde „běh“.
 - Lze kombinovat s kategorií a dalšími filtry (cena, stav, vzdálenost — pokud je poloha k dispozici).
 
@@ -706,6 +707,8 @@ I když uživatel napíše telefon nebo e-mail do popisu:
 
 Kontakty patří do chráněných polí profilu / inzerátu a zobrazí se až po kliknutí na „Zobrazit kontakt“.
 
+**Sloupce `posts` (migrace `078` + `079`):** `anon` a `authenticated` nemají table-level `SELECT`. Čtou jen výčet sloupců v `GRANT SELECT (…)` — `contact_phone`, `location` a `original_*` v něm nejsou. Telefon: RPC `get_owned_post_contact_phone` / `reveal_listing_contact`. GPS a původní text při editaci: RPC `get_post_edit_private_fields` (jen vlastník nebo staff). **Nový sloupec na `posts` aplikace nevidí, dokud ho stejná migrace nepřidá do allowlistu** — jinak záhadné `42501`. Postup: [`supabase-prikazy.md`](./supabase-prikazy.md#nová-migrace-sql-produkce).
+
 ### 6.11 Limity a chyby
 
 | Situace | Chování |
@@ -730,6 +733,7 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 | `moderation_hard_reject_evidence` | Hard-hit / NSFW / Sightengine výpadek / threshold; `sightengine_responses` | `054` / `056` | **`evidence_no`** (+ UUID `id`) |
 | `account_blacklist` | Hard stop podle e-mailu (auto/manual), soft unban | `055` | **`blacklist_no`** (+ UUID `id`) |
 | *(grants)* `posts` UPDATE pro `service_role` | Hide/restore při hard stopu | `057` | — |
+| *(grants)* `posts` column SELECT | Allowlist sloupců pro `anon`/`authenticated`; nearby/search = DEFINER | `078` | — |
 | *(fn)* `publish_approved_post` / `enforce_post_publish_gate` | Service-role publish + staff bypass jen cizí inzerát | `063` / `066` | — |
 | Storage bucket `moderation-evidence` | Snapshoty NSFW fotek (privátní, jen service_role) | `054` | — |
 
@@ -1014,7 +1018,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 
 ### 8.2 Zobrazení kontaktu
 
-1. Telefon a e-mail **nejsou** v HTML stránky ani v přímém SELECT na `posts`/`profiles` (column-level REVOKE + RLS).
+1. Telefon a e-mail **nejsou** v HTML stránky ani v přímém SELECT na `posts`/`profiles` (column-level GRANT allowlist, migrace `078`; samotný `REVOKE` sloupce po table `GRANT SELECT` Postgres ignoruje). Nepřihlášený nedostane ani přesný `location`, ani `original_*`.
 2. Přihlášený uživatel klikne **„Zobrazit kontakt“**.
 3. Server zavolá RPC **`reveal_listing_contact`** — ověří viditelnost inzerátu, opt-in vlajky, rate limit; zapíše `contact_reveals`; vrátí PII.
 4. Limit: **20 zobrazení za den** na uživatele (unikátní inzeráty; opětovné otevření téhož inzerátu limit nespotřebuje).

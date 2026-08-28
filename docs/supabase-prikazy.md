@@ -26,6 +26,8 @@ Migrace v tomto projektu jsou **číslované soubory** `supabase/NNN_popis.sql`.
 
 **Pořadí:** migrace spouštěj **v číselném pořadí** (028 před 029…). Nové migrace přidej do hlavičky [`PRD_v3.md`](./PRD_v3.md).
 
+**`posts` column SELECT (078 + 079):** `anon` / `authenticated` nemají `GRANT SELECT` na celou tabulku, jen na výčet sloupců. **Nový sloupec na `posts` musí stejná migrace přidat do `GRANT SELECT (…)`** — jinak appka spadne na `42501`. `contact_phone`, `location` a `original_*` do grantu nepatří (RPC). `get_nearby_posts` / `search_posts` jsou SECURITY DEFINER: viditelnost drží `is_post_publicly_visible` v těle, ne RLS.
+
 ### Změna AI moderace / prefillu (Edge Functions)
 
 AI moderace a photo-first prefill **neběží na Vercelu** — běží jako Edge Functions na Supabase. Git push je **automaticky nenasadí**.
@@ -771,7 +773,7 @@ Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, a
 | `Publishing requires moderation approval` | Publish gate (027) — chybí approval token | Normální flow přes AI modal |
 | `GEMINI_BLOCKED_*` | Google safety filtr | Viz `moderace-inzeratu.md` — `geminiSafe` prompt |
 | Migrace selže na `ADD VALUE` enum | Hodnota už existuje | `IF NOT EXISTS` (viz 036) nebo přeskoč řádek |
-| App nevidí nový sloupec | Migrace neběžela / špatný projekt | Ověř v Table Editoru sloupce tabulky `posts` |
+| App nevidí nový sloupec | Migrace neběžela / chybí column `GRANT SELECT` (078/079) | Ověř Table Editor + allowlist v poslední grant migraci (`079_…`) |
 | Po grantu stejný limit v profilu | Špatné UUID / migrace 038 neběžela | `SELECT * FROM get_user_listing_quota('UUID')` |
 | `Only admins can change user roles` | Bootstrap admina bez vypnutí triggeru | Postup § Nastavení admina — `DISABLE TRIGGER` → `UPDATE` → `ENABLE TRIGGER` |
 

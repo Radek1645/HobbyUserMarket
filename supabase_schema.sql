@@ -1,5 +1,5 @@
 -- =============================================================================
--- HobbyUserMarket — Supabase PostgreSQL Schema (snapshot tč. migrace 077)
+-- HobbyUserMarket — Supabase PostgreSQL Schema (snapshot tč. migrace 079)
 -- Čistý start: 1) supabase/000_reset_database.sql  2) tento soubor
 -- ⚠️  Spusť CELÝ soubor (Ctrl+A → Run)
 -- Produkční pravda = číslované migrace v supabase/; tento dump drží CREATE TABLE posts v souladu.
@@ -1235,9 +1235,31 @@ DROP POLICY IF EXISTS moderation_image_renditions_delete ON storage.objects;
 -- =============================================================================
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 
-GRANT SELECT ON public.posts TO anon, authenticated, service_role;
+GRANT SELECT ON public.posts TO service_role;
 GRANT UPDATE ON public.posts TO service_role;
 GRANT INSERT, UPDATE, DELETE ON public.posts TO authenticated;
+
+-- 078/079: table-level SELECT pro anon/authenticated by znovu otevřel
+-- contact_phone / location / original_*. Allowlist = sloupce, které app selectuje.
+REVOKE SELECT ON public.posts FROM anon, authenticated;
+GRANT SELECT (
+  id, user_id, title, description, description_ai_assisted,
+  meta_description, image_alt, category_type, subcategory_slug,
+  price_type, price_amount, exchange_for, condition_label,
+  location_text, status, status_reason_code, event_date, external_url,
+  show_contact_email, show_contact_phone, job_cv_required,
+  expires_at, main_image_url, slug, view_count, created_at, updated_at
+) ON public.posts TO anon;
+GRANT SELECT (
+  id, user_id, title, description, description_ai_assisted,
+  meta_description, image_alt, category_type, subcategory_slug,
+  price_type, price_amount, exchange_for, condition_label,
+  location_text, status, status_reason_code, event_date, external_url,
+  show_contact_email, show_contact_phone, job_cv_required,
+  expires_at, main_image_url, slug, view_count, created_at, updated_at,
+  deletion_reason, listing_duration_days, listing_quota_consumed,
+  publish_request_id, publish_started_at, renew_count, payment_status
+) ON public.posts TO authenticated;
 GRANT USAGE, SELECT ON SEQUENCE public.posts_id_seq TO authenticated;
 
 GRANT SELECT ON public.profiles TO anon, authenticated, service_role;
@@ -1265,9 +1287,8 @@ GRANT ALL ON public.anonymous_rate_limits TO service_role;
 -- 9. OCHRANA PII KONTAKTŮ (audit C1 + C2)
 -- =============================================================================
 
--- C2: contact_phone nikdy nesmí jít přes veřejné SELECT (RLS filtruje řádky,
--- ne sloupce). MUSÍ být PO GRANT SELECT výše. service_role si čtení ponechává.
-REVOKE SELECT (contact_phone) ON public.posts FROM anon, authenticated;
+-- C2: contact_phone není v column allowlistu (078). Sloupcový REVOKE po
+-- table-level GRANT SELECT je no-op — proto 078 nejdřív bere table SELECT.
 
 -- C1: odhalení e-mailu + telefonu jedním voláním — jediné místo, které vrací PII.
 -- Ověří přihlášení, viditelnost inzerátu (M2), opt-in vlajky, rate limit (M1)
@@ -1357,6 +1378,43 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_owned_post_contact_phone(BIGINT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_owned_post_contact_phone(BIGINT) TO authenticated;
+
+-- 079: GPS + original_* jen vlastník / staff (editace). Ne REST SELECT.
+CREATE OR REPLACE FUNCTION public.get_post_edit_private_fields(p_post_id BIGINT)
+RETURNS TABLE (
+  original_title TEXT,
+  original_description TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    p.original_title,
+    p.original_description,
+    extensions.ST_Y(p.location::extensions.geometry),
+    extensions.ST_X(p.location::extensions.geometry)
+  FROM public.posts p
+  WHERE p.id = p_post_id
+    AND (
+      p.user_id = auth.uid()
+      OR public.is_moderator_or_admin()
+    );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_post_edit_private_fields(BIGINT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_post_edit_private_fields(BIGINT)
+  TO authenticated;
 
 -- =============================================================================
 -- 10. SERVER-SIDE VYNUCENÍ AI MODERACE (audit H1 + P14)
