@@ -28,7 +28,8 @@
 **Aktualizace 2026-08-09:** OAuth resume po **Zpět** z Google (cookie + sessionStorage); krokovník + AI/Publikace; C3 + D2 smoke; PRD v3.64. FB ads odloženy — produkční test na mobilu.
 **Aktualizace 2026-08-23:** § M `/jak-vytvorit-inzerat` — 5 kroků + prefill, hotovo.  
 **Aktualizace 2026-08-22:** krok 0 **Vyfotit** + galerie (Android); HEIC decode; copy „Napíšeme název a popis“ / CTA **Předvyplnit inzerát**; snapshot jen fotek v limitu; PRD v3.74. Edge `suggest-listing-from-photos` **nasazeno**.
-**Aktualizace 2026-08-27:** § O GA4 konverze = publikace (`generate_lead`); Pixel Lead na produkci OK.
+**Aktualizace 2026-08-27:** § O GA4 konverze = publikace (`generate_lead`); Pixel Lead na produkci OK.  
+**Aktualizace 2026-08-28:** § P Mapy.cz proxy — kód + localhost OK; produkční smoke po Vercel deployi.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
 
@@ -48,6 +49,19 @@ Zaškrtávej `[x]` přímo v tomto souboru.
 | O4 | Smoke: publikace na produkci → DebugView / Realtime `en=generate_lead` | Jednou; refresh detailu znovu nepošle; až po Vercel deployi kódu | ☐ |
 
 Dočasný workaround bez O1 už není potřeba (kód posílá Custom Event). `lp_view` na `/prodejte-snadno` = denominátor kampaně, ne konverze.
+
+---
+
+## P. Mapy.cz proxy (GDPR + klíč mimo bundle)
+
+> **2026-08-28.** Suggest/rgeocode jen ze serveru. Klíč `MAPY_CZ_API_KEY`. Žádná nová SQL migrace.
+
+| # | Úkol | Očekávání | ✓ |
+|---|------|-----------|---|
+| P1 | Localhost: header Poloha + lokalita ve formuláři (suggest + GPS) | Našeptávač, potvrzení, okolí na HP; Network **ne** volá `api.mapy.cz` z prohlížeče | ☑ 2026-08-28 |
+| P2 | Env: `MAPY_CZ_API_KEY` na Vercel, smazat `NEXT_PUBLIC_MAPY_CZ_API_KEY` | Production i Preview | ☑ uživatel 2026-08-28 |
+| P3 | Smoke produkce po deployi: Poloha + našeptávač + GPS | 200 na `/api/mapy/suggest`; žádný 403/503; DevTools bez `api.mapy.cz` | ☐ |
+| P4 | DPA Seznam.cz (B-06) | Napsat na developer.mapy.com/kontakt — adresa + GPS ze serveru, ne IP návštěvníka | ☐ |
 
 ---
 

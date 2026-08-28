@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.83  
+> **Verze dokumentu:** v3.84  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-27
+> **Datum:** 2026-08-28
 
 ---
 
@@ -210,7 +210,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Frontend/Backend:** Next.js (App Router), Tailwind CSS.
 * **Hosting / Deployment:** Vercel (Free / Hobby tier).
 * **Database & Auth:** Supabase (PostgreSQL + PostGIS extenze pro geolokaci, Supabase Auth, Supabase Storage). Přechod na Pro Tier ($25/měsíc) při ostrém startu kvůli garanci záloh a neusínání DB.
-* **Geocoding API:** Mapy.cz API (Autocomplete + Geofocus). Využití bezplatného tarifu pro vývojáře, který plně pokrývá potřeby MVP.
+* **Geocoding API:** Mapy.cz REST (`/v1/suggest`, `/v1/rgeocode`) **jen ze serveru** — Next.js `POST /api/mapy/suggest` a `/api/mapy/rgeocode`. Klíč `MAPY_CZ_API_KEY` (ne `NEXT_PUBLIC_`). Rate limit 60 suggest / 20 rgeocode za hodinu na hashed IP (`increment_anonymous_rate_limit`, `action_type` `mapy_suggest` / `mapy_rgeocode`). Prohlížeč volá jen naše routy; Seznam vidí IP serveru, ne návštěvníka.
 * **AI Vrstva:** Supabase Edge Functions — **prefill** (`suggest-listing-from-photos`) + **dvě fáze moderace** (`moderate-listing`: náhled vs. finále) s oddělitelnými modely + staff **prefill lab** (`compare-suggest-from-photos`). Defaults (aktualizace **2026-08-25**): Prefill primary `SUGGEST_LISTING_MODEL` = `gemini-3.5-flash-lite`, fallback `SUGGEST_FALLBACK_MODEL` = `gpt-5.4-nano`; lab A/B default `gemini-3.5-flash-lite` vs `gpt-5.4-nano`; preview `GEMINI_MODEL` = `gemini-2.5-flash`; final `MODERATION_FINAL_*` = `gemini-3.5-flash-lite` (A/B OpenAI `gpt-4o-mini`). Tabulka: §5.4 · Metodika §6 · [`moderace-inzeratu.md`](./moderace-inzeratu.md). Edge limit: **30 s**; Prefill má celkový deadline 28 s, uvnitř nejvýše 12 s + 8 s pro AI.
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
@@ -491,7 +491,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 
 > **Stav:** Odloženo (2026-08-20). Bez dostatečné hustoty inzerce mapa na HP nedává smysl (prázdná / jeden chumel).  
 > **Cursor plán (mimo repo):** `%USERPROFILE%\.cursor\plans\mapa_inzerátů_hp_8f3a1c2e.plan.md`  
-> **Předpoklad stacku:** stejný `NEXT_PUBLIC_MAPY_CZ_API_KEY`, PostGIS `posts.location`, RPC `get_nearby_posts` / `get_recent_posts`.
+> **Předpoklad stacku:** stejný serverový `MAPY_CZ_API_KEY` (proxy `/api/mapy/*`), PostGIS `posts.location`, RPC `get_nearby_posts` / `get_recent_posts`.
 
 **Směr kompromisního MVP (až bude hustota):**
 
@@ -526,7 +526,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 5. Fetch mapy fix 15 km / max 100 vs později viewport (bbox) query.
 6. Cap 100 v hustém městě — stačí, nebo pagination?
 7. Schovat přesné `posts.location` před anon SELECT (dnes veřejný SELECT může GPS téct) — follow-up hned po MVP?
-8. Veřejný API klíč (`NEXT_PUBLIC_`): HTTP-referrer lock + měsíční limit v Mapy portálu; proxy dlaždic až později.
+8. Geocoding klíč je server-only (`MAPY_CZ_API_KEY`); HTTP-referrer lock na klíči vyžaduje, aby proxy posílala `Referer` z Origin prohlížeče. Dlaždice mapy (až budou) pořád řešit zvlášť — proxy tiles až později.
 9. Kvóta: 1 tile = 1 kredit; načítat až po otevření mapy; ne retina.
 10. `dynamic(..., { ssr: false })`; velikost Leaflet bundle.
 11. GTM: `cta_home_map_toggle`, `cta_home_map_pin`.
@@ -604,7 +604,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   2. **Obsah a Cena:**
      * **Název inzerátu:** Povinné pole (max **80 znaků**). Používá se pro SEO Title tag, Open Graph a generování URL slugu.
      * **Textový popis:** Min. **10**, max **2000** znaků. Strukturovaný finální text (po AI nebo ručně): **úvod** (až 6 vět, včetně ceny a předání) + oddělovač `---` + sekce **Parametry** s odrážkami `• Popisek: hodnota`. *(Události v0.2: datum konání jde do `event_date`, ne do popisu; kapacita volitelně v popisu nebo AI dotazník.)*
-     * **Poloha inzerátu (Validace a GPS):** Povinné pole s našeptávačem Mapy.cz. Tlačítko „Použít aktuální polohu“ pro GPS z prohlížeče. Do `posts` se ukládá `location_text` (UI) i PostGIS point `location` (prostorové dotazy).
+     * **Poloha inzerátu (Validace a GPS):** Povinné pole s našeptávačem Mapy.cz (klient → `/api/mapy/suggest`). Tlačítko „Použít aktuální polohu“ pro GPS z prohlížeče, reverse geocode přes `/api/mapy/rgeocode`. Do `posts` se ukládá `location_text` (UI) i PostGIS point `location` (prostorové dotazy).
      * **Logika typu ceny (Dropdown):** Pevná (vynutí číselné pole v Kč) / Za odvoz (0 Kč) / Dohodou, Výměnou, Nabídni (skryje částku, zobrazí textový štítek).
      * **Platnost inzerátu *(v0.1.1)*:** Default **30 dní**. UI: `<select>` s preset hodnotami (7, 14, 30, 60, 90, 180, 365) **nebo** `<input type="number">` — **žádný slider** (mobilní UX). Ukládá se `listing_duration_days`; `expires_at` nastaví DB trigger (§9.2). U `udalost` (v0.2) se pole skryje — platí §8.4.1.
      * **Varování platnosti *(v0.1.1)*:** U `zbozi`/`sluzby`, pokud popis nebo AI JSON obsahuje datum **po** vypočtené expiraci, UI zobrazí: *„Pozor: Platnost inzerátu končí dříve než vámi zmíněné datum. Opravte platnost nebo datum.“*
@@ -899,6 +899,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.81 | 2026-08-25 | **Prefill OpenAI fallback:** po úspěšném Sightengine Gemini (max. 12 s) → při technickém selhání OpenAI `gpt-5.4-nano` (max. 8 s); celý request deadline 28 s. Samostatný `SUGGEST_FALLBACK_MODEL`, audit `used_fallback`, dvojí selhání = technická 503. |
 | v3.82 | 2026-08-26 | **FB landing + Meta Pixel:** `/prodejte-snadno`; pixel `1774699993535627` v appce (ne GTM) — `PageView` SPA, `ViewContent`, `InitiateCheckout`, `Lead` po publikaci + UTM v `localStorage`. Ads optimalizace na `Lead`. Doména `zapikolou.cz` ověřená TXT v Cloudflare. Kuchařka [`fb-ads/MERENI-console.md`](./fb-ads/MERENI-console.md). |
 | v3.83 | 2026-08-27 | **GA4 konverze publikace:** dataLayer Custom Event `generate_lead` ve stejném okamžiku jako Pixel `Lead` (`?published=<id>`), i když Pixel běží; analytický souhlas; parametry `content_category` + UTM; dedupe 1× na inzerát. GTM → GA4 Event `G-CT51VVNP9C`. Metodika §14.3; [`fb-ads/MERENI-pixel.md`](./fb-ads/MERENI-pixel.md). |
+| v3.84 | 2026-08-28 | **Mapy.cz proxy:** suggest/rgeocode jen ze serveru (`/api/mapy/*`), klíč `MAPY_CZ_API_KEY` mimo JS bundle; rate limit 60/20 na hashed IP; Seznam nevidí IP návštěvníka. UX `LocationInput` / header Poloha beze změny. DPA Seznam stále chybí (adresa + GPS dál tečou). |
 
 ---
 

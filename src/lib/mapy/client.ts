@@ -1,165 +1,89 @@
-import { getMapyApiKey } from "@/lib/mapy/env";
 import {
-  formatHeaderLocation,
-  formatPublicListingLocation,
-} from "@/lib/posts/format-public-location";
-import type {
-  MapyGeocodeEntity,
-  MapyGeocodeResponse,
-  MapyLocationSelection,
-  MapyRgeocodeResponse,
-} from "@/lib/mapy/types";
+  MAPY_SUGGEST_MIN_QUERY_LENGTH,
+} from "@/config/mapy";
+import { isAbortError, MapyApiError } from "@/lib/mapy/errors";
+import type { MapyGeocodeEntity, MapyLocationSelection } from "@/lib/mapy/types";
 
-const MAPY_API_BASE = "https://api.mapy.cz";
+export { MapyApiError } from "@/lib/mapy/errors";
+export {
+  entityToLocationSelection,
+  formatHeaderAreaLocation,
+  formatMapyLocationLabel,
+  formatPublicAreaLocation,
+  locationTextFromEntity,
+} from "@/lib/mapy/format";
 
-export class MapyApiError extends Error {
-  constructor(
-    readonly code: "missing_key" | "network" | "http" | "empty",
-    message: string,
-  ) {
-    super(message);
-    this.name = "MapyApiError";
-  }
-}
-
-function buildUrl(path: string, params: Record<string, string | string[]>): URL {
-  const url = new URL(`${MAPY_API_BASE}${path}`);
-  for (const [key, value] of Object.entries(params)) {
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        url.searchParams.append(key, item);
-      }
-    } else {
-      url.searchParams.set(key, value);
-    }
-  }
-  return url;
-}
-
-async function mapyGet<T>(
-  path: string,
-  params: Record<string, string | string[]>,
-  signal?: AbortSignal,
-): Promise<T> {
-  const apiKey = getMapyApiKey();
-  if (!apiKey) {
-    throw new MapyApiError(
-      "missing_key",
-      "Mapy.cz API klíč není nastaven (NEXT_PUBLIC_MAPY_CZ_API_KEY).",
-    );
-  }
-
-  let response: Response;
+async function readMapyError(
+  response: Response,
+  fallbackCode: MapyApiError["code"],
+  fallbackMessage: string,
+): Promise<MapyApiError> {
+  let message = fallbackMessage;
   try {
-    response = await fetch(buildUrl(path, params).toString(), {
-      headers: { "X-Mapy-Api-Key": apiKey },
+    const body = (await response.json()) as { error?: unknown };
+    if (typeof body.error === "string" && body.error.trim()) {
+      message = body.error;
+    }
+  } catch {
+    // tělo nemusí být JSON
+  }
+
+  if (response.status === 429) {
+    return new MapyApiError("rate_limit", message);
+  }
+  if (response.status === 503) {
+    return new MapyApiError("missing_key", message);
+  }
+  return new MapyApiError(fallbackCode, message);
+}
+
+async function mapyProxyFetch(
+  path: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<Response> {
+  try {
+    return await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
       signal,
     });
-  } catch {
+  } catch (err) {
+    if (signal?.aborted || isAbortError(err)) {
+      throw err;
+    }
     throw new MapyApiError(
       "network",
       "Mapy.cz API není dostupné. Zkuste to prosím znovu za chvíli.",
     );
   }
-
-  if (!response.ok) {
-    throw new MapyApiError(
-      "http",
-      `Mapy.cz API vrátilo chybu (${response.status}).`,
-    );
-  }
-
-  return response.json() as Promise<T>;
 }
-
-/** Alias pro filtr polohy návštěvníka na homepage. */
-export function formatPublicAreaLocation(locationText: string): string {
-  return formatPublicListingLocation(locationText);
-}
-
-/** Kompaktní štítek polohy do headeru. */
-export function formatHeaderAreaLocation(locationText: string): string {
-  return formatHeaderLocation(locationText);
-}
-
-/** Obec/město z Mapy `location` řetězce (první segment, bez „- město“). */
-function municipalityFromMapyLocation(location?: string): string | null {
-  if (!location) return null;
-  const withoutCountry = location.replace(/,?\s*Česko\s*$/i, "").trim();
-  const [first] = withoutCountry.split(",").map((part) => part.trim());
-  if (!first) return null;
-  return first.replace(/\s*-\s*město$/i, "").trim() || null;
-}
-
-/** Kontextová nápověda v našeptávači (např. kraj u obce). */
-export function formatMapyLocationLabel(entity: MapyGeocodeEntity): string {
-  const name = entity.name.trim();
-  const municipality = municipalityFromMapyLocation(entity.location);
-
-  if (
-    entity.type === "regional.municipality" ||
-    entity.type === "regional.municipality_part"
-  ) {
-    if (municipality && municipality !== name) {
-      return `${name}, ${municipality}`;
-    }
-    return name || municipality || "";
-  }
-
-  if (
-    (entity.type === "regional.address" || entity.type === "regional.street") &&
-    municipality &&
-    name !== municipality
-  ) {
-    return `${name}, ${municipality}`;
-  }
-
-  return name || municipality || "";
-}
-
-/** Krátký název pro uložení do `location_text` (ulice/obec + město, ne kraj). */
-export function locationTextFromEntity(entity: MapyGeocodeEntity): string {
-  return formatMapyLocationLabel(entity);
-}
-
-export function entityToLocationSelection(
-  entity: MapyGeocodeEntity,
-): MapyLocationSelection {
-  return {
-    locationText: locationTextFromEntity(entity),
-    latitude: entity.position.lat,
-    longitude: entity.position.lon,
-  };
-}
-
-const SUGGEST_TYPES = [
-  "regional.municipality",
-  "regional.municipality_part",
-  "regional.street",
-  "regional.address",
-] as const;
 
 export async function suggestPlaces(
   query: string,
   signal?: AbortSignal,
 ): Promise<MapyGeocodeEntity[]> {
   const trimmed = query.trim();
-  if (trimmed.length < 2) {
+  if (trimmed.length < MAPY_SUGGEST_MIN_QUERY_LENGTH) {
     return [];
   }
 
-  const data = await mapyGet<MapyGeocodeResponse>(
-    "/v1/suggest",
-    {
-      query: trimmed,
-      lang: "cs",
-      limit: "10",
-      locality: "cz",
-      type: [...SUGGEST_TYPES],
-    },
+  const response = await mapyProxyFetch(
+    "/api/mapy/suggest",
+    { query: trimmed },
     signal,
   );
 
+  if (!response.ok) {
+    throw await readMapyError(
+      response,
+      "http",
+      "Našeptávač lokality teď nefunguje.",
+    );
+  }
+
+  const data = (await response.json()) as { items?: MapyGeocodeEntity[] };
   return data.items ?? [];
 }
 
@@ -172,44 +96,23 @@ export async function reverseGeocodeLocation(
   signal?: AbortSignal,
   options?: { approximate?: boolean },
 ): Promise<MapyLocationSelection> {
-  const data = await mapyGet<MapyRgeocodeResponse>(
-    "/v1/rgeocode",
+  const response = await mapyProxyFetch(
+    "/api/mapy/rgeocode",
     {
-      lat: String(latitude),
-      lon: String(longitude),
-      lang: "cs",
+      latitude,
+      longitude,
+      approximate: options?.approximate === true,
     },
     signal,
   );
 
-  const items = data.items ?? [];
-  if (items.length === 0) {
-    throw new MapyApiError(
-      "empty",
-      "Pro tuto polohu se nepodařilo určit název obce.",
+  if (!response.ok) {
+    throw await readMapyError(
+      response,
+      response.status === 404 ? "empty" : "http",
+      "Polohu se nepodařilo převést na název obce.",
     );
   }
 
-  const preferred = options?.approximate
-    ? (items.find((item) => item.type === "regional.street") ??
-      items.find((item) => item.type === "regional.municipality_part") ??
-      items.find((item) => item.type === "regional.municipality") ??
-      items.find((item) => item.type === "regional.address") ??
-      items[0])
-    : (items.find((item) => item.type === "regional.address") ??
-      items.find((item) => item.type === "regional.street") ??
-      items.find((item) => item.type === "regional.municipality_part") ??
-      items.find((item) => item.type === "regional.municipality") ??
-      items[0]);
-
-  const selection = entityToLocationSelection(preferred);
-
-  if (options?.approximate) {
-    return {
-      ...selection,
-      locationText: formatPublicAreaLocation(selection.locationText),
-    };
-  }
-
-  return selection;
+  return (await response.json()) as MapyLocationSelection;
 }

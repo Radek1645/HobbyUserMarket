@@ -93,6 +93,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
   - zadat obec v našeptávači (Mapy.cz),
   - použít **aktuální polohu** (GPS),
   - zvolit **Zobrazit celou ČR** (vypne filtrování podle polohy).
+- Našeptávač i reverse geocode jdou přes náš server (`/api/mapy/suggest`, `/api/mapy/rgeocode`) — Mapy.cz nevidí IP návštěvníka. Chování v UI je stejné.
 - Po nastavení polohy pulz zmizí; tlačítko zobrazí zkrácený název obce (např. „Vyškov“).
 
 **Krok 2 — lokální výpis**
@@ -391,7 +392,7 @@ Uživatel vybere (manuální cesta, nebo doplnění po Prefillu):
 |------|----------|
 | Název | Povinný, max. 80 znaků (AI H1 cílí na ~60); slouží i pro SEO a URL |
 | Popis | Min. 10, max. 2000 znaků; hrubý text stačí — AI ho může upravit |
-| Lokalita | Povinná; našeptávač Mapy.cz nebo „Použít aktuální polohu“ — obec musí být **potvrzena z našeptávače** (GPS doplní souřadnice) |
+| Lokalita | Povinná; našeptávač Mapy.cz nebo „Použít aktuální polohu“ — obec musí být **potvrzena z našeptávače** (GPS doplní souřadnice). Volání Mapy.cz jde přes server (`/api/mapy/*`). |
 | Typ ceny | Podle kategorie — detail v [§12](#12-speciální-typy-inzerátů). U **zboží**: Pevná, Za odvoz, Dohodou, Výměnou, Nabídni. U **služeb**: Hodinová sazba, Cena za zakázku, Dohodou. |
 | Platnost | U zboží, služeb a nemovitostí: 1–365 dní (výchozí 30); u událostí se nevybírá — platí datum akce |
 | Datum akce | U událostí povinné; musí být v budoucnosti (při novém založení) |
