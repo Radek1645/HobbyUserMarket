@@ -1,5 +1,7 @@
 # TO-DO Fable — Audit projektu HobbyUserMarket
 
+> **Archiv.** Živý stav nálezů: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md). Tento soubor neměnit.
+
 > **Autor:** Fable (AI audit)
 > **Datum auditu:** 2026-07-06 · **Poslední revize:** 2026-07-24 (P40 AI Act / prompt versioning)
 > **Rozsah auditu:** Server Actions, API routes, Supabase schéma + RLS, Edge Functions (moderace), `src/lib`, auth/onboarding flow, browse/UX komponenty.

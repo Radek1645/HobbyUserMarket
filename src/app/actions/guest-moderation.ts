@@ -23,7 +23,8 @@ import {
   signGuestVisitorId,
 } from "@/lib/guest/visitor-id-server";
 import type { ModerationImageReference } from "@/lib/moderation/prepare-moderation-images";
-import { readRequestIp } from "@/lib/security/turnstile";
+import { readClientIpFromHeaders } from "@/lib/security/client-ip";
+import { verifyTurnstileTokenServer } from "@/lib/security/turnstile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createHash } from "node:crypto";
@@ -64,7 +65,7 @@ function getFileExtension(mimeType: string): string {
 
 /**
  * Nahraje jednu nebo více fotek do guest stagingu.
- * Abuse limit: IP/visitor rate limit (+ Turnstile na AI preview, ne na každou fotku).
+ * Abuse limit: IP/visitor rate limit; Turnstile po soft limitu nahrávání.
  */
 export async function uploadGuestModerationImages(
   formData: FormData,
@@ -83,8 +84,21 @@ export async function uploadGuestModerationImages(
     return { ok: false, error: `Najednou lze nahrát nejvýše ${LISTING_IMAGE_MAX_FILES} fotek.` };
   }
 
-  const visitorId = await ensureGuestVisitorId();
+  const ensured = await ensureGuestVisitorId();
+  if (!ensured.ok) {
+    return { ok: false, error: ensured.error };
+  }
+  const visitorId = ensured.visitorId;
   const headerStore = await headers();
+  const ipAddress = readClientIpFromHeaders(headerStore);
+  const turnstileToken = String(formData.get("turnstileToken") ?? "").trim();
+  let captchaVerified = false;
+  if (turnstileToken) {
+    captchaVerified = await verifyTurnstileTokenServer({
+      token: turnstileToken,
+      ipAddress,
+    });
+  }
   const admin = createAdminClient();
   if (!admin.ok) {
     console.error("uploadGuestModerationImages admin:", admin.error);
@@ -118,11 +132,16 @@ export async function uploadGuestModerationImages(
   // Celou dávku nejdřív rezervujeme v limitu; žádná půlka batch se nenahraje.
   for (let index = 0; index < preparedFiles.length; index++) {
     const rate = await assertGuestUploadRateLimit({
-      ipAddress: readRequestIp(headerStore),
+      ipAddress,
       visitorId,
+      captchaVerified,
     });
     if (!rate.ok) {
-      return { ok: false, error: rate.error };
+      return {
+        ok: false,
+        error: rate.error,
+        captchaRequired: rate.captchaRequired,
+      };
     }
   }
 
@@ -203,14 +222,18 @@ export async function uploadGuestModerationImage(
 }
 
 /** Zajistí guest visitor cookie (volat z guest stránky). */
-export async function bootstrapGuestVisitor(): Promise<{
-  visitorId: string;
-  visitorToken: string;
-}> {
-  const visitorId = await ensureGuestVisitorId();
+export async function bootstrapGuestVisitor(): Promise<
+  | { ok: true; visitorId: string; visitorToken: string }
+  | { ok: false; error: string }
+> {
+  const ensured = await ensureGuestVisitorId();
+  if (!ensured.ok) {
+    return ensured;
+  }
   return {
-    visitorId,
-    visitorToken: signGuestVisitorId(visitorId),
+    ok: true,
+    visitorId: ensured.visitorId,
+    visitorToken: signGuestVisitorId(ensured.visitorId),
   };
 }
 

@@ -1,5 +1,7 @@
 # Security, AI, UX a SEO audit — 2026-07-27
 
+> **Archiv.** Živý stav nálezů: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md). Tento soubor neměnit.
+
 > Projekt: **zaPikolou.cz / HobbyUserMarket**  
 > Auditovaná větev: `main`  
 > Zdroje: aktuální kód a SQL migrace, `docs/TO-DO_Fable.md`, `docs/PRD_v3.md` v3.46, `docs/Metodika.md`, `docs/seo/SEO_BIBLE.md` v1.8  

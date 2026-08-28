@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-08-28 (odpoledne) | [2026-08-28-vecer.md](./2026-08-28-vecer.md) — P0 078/079, audit backlog, SEC-M07/M08 IP+guest AI strop, PRD v3.87 |
 | 2026-08-28 | [2026-08-28.md](./2026-08-28.md) — Mapy.cz proxy (server-only klíč), PRD v3.84 |
 | 2026-08-27 | [2026-08-27.md](./2026-08-27.md) — GA4 `generate_lead` po publikaci, GTM Preview OK, PRD v3.83 |
 | 2026-08-26 | [2026-08-26.md](./2026-08-26.md) — FB landing, Meta Pixel Lead + UTM, DNS ověření, PRD v3.82 |

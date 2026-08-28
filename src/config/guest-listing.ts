@@ -25,11 +25,33 @@ export const GUEST_SUGGEST_SOFT_LIMIT_PER_HOUR = 5;
 export const GUEST_SUGGEST_IP_LIMIT_PER_HOUR = 5;
 export const GUEST_SUGGEST_VISITOR_LIMIT_PER_HOUR = 5;
 
+/** Nové visitor cookie / hodina / IP — reuse existující cookie se nepočítá. */
+export const GUEST_VISITOR_MINT_LIMIT_PER_HOUR = 10;
+
+export const GUEST_VISITOR_MINT_RATE_ACTION = "guest_visitor_mint";
+
+/**
+ * Globální strop placeného guest AI (preview + prefill) napříč všemi IP.
+ * Per-identita limity ztrátu neohraničí.
+ */
+export const GUEST_AI_GLOBAL_LIMIT_PER_HOUR = 40;
+
+export const GUEST_AI_GLOBAL_LIMIT_PER_DAY = 300;
+
+export const GUEST_AI_GLOBAL_RATE_ACTION = "guest_ai_spend";
+
+export const GUEST_AI_GLOBAL_DAY_RATE_ACTION = "guest_ai_spend_day";
+
+export const GUEST_AI_GLOBAL_SUBJECT_KEY = "global:guest_ai";
+
 /** Guest upload: IP limit / hodina. */
 export const GUEST_UPLOAD_IP_LIMIT_PER_HOUR = 30;
 
 /** Guest upload: visitor limit / hodina. */
 export const GUEST_UPLOAD_VISITOR_LIMIT_PER_HOUR = 20;
+
+/** Soft práh — odtud upload chce Turnstile (musí být ≤ visitor hard). */
+export const GUEST_UPLOAD_SOFT_LIMIT_PER_HOUR = 10;
 
 export const GUEST_UPLOAD_RATE_ACTION = "guest_upload";
 

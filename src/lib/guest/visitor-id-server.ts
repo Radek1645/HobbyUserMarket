@@ -1,17 +1,30 @@
 import { GUEST_VISITOR_COOKIE } from "@/config/guest-listing";
+import { assertGuestVisitorMintRateLimit } from "@/lib/guest/anonymous-rate-limit";
 import { isGuestVisitorId } from "@/lib/guest/visitor-id";
+import { readClientIpFromHeaders } from "@/lib/security/client-ip";
 import { createHash } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+
+export type GuestVisitorEnsureResult =
+  | { ok: true; visitorId: string }
+  | { ok: false; error: string };
 
 /**
  * Vrátí / vytvoří visitor cookie pro guest AI staging.
+ * Nové ID se počítá do IP mint limitu; existující cookie se jen přečte.
  * Volat jen ze Server Action / Route Handler — ne z RSC renderu.
  */
-export async function ensureGuestVisitorId(): Promise<string> {
+export async function ensureGuestVisitorId(): Promise<GuestVisitorEnsureResult> {
   const jar = await cookies();
   const existing = jar.get(GUEST_VISITOR_COOKIE)?.value?.trim() ?? "";
   if (isGuestVisitorId(existing)) {
-    return existing;
+    return { ok: true, visitorId: existing };
+  }
+
+  const ipAddress = readClientIpFromHeaders(await headers());
+  const mint = await assertGuestVisitorMintRateLimit(ipAddress);
+  if (!mint.ok) {
+    return mint;
   }
 
   const visitorId = crypto.randomUUID();
@@ -22,7 +35,7 @@ export async function ensureGuestVisitorId(): Promise<string> {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
-  return visitorId;
+  return { ok: true, visitorId };
 }
 
 export async function readGuestVisitorId(): Promise<string | null> {

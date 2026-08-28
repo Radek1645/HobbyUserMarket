@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.86  
+> **Verze dokumentu:** v3.87  
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
@@ -210,7 +210,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 * **Frontend/Backend:** Next.js (App Router), Tailwind CSS.
 * **Hosting / Deployment:** Vercel (Free / Hobby tier).
 * **Database & Auth:** Supabase (PostgreSQL + PostGIS extenze pro geolokaci, Supabase Auth, Supabase Storage). Přechod na Pro Tier ($25/měsíc) při ostrém startu kvůli garanci záloh a neusínání DB.
-* **Geocoding API:** Mapy.cz REST (`/v1/suggest`, `/v1/rgeocode`) **jen ze serveru** — Next.js `POST /api/mapy/suggest` a `/api/mapy/rgeocode`. Klíč `MAPY_CZ_API_KEY` (ne `NEXT_PUBLIC_`). Rate limit 60 suggest / 20 rgeocode za hodinu na hashed IP (`increment_anonymous_rate_limit`, `action_type` `mapy_suggest` / `mapy_rgeocode`). Prohlížeč volá jen naše routy; Seznam vidí IP serveru, ne návštěvníka.
+* **Geocoding API:** Mapy.cz REST (`/v1/suggest`, `/v1/rgeocode`) **jen ze serveru** — Next.js `POST /api/mapy/suggest` a `/api/mapy/rgeocode`. Klíč `MAPY_CZ_API_KEY` (ne `NEXT_PUBLIC_`). Rate limit 60 suggest / 20 rgeocode za hodinu na hashed IP (`increment_anonymous_rate_limit`, `action_type` `mapy_suggest` / `mapy_rgeocode`). IP z `getClientIpAddress` (Vercel / XFF zprava). Prohlížeč volá jen naše routy; Seznam vidí IP serveru, ne návštěvníka.
 * **AI Vrstva:** Supabase Edge Functions — **prefill** (`suggest-listing-from-photos`) + **dvě fáze moderace** (`moderate-listing`: náhled vs. finále) s oddělitelnými modely + staff **prefill lab** (`compare-suggest-from-photos`). Defaults (aktualizace **2026-08-25**): Prefill primary `SUGGEST_LISTING_MODEL` = `gemini-3.5-flash-lite`, fallback `SUGGEST_FALLBACK_MODEL` = `gpt-5.4-nano`; lab A/B default `gemini-3.5-flash-lite` vs `gpt-5.4-nano`; preview `GEMINI_MODEL` = `gemini-2.5-flash`; final `MODERATION_FINAL_*` = `gemini-3.5-flash-lite` (A/B OpenAI `gpt-4o-mini`). Tabulka: §5.4 · Metodika §6 · [`moderace-inzeratu.md`](./moderace-inzeratu.md). Edge limit: **30 s**; Prefill má celkový deadline 28 s, uvnitř nejvýše 12 s + 8 s pro AI.
 * **Volání AI (kritické — architektura):** Edge Function `moderate-listing` se volá **striktně napřímo z frontendového klienta** přes Supabase SDK (`supabase.functions.invoke()`). **Next.js API Routes nesmí AI volání proxyovat** — na Vercel Hobby hrozí `504 Gateway Timeout` (legacy projekty bez Fluid compute: limit **10 s**; i s Fluid compute proxy zbytečně přidává latenci a závislost). API klíče k Gemini/OpenAI zůstávají výhradně v Edge Function (server-side secrets), nikdy v prohlížeči ani v Next.js route.
 * **E-mailový partner:** Resend nebo Postmark (nižší placený tarif pro garantované doručení do Inboxu).
@@ -902,6 +902,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.84 | 2026-08-28 | **Mapy.cz proxy:** suggest/rgeocode jen ze serveru (`/api/mapy/*`), klíč `MAPY_CZ_API_KEY` mimo JS bundle; rate limit 60/20 na hashed IP; Seznam nevidí IP návštěvníka. UX `LocationInput` / header Poloha beze změny. DPA Seznam stále chybí (adresa + GPS dál tečou). |
 | v3.85 | 2026-08-28 | **posts column SELECT:** table `GRANT SELECT` přebíjel `REVOKE (contact_phone)` z 025. Migrace [`078`](../supabase/078_posts_column_select_grants.sql) — allowlist sloupců; `anon` bez `contact_phone` / `location` / `original_*`. `get_nearby_posts` + `search_posts` → SECURITY DEFINER (čtou `location` interně). `authenticated` má `location`/`original_*` do fáze 2 (RPC own/staff). |
 | v3.86 | 2026-08-28 | **Fáze 2 P0:** `location` + `original_*` pryč z `authenticated` SELECT. Čtení jen RPC `get_post_edit_private_fields` (vlastník nebo staff). Migrace [`079`](../supabase/079_posts_edit_private_rpc.sql). |
+| v3.87 | 2026-08-28 | **SEC-M07/M08:** IP helper (`x-vercel-forwarded-for` → `x-real-ip` → XFF zprava). Guest mint max. 10 nových cookie/h/IP. Upload Turnstile po 10 fotkách/h. Globální guest AI 40/h + 300/den (`guest_ai_spend`) — bez nové migrace; potřeba deploy Edge. |
 
 ---
 

@@ -1,5 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 import {
+  GUEST_AI_GLOBAL_DAY_RATE_ACTION,
+  GUEST_AI_GLOBAL_LIMIT_PER_DAY,
+  GUEST_AI_GLOBAL_LIMIT_PER_HOUR,
+  GUEST_AI_GLOBAL_RATE_ACTION,
+  GUEST_AI_GLOBAL_SUBJECT_KEY,
   GUEST_AI_IP_LIMIT_PER_HOUR,
   GUEST_AI_SOFT_LIMIT_PER_HOUR,
   GUEST_AI_VISITOR_LIMIT_PER_HOUR,
@@ -79,6 +84,57 @@ export async function assertSuggestFromPhotosRateLimit(
 
   if (count > SUGGEST_FROM_PHOTOS_RATE_LIMIT_PER_HOUR) {
     throw new Error("RATE_LIMIT");
+  }
+}
+
+function currentUtcDayWindowStart(): string {
+  const now = new Date();
+  now.setUTCHours(0, 0, 0, 0);
+  return now.toISOString();
+}
+
+async function incrementAnonymousCount(
+  admin: ReturnType<typeof createAdminClient>,
+  subjectKey: string,
+  actionType: string,
+  windowStart: string,
+): Promise<number> {
+  const { data, error } = await admin.rpc("increment_anonymous_rate_limit", {
+    p_subject_key: subjectKey,
+    p_action_type: actionType,
+    p_window_start: windowStart,
+  });
+  if (error || typeof data !== "number") {
+    console.error("guest AI global rate-limit rpc:", error);
+    throw new Error("RATE_LIMIT_UNAVAILABLE");
+  }
+  return data;
+}
+
+/**
+ * Strop útraty guest AI napříč všemi návštěvníky (hodina + kalendářní den UTC).
+ * Volat až po per-IP / visitor limitu, před Sightengine/Gemini.
+ */
+export async function assertGuestAiGlobalSpendLimit(): Promise<void> {
+  const admin = createAdminClient();
+  const hourCount = await incrementAnonymousCount(
+    admin,
+    GUEST_AI_GLOBAL_SUBJECT_KEY,
+    GUEST_AI_GLOBAL_RATE_ACTION,
+    currentHourWindowStart(),
+  );
+  if (hourCount > GUEST_AI_GLOBAL_LIMIT_PER_HOUR) {
+    throw new Error("RATE_LIMIT_GLOBAL");
+  }
+
+  const dayCount = await incrementAnonymousCount(
+    admin,
+    GUEST_AI_GLOBAL_SUBJECT_KEY,
+    GUEST_AI_GLOBAL_DAY_RATE_ACTION,
+    currentUtcDayWindowStart(),
+  );
+  if (dayCount > GUEST_AI_GLOBAL_LIMIT_PER_DAY) {
+    throw new Error("RATE_LIMIT_GLOBAL");
   }
 }
 

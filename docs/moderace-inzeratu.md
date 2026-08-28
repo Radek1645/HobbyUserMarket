@@ -35,9 +35,10 @@ Formulář (create / edit)
 
 Feature flag `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED` (default **vypnuto**). Host může na `/inzerat/novy` nahrát fotky a dostat AI náhled **bez loginu** (`issueApproval: false` only). Pojistky:
 
-1. Anonymous rate limit (IP + visitor) — migrace `073`, Edge `assertGuestAiModerationRateLimit`
-2. Cloudflare Turnstile po soft limitu / na guest upload
-3. Po OAuth vždy **nové** final AI + `publish_approved_post` — draft v **localStorage** je jen UX; `next`/`resume` drží cookie `pending_auth_return_path` + `sessionStorage` (Back z Google)
+1. Anonymous rate limit (IP + visitor) — migrace `073`, Edge `assertGuestAiModerationRateLimit`. IP z `x-vercel-forwarded-for` → `x-real-ip` → XFF **zprava** (`_shared/client-ip.ts`).
+2. Cloudflare Turnstile po soft limitu; guest upload po 10 fotkách/h (ne hardcoded `p_captcha_verified`).
+3. Nové visitor cookie max. 10/h/IP; globální strop guest AI 40/h + 300/den UTC (`guest_ai_spend` / `guest_ai_spend_day`).
+4. Po OAuth vždy **nové** final AI + `publish_approved_post` — draft v **localStorage** je jen UX; `next`/`resume` drží cookie `pending_auth_return_path` + `sessionStorage` (Back z Google)
 
 **Před FB ads:** produkční smoke na mobilu + Pixel (E3/E4) — viz [`fb-promo-campaign.md`](./fb-promo-campaign.md) a [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L.
 

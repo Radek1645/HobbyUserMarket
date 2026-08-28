@@ -14,7 +14,9 @@ import {
   loadModerationImagesFromStorage,
   type StorageImageReference,
 } from "../_shared/moderation/load-storage-images.ts";
+import { getClientIpAddress } from "../_shared/client-ip.ts";
 import {
+  assertGuestAiGlobalSpendLimit,
   assertGuestSuggestFromPhotosRateLimit,
   assertSuggestFromPhotosRateLimit,
   verifyGuestVisitorToken,
@@ -71,19 +73,6 @@ function technicalErrorResponse(
   errorCode?: string,
 ): Response {
   return jsonResponse({ error: "TECHNICAL_ERROR", message, errorCode }, httpStatus);
-}
-
-function readClientIp(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  const cfIp = req.headers.get("cf-connecting-ip")?.trim();
-  if (cfIp) return cfIp;
-  const realIp = req.headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
-  return "0.0.0.0";
 }
 
 function isUuid(value: string): boolean {
@@ -159,7 +148,7 @@ serve(async (req) => {
         );
       }
 
-      const ipAddress = readClientIp(req);
+      const ipAddress = getClientIpAddress(req);
       const turnstileToken = String(body?.turnstileToken ?? "").trim();
 
       let guestLimit;
@@ -219,6 +208,26 @@ serve(async (req) => {
             "RATE_LIMIT_UNAVAILABLE",
           );
         }
+      }
+
+      try {
+        await assertGuestAiGlobalSpendLimit();
+      } catch (rateError) {
+        if (
+          rateError instanceof Error &&
+          rateError.message === "RATE_LIMIT_GLOBAL"
+        ) {
+          return technicalErrorResponse(
+            "AI je teď vytížená. Zkuste to za chvíli, nebo vyplňte inzerát ručně.",
+            429,
+            "RATE_LIMIT",
+          );
+        }
+        return technicalErrorResponse(
+          "AI předvyplnění teď není dostupné. Zkuste to za chvíli, nebo vyplňte inzerát ručně.",
+          503,
+          "RATE_LIMIT_UNAVAILABLE",
+        );
       }
 
       ownerPrefix = `guest/${visitorId}`;

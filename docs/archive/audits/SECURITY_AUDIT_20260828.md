@@ -1,15 +1,17 @@
 # Bezpečnostní audit zaPikolou.cz
 
+> **Archiv.** Živý stav nálezů: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) (`SEC-H05`, `SEC-M07`–`M10`, `SEC-L08`–`L12`). Tento soubor neměnit.
+
 **Datum:** 28. 8. 2026
 **Rozsah auditu:** kód (`src/`, migrace 000–077, Edge Functions, `next.config.ts`, `vercel.json`) + dump oprávnění/policies z produkční DB + produkční logy
-**Oprava P0:** migrace `078_posts_column_select_grants.sql` — nasazena a ověřena na produkci 28. 8. 2026 (SQL Editor + hledání „teploměr“ na webu)
-**Stav dokumentu:** PRD v3.85; P0 zavřený pro `anon`; fáze 2 (`authenticated` + `location` / `original_*`) otevřená
+**Oprava P0:** migrace `078` + `079` — obě nasazené a ověřené na produkci 28. 8. 2026
+**Stav dokumentu:** archiv; kanonický backlog `docs/SECURITY_UX_BACKLOG.md`. P0 zavřený (`anon` i `authenticated`); další práce M1–M5 tam jako SEC-M07–M10.
 
 ---
 
 ## Shrnutí
 
-Audit našel **jednu kritickou zranitelnost** (P0), opravenou migrací 078 a ověřenou na produkci, a **pět středních** nálezů (M1–M5), které zůstávají otevřené.
+Audit našel **jednu kritickou zranitelnost** (P0), opravenou migracemi 078 a 079 a ověřenou na produkci, a **pět středních** nálezů (M1–M5), které zůstávají otevřené.
 
 Kritický nález nebyl viditelný z kódu. Migrace vypadala správně a code review ji označilo za dobrou praxi. Odhalil ho až dotaz na oprávnění nasazené databáze. **To je hlavní poučení celého auditu:** u oprávnění a RLS se kód nesmí brát jako zdroj pravdy.
 
@@ -20,7 +22,7 @@ Zbytek codebase je na projekt vzniklý „vibe codingem" nadprůměrně obezřet
 ## P0 — Únik osobních údajů přes PostgREST
 
 **Závažnost:** kritická
-**Stav:** OPRAVENO na produkci migrací `078_posts_column_select_grants.sql` (28. 8. 2026). Ověření: `anon` + `contact_phone`/`location`/`original_description` → `42501`; `anon` + `slug,title` → OK; `get_nearby_posts` vrací jen `active`; `search_posts('teplomer')` žije; na webu hledání „teploměr“ ukáže inzerát s oblastí, ne GPS.
+**Stav:** OPRAVENO na produkci. `078` (anon) + `079` (authenticated). Ověření 078: `anon` + `contact_phone`/`location`/`original_description` → `42501`; `anon` + `slug,title` → OK; `get_nearby_posts` vrací jen `active`; `search_posts('teplomer')` žije; na webu hledání „teploměr“ ukáže inzerát s oblastí, ne GPS. Ověření 079: `authenticated` + `slug,title` → OK; `authenticated` + `location` → `42501 permission denied for table posts`.
 
 ### Co bylo špatně
 
@@ -94,13 +96,11 @@ To je bezpečné, protože **obě mají filtr viditelnosti explicitně v těle**
 
 `get_recent_posts` zůstává `INVOKER` — čte jen `location_text`, který v allowlistu je.
 
-### Zbývá dořešit (fáze 2)
+### Fáze 2 (authenticated)
 
-**Stav:** kód + migrace `079_posts_edit_private_rpc.sql` v repu (28. 8. 2026). Na produkci platí až po Run 079 v SQL Editoru **a** deploy Next.js (pořadí: nejdřív appka, hned 079 — opačně rozbije `/upravit` na živém kódu, který ještě selectuje `location`).
+**Stav:** OPRAVENO na produkci migrací `079_posts_edit_private_rpc.sql` (28. 8. 2026). Deploy Next.js před Run 079. SQL Editor: `set role authenticated; select slug, title from public.posts limit 1;` → řádek; `select location from public.posts limit 1;` → `42501`. Hint `GRANT SELECT ON public.posts TO authenticated` **nepoužívat** — znovu otevře únik.
 
-Přihlášený uživatel si přes REST **do nasazení 079** stále přečte `location` a `original_*` u cizího veřejného inzerátu.
-
-Řešení v 079: RPC `get_post_edit_private_fields` (`user_id = auth.uid() OR is_moderator_or_admin()`), pak výhození těch sloupců z `authenticated` allowlistu.
+RPC `get_post_edit_private_fields` (`user_id = auth.uid() OR is_moderator_or_admin()`). GPS a `original_*` nejsou v `authenticated` SELECT allowlistu.
 
 ---
 

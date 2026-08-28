@@ -287,16 +287,22 @@ export function CreateListingForm({
 
   /** Cookie smí nastavit jen Server Action — ne RSC stránka. */
   useEffect(() => {
-    if (!guestMode || guestSession) {
+    if (!guestMode || guestSession || guestBootstrapError) {
       return;
     }
     let cancelled = false;
     void bootstrapGuestVisitor()
-      .then((session) => {
-        if (!cancelled) {
-          setGuestSession(session);
-          setGuestBootstrapError(null);
+      .then((result) => {
+        if (cancelled) return;
+        if (!result.ok) {
+          setGuestBootstrapError(result.error);
+          return;
         }
+        setGuestSession({
+          visitorId: result.visitorId,
+          visitorToken: result.visitorToken,
+        });
+        setGuestBootstrapError(null);
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -310,12 +316,16 @@ export function CreateListingForm({
     return () => {
       cancelled = true;
     };
-  }, [guestMode, guestSession]);
+  }, [guestMode, guestSession, guestBootstrapError]);
 
   const consumeTurnstileToken = useCallback(() => {
     turnstileTokenRef.current = null;
     setTurnstileToken(null);
     turnstileWidgetRef.current?.reset();
+  }, []);
+
+  const handleGuestCaptchaRequired = useCallback(() => {
+    setShowCaptcha(true);
   }, []);
 
   /** Po OAuth: claim staging → final AI → publish (draft je jen UX). */
@@ -1815,6 +1825,8 @@ export function CreateListingForm({
             subcategorySlug={subcategorySlug}
             guestMode={guestMode}
             disabled={guestMode && !guestSessionReady}
+            turnstileToken={turnstileToken}
+            onCaptchaRequired={handleGuestCaptchaRequired}
           />
 
           {guestMode && showCaptcha && resolveTurnstileSiteKey() ? (

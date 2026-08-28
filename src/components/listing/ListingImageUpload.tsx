@@ -79,6 +79,8 @@ type ListingImageUploadProps = {
   guestMode?: boolean;
   /** Guest bootstrap / jiné blokování nahrávání. */
   disabled?: boolean;
+  turnstileToken?: string | null;
+  onCaptchaRequired?: () => void;
 };
 
 export const ListingImageUpload = forwardRef<
@@ -91,6 +93,8 @@ export const ListingImageUpload = forwardRef<
     subcategorySlug,
     guestMode = false,
     disabled = false,
+    turnstileToken = null,
+    onCaptchaRequired,
   },
   ref,
 ) {
@@ -208,8 +212,14 @@ export const ListingImageUpload = forwardRef<
           formData.append("file", entry.file);
           formData.append("clientKey", entry.key);
         }
+        if (turnstileToken) {
+          formData.append("turnstileToken", turnstileToken);
+        }
         const uploaded = await uploadGuestModerationImages(formData);
         if (!uploaded.ok) {
+          if (uploaded.captchaRequired) {
+            onCaptchaRequired?.();
+          }
           throw new Error(uploaded.error);
         }
 
@@ -264,7 +274,7 @@ export const ListingImageUpload = forwardRef<
     renditionSignatureRef.current = prepared.renditionSignature;
 
     return prepared.payload;
-  }, [guestMode, items, mainKey]);
+  }, [guestMode, items, mainKey, onCaptchaRequired, turnstileToken]);
 
   const getGuestStagingPaths = useCallback(() => {
     return items

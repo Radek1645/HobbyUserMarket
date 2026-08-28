@@ -304,7 +304,7 @@ Flag: `SUGGEST_FROM_PHOTOS_ENABLED` (`src/config/suggest-from-photos.ts`). Jen *
 - Prefilluje: `title`, `description`, `categoryType`, `subcategorySlug`. **Ne** cena, stav, lokalita.
 - Sightengine = autoritativní NSFW gate. Draft generuje Gemini (`SUGGEST_LISTING_MODEL`, default `gemini-3.5-flash-lite`), při technickém selhání OpenAI (`SUGGEST_FALLBACK_MODEL`, default `gpt-5.4-nano`). `MODERATION_FINAL_*` se na Prefill nepoužívá.
 - Staff srovnání modelů: Edge `compare-suggest-from-photos` + `/mod/prefill-lab` (stejný prompt/schema, bez DB).
-- Hosté: stejný flow (guest visitor + podpis, rate limit `guest_suggest_from_photos`, Turnstile po soft limitu).
+- Hosté: stejný flow (guest visitor + podpis, rate limit `guest_suggest_from_photos`, Turnstile po soft limitu). Nové visitor cookie max. 10/h/IP; globální strop guest AI 40/h a 300/den (`guest_ai_spend`). IP pro limity z `x-vercel-forwarded-for` / `x-real-ip` / XFF **zprava** (ne zleva).
 
 #### UX flow
 
@@ -337,7 +337,7 @@ flowchart TD
 
 #### Backend `suggest-listing-from-photos` (stručně)
 
-1. Auth JWT **nebo** guest visitor + token; rate limit `suggest_from_photos` (20/h) / `guest_suggest_from_photos` (5/h, soft=hard).
+1. Auth JWT **nebo** guest visitor + token; rate limit `suggest_from_photos` (20/h) / `guest_suggest_from_photos` (5/h, soft=hard). Navíc globální `guest_ai_spend` (40/h, 300/den UTC) — až po per-IP limitu, před Sightengine.
 2. Staging + Sharp renditions (512 Sightengine / 1024 Gemini) — stejné buckety jako u moderace.
 3. Sightengine NSFW na všech fotkách.
 4. Gemini structured JSON (max. 12 s); při technickém selhání OpenAI fallback (max. 8 s). Celý request má deadline 28 s, takže čas spotřebovaný načtením fotek a Sightenginem může limit primary zkrátit. Blokace Gemini po úspěšném Sightengine je technické selhání generátoru, ne NSFW verdikt.
@@ -714,6 +714,8 @@ Kontakty patří do chráněných polí profilu / inzerátu a zobrazí se až po
 | Situace | Chování |
 |---------|---------|
 | Více než 20 AI kontrol za hodinu | Hláška o limitu, zkusit později |
+| Globální strop guest AI (40/h nebo 300/den) | „AI je teď vytížená…“ — platí pro všechny hosty najednou |
+| Nové guest cookie nad 10/h z jedné IP | Relaci nejde připravit; existující cookie se dál použije |
 | Hard-hit text / NSFW fotka | `REJECTED` bez volání Gemini; evidence |
 | 3× hard reject za 24 h | Hard stop → `account_blacklist` + `/ucet-pozastaven` |
 | Sightengine nedostupný | Technická chyba (`SIGHTENGINE_UNAVAILABLE`), ne zamítnutí obsahu |

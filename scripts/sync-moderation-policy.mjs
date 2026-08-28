@@ -28,8 +28,21 @@ export const GUEST_AI_VISITOR_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_AI_VISITO
 export const GUEST_SUGGEST_SOFT_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_SUGGEST_SOFT_LIMIT_PER_HOUR", 5)};
 export const GUEST_SUGGEST_IP_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_SUGGEST_IP_LIMIT_PER_HOUR", 5)};
 export const GUEST_SUGGEST_VISITOR_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_SUGGEST_VISITOR_LIMIT_PER_HOUR", 5)};
+export const GUEST_AI_GLOBAL_LIMIT_PER_HOUR = ${readGuestLimit("GUEST_AI_GLOBAL_LIMIT_PER_HOUR", 40)};
+export const GUEST_AI_GLOBAL_LIMIT_PER_DAY = ${readGuestLimit("GUEST_AI_GLOBAL_LIMIT_PER_DAY", 300)};
+export const GUEST_AI_GLOBAL_RATE_ACTION = "guest_ai_spend";
+export const GUEST_AI_GLOBAL_DAY_RATE_ACTION = "guest_ai_spend_day";
+export const GUEST_AI_GLOBAL_SUBJECT_KEY = "global:guest_ai";
 `,
 );
+
+const clientIpSource = join(root, "src/lib/security/client-ip.ts");
+const clientIpTarget = join(root, "supabase/functions/_shared/client-ip.ts");
+writeFileSync(
+  clientIpTarget,
+  `/** Auto-synced from src/lib/security/client-ip.ts — do not edit. */\n${readFileSync(clientIpSource, "utf8")}`,
+);
+console.log("Synced client-ip:", clientIpTarget);
 console.log("Synced guest rate limits:", guestRateLimitTarget);
 
 const source = join(root, "src/config/moderation/prohibited-topics.ts");

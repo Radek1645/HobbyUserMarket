@@ -201,6 +201,9 @@ export function AiListingPrefillEntry({
         formData.append("file", photo.file);
         formData.append("clientKey", photo.key);
       }
+      if (turnstileTokenRef.current) {
+        formData.append("turnstileToken", turnstileTokenRef.current);
+      }
       const uploaded = await uploadGuestModerationImages(formData);
       if (!uploaded.ok) {
         if (uploaded.captchaRequired) {

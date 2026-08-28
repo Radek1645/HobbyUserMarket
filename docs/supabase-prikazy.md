@@ -194,7 +194,7 @@ IP anonymizace: cron `/api/cron/anonymize-inquiry-ips` → RPC `anonymize_old_in
 
 #### `rate_limits`
 
-`id`, `user_id`, `action_type` (`ai_check` / `suggest_from_photos` / …), `count`, `window_start` — hodinová okna limitů (přihlášený). Hosté: `anonymous_rate_limits` (`guest_suggest_from_photos`, `mapy_suggest`, `mapy_rgeocode`, …). Mapy proxy: hashed IP, 60 suggest / 20 rgeocode za hodinu (`increment_anonymous_rate_limit`, bez nové migrace).
+`id`, `user_id`, `action_type` (`ai_check` / `suggest_from_photos` / …), `count`, `window_start` — hodinová okna limitů (přihlášený). Hosté: `anonymous_rate_limits` (`guest_suggest_from_photos`, `guest_ai_preview`, `guest_upload`, `guest_visitor_mint`, `guest_ai_spend`, `mapy_suggest`, `mapy_rgeocode`). Mapy proxy: hashed IP, 60 suggest / 20 rgeocode za hodinu. `guest_ai_spend` (40/h) a `guest_ai_spend_day` (300/den UTC) na klíči `global:guest_ai`. IP pro limity: `x-vercel-forwarded-for` → `x-real-ip` → XFF zprava (`src/lib/security/client-ip.ts`).
 
 ---
 

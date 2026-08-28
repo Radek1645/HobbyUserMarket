@@ -1,21 +1,21 @@
 # Security & UX backlog — zaPikolou.cz
 
-> **Živý backlog** (od 2026-08-06). Nahrazuje `TO-DO_Fable.md` + `SECURITY_AND_UX_AUDIT_20260727.md`.  
-> **Archiv originálů:** [`archive/audits/`](./archive/audits/)  
-> **Operativní smoke / produktové TO-DO:** [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md)  
-> **Zdroje:** kód + migrace, PRD, Metodika, SEO Bible; audity Fable (2026-07-06) a Security/UX (2026-07-27).
+> **Jediný živý backlog** (od 2026-08-06, naposledy 2026-08-28).  
+> Originály auditů jsou v [`archive/audits/`](./archive/audits/). Sem patří stav a pořadí práce, ne plný zápis auditu.  
+> **Operativní smoke / produktové TO-DO:** [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md)
 
 ---
 
 ## 0. Must-have před ostrým provozem
 
-Blokátory spuštění (ne „nice to have“). Stav k 2026-08-06 večer.
+Blokátory spuštění (ne „nice to have“). Stav k 2026-08-28.
 
 ### Hotovo — bezpečnostní základ
 
 | Oblast | Stav |
 |--------|------|
 | PII kontakty (C1/C2, reveal rate limit) | ✅ migrace 025–026 |
+| **P0 column SELECT** (`contact_phone`, `location`, `original_*`) | ✅ **SEC-H05** — 078 (anon) + 079 (authenticated); produkce 28. 8. 2026 |
 | Publish gate + approval token + fingerprint textu/fotek | ✅ 027, 062–066; smoke create/edit |
 | AI rate limit jen service_role + atomické RPC | ✅ 062 |
 | Next.js / prod deps bez High/Critical | ✅ 15.5.22; `npm audit --omit=dev` = 0 |
@@ -33,12 +33,13 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-06 večer.
 | **GO-3** | Negativní smoke fotek **I6** | Cizí path / výměna / pořadí nesmí projít publish gate | TO-DO §E |
 | **GO-4** | Ops checklist: Vercel `main` zelený, Edge `CRON_SECRET` + `SITE_URL=https://zapikolou.cz` | Bez toho crony a maily padají | TO-DO §0 |
 | **GO-5** | **P33** — revize GDPR textů právníkem (Resend DPA už ✅) | Právní riziko při ostrém provozu s PII | §4 P33 |
-| **GO-6** | Inquiry abuse hardening: `Content-Type` + `Origin` (CAPTCHA až při spam tlaku) | Cross-site spam poptávek (SEC-M02) | §2 SEC-M02 |
+| **GO-6** | Inquiry abuse hardening: `Content-Type` + `Origin` (CAPTCHA = SEC-M09) | Cross-site spam poptávek (SEC-M02) | §2 SEC-M02 |
 | ~~**GO-7**~~ | ~~FAQ + DSA/VOP odkazy smoke (**F1**)~~ | ✅ produkce 2026-08-06 | [`TO-DO-dalsi-den`](./TO-DO-dalsi-den.md) §4 |
 
 ### Není blokátor soft launch
 
-- Category SEO kód (CSEO4), Půjčovna, monetizace v0.6, P2B e-maily (až před 1. IČO), CAPTCHA, AV příloh, God Mode timeline, LCP preload, UX polish (dva AI modaly, loading.tsx).
+- Category SEO kód (CSEO4), Půjčovna, monetizace v0.6, P2B e-maily (až před 1. IČO), AV příloh, God Mode timeline, LCP preload, UX polish (dva AI modaly, loading.tsx).
+- **SEC-M07 + SEC-M08** — Edge nasazeno 28. 8.; Next.js s pushem `main`. Guest E2E na produkci zbývá.
 
 ---
 
@@ -46,51 +47,76 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-06 večer.
 
 | Oblast | Otevřené High | Otevřené Medium | Low / backlog |
 |--------|:-------------:|:---------------:|:-------------:|
-| Security (2026-07-27+) | 0 (SEC-H01–H04 ✅) | ~4 (M01, M02, M03, M04, M06) | L01–L07 + rezidua |
+| Security | 0 (SEC-H01–H05 ✅) | 7 (M01–M04, M06, M09, M10) | L01–L12 + rezidua |
 | Proces (Fable) | — | P5, P13, P16, P18, P28 ops, P29, P30 UI, P32, P33 právník | P25, P34, P36, P40 |
 | UX | — | loading/error boundaries, silent errors, 2 AI modaly | a11y drobnosti |
 
-**Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **Hard stop H1/H3/H5 produkce:** 2026-08-06 ✅ · **I6 / B1–B5:** ⏳
+**Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **Hard stop H1/H3/H5 produkce:** 2026-08-06 ✅ · **P0 column grants 078+079:** 2026-08-28 ✅ ověřeno · **SEC-M07/M08:** Edge nasazeno 28. 8.; Next.js s pushem `main` · **I6 / B1–B5:** ⏳
+
+**Další bezpečnostní práce:** SEC-M09 Turnstile v Next → SEC-M10 heslo → SEC-M03 hlavičky → L\*.
 
 ---
 
-## 2. Security — otevřené nálezy
+## 2. Security — nálezy podle priority
+
+ID `SEC-*` jsou kanonická. Sloupec **Zdroj** odkazuje na archivovaný audit (`2026-07-27` / `2026-08-28 M1` = původní číslo v tom auditu).
 
 ### Vysoké (SEC-H*) — uzavřeno
 
-| ID | Nález | Stav |
-|----|-------|------|
-| SEC-H01 | Token ≠ text | ✅ 063–066 |
-| SEC-H02 | Token ≠ fotky | ✅ 063; staging 067–068 |
-| SEC-H03 | Bypass `rate_limits` | ✅ 062 |
-| SEC-H04 | Vulnerable deps | ✅ Next 15.5.22 |
+| ID | Nález | Zdroj | Stav |
+|----|-------|-------|------|
+| SEC-H01 | Token ≠ text | 2026-07-27 | ✅ 063–066 |
+| SEC-H02 | Token ≠ fotky | 2026-07-27 | ✅ 063; staging 067–068 |
+| SEC-H03 | Bypass `rate_limits` | 2026-07-27 | ✅ 062 |
+| SEC-H04 | Vulnerable deps | 2026-07-27 | ✅ Next 15.5.22 |
+| **SEC-H05** | Table `GRANT SELECT` na `posts` přebíjel column `REVOKE` — `anon` (pak i `authenticated`) četli `contact_phone`, přesné `location`, `original_*` | 2026-08-28 P0 | ✅ **078 + 079** na produkci 28. 8. 2026. Detail / edit vlastního inzerátu OK. Hint `GRANT SELECT ON posts` **nepoužívat**. |
 
-### Střední — otevřené
+Incident SEC-H05 (logy 21.–28. 8., retence 7 dní PRO): `%2Ccontact_phone` zvenku **0**; `original_description` jen vlastní appka. Zneužití v dostupném okně nenalezeno; starší období nejde ověřit. Není právní posouzení. Důkazy a SQL: [`archive/audits/SECURITY_AUDIT_20260828.md`](./archive/audits/SECURITY_AUDIT_20260828.md).
 
-| ID | Nález | Návrh | Priorita launch |
-|----|-------|-------|-----------------|
-| **SEC-M01** | Edge `req.json()` bez limitu body/schema | Content-Length, schema před mapováním, stejné limity jako SA | P1 po GO |
-| **SEC-M02** | Inquiry bez Content-Type / Origin | JSON + Origin allowlist; Turnstile později | **GO-6** |
-| **SEC-M03** | Chybí security HTTP headers | CSP report-only → enforce; frame-ancestors, Referrer-Policy… | P1 |
-| **SEC-M04** | Log 800 znaků raw AI odpovědi | Jen kód/model/délka/hash | P1 |
-| ~~SEC-M05~~ | Re-moderace polí | ✅ 063 | — |
-| **SEC-M06** | Restore → rovnou `active` | Draft/hidden + povinný důvod / review | P1 |
+### Střední — otevřené (priorita shora dolů)
+
+| ID | Nález | Návrh | Zdroj | Launch |
+|----|-------|-------|-------|--------|
+| **SEC-M07** | IP z `x-forwarded-for` **zleva** — klient ji volí | Jeden helper: `x-vercel-forwarded-for` → `x-real-ip` → XFF **zprava**. `cf-connecting-ip` pryč. | 2026-08-28 M1 | ✅ Edge nasazeno; Next.js s pushem. Unit 6/6. |
+| **SEC-M08** | Nekonečný guest mint + `p_captcha_verified: true` + žádný globální strop AI | Mint 10/h/IP (jen nové cookie); upload Turnstile po soft 10; globální 40/h a 300/den (`guest_ai_spend`) | 2026-08-28 M2 | ✅ Edge nasazeno (`moderate-listing` + `suggest-listing-from-photos`); Next.js s pushem. Guest E2E na produkci ještě ne. |
+| **SEC-M09** | `verifyTurnstileTokenServer()` má 0 volání v `src/`. Slabé: `resendSignupVerificationEmail` (e-mail bombing), `/api/inquiry`, login/signup. | Nasadit Turnstile; nejdřív resend + inquiry | 2026-08-28 M3 | P1; překrývá P16 / H2-R |
+| **SEC-M10** | `updatePassword()` bez stávajícího hesla; po změně chybí `signOut({ scope: "global" })`. Recovery staré heslo chtít nesmí. | Rozlišit obnova vs. změna v účtu | 2026-08-28 M5 | P1 |
+| **SEC-M01** | Edge `req.json()` bez limitu body/schema | Content-Length, schema před mapováním | 2026-07-27 | P1 po GO |
+| **SEC-M02** | Inquiry bez Content-Type / Origin | JSON + Origin allowlist; CAPTCHA = M09 | 2026-07-27 | **GO-6** |
+| **SEC-M03** | Chybí CSP / frame-ancestors / Referrer-Policy / Permissions-Policy (`next.config.ts`, middleware). Vercel dodá HSTS. SameSite=Lax snižuje clickjacking. | CSP report-only → enforce | 2026-07-27 + 2026-08-28 M4 | P1 |
+| **SEC-M04** | Log 800 znaků raw AI odpovědi | Jen kód/model/délka/hash | 2026-07-27 | P1 |
+| ~~SEC-M05~~ | Re-moderace polí | ✅ 063 | 2026-07-27 | — |
+| **SEC-M06** | Restore → rovnou `active` | Draft/hidden + povinný důvod / review | 2026-07-27 | P1 |
 
 ### Nízké — otevřené
 
-| ID | Nález | Poznámka |
-|----|-------|----------|
-| SEC-L01 / L2 | Gemini klíč v query | Header auth |
-| SEC-L02 | View-hash fallback = service role | Vyžadovat `LISTING_VIEW_HASH_SECRET` |
-| SEC-L03 | JSON-LD bez společného serializeru | Homepage/FAQ |
-| SEC-L04 | Orphan Storage | Reconciliation job |
-| SEC-L05 / M9-R | Přílohy bez AV | Po soft launch / nebo zakázat PDF |
-| SEC-L06 | Staré SQL 001/002 | Neprohánět jako „fresh deploy“ |
-| SEC-L07 | Anonymní `/nahlasit` bez limitu | IP/e-mail + CAPTCHA |
-| H2-R | CAPTCHA u inquiry | Až spam |
-| L1 | Min. heslo 8 | Záměr; strength meter ✅ |
+| ID | Nález | Zdroj | Poznámka |
+|----|-------|-------|----------|
+| SEC-L01 / L2 | Gemini klíč v query | 2026-07-27 | Header auth |
+| **SEC-L02** | View-hash fallback = `SUPABASE_SERVICE_ROLE_KEY` | 2026-07-27 + 2026-08-28 L5 | Vyžadovat `LISTING_VIEW_HASH_SECRET` |
+| SEC-L03 | JSON-LD bez společného serializeru | 2026-07-27 | Homepage/FAQ |
+| SEC-L04 | Orphan Storage | 2026-07-27 | Reconciliation job |
+| SEC-L05 / M9-R | Přílohy bez AV | 2026-07-27 | Po soft launch / nebo zakázat PDF |
+| SEC-L06 | Staré SQL 001/002 | 2026-07-27 | Neprohánět jako „fresh deploy“ |
+| SEC-L07 | Anonymní `/nahlasit` bez limitu | 2026-07-27 | IP/e-mail + CAPTCHA (po M07/M09) |
+| **SEC-L08** | `loadAccountBlacklist()` exportovaná SA bez `requireStaff()` | 2026-08-28 L1 | Drží RLS + granty |
+| **SEC-L09** | Breadcrumb JSON-LD `dangerouslySetInnerHTML` bez escape `<` | 2026-08-28 L2 | Zdroj `category_seo_pages` (service role) |
+| **SEC-L10** | `LegalMarkdown` propustí `javascript:` v `href` | 2026-08-28 L3 | Zdroj je repo markdown |
+| **SEC-L11** | `.gitignore` jen `.env*.local` | 2026-08-28 L4 | Doplnit `.env`, `.env.production` |
+| **SEC-L12** | Bucket `post-images` veřejný; skrytý inzerát dokud neprobehne cleanup | 2026-08-28 L6 | UUID cesty; přijmout nebo signed URL |
+| H2-R | CAPTCHA u inquiry | 2026-07-27 | Sloučit do **SEC-M09** |
+| L1 | Min. heslo 8 | 2026-07-27 | Záměr; strength meter ✅ |
 
-Detail důkazů: [`archive/audits/SECURITY_AND_UX_AUDIT_20260727.md`](./archive/audits/SECURITY_AND_UX_AUDIT_20260727.md) §3.
+Detail důkazů 2026-07-27: [`archive/audits/SECURITY_AND_UX_AUDIT_20260727.md`](./archive/audits/SECURITY_AND_UX_AUDIT_20260727.md) §3.  
+Detail P0 / M1–M5 / L1–L6 a kontrolní SQL: [`archive/audits/SECURITY_AUDIT_20260828.md`](./archive/audits/SECURITY_AUDIT_20260828.md).
+
+### Trvalá pravidla (granty / RLS) — z 28. 8. 2026
+
+1. Oprávnění ověřovat **dotazem na nasazenou DB**, ne jen z migrace.
+2. Column `REVOKE` po table `GRANT SELECT` je **no-op**.
+3. Nový sloupec na `posts` musí stejná migrace přidat do `GRANT SELECT (…)` — jinak `42501`.
+4. `get_nearby_posts` / `search_posts` jsou DEFINER: viditelnost drží `is_post_publicly_visible` v těle.
+5. Sloupcové granty jsou per-role. Citlivé pole = SECURITY DEFINER RPC, ne REST SELECT.
 
 ---
 
@@ -124,9 +150,11 @@ Jako běžný `authenticated` (ne service_role):
 | C1–C3 | JPEG OK; obří/ne-obrázek 400; rate_limits down → 503 | ☐ |
 | D1 | `/llms.txt` s `[`/`]` v titulku | ☐ |
 
-### Hard stop · fotky
+### Hard stop · fotky · P0 sloupce
 
 Viz [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) §1 — **H1/H3/H5 produkce ✅ 2026-08-06**; H2 NSFW ☐; I5 ✅, I6 ☐.
+
+P0 (28. 8. 2026): `anon`/`authenticated` + `location` → `42501`; search „teploměr“ OK; `/upravit` vlastního inzerátu po deploy 079 → špendlík na mapě ✅.
 
 ---
 
@@ -136,7 +164,7 @@ Viz [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) §1 — **H1/H3/H5 produkce ✅
 |----|------|--------------|--------|
 | **P5** | Prolong hard-code +30 dní | RPC / `listing_duration_days` | Po |
 | **P13** | Dva AI modaly (Approved→Preview) | Sloučit | Po |
-| **P16** | Inquiry CAPTCHA + dashboard | Turnstile; dashboard majitele částečně (počty ✅) | CAPTCHA po |
+| **P16** | Inquiry CAPTCHA + dashboard | CAPTCHA = **SEC-M09**; dashboard majitele částečně (počty ✅) | CAPTCHA s M09 |
 | **P18** | Resend chyby jen console | Sentry/alert | Po |
 | **P25** | PRD OTP vs heslo | Sladit docs | Docs |
 | **P28** | Monitoring / backup runbook | Ops checklist v repu | Soft ops |
@@ -184,20 +212,27 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 ### P0 — před ostrým provozem (= §0 GO-*)
 
 - [x] GO-7 FAQ smoke na produkci
+- [x] GO-1 Hard stop produkční smoke (H1/H3/H5; H2 NSFW + H4 mail produkce volitelně)
+- [x] SEC-H05 column SELECT 078+079 (nebyl v původním GO seznamu; hotovo 28. 8.)
 - [ ] GO-2 RLS B1–B5
 - [ ] GO-3 I6 negativní fotky
 - [ ] GO-4 Ops secrets + zelený build
 - [ ] GO-5 P33 právník
 - [ ] GO-6 Inquiry Content-Type + Origin
-- [x] GO-1 Hard stop produkční smoke (H1/H3/H5; H2 NSFW + H4 mail produkce volitelně)
 
-### P1 — bezpečnost / abuse (hned po GO nebo paralelně)
+### P1 — bezpečnost / abuse (hned; nahoře = dřív)
 
-- [ ] SEC-M01 Edge body/schema limity
+- [x] **SEC-M07** IP helper (Vercel → XFF zprava)
+- [x] **SEC-M08** guest mint + captcha flag + strop AI útraty (Edge nasazeno 28. 8.)
+- [ ] **SEC-M09** Turnstile v Next (`resendSignupVerificationEmail`, inquiry, pak login)
+- [ ] **SEC-M10** změna hesla = stávající heslo + global sign-out
+- [ ] SEC-M02 / GO-6 Inquiry Origin (doplňuje M09)
 - [ ] SEC-M03 Security headers (CSP report-only)
+- [ ] SEC-M01 Edge body/schema limity
 - [ ] SEC-M04 Nelogovat raw AI text
 - [ ] SEC-M06 Restore → draft/hidden + důvod
 - [ ] SEC-L07 Report rate limit
+- [ ] SEC-L11 `.gitignore` `.env`
 - [ ] P29 Silent management errors
 
 ### P2 — produkt / UX / SEO
@@ -207,10 +242,11 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 - [ ] P36 GTM cookie CTA · P34 LCP
 - [ ] CSEO4 Category SEO Vlna 1
 - [ ] P30 God Mode timeline
+- [ ] SEC-L08–L10, L09 breadcrumbs, L12 public bucket
 
 ### P3 — později / triggery
 
-- [ ] P32 P2B před IČO · monetizace v0.6 · AV příloh · CAPTCHA · P40 inventář AI · dependency CI gate
+- [ ] P32 P2B před IČO · monetizace v0.6 · AV příloh · P40 inventář AI · dependency CI gate · SEC-L01/L02/L04/L05
 
 ---
 
@@ -221,6 +257,7 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 3. Neplatný AI JSON / chybějící token ≠ publikace.
 4. `npm audit --omit=dev` bez Critical/High; `lint` + `build` OK.
 5. Hard stop 3×/24h → `/ucet-pozastaven` (+ mail — H4 produkce ještě neověřen). **Ověřeno produkce 2026-08-06** (stop stránka + blacklist automatic).
+6. `anon` i `authenticated`: `SELECT contact_phone` / `location` / `original_*` z `posts` → `42501`. Edit vlastního inzerátu přes `get_post_edit_private_fields`. **Ověřeno produkce 2026-08-28.**
 
 ---
 
@@ -229,10 +266,13 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 | Soubor | Obsah |
 |--------|-------|
 | [`archive/audits/TO-DO_Fable_20260706.md`](./archive/audits/TO-DO_Fable_20260706.md) | Původní Fable audit + detail hotových C/H/M/P/U |
-| [`archive/audits/SECURITY_AND_UX_AUDIT_20260727.md`](./archive/audits/SECURITY_AND_UX_AUDIT_20260727.md) | Audit 2026-07-27 (SEC-H/M/L, AI prompt review, UX) |
+| [`archive/audits/SECURITY_AND_UX_AUDIT_20260727.md`](./archive/audits/SECURITY_AND_UX_AUDIT_20260727.md) | Audit 2026-07-27 (SEC-H01–H04, M/L, AI prompt, UX) |
+| [`archive/audits/SECURITY_AUDIT_20260828.md`](./archive/audits/SECURITY_AUDIT_20260828.md) | Audit 2026-08-28 (P0 PostgREST, M1–M5, L1–L6, kontrolní SQL) |
 
 | Datum | Změna |
 |-------|-------|
+| 2026-08-28 | **SEC-M07/M08:** důvěryhodná IP, limit mintu visitor cookie, upload Turnstile po soft limitu, globální `guest_ai_spend` 40/h + 300/den. Bez nové SQL migrace. |
+| 2026-08-28 | Audit 28. 8. sloučen sem; P0 = **SEC-H05** ✅ 078+079; otevřené M1–M5 → SEC-M07–M10 + M03; L\* → L08–L12 / L02; originál v `archive/audits/` |
 | 2026-08-06 večer | Produkční smoke hard stop H1/H3/H5 ✅; UI rose panel pro hard gate vs amber Gemini; GO-1 uzavřen |
 | 2026-08-06 | Sjednocení Fable + Security auditu do tohoto souboru; originály archivovány |
 | 2026-07-27…28 | SEC-H01–H04 opravy + nasazení 062–066 |
