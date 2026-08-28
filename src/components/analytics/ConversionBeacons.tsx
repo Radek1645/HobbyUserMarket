@@ -1,7 +1,7 @@
 "use client";
 
-import { trackEvent } from "@/lib/analytics/meta-pixel";
 import { useCookieConsent } from "@/components/consent/CookieConsentProvider";
+import { resolveGtmContainerId } from "@/config/gtm";
 import {
   LISTING_PUBLISHED_QUERY,
   LISTING_PUBLISHED_SENT_KEY,
@@ -10,7 +10,13 @@ import {
   PENDING_REGISTRATION_CONVERSION_KEY,
   REGISTERED_CONVERSION_QUERY,
   REGISTRATION_CONVERSION_SENT_KEY,
+  resolveMetaPixelId,
 } from "@/config/meta-pixel";
+import {
+  hasGenerateLeadBeenSent,
+  pushGenerateLeadOnce,
+} from "@/lib/analytics/generate-lead";
+import { trackEvent } from "@/lib/analytics/meta-pixel";
 import { campaignParamsToEventData } from "@/lib/promo/campaign-storage";
 import { clearGuestListingDraft } from "@/lib/guest/listing-draft";
 import type { CategoryType } from "@/types/post";
@@ -72,6 +78,77 @@ function listingPublishedSentKey(postId: string): string {
   return `${LISTING_PUBLISHED_SENT_KEY}:${postId}`;
 }
 
+function hasPixelLeadBeenSent(postId: string): boolean {
+  try {
+    return localStorage.getItem(listingPublishedSentKey(postId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markPixelLeadSent(postId: string): void {
+  try {
+    localStorage.setItem(listingPublishedSentKey(postId), "1");
+  } catch {
+    /* Event se i bez storage může odeslat; serverový redirect je zdroj pravdy. */
+  }
+}
+
+function listingPublishedEventParams(
+  pending: PendingListingPublished,
+): Record<string, unknown> {
+  const params: Record<string, unknown> = {
+    ...campaignParamsToEventData(),
+  };
+  if (pending.contentCategory) {
+    params.content_category = pending.contentCategory;
+  }
+  return params;
+}
+
+function shouldKeepListingPublishedPending(postId: string): boolean {
+  if (!hasGenerateLeadBeenSent(postId) && resolveGtmContainerId()) {
+    return true;
+  }
+
+  if (resolveMetaPixelId() && !hasPixelLeadBeenSent(postId)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * GA4 `generate_lead` po analytickém souhlasu; Pixel `Lead` po marketingovém.
+ * Pending zůstane, dokud nedorazí kanály, které jsou v appce zapnuté.
+ */
+function flushListingPublishedConversions(options: {
+  analytics: boolean;
+  marketing: boolean;
+}): void {
+  const pending = readPendingListingPublished();
+  if (!pending) {
+    return;
+  }
+
+  const params = listingPublishedEventParams(pending);
+
+  if (options.analytics && resolveGtmContainerId()) {
+    pushGenerateLeadOnce(pending.postId, params);
+  }
+
+  if (options.marketing && resolveMetaPixelId()) {
+    if (!hasPixelLeadBeenSent(pending.postId)) {
+      markPixelLeadSent(pending.postId);
+      trackEvent(META_PIXEL_EVENTS.LEAD, params);
+    }
+  }
+
+  if (!shouldKeepListingPublishedPending(pending.postId)) {
+    clearPendingListingPublished();
+  }
+}
+
 function setPendingListingPublished(
   postId: string,
   contentCategory?: string,
@@ -118,33 +195,6 @@ function clearPendingListingPublished(): void {
   } catch {
     /* ignore */
   }
-}
-
-function trackPendingListingPublished(): void {
-  const pending = readPendingListingPublished();
-  if (!pending) return;
-
-  const sentKey = listingPublishedSentKey(pending.postId);
-  try {
-    if (localStorage.getItem(sentKey) === "1") {
-      clearPendingListingPublished();
-      return;
-    }
-    localStorage.setItem(sentKey, "1");
-  } catch {
-    /* Event se i bez storage může odeslat; serverový redirect je zdroj pravdy. */
-  }
-
-  clearPendingListingPublished();
-
-  const params: Record<string, unknown> = {
-    ...campaignParamsToEventData(),
-  };
-  if (pending.contentCategory) {
-    params.content_category = pending.contentCategory;
-  }
-
-  trackEvent(META_PIXEL_EVENTS.LEAD, params);
 }
 
 /**
@@ -204,16 +254,19 @@ export function RegistrationConversionBeacon({
     });
   }, [consent?.marketing, isReady, userId]);
 
-  // Pending publish může vzniknout na detailu a souhlas přijít až na jiné stránce.
+  // Pending publish: GA4 po analytice, Pixel po marketingu (i na jiné stránce).
   useEffect(() => {
-    if (!isReady || !consent?.marketing) return;
-    trackPendingListingPublished();
-  }, [consent?.marketing, isReady, pathname]);
+    if (!isReady) return;
+    flushListingPublishedConversions({
+      analytics: Boolean(consent?.analytics),
+      marketing: Boolean(consent?.marketing),
+    });
+  }, [consent?.analytics, consent?.marketing, isReady, pathname]);
 
   return null;
 }
 
-/** Po redirectu `?published=<id>` vypálí Lead (jednou, až po serverovém zápisu). */
+/** Po redirectu `?published=<id>` vypálí GA4 generate_lead a Pixel Lead (jednou, až po serverovém zápisu). */
 export function ListingPublishedConversionBeacon({
   postId,
   contentCategory,
@@ -223,7 +276,6 @@ export function ListingPublishedConversionBeacon({
 }) {
   const searchParams = useSearchParams();
   const { consent, isReady } = useCookieConsent();
-  const fired = useRef(false);
 
   useEffect(() => {
     const publishedId = searchParams.get(LISTING_PUBLISHED_QUERY);
@@ -244,7 +296,7 @@ export function ListingPublishedConversionBeacon({
   }, [contentCategory, postId, searchParams]);
 
   useEffect(() => {
-    if (!isReady || fired.current || !consent?.marketing) {
+    if (!isReady) {
       return;
     }
 
@@ -252,9 +304,11 @@ export function ListingPublishedConversionBeacon({
       return;
     }
 
-    fired.current = true;
-    trackPendingListingPublished();
-  }, [consent?.marketing, isReady, postId]);
+    flushListingPublishedConversions({
+      analytics: Boolean(consent?.analytics),
+      marketing: Boolean(consent?.marketing),
+    });
+  }, [consent?.analytics, consent?.marketing, isReady, postId]);
 
   return null;
 }

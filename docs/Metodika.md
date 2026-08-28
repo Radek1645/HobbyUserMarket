@@ -1786,6 +1786,7 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 | `src/lib/promo/campaign-storage.ts` | UTM / `fbclid` v localStorage (30 dní) |
 | `src/components/promo/FbPromoViewBeacon.tsx` | `lp_view` do dataLayer po analytickém souhlasu |
 | `src/lib/analytics/virtual-pageview.ts` | SPA `virtual_pageview` do `dataLayer` (P35) |
+| `src/lib/analytics/generate-lead.ts` | GA4 `generate_lead` po publikaci (i když Pixel běží) |
 | `src/components/analytics/VirtualPageviewTracker.tsx` | Client navigace → page view po souhlasu |
 | `src/config/listing-form-ui.ts` | Povinná pole — hvězdička, legenda |
 | `src/config/listing-form-tips.ts` | Příklady v tipu u fotek podle kategorie |
@@ -1799,6 +1800,12 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 V GTM adminu: zapnutý **Consent Overview**; GA4 tag s **Require consent** → `analytics_storage`; click trigger `[data-gtm-id^="cta_"]`.
 
 **FB landing:** Custom Event `lp_view` (po analytickém souhlasu). Kliky `cta_lp_*` stejný click trigger; parametr `data-gtm-position` (header / hero / footer).
+
+**Konverze publikace (GA4):** Custom Event **`generate_lead`** z appky (`src/lib/analytics/generate-lead.ts`) ve stejném okamžiku jako Pixel `Lead` (`?published=<id>`), i když Pixel běží. Trigger: analytický souhlas (ne marketing). Parametry: `content_category` + UTM. Jednou na inzerát (`zapikolou:generate_lead_sent:<postId>`).
+
+V GTM: Custom Event `generate_lead` → GA4 Event tag `G-CT51VVNP9C`, Require consent `analytics_storage`. V GA4 Admin → Events → **Mark as conversion**. Pixel do GTM nepřidávat.
+
+Klik `cta_create_publish` ani `lp_view` jako konverzi neoznačovat.
 
 **SPA page views (P35):** Custom Event trigger `virtual_pageview` → GA4 Event tag typu **page_view** (nebo Configuration s přepsanými poli). Mapovat Data Layer proměnné:
 - `page_path` → page_location / page_path

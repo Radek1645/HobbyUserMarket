@@ -158,6 +158,16 @@ new PerformanceObserver(l => l.getEntries()
 
 V URL hledejte `en=` (název události) a `gcs=` (stav souhlasu). Před souhlasem nesmí odcházet plné hit s cookies; po Přijmout vše ano.
 
+### Konverze publikace (`generate_lead`)
+
+Po publikaci inzerátu (stejný moment jako Pixel `Lead`):
+
+```js
+[...dataLayer].filter(x => x && x.event === 'generate_lead')
+```
+
+Má tam být **jeden** objekt s `content_category` a UTM. V GTM Preview Custom Event `generate_lead`; v GA4 **Admin → Events → Mark as conversion**. Klik Publikovat tohle nespouští.
+
 ### Ruční test
 
 Až po souhlasu:

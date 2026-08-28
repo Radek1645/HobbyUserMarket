@@ -23,6 +23,8 @@ V Next.js, ne v GTM. Důvod: `Lead` musí jít až po serverovém potvrzení pub
 
 `Lead` se pálí až po redirectu z `createListing`, ne na klik Publikovat.
 
+GA4 konverze stejného momentu: dataLayer event **`generate_lead`** (po analytickém souhlasu). GTM → GA4 Event tag; v GA4 označit jako conversion. Pixel `Lead` na to nemá vliv — obojí může jít naráz.
+
 ## UTM
 
 Při prvním vstupu s `utm_*` / `fbclid` / `gclid` se uloží do `localStorage` (30 dní) a přiloží k `Lead`. CTA z landing page je táhnou v URL; guest login je připojí do `next`.

@@ -28,7 +28,7 @@ export const META_PIXEL_STANDARD_EVENTS: ReadonlySet<string> = new Set(
   Object.values(META_PIXEL_EVENTS),
 );
 
-/** GTM Custom Event názvy, když Pixel v appce neběží. */
+/** GTM Custom Event názvy, když Pixel v appce neběží (mimo publikaci — ta má `generate_lead`). */
 export const META_PIXEL_DATALAYER_EVENTS = {
   PAGE_VIEW: "meta_page_view",
   VIEW_CONTENT: "meta_view_content",

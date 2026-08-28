@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-08-27 | [2026-08-27.md](./2026-08-27.md) — GA4 `generate_lead` po publikaci, GTM Preview OK, PRD v3.83 |
 | 2026-08-26 | [2026-08-26.md](./2026-08-26.md) — FB landing, Meta Pixel Lead + UTM, DNS ověření, PRD v3.82 |
 | 2026-08-25 (večer) | [2026-08-25-vecer.md](./2026-08-25-vecer.md) — Prefill OpenAI fallback, Edge deploy v16+, smoke Gemini/fallback/NSFW, PRD v3.81 |
 | 2026-08-24 (odpoledne) | [2026-08-24-vecer.md](./2026-08-24-vecer.md) — `event_date` ISO UTC / Prague, publish gate u událostí, PRD v3.80 |

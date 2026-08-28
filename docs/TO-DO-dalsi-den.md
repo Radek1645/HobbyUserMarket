@@ -28,8 +28,26 @@
 **Aktualizace 2026-08-09:** OAuth resume po **Zpět** z Google (cookie + sessionStorage); krokovník + AI/Publikace; C3 + D2 smoke; PRD v3.64. FB ads odloženy — produkční test na mobilu.
 **Aktualizace 2026-08-23:** § M `/jak-vytvorit-inzerat` — 5 kroků + prefill, hotovo.  
 **Aktualizace 2026-08-22:** krok 0 **Vyfotit** + galerie (Android); HEIC decode; copy „Napíšeme název a popis“ / CTA **Předvyplnit inzerát**; snapshot jen fotek v limitu; PRD v3.74. Edge `suggest-listing-from-photos` **nasazeno**.
+**Aktualizace 2026-08-27:** § O GA4 konverze = publikace (`generate_lead`); Pixel Lead na produkci OK.
 
 Zaškrtávej `[x]` přímo v tomto souboru.
+
+---
+
+## O. Priorita — GA4 konverze publikace inzerátu
+
+> **2026-08-27.** Meta Pixel `Lead` na produkci ověřen (adblock vypnutý, `2.9.385`, `ev=Lead` 1×). Do **GA4** se ten Lead **neposílá** — `dataLayer` `meta_lead` jede jen když je Pixel vypnutý. Klik Publikovat (`cta_create_publish`) jako konverzi nedávat.
+
+**Konverze GA4 = stejný moment jako Pixel:** redirect `?published=<id>` po serverovém zápisu.
+
+| # | Úkol | Očekávání | ✓ |
+|---|------|-----------|---|
+| O1 | Kód: po Lead beaconu vždy `dataLayer` `generate_lead` (i když Pixel běží) | Custom Event v GTM, ne trigger na URL; UTM / `content_category` v parametrech; 1× na inzerát | ☑ 2026-08-27 kód + Preview localhost |
+| O2 | GTM: trigger Custom Event `generate_lead` → GA4 Event tag `G-CT51VVNP9C` | Consent `analytics_storage`; Pixel v GTM **nepřidávat**; **Submit → Publish** | ☑ 2026-08-27 Preview + Publish |
+| O3 | GA4 Admin → Events → `generate_lead` **Mark as conversion** (klíčová událost) | Ne „Vytvoření události“; není `page_view` / `scroll` / `form_start` / `lp_view` | ☑ 2026-08-27 stream web zaPikolou.cz |
+| O4 | Smoke: publikace na produkci → DebugView / Realtime `en=generate_lead` | Jednou; refresh detailu znovu nepošle; až po Vercel deployi kódu | ☐ |
+
+Dočasný workaround bez O1 už není potřeba (kód posílá Custom Event). `lp_view` na `/prodejte-snadno` = denominátor kampaně, ne konverze.
 
 ---
 

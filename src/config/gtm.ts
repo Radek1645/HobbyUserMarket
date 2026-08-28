@@ -15,3 +15,9 @@ export function resolveGtmContainerId(): string | null {
 
   return DEFAULT_GTM_CONTAINER_ID;
 }
+
+/** dataLayer / GA4 — publikace inzerátu (stejný moment jako Pixel `Lead`). */
+export const GTM_GENERATE_LEAD_EVENT = "generate_lead";
+
+/** localStorage — `generate_lead` jednou na inzerát. */
+export const GENERATE_LEAD_SENT_KEY = "zapikolou:generate_lead_sent";
