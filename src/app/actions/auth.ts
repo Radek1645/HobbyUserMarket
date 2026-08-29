@@ -33,7 +33,12 @@ import {
 } from "@/lib/auth/map-auth-error";
 import { PENDING_REGISTRATION_METADATA_KEY } from "@/config/meta-pixel";
 import { PASSWORD_MIN_LENGTH } from "@/config/app";
+import { TURNSTILE_ACTION } from "@/config/turnstile";
+import { assertVerificationResendRateLimit } from "@/lib/auth/verification-resend-rate-limit";
+import { readClientIpFromHeaders } from "@/lib/security/client-ip";
+import { assertTurnstileToken } from "@/lib/security/turnstile";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export type AuthFormState = {
@@ -221,14 +226,33 @@ export async function signUpWithEmail(
   };
 }
 
-/** Znovu odešle ověřovací e-mail po registraci (U21). */
+/** Znovu odešle ověřovací e-mail po registraci (U21). Turnstile povinný (SEC-M09). */
 export async function resendSignupVerificationEmail(
   email: string,
   nextPath = "/",
+  turnstileToken = "",
 ): Promise<AuthFormState> {
   const normalized = email.trim().toLowerCase();
   if (!normalized) {
     return { error: "Chybí e-mail pro opětovné odeslání." };
+  }
+
+  const ipAddress = readClientIpFromHeaders(await headers());
+  const captcha = await assertTurnstileToken({
+    token: turnstileToken,
+    ipAddress,
+    action: TURNSTILE_ACTION.RESEND_SIGNUP_VERIFICATION,
+  });
+  if (!captcha.ok) {
+    return { error: captcha.error };
+  }
+
+  const rateLimit = await assertVerificationResendRateLimit({
+    ipAddress,
+    email: normalized,
+  });
+  if (!rateLimit.ok) {
+    return { error: rateLimit.error };
   }
 
   const safeNext = sanitizeInternalPath(nextPath);

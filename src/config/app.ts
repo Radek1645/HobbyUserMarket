@@ -1,6 +1,7 @@
 /** Globální parametry aplikace — PRD §3, §9.3 */
 
 import { SITE_OPERATOR_CONTACT_EMAIL } from "@/config/site";
+import { TURNSTILE_ACTION } from "@/config/turnstile";
 
 /** Adaptivní kroky rádiusu pro homepage (km) — od nejmenšího po max. */
 export const SEARCH_RADIUS_STEPS_KM = [15, 30, 50, 60] as const;
@@ -75,6 +76,12 @@ export const PASSWORD_MIN_LENGTH = 8;
 
 /** Cooldown před opětovným odesláním ověřovacího e-mailu (U21). */
 export const VERIFICATION_RESEND_COOLDOWN_MS = 60_000;
+
+/** Serverové limity opětovného odeslání ověřovacího e-mailu (SEC-M09). */
+export const VERIFICATION_RESEND_IP_LIMIT_PER_HOUR = 10;
+export const VERIFICATION_RESEND_EMAIL_LIMIT_PER_HOUR = 3;
+export const VERIFICATION_RESEND_RATE_ACTION =
+  TURNSTILE_ACTION.RESEND_SIGNUP_VERIFICATION;
 
 /** Max. doba dopředu pro datum události */
 export const EVENT_DATE_MAX_DAYS_AHEAD = 365;

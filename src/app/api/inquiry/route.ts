@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { TURNSTILE_ACTION } from "@/config/turnstile";
 import {
   INQUIRY_GENERIC_ERROR,
   INQUIRY_HONEYPOT_ERROR,
@@ -9,6 +10,7 @@ import {
   INQUIRY_UNAVAILABLE_ERROR,
 } from "@/lib/inquiry/api-errors";
 import { getClientIpAddress } from "@/lib/inquiry/client-ip";
+import { assertTurnstileToken } from "@/lib/security/turnstile";
 import { buildInquiryEmail, extractReplyTo } from "@/lib/inquiry/email";
 import {
   assertInquiryRateLimit,
@@ -50,6 +52,20 @@ export async function POST(request: Request) {
 
   if (isInquiryHoneypotFilled(body)) {
     return NextResponse.json({ error: INQUIRY_HONEYPOT_ERROR }, { status: 400 });
+  }
+
+  const turnstileToken =
+    body && typeof body === "object"
+      ? String((body as { turnstileToken?: unknown }).turnstileToken ?? "")
+      : "";
+  const captcha = await assertTurnstileToken({
+    token: turnstileToken,
+    ipAddress: clientIp,
+    action: TURNSTILE_ACTION.INQUIRY,
+  });
+  if (!captcha.ok) {
+    const status = captcha.reason === "unavailable" ? 503 : 400;
+    return NextResponse.json({ error: captcha.error }, { status });
   }
 
   const postId = Number((body as { postId?: unknown })?.postId);

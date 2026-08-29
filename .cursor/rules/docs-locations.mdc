@@ -21,3 +21,4 @@ Soubory `*.plan.md` ukládá Cursor **mimo repo**: `%USERPROFILE%\.cursor\plans\
 | Produkt / DB / API | `docs/PRD_v3.md` |
 | UX flow | `docs/Metodika.md` |
 | Backlog na další den | `docs/TO-DO-dalsi-den.md` |
+| Postgres granty / RLS (agenti) | `.cursor/rules/postgres-grants-rls.mdc` — kontrolní SQL v `docs/supabase-prikazy.md` |

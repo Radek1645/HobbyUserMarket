@@ -13,7 +13,7 @@ import {
 } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { Mail } from "lucide-react";
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { FreeListingQuotaBanner } from "@/components/auth/FreeListingQuotaBanner";
 import { PasswordInput } from "@/components/auth/PasswordInput";
@@ -24,6 +24,15 @@ import {
 } from "@/components/auth/RegistrationConsentFields";
 import { BackButton } from "@/components/navigation/BackLink";
 import { resolveAuthReturnPath } from "@/lib/auth/auth-return-path";
+import {
+  TurnstileChallenge,
+  type TurnstileWidgetHandle,
+} from "@/components/security/TurnstileWidget";
+import {
+  resolveTurnstileSiteKey,
+  TURNSTILE_ACTION,
+  TURNSTILE_REQUIRED_ERROR,
+} from "@/config/turnstile";
 
 type AuthTab = "login" | "register" | "forgot";
 
@@ -62,6 +71,8 @@ function AuthSuccessNotice({
   resendPending = false,
   resendCooldownDownSec = 0,
   resendFeedback,
+  captcha,
+  resendCaptchaReady = true,
 }: {
   title: string;
   message: string;
@@ -72,9 +83,14 @@ function AuthSuccessNotice({
   resendPending?: boolean;
   resendCooldownDownSec?: number;
   resendFeedback?: { type: "success" | "error"; message: string } | null;
+  captcha?: ReactNode;
+  resendCaptchaReady?: boolean;
 }) {
   const resendDisabled =
-    resendPending || resendCooldownDownSec > 0 || !onResendVerification;
+    resendPending ||
+    resendCooldownDownSec > 0 ||
+    !onResendVerification ||
+    !resendCaptchaReady;
 
   return (
     <div
@@ -117,6 +133,7 @@ function AuthSuccessNotice({
           ) : null}
         </div>
       </div>
+      {captcha ? <div className="mt-4">{captcha}</div> : null}
       {onResendVerification ? (
         <button
           type="button"
@@ -183,6 +200,10 @@ export function EmailAuthPanel({
   const [resendFeedback, setResendFeedback] = useState<
     { type: "success" | "error"; message: string } | null
   >(null);
+  const [resendTurnstileToken, setResendTurnstileToken] = useState<string | null>(
+    null,
+  );
+  const resendTurnstileRef = useRef<TurnstileWidgetHandle | null>(null);
 
   const state =
     tab === "login" ? loginState : tab === "register" ? registerState : resetState;
@@ -208,15 +229,33 @@ export function EmailAuthPanel({
         Math.ceil(VERIFICATION_RESEND_COOLDOWN_MS / 1000),
       );
       setResendFeedback(null);
+      setResendTurnstileToken(null);
     }
   }, [registerState.success]);
+
+  function consumeResendTurnstileToken() {
+    setResendTurnstileToken(null);
+    resendTurnstileRef.current?.reset();
+  }
 
   function handleResendVerification() {
     const email = registerState.email;
     if (!email || resendCooldownDownSec > 0) return;
+    if (!resendTurnstileToken) {
+      setResendFeedback({
+        type: "error",
+        message: TURNSTILE_REQUIRED_ERROR,
+      });
+      return;
+    }
 
     startResendTransition(async () => {
-      const result = await resendSignupVerificationEmail(email, resolvedNextPath);
+      const result = await resendSignupVerificationEmail(
+        email,
+        resolvedNextPath,
+        resendTurnstileToken,
+      );
+      consumeResendTurnstileToken();
       if (result.error) {
         setResendFeedback({ type: "error", message: result.error });
         return;
@@ -280,6 +319,16 @@ export function EmailAuthPanel({
           resendPending={resendPending}
           resendCooldownDownSec={resendCooldownDownSec}
           resendFeedback={resendFeedback}
+          resendCaptchaReady={Boolean(
+            resolveTurnstileSiteKey() && resendTurnstileToken,
+          )}
+          captcha={
+            <TurnstileChallenge
+              widgetRef={resendTurnstileRef}
+              onToken={setResendTurnstileToken}
+              action={TURNSTILE_ACTION.RESEND_SIGNUP_VERIFICATION}
+            />
+          }
         />
       ) : null}
 

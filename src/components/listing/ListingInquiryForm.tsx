@@ -24,7 +24,15 @@ import {
   type AttachmentFile,
 } from "./AttachmentDropzone";
 import { MeetingSafetyNotice } from "@/components/legal/SafetyNotice";
-import { useState } from "react";
+import {
+  TurnstileChallenge,
+  type TurnstileWidgetHandle,
+} from "@/components/security/TurnstileWidget";
+import {
+  TURNSTILE_ACTION,
+  TURNSTILE_REQUIRED_ERROR,
+} from "@/config/turnstile";
+import { useRef, useState } from "react";
 
 type ListingInquiryFormProps = {
   postId: number;
@@ -77,6 +85,8 @@ export function ListingInquiryForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileWidgetRef = useRef<TurnstileWidgetHandle | null>(null);
 
   const isJob = categoryType === "prace";
   const messageTrimmed = message.trim();
@@ -105,6 +115,11 @@ export function ListingInquiryForm({
       return;
     }
 
+    if (!turnstileToken) {
+      setError(TURNSTILE_REQUIRED_ERROR);
+      return;
+    }
+
     setPending(true);
     setAttachmentProgress(null);
 
@@ -128,6 +143,7 @@ export function ListingInquiryForm({
           message: messageTrimmed,
           attachments: attachmentPayload,
           [INQUIRY_HONEYPOT_FIELD]: honeypot,
+          turnstileToken,
         }),
       });
 
@@ -135,6 +151,8 @@ export function ListingInquiryForm({
 
       if (!res.ok) {
         setError(data.error ?? "Odeslání se nepodařilo.");
+        setTurnstileToken(null);
+        turnstileWidgetRef.current?.reset();
         return;
       }
 
@@ -145,8 +163,12 @@ export function ListingInquiryForm({
       setMessage("");
       setAttachments([]);
       setHoneypot("");
+      setTurnstileToken(null);
+      turnstileWidgetRef.current?.reset();
     } catch {
       setError("Odeslání se nepodařilo. Zkontrolujte připojení.");
+      setTurnstileToken(null);
+      turnstileWidgetRef.current?.reset();
     } finally {
       setAttachmentProgress(null);
       setPending(false);
@@ -289,6 +311,12 @@ export function ListingInquiryForm({
         />
       ) : null}
 
+      <TurnstileChallenge
+        widgetRef={turnstileWidgetRef}
+        onToken={setTurnstileToken}
+        action={TURNSTILE_ACTION.INQUIRY}
+      />
+
       {error ? (
         <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
@@ -308,7 +336,7 @@ export function ListingInquiryForm({
         <button
           type="submit"
           {...gtmCtaProps(GTM_CTA.INQUIRY_SUBMIT, { category: categoryType })}
-          disabled={pending}
+          disabled={pending || !turnstileToken}
           className="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
         >
           {pending

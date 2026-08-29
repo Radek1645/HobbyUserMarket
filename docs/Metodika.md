@@ -179,7 +179,7 @@ Stránky jsou veřejné, indexovatelné a v `sitemap.xml` (včetně `/gdpr`).
 ### 3.1 Způsoby přihlášení
 
 1. **Google** — jedním kliknutím (preferovaná cesta).
-2. **E-mail a heslo** — po registraci musí uživatel potvrdit e-mail odkazem; bez potvrzení není účet plně aktivní. Na success obrazovce může **znovu odeslat ověřovací e-mail** (cooldown 60 s). „Poslat znovu“ **zneplatní** předchozí odkaz — platí jen nejnovější mail (Resend SMTP log je zdroj pravdy o doručení). Cíl odkazu je `/auth/dokoncit` (klient zvládne PKCE `?code=` i implicit `#access_token=`); volitelně šablona s `token_hash` → `/auth/potvrdit` + tlačítko.
+2. **E-mail a heslo** — po registraci musí uživatel potvrdit e-mail odkazem; bez potvrzení není účet plně aktivní. Na success obrazovce může **znovu odeslat ověřovací e-mail** (UI cooldown 60 s) až po **Turnstile** („nejste robot“). Server navíc povolí nejvýše **10 resendů/h/IP a 3/h/e-mail**. „Poslat znovu“ **zneplatní** předchozí odkaz — platí jen nejnovější mail (Resend SMTP log je zdroj pravdy o doručení). Cíl odkazu je `/auth/dokoncit` (klient zvládne PKCE `?code=` i implicit `#access_token=`); volitelně šablona s `token_hash` → `/auth/potvrdit` + tlačítko.
 
 **Povinné souhlasy při registraci (e-mail i Google):**
 
@@ -709,6 +709,14 @@ Kontakty patří do chráněných polí profilu / inzerátu a zobrazí se až po
 
 **Sloupce `posts` (migrace `078` + `079`):** `anon` a `authenticated` nemají table-level `SELECT`. Čtou jen výčet sloupců v `GRANT SELECT (…)` — `contact_phone`, `location` a `original_*` v něm nejsou. Telefon: RPC `get_owned_post_contact_phone` / `reveal_listing_contact`. GPS a původní text při editaci: RPC `get_post_edit_private_fields` (jen vlastník nebo staff). **Nový sloupec na `posts` aplikace nevidí, dokud ho stejná migrace nepřidá do allowlistu** — jinak záhadné `42501`. Postup: [`supabase-prikazy.md`](./supabase-prikazy.md#nová-migrace-sql-produkce).
 
+**Trvalá pravidla (granty / RLS)** — agenti: [`.cursor/rules/postgres-grants-rls.mdc`](../.cursor/rules/postgres-grants-rls.mdc); kontrolní SQL před releasem: [`supabase-prikazy.md`](./supabase-prikazy.md#před-releasem-grantů--rls).
+
+1. Oprávnění a RLS se ověřují dotazem na **nasazenou** databázi, nikdy jen z migrací. Migrace může projít a nic neudělat.
+2. Column-level `REVOKE` proti table-level `GRANT` je **no-op**. Zúžení sloupce: odebrat grant na tabulku a nahradit explicitním výčtem.
+3. Nový sloupec na `posts` je pro aplikaci neviditelný, dokud nedostane `GRANT` v téže migraci (`42501`). Fail-closed je záměr.
+4. Viditelnost na homepage a v hledání drží od `078` `WHERE is_post_publicly_visible` v těle `get_nearby_posts` / `search_posts`, ne RLS. Kdo ho odstraní, obejde RLS.
+5. Sloupcové granty jsou **per-role**, ne per-policy. Co smí číst `authenticated`, smí číst každý registrovaný u každého řádku, který mu propustí RLS. Citlivé sloupce patří za SECURITY DEFINER RPC, ne za grant.
+
 ### 6.11 Limity a chyby
 
 | Situace | Chování |
@@ -1029,6 +1037,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 ### 8.3 Poptávkový formulář
 
 - Nepřihlášený i přihlášený může odeslat zprávu inzerentovi e-mailem.
+|- Před odesláním **Turnstile** (Cloudflare) — bez platného tokenu API vrátí 400; při výpadku ověření 503 a UI nabídne opakování. Token je vázaný na akci `inquiry` a whitelist hostname (`zapikolou.cz` / `www`, stabilní Vercel aliasy + `VERCEL_URL` / branch / production URL). Honeypot a denní limity (IP / inzerát) zůstávají.
 - E-mail prodejce zůstává skrytý — doručení přes Resend.
 - U **událostí** je tlačítko **„Mám zájem o účast“** — stejný mechanismus, jiný text e-mailu.
 - U **Práce a brigád** může uchazeč přiložit CV/portfolio (PDF, DOCX, JPG, PNG). Zadavatel volí **„Vyžadovat CV nebo portfolio při odpovědi“** (`job_cv_required`, migrace `046`) — pak bez přílohy formulář neodešle.
@@ -1850,7 +1859,8 @@ Zadání: [`fb-ads/MERENI-pixel.md`](./fb-ads/MERENI-pixel.md). Příkazy do kon
 | [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) | Hydratace textu, dotazník, skóre kvality inzerátu |
 | [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) | NSFW / hard-hit brána před Gemini (Sightengine, evidence) |
 | [`riziko-gemini-api-zakazany-obsah.md`](./riziko-gemini-api-zakazany-obsah.md) | Riziko Gemini ToS / CSAM — problém a návrh řešení |
-| [`supabase-prikazy.md`](./supabase-prikazy.md#nastavení-admina-a-moderátora) | SQL, migrace, bootstrap admina, **zvýšení limitu inzerátů** |
+| [`supabase-prikazy.md`](./supabase-prikazy.md#nastavení-admina-a-moderátora) | SQL, migrace, bootstrap admina, **zvýšení limitu inzerátů**; granty/RLS: [Před releasem](./supabase-prikazy.md#před-releasem-grantů--rls) |
+| [`.cursor/rules/postgres-grants-rls.mdc`](../.cursor/rules/postgres-grants-rls.mdc) | Trvalá pravidla grantů/RLS pro agenty (ověření na živé DB, column allowlist, SECURITY DEFINER) |
 | [`future_events.md`](./future_events.md) | Rozšíření modulu událostí |
 | [`future_jobs.md`](./future_jobs.md) | Plánovaný modul práce |
 | [`terminal-prikazy.md`](./terminal-prikazy.md) | Příkazy pro vývoj a deploy |

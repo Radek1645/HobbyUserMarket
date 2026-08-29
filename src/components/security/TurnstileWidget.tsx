@@ -1,11 +1,17 @@
 "use client";
 
-import { resolveTurnstileSiteKey } from "@/config/guest-listing";
+import {
+  resolveTurnstileSiteKey,
+  TURNSTILE_UNAVAILABLE_ERROR,
+  type TurnstileAction,
+} from "@/config/turnstile";
 import {
   forwardRef,
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
+  type Ref,
 } from "react";
 
 declare global {
@@ -18,6 +24,7 @@ declare global {
           callback: (token: string) => void;
           "expired-callback"?: () => void;
           "error-callback"?: () => void;
+          action?: TurnstileAction;
           theme?: "light" | "dark" | "auto";
         },
       ) => string;
@@ -34,6 +41,8 @@ export type TurnstileWidgetHandle = {
 
 type TurnstileWidgetProps = {
   onToken: (token: string | null) => void;
+  onError?: (message: string | null) => void;
+  action?: TurnstileAction;
   className?: string;
 };
 
@@ -54,8 +63,20 @@ function loadTurnstileScript(): Promise<void> {
     script.src =
       "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
     script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Turnstile script failed"));
+    script.onload = () => {
+      if (window.turnstile) {
+        resolve();
+        return;
+      }
+      script.remove();
+      turnstileScriptPromise = null;
+      reject(new Error("Turnstile API unavailable"));
+    };
+    script.onerror = () => {
+      script.remove();
+      turnstileScriptPromise = null;
+      reject(new Error("Turnstile script failed"));
+    };
     document.head.appendChild(script);
   });
   return turnstileScriptPromise;
@@ -65,19 +86,25 @@ function loadTurnstileScript(): Promise<void> {
 export const TurnstileWidget = forwardRef<
   TurnstileWidgetHandle,
   TurnstileWidgetProps
->(function TurnstileWidget({ onToken, className }, ref) {
+>(function TurnstileWidget({ onToken, onError, action, className }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
+  const onErrorRef = useRef(onError);
   const siteKey = resolveTurnstileSiteKey();
 
   useEffect(() => {
     onTokenRef.current = onToken;
   }, [onToken]);
 
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
   useImperativeHandle(ref, () => ({
     reset: () => {
       onTokenRef.current(null);
+      onErrorRef.current?.(null);
       if (widgetIdRef.current && window.turnstile) {
         try {
           window.turnstile.reset(widgetIdRef.current);
@@ -98,19 +125,41 @@ export const TurnstileWidget = forwardRef<
 
     void loadTurnstileScript()
       .then(() => {
-        if (cancelled || !containerRef.current || !window.turnstile) {
+        if (cancelled || !containerRef.current) {
+          return;
+        }
+        if (!window.turnstile) {
+          onTokenRef.current(null);
+          onErrorRef.current?.(TURNSTILE_UNAVAILABLE_ERROR);
           return;
         }
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
-          callback: (token) => onTokenRef.current(token),
-          "expired-callback": () => onTokenRef.current(null),
-          "error-callback": () => onTokenRef.current(null),
+          callback: (token) => {
+            onErrorRef.current?.(null);
+            onTokenRef.current(token);
+          },
+          "expired-callback": () => {
+            onTokenRef.current(null);
+            if (widgetIdRef.current && window.turnstile) {
+              try {
+                window.turnstile.reset(widgetIdRef.current);
+              } catch {
+                onErrorRef.current?.(TURNSTILE_UNAVAILABLE_ERROR);
+              }
+            }
+          },
+          "error-callback": () => {
+            onTokenRef.current(null);
+            onErrorRef.current?.(TURNSTILE_UNAVAILABLE_ERROR);
+          },
+          action,
           theme: "light",
         });
       })
       .catch(() => {
         onTokenRef.current(null);
+        onErrorRef.current?.(TURNSTILE_UNAVAILABLE_ERROR);
       });
 
     return () => {
@@ -124,7 +173,7 @@ export const TurnstileWidget = forwardRef<
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey]);
+  }, [action, siteKey]);
 
   if (!siteKey) {
     return null;
@@ -132,3 +181,66 @@ export const TurnstileWidget = forwardRef<
 
   return <div ref={containerRef} className={className} />;
 });
+
+type TurnstileChallengeProps = {
+  widgetRef: Ref<TurnstileWidgetHandle>;
+  onToken: (token: string | null) => void;
+  action: TurnstileAction;
+  className?: string;
+};
+
+/** Viditelný widget + copy; bez site key hláška místo tichého selhání. */
+export function TurnstileChallenge({
+  widgetRef,
+  onToken,
+  action,
+  className,
+}: TurnstileChallengeProps) {
+  const [widgetError, setWidgetError] = useState<string | null>(null);
+  const [widgetAttempt, setWidgetAttempt] = useState(0);
+
+  if (!resolveTurnstileSiteKey()) {
+    return (
+      <p role="status" className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        {TURNSTILE_UNAVAILABLE_ERROR}
+      </p>
+    );
+  }
+
+  return (
+    <div
+      className={
+        className ?? "rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+      }
+    >
+      <p className="mb-2 text-xs text-gray-600">
+        Ochrana proti spamu — potvrďte, že nejste robot.
+      </p>
+      <TurnstileWidget
+        key={widgetAttempt}
+        ref={widgetRef}
+        action={action}
+        onToken={onToken}
+        onError={setWidgetError}
+      />
+      {widgetError ? (
+        <div className="mt-2">
+          <p role="alert" className="text-sm text-red-700">
+            {widgetError}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              onToken(null);
+              setWidgetError(null);
+              setWidgetAttempt((attempt) => attempt + 1);
+            }}
+            className="mt-2 text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
+          >
+            Zkusit ověření znovu
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}

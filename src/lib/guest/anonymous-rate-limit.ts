@@ -6,25 +6,11 @@ import {
   GUEST_VISITOR_MINT_LIMIT_PER_HOUR,
   GUEST_VISITOR_MINT_RATE_ACTION,
 } from "@/config/guest-listing";
+import {
+  currentHourlyRateLimitWindowStart,
+  hashAnonymousRateLimitSubject,
+} from "@/lib/security/anonymous-rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createHash } from "node:crypto";
-
-function currentHourWindowStart(): string {
-  const now = new Date();
-  now.setMinutes(0, 0, 0);
-  return now.toISOString();
-}
-
-function hashSubject(kind: "ip" | "visitor", raw: string): string {
-  const salt = process.env.ANONYMOUS_RATE_LIMIT_SALT?.trim();
-  if (!salt) {
-    throw new Error("RATE_LIMIT_UNAVAILABLE");
-  }
-  const day = new Date().toISOString().slice(0, 10);
-  return `${kind}:${createHash("sha256")
-    .update(`${salt}:${day}:${raw}`)
-    .digest("hex")}`;
-}
 
 const MINT_UNAVAILABLE =
   "Návštěvnickou relaci teď nelze připravit. Zkuste to za chvíli.";
@@ -50,7 +36,7 @@ export async function assertGuestVisitorMintRateLimit(
 
   let subjectKey: string;
   try {
-    subjectKey = hashSubject("ip", ipAddress);
+    subjectKey = hashAnonymousRateLimitSubject("ip", ipAddress);
   } catch {
     console.error("guest visitor mint: missing ANONYMOUS_RATE_LIMIT_SALT");
     return { ok: false, error: MINT_UNAVAILABLE };
@@ -61,7 +47,7 @@ export async function assertGuestVisitorMintRateLimit(
     {
       p_subject_key: subjectKey,
       p_action_type: GUEST_VISITOR_MINT_RATE_ACTION,
-      p_window_start: currentHourWindowStart(),
+      p_window_start: currentHourlyRateLimitWindowStart(),
     },
   );
 
@@ -96,14 +82,14 @@ export async function assertGuestUploadRateLimit(params: {
   let ipKey: string;
   let visitorKey: string;
   try {
-    ipKey = hashSubject("ip", params.ipAddress);
-    visitorKey = hashSubject("visitor", params.visitorId);
+    ipKey = hashAnonymousRateLimitSubject("ip", params.ipAddress);
+    visitorKey = hashAnonymousRateLimitSubject("visitor", params.visitorId);
   } catch {
     console.error("guest upload rate-limit: missing ANONYMOUS_RATE_LIMIT_SALT");
     return { ok: false, error: UPLOAD_UNAVAILABLE };
   }
 
-  const windowStart = currentHourWindowStart();
+  const windowStart = currentHourlyRateLimitWindowStart();
   const { data, error } = await admin.client.rpc(
     "consume_anonymous_rate_limit_pair",
     {

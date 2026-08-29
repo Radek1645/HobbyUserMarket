@@ -69,8 +69,4 @@ export const GUEST_PUBLISH_LOCK_TIMEOUT_MS = 2 * 60 * 1000;
 
 export const GUEST_LISTING_RESUME_QUERY = "resume";
 
-/** Cloudflare Turnstile — site key (public). */
-export function resolveTurnstileSiteKey(): string | null {
-  const key = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
-  return key || null;
-}
+export { resolveTurnstileSiteKey } from "@/config/turnstile";

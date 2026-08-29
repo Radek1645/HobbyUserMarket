@@ -7,8 +7,11 @@ import {
   MAPY_SUGGEST_RATE_LIMIT_PER_HOUR,
 } from "@/config/mapy";
 import { getClientIpAddress } from "@/lib/inquiry/client-ip";
+import {
+  currentHourlyRateLimitWindowStart,
+  hashAnonymousRateLimitSubject,
+} from "@/lib/security/anonymous-rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createHash } from "node:crypto";
 
 export type MapyRateAction =
   | typeof MAPY_SUGGEST_RATE_ACTION
@@ -17,23 +20,6 @@ export type MapyRateAction =
 export type MapyRateLimitResult =
   | { ok: true }
   | { ok: false; status: 429 | 503; error: string };
-
-function currentHourWindowStart(): string {
-  const now = new Date();
-  now.setMinutes(0, 0, 0);
-  return now.toISOString();
-}
-
-function hashIpSubject(ipAddress: string): string {
-  const salt = process.env.ANONYMOUS_RATE_LIMIT_SALT?.trim();
-  if (!salt) {
-    throw new Error("RATE_LIMIT_UNAVAILABLE");
-  }
-  const day = new Date().toISOString().slice(0, 10);
-  return `ip:${createHash("sha256")
-    .update(`${salt}:${day}:${ipAddress}`)
-    .digest("hex")}`;
-}
 
 function limitForAction(action: MapyRateAction): number {
   return action === MAPY_SUGGEST_RATE_ACTION
@@ -58,7 +44,10 @@ export async function assertMapyRateLimit(
 
   let subjectKey: string;
   try {
-    subjectKey = hashIpSubject(getClientIpAddress(request));
+    subjectKey = hashAnonymousRateLimitSubject(
+      "ip",
+      getClientIpAddress(request),
+    );
   } catch {
     console.error("mapy rate-limit: missing ANONYMOUS_RATE_LIMIT_SALT");
     return { ok: false, status: 503, error: MAPY_SERVICE_UNAVAILABLE_ERROR };
@@ -69,7 +58,7 @@ export async function assertMapyRateLimit(
     {
       p_subject_key: subjectKey,
       p_action_type: action,
-      p_window_start: currentHourWindowStart(),
+      p_window_start: currentHourlyRateLimitWindowStart(),
     },
   );
 

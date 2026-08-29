@@ -1,0 +1,18 @@
+---
+description: Postgres granty a RLS — ověřovat na živé DB, column SELECT allowlist na posts, SECURITY DEFINER viditelnost
+alwaysApply: true
+---
+
+# Postgres — granty a RLS
+
+Pravda je **nasazená databáze**, ne soubor migrace. Kontrolní SQL: [`docs/supabase-prikazy.md`](../../docs/supabase-prikazy.md) (sekce Před releasem grantů / RLS).
+
+1. **Ověřovat na živé DB.** Migrace může projít a nic neudělat. Před releasem grantů nebo RLS spustit kontrolní dotazy na produkci.
+
+2. **Column-level `REVOKE` proti table-level `GRANT` je no-op.** Zúžení sloupce: nejdřív `REVOKE SELECT ON table FROM role`, pak `GRANT SELECT (col1, col2, …)`. Samotný `REVOKE SELECT (col)` Postgres ignoruje (warning, stav se nezmění).
+
+3. **Nový sloupec na `posts`** musí stejná migrace přidat do `GRANT SELECT (…)` pro `anon` i `authenticated`. Jinak appka spadne na `42501` na jedné stránce — fail-closed je záměr. Citlivé sloupce (`contact_phone`, `location`, `original_*`) do allowlistu **nepatří**. Hint `GRANT SELECT ON posts` **nepoužívat** — vrací table-level grant a shodí 078/079.
+
+4. **`get_nearby_posts` a `search_posts` jsou SECURITY DEFINER** (od 078). Viditelnost drží `WHERE is_post_publicly_visible(…)` v těle funkce, ne RLS. Kdo ten filtr odstraní, obejde RLS a nic ho nezastaví.
+
+5. **Sloupcové granty jsou per-role, ne per-policy.** Co smí číst `authenticated`, smí číst každý registrovaný u každého řádku, který mu propustí RLS. Citlivé sloupce patří za SECURITY DEFINER RPC, ne za GRANT.

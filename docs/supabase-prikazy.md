@@ -28,6 +28,64 @@ Migrace v tomto projektu jsou **číslované soubory** `supabase/NNN_popis.sql`.
 
 **`posts` column SELECT (078 + 079):** `anon` / `authenticated` nemají `GRANT SELECT` na celou tabulku, jen na výčet sloupců. **Nový sloupec na `posts` musí stejná migrace přidat do `GRANT SELECT (…)`** — jinak appka spadne na `42501`. `contact_phone`, `location` a `original_*` do grantu nepatří (RPC). `get_nearby_posts` / `search_posts` jsou SECURITY DEFINER: viditelnost drží `is_post_publicly_visible` v těle, ne RLS.
 
+Trvalá pravidla pro agenty: [`.cursor/rules/postgres-grants-rls.mdc`](../.cursor/rules/postgres-grants-rls.mdc).
+
+### Před releasem grantů / RLS
+
+Spouštět v Supabase SQL Editoru **před releasem** a po každé migraci, která sahá na granty, RLS nebo SECURITY DEFINER funkce. Migrace může projít a nic neudělat — pravda je výstup těchto dotazů, ne soubor v `supabase/`.
+
+```sql
+-- 1. Má každá veřejná tabulka zapnutou RLS?
+select relname, relrowsecurity
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public' and c.relkind = 'r'
+order by 1;
+
+-- 2. Reálné policies (porovnat s migracemi)
+select schemaname, tablename, policyname, roles, cmd, qual, with_check
+from pg_policies where schemaname in ('public','storage') order by 1,2,3;
+
+-- 3. Co reálně smí anon a authenticated (table-level)
+select table_name, grantee, string_agg(privilege_type, ',' order by privilege_type)
+from information_schema.role_table_grants
+where table_schema = 'public' and grantee in ('anon','authenticated')
+group by 1,2 order by 1,2;
+
+-- 4. Sloupcová oprávnění u citlivých sloupců posts
+-- Očekávej po 078+079:
+--   contact_phone, location, original_*   anon=false  auth=false
+--   title, slug, location_text            obě true
+select c.column_name,
+       bool_or(p.grantee = 'anon')          as anon_cte,
+       bool_or(p.grantee = 'authenticated') as auth_cte
+from information_schema.columns c
+left join information_schema.column_privileges p
+  on  p.table_schema = c.table_schema and p.table_name = c.table_name
+  and p.column_name  = c.column_name  and p.privilege_type = 'SELECT'
+  and p.grantee in ('anon','authenticated')
+where c.table_schema = 'public' and c.table_name = 'posts'
+  and c.column_name in ('contact_phone','location','original_title',
+                        'original_description','title','slug','location_text')
+group by c.column_name order by c.column_name;
+
+-- 5. Přežil nějaký starý overload s grantem pro authenticated?
+select p.proname, pg_get_function_identity_arguments(p.oid) as args,
+       p.prosecdef as definer, array_to_string(p.proacl, ', ') as acl
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in ('publish_approved_post','issue_moderation_approval',
+                    'reveal_listing_contact','get_nearby_posts',
+                    'search_posts','get_recent_posts')
+order by 1,2;
+
+-- 6. Runtime test jako anon (musí skončit chybou 42501)
+set local role anon;
+select contact_phone from public.posts limit 1;
+reset role;
+```
+
+`posts` **nesmí** mít table-level `GRANT SELECT` pro `anon` / `authenticated` (řádek v dotazu 3). Hint `GRANT SELECT ON posts` to znovu zavede a shodí 078/079.
+
 ### Změna AI moderace / prefillu (Edge Functions)
 
 AI moderace a photo-first prefill **neběží na Vercelu** — běží jako Edge Functions na Supabase. Git push je **automaticky nenasadí**.
@@ -194,7 +252,7 @@ IP anonymizace: cron `/api/cron/anonymize-inquiry-ips` → RPC `anonymize_old_in
 
 #### `rate_limits`
 
-`id`, `user_id`, `action_type` (`ai_check` / `suggest_from_photos` / …), `count`, `window_start` — hodinová okna limitů (přihlášený). Hosté: `anonymous_rate_limits` (`guest_suggest_from_photos`, `guest_ai_preview`, `guest_upload`, `guest_visitor_mint`, `guest_ai_spend`, `mapy_suggest`, `mapy_rgeocode`). Mapy proxy: hashed IP, 60 suggest / 20 rgeocode za hodinu. `guest_ai_spend` (40/h) a `guest_ai_spend_day` (300/den UTC) na klíči `global:guest_ai`. IP pro limity: `x-vercel-forwarded-for` → `x-real-ip` → XFF zprava (`src/lib/security/client-ip.ts`).
+`id`, `user_id`, `action_type` (`ai_check` / `suggest_from_photos` / …), `count`, `window_start` — hodinová okna limitů (přihlášený). Hosté a veřejné akce: `anonymous_rate_limits` (`guest_suggest_from_photos`, `guest_ai_preview`, `guest_upload`, `guest_visitor_mint`, `guest_ai_spend`, `mapy_suggest`, `mapy_rgeocode`, `resend_signup_verification`). Mapy proxy: hashed IP, 60 suggest / 20 rgeocode za hodinu. Resend ověření: denně rotující hash IP i e-mailu, 10/h/IP + 3/h/e-mail. `guest_ai_spend` (40/h) a `guest_ai_spend_day` (300/den UTC) na klíči `global:guest_ai`. IP pro limity: `x-vercel-forwarded-for` → `x-real-ip` → XFF zprava (`src/lib/security/client-ip.ts`).
 
 ---
 
@@ -354,7 +412,7 @@ npx supabase link --project-ref <PROJECT_REF>
 | `npx supabase db push` | Aplikuje lokální migrace přes CLI | Jen pokud máš `supabase/migrations/` a `config.toml` — u nás spíš SQL Editor |
 | `npx supabase db diff` | Vygeneruje SQL rozdíl oproti cloudu | Ladění schématu |
 | Table Editor | Ruční prohlížení / editace řádků | `posts`, `profiles`, `moderation_checks`… |
-| Database → Roles | Kontrola RLS a grantů | Po změně policies |
+| Database → Roles | Kontrola RLS a grantů | Po změně policies — nestačí; viz **Před releasem grantů / RLS** |
 
 **Ruční SQL (moderace / ops):**
 
@@ -755,6 +813,7 @@ Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, a
 | Změnil jsi… | Udělej |
 |-------------|--------|
 | Nový soubor `supabase/NNN_*.sql` | SQL Editor na produkci + commit + PRD hlavička + **aktualizuj § Schéma databáze** v tomto souboru |
+| Granty, RLS, SECURITY DEFINER, nový sloupec na `posts` | Kontrolní dotazy [Před releasem grantů / RLS](#před-releasem-grantů--rls) na produkci |
 | Nová tabulka / sloupec / enum | Stejně — lidský popis atributů v § Schéma databáze (skill ukončení práce) |
 | `prohibited-topics.ts` / AI prompty / `categories.ts` | `npm run sync:moderation` + deploy `moderate-listing` (a při sdílených změnách i `suggest-listing-from-photos`) |
 | Prefill (`suggest-listing.ts`, `suggest-from-photos.ts`, Edge `suggest-listing-from-photos`) | `npm run sync:moderation` + `npx supabase functions deploy suggest-listing-from-photos` |

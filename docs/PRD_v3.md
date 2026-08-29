@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.87  
+> **Verze dokumentu:** v3.88
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-28
+> **Datum:** 2026-08-29
 
 ---
 
@@ -579,7 +579,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 * **Ochrana kontaktů před scrapery (Anti-Scraping / Bot protection):**
   * **Tlačítko „Zobrazit kontakt“:** Telefon a e-mail prodejce nejsou v HTML kódu stránky ani v veřejném SELECT na `posts`/`profiles`. Zobrazí se až po kliknutí **přihlášeného** uživatele přes RPC `reveal_listing_contact` (SECURITY DEFINER): ověří viditelnost inzerátu, opt-in vlajky `show_contact_email` / `show_contact_phone`, zapíše `contact_reveals`. Čtení `posts.contact_phone` mají jen SECURITY DEFINER RPC (`reveal_listing_contact`, `get_owned_post_contact_phone`) a `service_role` — role `anon`/`authenticated` sloupec v SELECT grantu nemají (migrace `078`; `025` nestačilo).
   * **Rate limit:** Max **20 zobrazení kontaktů / den / uživatel** (vynuceno v RPC, migrace `026`; konstanta `CONTACT_REVEAL_RATE_LIMIT_PER_DAY` v `app.ts`).
-  * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá. Po úspěšném odeslání se zapíše metadata do `inquiry_events` (bez obsahu zprávy — §11.1 C).
+  * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá. Odeslání vyžaduje **Cloudflare Turnstile** (SEC-M09) plus honeypot a denní rate limit. Po úspěchu se zapíše metadata do `inquiry_events` (bez obsahu zprávy — §11.1 C).
   * **Události *(v0.2)*:** U `category_type = 'udalost'` se formulář chová jako „registrace zájmu o účast“ — tlačítko **„Mám zájem o účast“**, předmět/tělo e-mailu: *„Uživatel [jméno] se chce zúčastnit vaší akce: [Název] — [kontaktní údaje].“* Pořadatel odpovídá ze svého e-mailu; systém neukládá účastníky do DB.
 * **Komunitní moderování inzerátů:**
   * **Inline:** Tlačítko „Nahlásit inzerát“ na detailu (Důvody: Podvod / Nelegální obsah / Sexuální obsah / Drogy / Spam / Nevhodné chování / Jiné). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky **zablokuje** (`blocked`, `status_reason_code = 'reports_threshold'`) — spadne do karantény pro moderátory.
@@ -902,7 +902,8 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.84 | 2026-08-28 | **Mapy.cz proxy:** suggest/rgeocode jen ze serveru (`/api/mapy/*`), klíč `MAPY_CZ_API_KEY` mimo JS bundle; rate limit 60/20 na hashed IP; Seznam nevidí IP návštěvníka. UX `LocationInput` / header Poloha beze změny. DPA Seznam stále chybí (adresa + GPS dál tečou). |
 | v3.85 | 2026-08-28 | **posts column SELECT:** table `GRANT SELECT` přebíjel `REVOKE (contact_phone)` z 025. Migrace [`078`](../supabase/078_posts_column_select_grants.sql) — allowlist sloupců; `anon` bez `contact_phone` / `location` / `original_*`. `get_nearby_posts` + `search_posts` → SECURITY DEFINER (čtou `location` interně). `authenticated` má `location`/`original_*` do fáze 2 (RPC own/staff). |
 | v3.86 | 2026-08-28 | **Fáze 2 P0:** `location` + `original_*` pryč z `authenticated` SELECT. Čtení jen RPC `get_post_edit_private_fields` (vlastník nebo staff). Migrace [`079`](../supabase/079_posts_edit_private_rpc.sql). |
-| v3.87 | 2026-08-28 | **SEC-M07/M08:** IP helper (`x-vercel-forwarded-for` → `x-real-ip` → XFF zprava). Guest mint max. 10 nových cookie/h/IP. Upload Turnstile po 10 fotkách/h. Globální guest AI 40/h + 300/den (`guest_ai_spend`) — bez nové migrace; potřeba deploy Edge. |
+| v3.87 | 2026-08-28 | **SEC-M07/M08:** IP helper (`x-vercel-forwarded-for` → `x-real-ip` → XFF **zprava**). Guest mint max. 10 nových cookie/h/IP. Upload Turnstile po 10 fotkách/h. Globální guest AI 40/h + 300/den (`guest_ai_spend`) — bez nové migrace; potřeba deploy Edge. |
+| v3.88 | 2026-08-29 | **SEC-M09 první fáze:** povinný Turnstile u `resendSignupVerificationEmail` a `POST /api/inquiry`; oddělené `action`, hostname whitelist (`zapikolou.cz`/`www` + stabilní Vercel aliasy + `VERCEL_*` URL), Siteverify timeout 10 s a viditelná chyba/retry. Resend navíc 10/h/IP + 3/h/e-mail přes `anonymous_rate_limits`/RPC z 073. Login/signup zatím bez CAPTCHA. |
 
 ---
 

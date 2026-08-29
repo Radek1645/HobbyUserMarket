@@ -39,7 +39,7 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-28.
 ### Není blokátor soft launch
 
 - Category SEO kód (CSEO4), Půjčovna, monetizace v0.6, P2B e-maily (až před 1. IČO), AV příloh, God Mode timeline, LCP preload, UX polish (dva AI modaly, loading.tsx).
-- **SEC-M07 + SEC-M08** — Edge nasazeno 28. 8.; Next.js s pushem `main`. Guest E2E na produkci zbývá.
+- ~~**SEC-M07 + SEC-M08**~~ — ✅ produkce 29. 8. 2026: Vercel green, smoke, inzerát jde založit.
 
 ---
 
@@ -51,9 +51,9 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-28.
 | Proces (Fable) | — | P5, P13, P16, P18, P28 ops, P29, P30 UI, P32, P33 právník | P25, P34, P36, P40 |
 | UX | — | loading/error boundaries, silent errors, 2 AI modaly | a11y drobnosti |
 
-**Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **Hard stop H1/H3/H5 produkce:** 2026-08-06 ✅ · **P0 column grants 078+079:** 2026-08-28 ✅ ověřeno · **SEC-M07/M08:** Edge nasazeno 28. 8.; Next.js s pushem `main` · **I6 / B1–B5:** ⏳
+**Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **Hard stop H1/H3/H5 produkce:** 2026-08-06 ✅ · **P0 column grants 078+079:** 2026-08-28 ✅ ověřeno · **SEC-M07/M08:** ✅ ověřeno produkce 2026-08-29 (smoke, založení inzerátu) · **I6 / B1–B5:** ⏳
 
-**Další bezpečnostní práce:** SEC-M09 Turnstile v Next → SEC-M10 heslo → SEC-M03 hlavičky → L\*.
+**Další bezpečnostní práce:** SEC-M10 heslo → Turnstile login/signup (zbytek M09) → SEC-M03 hlavičky → L\*.
 
 ---
 
@@ -77,9 +77,9 @@ Incident SEC-H05 (logy 21.–28. 8., retence 7 dní PRO): `%2Ccontact_phone` zve
 
 | ID | Nález | Návrh | Zdroj | Launch |
 |----|-------|-------|-------|--------|
-| **SEC-M07** | IP z `x-forwarded-for` **zleva** — klient ji volí | Jeden helper: `x-vercel-forwarded-for` → `x-real-ip` → XFF **zprava**. `cf-connecting-ip` pryč. | 2026-08-28 M1 | ✅ Edge nasazeno; Next.js s pushem. Unit 6/6. |
-| **SEC-M08** | Nekonečný guest mint + `p_captcha_verified: true` + žádný globální strop AI | Mint 10/h/IP (jen nové cookie); upload Turnstile po soft 10; globální 40/h a 300/den (`guest_ai_spend`) | 2026-08-28 M2 | ✅ Edge nasazeno (`moderate-listing` + `suggest-listing-from-photos`); Next.js s pushem. Guest E2E na produkci ještě ne. |
-| **SEC-M09** | `verifyTurnstileTokenServer()` má 0 volání v `src/`. Slabé: `resendSignupVerificationEmail` (e-mail bombing), `/api/inquiry`, login/signup. | Nasadit Turnstile; nejdřív resend + inquiry | 2026-08-28 M3 | P1; překrývá P16 / H2-R |
+| ~~**SEC-M07**~~ | IP z `x-forwarded-for` **zleva** — klient ji volí | Jeden helper: `x-vercel-forwarded-for` → `x-real-ip` → XFF **zprava**. `cf-connecting-ip` pryč. | 2026-08-28 M1 | ✅ **ověřeno produkce 2026-08-29** (unit 6/6 dřív; smoke + založení inzerátu). |
+| ~~**SEC-M08**~~ | Nekonečný guest mint + `p_captcha_verified: true` + žádný globální strop AI | Mint 10/h/IP (jen nové cookie); upload Turnstile po soft 10; globální 40/h a 300/den (`guest_ai_spend`) | 2026-08-28 M2 | ✅ **ověřeno produkce 2026-08-29** — Edge + Next; smoke, inzerát jde založit. |
+| **SEC-M09** | `verifyTurnstileTokenServer()` má 0 volání v `src/`. Slabé: `resendSignupVerificationEmail` (e-mail bombing), `/api/inquiry`, login/signup. | Nasadit Turnstile; nejdřív resend + inquiry | 2026-08-28 M3 | 🟡 **první fáze v kódu** 2026-08-29: resend + inquiry, action + hostname whitelist (SITE + stabilní aliasy + Vercel env URL), timeout, UI retry; resend 10/h/IP + 3/h/e-mail. Login/signup a produkční smoke zbývá. |
 | **SEC-M10** | `updatePassword()` bez stávajícího hesla; po změně chybí `signOut({ scope: "global" })`. Recovery staré heslo chtít nesmí. | Rozlišit obnova vs. změna v účtu | 2026-08-28 M5 | P1 |
 | **SEC-M01** | Edge `req.json()` bez limitu body/schema | Content-Length, schema před mapováním | 2026-07-27 | P1 po GO |
 | **SEC-M02** | Inquiry bez Content-Type / Origin | JSON + Origin allowlist; CAPTCHA = M09 | 2026-07-27 | **GO-6** |
@@ -104,7 +104,7 @@ Incident SEC-H05 (logy 21.–28. 8., retence 7 dní PRO): `%2Ccontact_phone` zve
 | **SEC-L10** | `LegalMarkdown` propustí `javascript:` v `href` | 2026-08-28 L3 | Zdroj je repo markdown |
 | **SEC-L11** | `.gitignore` jen `.env*.local` | 2026-08-28 L4 | Doplnit `.env`, `.env.production` |
 | **SEC-L12** | Bucket `post-images` veřejný; skrytý inzerát dokud neprobehne cleanup | 2026-08-28 L6 | UUID cesty; přijmout nebo signed URL |
-| H2-R | CAPTCHA u inquiry | 2026-07-27 | Sloučit do **SEC-M09** |
+| H2-R | CAPTCHA u inquiry | 2026-07-27 | Sloučit do **SEC-M09** — inquiry v kódu 29. 8. |
 | L1 | Min. heslo 8 | 2026-07-27 | Záměr; strength meter ✅ |
 
 Detail důkazů 2026-07-27: [`archive/audits/SECURITY_AND_UX_AUDIT_20260727.md`](./archive/audits/SECURITY_AND_UX_AUDIT_20260727.md) §3.  
@@ -164,7 +164,7 @@ P0 (28. 8. 2026): `anon`/`authenticated` + `location` → `42501`; search „tep
 |----|------|--------------|--------|
 | **P5** | Prolong hard-code +30 dní | RPC / `listing_duration_days` | Po |
 | **P13** | Dva AI modaly (Approved→Preview) | Sloučit | Po |
-| **P16** | Inquiry CAPTCHA + dashboard | CAPTCHA = **SEC-M09**; dashboard majitele částečně (počty ✅) | CAPTCHA s M09 |
+| **P16** | Inquiry CAPTCHA + dashboard | CAPTCHA = **SEC-M09** ✅ v kódu 29. 8.; dashboard majitele částečně (počty ✅) | Dashboard po |
 | **P18** | Resend chyby jen console | Sentry/alert | Po |
 | **P25** | PRD OTP vs heslo | Sladit docs | Docs |
 | **P28** | Monitoring / backup runbook | Ops checklist v repu | Soft ops |
@@ -222,9 +222,10 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 
 ### P1 — bezpečnost / abuse (hned; nahoře = dřív)
 
-- [x] **SEC-M07** IP helper (Vercel → XFF zprava)
-- [x] **SEC-M08** guest mint + captcha flag + strop AI útraty (Edge nasazeno 28. 8.)
-- [ ] **SEC-M09** Turnstile v Next (`resendSignupVerificationEmail`, inquiry, pak login)
+- [x] **SEC-M07** IP helper (Vercel → XFF zprava) — ověřeno produkce 2026-08-29
+- [x] **SEC-M08** guest mint + captcha flag + strop AI útraty — ověřeno produkce 2026-08-29
+- [x] **SEC-M09 první fáze** — Turnstile u resend ověření + `/api/inquiry`; action/hostname/timeout/UI retry + resend limit (v kódu 2026-08-29)
+- [ ] **SEC-M09 dokončení** — produkční smoke; potom rozhodnout Turnstile u login/signup
 - [ ] **SEC-M10** změna hesla = stávající heslo + global sign-out
 - [ ] SEC-M02 / GO-6 Inquiry Origin (doplňuje M09)
 - [ ] SEC-M03 Security headers (CSP report-only)
@@ -258,6 +259,7 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 4. `npm audit --omit=dev` bez Critical/High; `lint` + `build` OK.
 5. Hard stop 3×/24h → `/ucet-pozastaven` (+ mail — H4 produkce ještě neověřen). **Ověřeno produkce 2026-08-06** (stop stránka + blacklist automatic).
 6. `anon` i `authenticated`: `SELECT contact_phone` / `location` / `original_*` z `posts` → `42501`. Edit vlastního inzerátu přes `get_post_edit_private_fields`. **Ověřeno produkce 2026-08-28.**
+7. Guest založení inzerátu po M07/M08 (trusted IP, mint cookie, upload/AI limity). **Ověřeno produkce 2026-08-29** (Vercel smoke, inzerát jde založit).
 
 ---
 
@@ -271,6 +273,8 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 
 | Datum | Změna |
 |-------|-------|
+| 2026-08-29 | **SEC-M09 první fáze:** povinný Turnstile u resendu a poptávky; token svázaný s action + produkčním hostname; Siteverify 10s timeout; viditelná chyba/retry; resend 10/h/IP + 3/h/e-mail. Login/signup a produkční smoke zbývá. |
+| 2026-08-29 | **SEC-M07/M08 ověřeno na produkci:** Vercel green, smoke, inzerát jde založit. |
 | 2026-08-28 | **SEC-M07/M08:** důvěryhodná IP, limit mintu visitor cookie, upload Turnstile po soft limitu, globální `guest_ai_spend` 40/h + 300/den. Bez nové SQL migrace. |
 | 2026-08-28 | Audit 28. 8. sloučen sem; P0 = **SEC-H05** ✅ 078+079; otevřené M1–M5 → SEC-M07–M10 + M03; L\* → L08–L12 / L02; originál v `archive/audits/` |
 | 2026-08-06 večer | Produkční smoke hard stop H1/H3/H5 ✅; UI rose panel pro hard gate vs amber Gemini; GO-1 uzavřen |
