@@ -1,14 +1,14 @@
 # Zásady ochrany osobních údajů
 
 **Platforma:** HobbyUserMarket  
-**Verze:** Draft 1.1 · **Datum účinnosti:** [doplnit]  
+**Verze:** 1.1 · **Datum účinnosti:** [doplnit]  
 **Správce:** [název, sídlo, IČO] · **Kontakt pro GDPR:** [e-mail / DPO]
 
 ---
 
 ## TL;DR — v čem je pointa
 
-Vaše údaje (e-mail, volitelně telefon) potřebujeme k provozu účtu a inzerce. IP u poptávek anonymizujeme do 7 dnů. Neaktivní účty bez přihlášení déle než 90 dní a bez aktivního inzerátu automaticky anonymizujeme (s předchozím upozorněním). Citlivé údaje nikomu neprodáváme.
+Vaše údaje (e-mail, přezdívka) potřebujeme k provozu účtu a inzerce. Občanské jméno ani telefon v profilu nevyžadujeme. IP u poptávek anonymizujeme do 7 dnů. Neaktivní účty bez přihlášení déle než 90 dní a bez aktivního inzerátu automaticky anonymizujeme (s předchozím upozorněním). Citlivé údaje nikomu neprodáváme.
 
 ---
 
@@ -22,11 +22,12 @@ Správcem osobních údajů je Provozovatel platformy HobbyUserMarket. Zpracová
 
 | Účel zpracování | Kategorie údajů | Právní základ dle GDPR | Doba uchování |
 |-----------------|-----------------|------------------------|---------------|
-| Správa účtu a inzerce | Jméno, e-mail, telefon (volitelný), text inzerátu, fotografie | Plnění smlouvy (čl. 6 odst. 1 písm. b) | Po dobu existence aktivního účtu; po vypršení inzerát skryjeme (archivace) a uchováme nejvýše **365 dní od založení**, poté soft-delete (viz VOP a §6.1) |
+| Správa účtu a inzerce | E-mail, přezdívka (nickname), text inzerátu, fotografie; u firemního profilu název firmy (a IČO, pokud je uvedeno); volitelně kontaktní telefon u konkrétního inzerátu — jen pokud ho inzerent sám vyplní | Plnění smlouvy (čl. 6 odst. 1 písm. b) | Po dobu existence aktivního účtu; po vypršení inzerát skryjeme (archivace) a uchováme nejvýše **365 dní od založení**, poté soft-delete (viz VOP a §6.1) |
 | Automatická anonymizace neaktivních účtů | Identifikační a kontaktní údaje v profilu | Oprávněný zájem — minimalizace údajů (čl. 6 odst. 1 písm. f) | Spuštění po **90 dnech** od posledního přihlášení, pokud uživatel nemá aktivní inzerát; viz §6.1 |
 | Novinky a tipy e-mailem (připravujeme) | E-mailová adresa | Souhlas (čl. 6 odst. 1 písm. a) | Souhlas můžeme uložit při registraci; obchodní sdělení zatím nezasíláme. Po spuštění do odvolání souhlasu — viz [Marketingový souhlas](/marketingovy-souhlas) |
 | Analytika webu (GA4) | Technické identifikátory, agregované údaje o chování na webu | Souhlas (čl. 6 odst. 1 písm. a) — aktivace až po souhlasu v cookie liště | Dle nastavení nástroje a do odvolání souhlasu |
 | Provozní a bezpečnostní záznamy | IP u poptávek, technické identifikátory | Oprávněný zájem (čl. 6 odst. 1 písm. f) | IP u poptávek anonymizována do 7 dnů (§3.2); logy hostingu dle poskytovatele |
+| Hard-stop / bezpečnostní evidence (CSAM gate, NSFW) | E-mail na blacklistu, evidence zamítnutí, snapshoty fotek v privátním úložišti | Oprávněný zájem / plnění právních povinností (čl. 6 odst. 1 písm. f / c) | Evidence a historie odebraných blacklist záznamů nejvýše **24 měsíců**; aktivní blacklist po dobu trvání opatření |
 
 ---
 
@@ -66,9 +67,10 @@ Pokud se u konkrétního analytického nástroje uplatní **společné správcov
 | Sightengine (Kozelo SAS) | předfiltrace fotografií (detekce nahoty / nevhodného obsahu) před AI moderací | výchozí zpracování může probíhat ve více regionech (včetně mimo EHP); omezení regionu typicky Enterprise — DPA dle smlouvy se Sightengine; provozovatel: Francie |
 | OpenAI | záložní AI moderace (pokud je aktivní) | přenos mimo EHP (typicky USA) — DPA / SCC dle smlouvy s OpenAI |
 | Google | analytika webu (GA4 / GTM) — jen po souhlasu v cookie liště | dle služby Google |
+| Cloudflare | DNS zóny `zapikolou.cz`; příjem `info@zapikolou.cz` (Email Routing — přeposílání, ne schránka); ochrana proti zneužití (Turnstile) u guest / anonymních akcí | dle služby Cloudflare |
 | Mapy.cz | geokódování a našeptávač lokality | CZ / EU |
 
-Odesílání e-mailů přes Resend běží v EU (`eu-west-1`). U služeb Google (včetně Gemini), Sightengine a OpenAI a u účetních/provozních údajů u Resend může docházet k přenosu mimo EHP; v takovém případě se uplatní odpovídající záruky (např. standardní smluvní doložky / Data Privacy Framework) dle smluv s daným poskytovatelem. Text a fotografie inzerátu se k moderaci (včetně předfiltrace fotografií) odesílají jen za tímto účelem.
+Odesílání e-mailů webu přes Resend běží v EU (`eu-west-1`). Příchozí pošta na `info@zapikolou.cz` se doručuje přes Cloudflare Email Routing. U služeb Google (včetně Gemini), Sightengine a OpenAI, Cloudflare a u účetních/provozních údajů u Resend může docházet k přenosu mimo EHP; v takovém případě se uplatní odpovídající záruky (např. standardní smluvní doložky / Data Privacy Framework) dle smluv s daným poskytovatelem. Text a fotografie inzerátu se k moderaci (včetně předfiltrace fotografií) odesílají jen za tímto účelem.
 
 ---
 
@@ -89,8 +91,6 @@ Abychom minimalizovali zpracování osobních údajů, účet **automaticky anon
 
 Platforma je určena uživatelům od **15 let**. Při registraci vyžadujeme **prohlášení**, že uživateli je alespoň 15 let; bez tohoto prohlášení účet nezaložíme. Věk technicky neověřujeme (např. dokladem totožnosti). V České republice platí pro souhlas se zpracováním osobních údajů v souvislosti s informační společností věk **15 let** (čl. 8 GDPR ve spojení s národní úpravou). U osob mladších 15 let může souhlas udělit výhradně zákonný zástupce.
 
-> **Poznámka pro revizi právníkem:** Sladění s registračním flow a VOP §6.
-
 ---
 
 ## 7. Kontakt
@@ -98,5 +98,3 @@ Platforma je určena uživatelům od **15 let**. Při registraci vyžadujeme **p
 Dotazy ke zpracování osobních údajů směřujte na: **[e-mail správce]**
 
 ---
-
-*Draft — před publikací nechat zkontrolovat právníkem.*

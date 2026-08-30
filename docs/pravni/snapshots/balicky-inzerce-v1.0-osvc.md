@@ -1,7 +1,7 @@
 # Balíčky inzerce a ceník
 
 **Platforma:** HobbyUserMarket  
-**Verze:** Draft 1.0 · **Datum účinnosti:** [doplnit]
+**Verze:** 1.0 · **Datum účinnosti:** [doplnit]
 
 ---
 
@@ -33,7 +33,7 @@
 | **Sčítání balíčků** | Kredity z více balíčků nebo grantů se **sčítají**. |
 | **Drafty** | Koncept (`draft`) kredit nespotřebovává, dokud není inzerát zveřejněn. |
 
-Aktuální stav kreditů uživatel vidí v účtu (Moje inzeráty / Nastavení profilu).
+Aktuální stav kreditů uživatel vidí v účtu ([Moje inzeráty](/moje-inzeraty) / [Nastavení profilu](/profil/nastaveni)).
 
 ---
 
@@ -46,8 +46,6 @@ Provozovatel je oprávněn tento ceník **kdykoli upravit** s účinností od zv
 | **Start zdarma** | 20 | zdarma | Automaticky každému novému účtu |
 | **Balíček +20 inzerátů** | +20 | 50 Kč | Placený balíček — dokoupení viz §4 |
 | **Partnerský balíček** | +20 | dle dohody | Manuálně přidělený (beta, partneři) |
-
-> **Technická poznámka (interní):** Slugy v DB — `free`, `standard_20`, `promo_partner` (migrace `038_listing_quota.sql`). Po změně tabulky synchronizovat seed / UI.
 
 ---
 
@@ -71,5 +69,3 @@ U **placené** inzertní služby platí reklamační práva dle [VOP §2](/vop) 
 | Tato stránka | **Ceník, limity, definice inzertní služby** |
 
 ---
-
-*Draft — před publikací nechat zkontrolovat právníkem.*

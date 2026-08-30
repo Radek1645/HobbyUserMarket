@@ -29,8 +29,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
-.env*.local
+# env files (SEC-L11) — ignoruj všechny; výjimkou jsou jen .example šablony
+.env
+.env.*
+!.env.example
+!.env.local.example
 
 # slovní popis projektu (lokálně)
 /description_projekt/
@@ -39,6 +42,24 @@ yarn-error.log*
 /docs/_local/
 /docs/LinkendIn/
 /docs/Vercel_logy/
+/docs/Supabase_logy/
+/docs/Subreg/
+/docs/fb-ads/SecurityData_*.xlsx
+
+# Pracovní koš — nikdy do gitu
+/koš/
+
+# docs/pravni: servírované dokumenty a snapshots MUSÍ zůstat v gitu
+# (readLegalDocument a readVopSnapshotByVersion je čtou z disku na Vercelu).
+# Ignoruj jen interní části.
+/docs/pravni/DPA/
+/docs/pravni/REVIZE_PRAVNI/
+/docs/pravni/navrh-claude/
+/docs/pravni/dpa-checklist.md
+/docs/pravni/povinnosti-urady-fb-reklama.md
+
+# Instrukce pro Claude Code — lokální, nesdílet do repozitáře
+/CLAUDE.md
 
 # API keys (nikdy do gitu)
 ../Key/

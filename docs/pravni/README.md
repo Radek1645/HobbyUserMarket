@@ -1,6 +1,6 @@
 # Právní dokumentace — draft (Legal Design)
 
-> **Stav:** Web FO VOP **1.11-fo** (účinnost 15.08.2026) · GDPR FO **1.5-fo** · cookies **1.3** · Pravidla **1.5** · Limity FO **1.4-fo** · OSVČ drafty k doplnění před monetizací · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
+> **Stav:** Web FO VOP **1.11-fo** (účinnost 15.08.2026) · GDPR FO **1.5-fo** · cookies **1.3** · Pravidla **1.5** · Limity FO **1.4-fo** · OSVČ VOP draft **1.6-osvc** · GDPR OSVČ **1.2-osvc** · Balíčky OSVČ **1.1-osvc** (IČO / datum účinnosti k doplnění; bez adresy) · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
 > **Projekt:** HobbyUserMarket (specifikace [`PRD_v3.md`](../PRD_v3.md) §11.3)
 
 Modulární sada právních textů pro web. Každý dokument obsahuje srozumitelné shrnutí (TL;DR) a plné znění pro publikaci na samostatné URL.
@@ -41,7 +41,7 @@ NEXT_PUBLIC_MONETIZATION_ENABLED=true
 
 **Checklist při zapnutí:**
 
-1. Doplnit identifikaci v `*-osvc.md` (název, sídlo, IČO, e-mail).
+1. Doplnit identifikaci v `*-osvc.md` (IČO, datum účinnosti). Adresa / místo podnikání do VOP nepatří.
 2. Nastavit `NEXT_PUBLIC_MONETIZATION_ENABLED=true` + redeploy.
 3. V DB: `UPDATE listing_packages SET is_purchasable = true WHERE slug = 'standard_20'`.
 4. Spustit platební modul (Fio API) dle PRD §12.
@@ -50,7 +50,7 @@ NEXT_PUBLIC_MONETIZATION_ENABLED=true
 
 ## Doplňovat před publikací
 
-- Identifikace provozovatele — FO: jméno + e-mail v `*-fo.md`; OSVČ: název, sídlo, IČO v `*-osvc.md`
+- Identifikace provozovatele — FO: jméno + e-mail v `*-fo.md`; OSVČ: jméno, IČO (přiděleno ČSÚ), zápis v živnostenském rejstříku (bez adresy)
 - Kontaktní e-mail a datová schránka (DSA, GDPR)
 - Verze dokumentu a datum účinnosti
 - PDF export do `public/docs/` (např. `vop-v1.0.pdf`, `gdpr-v1.0.pdf`)
@@ -62,9 +62,10 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 
 - V DB se ukládá `profiles.vop_accepted_at` a `profiles.vop_version` (migrace **044**).
 - `vop_version` musí odpovídat **verzovanému artefaktu**, který je dlouhodobě dostupný:
-  - PDF v `public/docs/` se verzí v názvu (např. `vop-v1.8-fo.pdf`, `vop-v1.5-osvc.pdf`)
+  - PDF v `public/docs/` se verzí v názvu (např. `vop-v1.8-fo.pdf`, `vop-v1.6-osvc.pdf`)
   - a/nebo HTML snapshot verze (nesmí se zpětně měnit)
-- Aktuální FO: `CURRENT_VOP_VERSION = "1.11-fo"` → snapshot [`snapshots/vop-v1.11-fo.md`](./snapshots/vop-v1.11-fo.md). Starší snapshoty (`vop-v1.5-fo` … `vop-v1.10-fo`) ponechány pro dříve odsouhlasené účty.
+- Aktuální FO (web): `CURRENT_VOP_VERSION = "1.11-fo"` → snapshot [`snapshots/vop-v1.11-fo.md`](./snapshots/vop-v1.11-fo.md). Starší snapshoty (`vop-v1.5-fo` … `vop-v1.10-fo`) ponechány pro dříve odsouhlasené účty.
+- OSVČ draft (až `NEXT_PUBLIC_MONETIZATION_ENABLED=true`): `"1.6-osvc"` → [`snapshots/vop-v1.6-osvc.md`](./snapshots/vop-v1.6-osvc.md). Starší [`vop-v1.5-osvc.md`](./snapshots/vop-v1.5-osvc.md) beze změny.
 - Jakmile je verze jednou v produkci a někdo ji odsouhlasí, **nesmí se přepsat** „na místě“ bez navýšení verze (jen nový soubor + nová verze).
 
 ## Data v EU / EHP — checklist (P33)
@@ -78,7 +79,7 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 - [x] **Tabulka zpracovatelů** v FO i OSVC §5.1 (2026-07-19)
 - [x] Ověřit **Resend** sending region — Ireland `eu-west-1`, doména `zapikolou.cz` Verified (2026-07-19); zapsáno v GDPR §5.1
 - [x] **Cloudflare** — DNS `zapikolou.cz` + Email Routing `info@` + Turnstile; zapsáno v GDPR FO **1.5-fo** §5.1 (2026-08-20)
-- [x] **Resend DPA** — staženo 2026-07-20 do [`resend-dpa-signed.pdf`](./resend-dpa-signed.pdf) (DocuSign `CC958417-…`, Updated 12/31/2025). Předpodepsaná Resendem; závazná od registrace účtu — bez countersign. Zahrnuje SCC / GDPR.
+- [x] **Resend DPA** — staženo 2026-07-20 do [`resend-dpa-signed.pdf`](./DPA/resend-dpa-signed.pdf) (DocuSign `CC958417-…`, Updated 12/31/2025). Předpodepsaná Resendem; závazná od registrace účtu — bez countersign. Zahrnuje SCC / GDPR. *(2026-08-27: přesunuto do `pravni/DPA/`, spolu s ostatními DPA dokumenty — viz [`dpa-checklist.md`](./dpa-checklist.md))*
 - [ ] **Sightengine DPA** — podepsat / vrátit na support@sightengine.com (EU zákazník)
 - [ ] Revize právníkem před publikací finálního GDPR textu (vč. Sightengine + CSAM hard stop ve VOP/Pravidlech)
 
@@ -129,7 +130,7 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 | Veřejný profil `/uzivatel/[nickname]` v GDPR FO | ✅ |
 | Odkazy [Moje inzeráty](/moje-inzeraty) / [Nastavení](/profil/nastaveni) v Balíčcích | ✅ |
 | `REVIZE_PRAVNI/` FO kopie — **neaktualizováno** v tomto kroku (webové soubory jsou zdroj pravdy; před další syncem srovnat) | ⚠️ |
-| OSVČ GDPR / brand — před monetizací | ⏳ |
+| OSVČ GDPR / brand — před monetizací | ✅ **1.2-osvc** (2026-08-30) |
 
 ## Sync 2026-08-15 — FO bez úmyslu placené inzerce
 
@@ -149,6 +150,17 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 | OSVČ GDPR §5.1 — stejný řádek Cloudflare (draft, před monetizací) | ✅ |
 | Ops: [`branding-a-domeny.md`](../branding-a-domeny.md) — Subreg = jen registrace | ✅ |
 
+## Draft 2026-08-29 — VOP OSVČ 1.6
+
+| Bod | Stav |
+|-----|------|
+| VOP OSVČ → **1.6-osvc** + snapshot; `CURRENT_VOP_VERSION` při monetizaci | ✅ |
+| Základ FO **1.11** (brand, guest draft, `/nahlasit`, CSAM, statistiky, §8.3) + reklamace / ceník / limitace z OSVČ 1.5 | ✅ |
+| Placeholdery: IČO, datum účinnosti | ⏳ až přidělení IČO |
+| Web `/vop` | beze změny (**1.11-fo**, monetizace vypnutá) |
+| Balíčky OSVČ → **1.1-osvc** (brand zaPikolou, ceník, nákup převodem, odstoupení); snapshot [`snapshots/balicky-inzerce-v1.0-osvc.md`](./snapshots/balicky-inzerce-v1.0-osvc.md) | ✅ draft |
+| GDPR OSVČ → **1.2-osvc** (brand zaPikolou, guest draft, Meta Pixel, veřejný profil, nákup balíčku); snapshot [`snapshots/ochrana-osobnich-udaju-v1.1-osvc.md`](./snapshots/ochrana-osobnich-udaju-v1.1-osvc.md) | ✅ draft |
+
 ## K potvrzení právníkem
 
 - [ ] Formulace věku 15–18 let a souhlas zákonného zástupce (NOZ)
@@ -156,6 +168,7 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 - [ ] Rozsah povinností u inzerce práce
 - [ ] Společné správcovství GA4 — zda se vztahuje na naši implementaci
 - [ ] CSAM hard stop (VOP §4.5 / Pravidla §2.4) + Sightengine v GDPR §5.1
+- [ ] Odstoupení od smlouvy u placeného balíčku — [Balíčky OSVČ §4.3](./balicky-inzerce-osvc.md) + checkbox v objednávkovém flow
 - [x] Checkbox věku v registračním formuláři — hotovo v kódu
 
 ## Odkazy z UI copy na tyto dokumenty

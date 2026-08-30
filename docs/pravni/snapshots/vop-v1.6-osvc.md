@@ -1,8 +1,8 @@
 # Všeobecné obchodní podmínky (VOP)
 
-**Platforma:** HobbyUserMarket  
-**Verze:** Draft 1.5 · **Datum účinnosti:** [doplnit]  
-**Provozovatel:** [název, sídlo, IČO]
+**Platforma:** zaPikolou.cz  
+**Verze:** 1.6-osvc · **Datum účinnosti:** [doplnit]  
+**Provozovatel:** Radek Horák, podnikající fyzická osoba · IČO: [doplnit] (přiděleno Českým statistickým úřadem) · zapsán v živnostenském rejstříku · kontaktní e-mail: info@zapikolou.cz · datová schránka: fxetq2k
 
 ---
 
@@ -16,7 +16,7 @@ Jsme **inzertní nástěnka, ne prodejce ani zprostředkovatel obchodu**. Za obs
 
 ### 1.1 Zprostředkovatelský charakter služeb
 
-Provozovatel provozuje platformu HobbyUserMarket jako hostingovou službu, která umožňuje registrovaným uživatelům zveřejňovat inzeráty — včetně nabídky a poptávky **zboží, služeb, pracovních příležitostí, nemovitostí a událostí**. Provozovatel **není** prodejcem, kupujícím, zaměstnavatelem, pronajímatelem ani jiným účastníkem transakcí mezi uživateli.
+Provozovatel provozuje platformu zaPikolou.cz jako hostingovou službu, která umožňuje registrovaným uživatelům zveřejňovat inzeráty — včetně nabídky a poptávky **zboží, služeb, pracovních příležitostí, nemovitostí a událostí**. Návštěvník bez účtu může připravit koncept inzerátu (včetně nahrání fotografií a náhledu automatické kontroly); **zveřejnění** inzerátu je možné až po registraci a přihlášení. Provozovatel **není** prodejcem, kupujícím, zaměstnavatelem, pronajímatelem ani jiným účastníkem transakcí mezi uživateli.
 
 ### 1.2 Vyloučení odpovědnosti
 
@@ -24,21 +24,23 @@ Provozovatel nenese odpovědnost za kvalitu, stav, bezpečnost, legálnost ani p
 
 ### 1.3 Limitace náhrady škody
 
-Provozovatel neodpovídá za ušlý zisk či následné škody způsobené výpadky systému nebo kybernetickými útoky. Celková odpovědnost Provozovatele vůči uživateli je omezena částkou, kterou uživatel prokazatelně zaplatil za konkrétní **placenou inzertní službu** dle [Balíčků inzerce](/balicky-inzerce).
+Provozovatel neodpovídá za ušlý zisk či následné škody způsobené výpadky systému nebo kybernetickými útoky. U **placené** inzertní služby je celková odpovědnost Provozovatele vůči uživateli omezena částkou, kterou uživatel prokazatelně zaplatil za konkrétní placenou inzertní službu dle [Balíčků inzerce](/balicky-inzerce). U **bezplatné** inzertní služby je odpovědnost Provozovatele za škodu omezena v rozsahu, v jakém to kogentní ustanovení právních předpisů dovolují.
 
 ### 1.4 Nemovitosti
 
 Provozovatel **nevykonává činnost realitního zprostředkovatele** ve smyslu zákona o realitním zprostředkování. Platforma umožňuje pouze zveřejnění inzerátů týkajících se nemovitostí; smlouvy uzavírají výhradně uživatelé mezi sebou. Provozovatel se neúčastní vyjednávání, nevybírá provizi z transakce a neověřuje vlastnictví nemovitostí.
 
-> **Poznámka pro revizi právníkem:** Potvrzení vyloučení z působnosti zákona č. 39/2020 Sb.
-
 ---
 
 ## 2. Technické parametry a reklamace
 
-### 2.1 Definice výpadku
+### 2.1 Reklamace
 
-Technickým nedostatkem zakládajícím právo na reklamaci je výhradně **nepřetržitá nefunkčnost placených inzertních služeb** (viz [Balíčky inzerce](/balicky-inzerce)) po dobu delší než **5 hodin** v rámci jednoho kalendářního dne.
+Technickým nedostatkem zakládajícím právo na reklamaci **placené** inzertní služby je výhradně **nepřetržitá nefunkčnost** těchto služeb (viz [Balíčky inzerce](/balicky-inzerce)) po dobu delší než **5 hodin** v rámci jednoho kalendářního dne.
+
+Uživatel může technický problém oznámit na kontaktní e-mail Provozovatele. Provozovatel se jej pokusí odstranit v přiměřené době.
+
+U **bezplatné** inzertní služby výpadek, odstávka nebo omezení provozu **nezakládá** právo na peněžitou náhradu, obnovu kreditů ani jiné peněžité plnění. U **placené** inzertní služby se reklamace a případné vypořádání řídí tímto článkem a [Balíčky inzerce](/balicky-inzerce); **nevzniká** nárok na náhradu škody nad rámec čl. 1.3.
 
 ### 2.2 Výluky
 
@@ -70,7 +72,7 @@ Vložením fotografie nebo jiného autorského díla k inzerátu uděluje Uživa
 
 ### 3.3 Úpravy a vodoznaky
 
-Provozovatel si **vyhrazuje právo** (nikoli povinnost) vkládat do fotografií vodoznak s logem HobbyUserMarket a automaticky upravovat formátování textu (např. převod textu psaného velkými písmeny na malá), pokud to slouží jednotnému zobrazení nebo ochraně platformy. Vodoznak Provozovatel **nepoužívá povinně** — rozhodnutí o jeho použití závisí na technických a provozních potřebách platformy.
+Provozovatel si **vyhrazuje právo** (nikoli povinnost) vkládat do fotografií vodoznak s logem zaPikolou a automaticky upravovat formátování textu (např. převod textu psaného velkými písmeny na malá), pokud to slouží jednotnému zobrazení nebo ochraně platformy. Vodoznak Provozovatel **nepoužívá povinně** — rozhodnutí o jeho použití závisí na technických a provozních potřebách platformy.
 
 ### 3.4 Zákaz recyklace cizího obsahu
 
@@ -88,7 +90,7 @@ Každý inzerát před zveřejněním prochází **automatizovanou kontrolou obs
 
 Konkrétní kategorie zakázaného nebo omezeného obsahu (např. jednotlivé druhy zboží, služeb či klíčových slov) jsou vedeny v [Pravidlech inzerce](/podminky-inzerce) mimo tento dokument. Provozovatel je oprávněn tento seznam **kdykoli aktualizovat** s okamžitou účinností — typicky v reakci na nové způsoby zneužití platformy — bez nutnosti současné změny těchto VOP. Aktuální znění je vždy dostupné na uvedeném odkazu.
 
-**Absolutní zákaz (CSAM):** Jakýkoli obsah související se sexuálním zneužíváním dětí je zakázán bez výjimky. Sankce a postup jsou v [Pravidlech inzerce](/podminky-inzerce) čl. 2.4 a v čl. 4.5 těchto VOP.
+**Absolutní zákazy** včetně zvlášť závažného obsahu jsou v [Pravidlech inzerce](/podminky-inzerce) čl. 2.4; sankce a postup v čl. 4.5 těchto VOP.
 
 ### 4.3 Lidský přezkum (God Mode)
 
@@ -100,7 +102,7 @@ Automatizovaná kontrola je doplněna lidským dohledem. Moderátor nebo adminis
 
 ### 4.4 Hlášení obsahu
 
-Kdokoli může nahlásit nelegální inzerát přes formulář v sekci [DSA kontaktní centrum](/dsa).
+Kdokoli může nahlásit nelegální inzerát prostřednictvím formuláře [Nahlásit inzerát](/nahlasit). Postup a kontaktní údaje jsou popsány v [DSA kontaktním centru](/dsa).
 
 ### 4.5 Odstraňování a omezení viditelnosti
 
@@ -143,8 +145,6 @@ Registrací prohlašujete, že vám je **alespoň 15 let**. Jste-li ve věku **1
 
 Registrace osob **mladších 15 let** není dovolena. U osob mladších 15 let může být souhlas se zpracováním osobních údajů v souvislosti s informační společností udělen pouze zákonným zástupcem — viz [Zásady ochrany osobních údajů](/gdpr).
 
-> **Poznámka pro revizi právníkem:** Sladění s registračním formulářem (checkbox věku) a čl. 8 GDPR / zákon č. 110/2019 Sb.
-
 ---
 
 ## 7. Inzerce podnikatelů a právnických osob
@@ -174,7 +174,7 @@ Platforma neumožňuje Podnikatelům přímé placené ovlivňování (tzv. topo
 
 ### 7.5 Přístup k vygenerovaným datům
 
-Podnikatel má po dobu aktivního uživatelského účtu přístup k **agregovaným statistikám** u svých vlastních inzerátů (zejména k celkovému počtu **zobrazení inzerátu** v klientské sekci). Poptávky od zájemců se doručují e-mailem. Podnikatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu Podnikatele jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
+Každý uživatel s aktivním účtem má u svých vlastních inzerátů přístup k **agregovaným statistikám** (zejména k celkovému počtu **zobrazení inzerátu** v sekci [Moje inzeráty](/moje-inzeraty)) — stejně soukromá osoba i Podnikatel. Poptávky od zájemců se doručují e-mailem. Uživatel nemá přístup k identifikačním údajům jednotlivých prohlížečů ani k osobním údajům jiných uživatelů platformy, s výjimkou situace, kdy zájemce sám odešle své kontaktní údaje prostřednictvím poptávkového formuláře. Po smazání nebo anonymizaci účtu jsou všechna tato data trvale nedostupná. Provozovatel tato metadata v anonymizované podobě využívá pro účely provozní analytiky.
 
 ---
 
@@ -203,8 +203,6 @@ Ukončením nebo podstatným omezením provozu zaniká možnost zveřejnění a 
 
 O plánovaném ukončení Provozovatel uživatele informuje přiměřeně předem (typicky e-mailem), pokud to okolnosti dovolí. U uživatelů s profilem Podnikatele se v rozsahu vyžadovaném nařízením (EU) 2019/1150 uplatní příslušné oznamovací lhůty.
 
-**Kontakt:** [e-mail provozovatele]
+**Kontakt:** info@zapikolou.cz · datová schránka: fxetq2k
 
 ---
-
-*Draft — před publikací nechat zkontrolovat právníkem.*

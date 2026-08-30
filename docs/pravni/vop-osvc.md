@@ -1,8 +1,8 @@
 # Všeobecné obchodní podmínky (VOP)
 
-**Platforma:** HobbyUserMarket  
-**Verze:** 1.5 · **Datum účinnosti:** [doplnit]  
-**Provozovatel:** [název, sídlo, IČO]
+**Platforma:** zaPikolou.cz  
+**Verze:** 1.6-osvc · **Datum účinnosti:** [doplnit]  
+**Provozovatel:** Radek Horák, podnikající fyzická osoba · IČO: [doplnit] (přiděleno Českým statistickým úřadem) · zapsán v živnostenském rejstříku · kontaktní e-mail: info@zapikolou.cz · datová schránka: fxetq2k
 
 ---
 
@@ -16,7 +16,7 @@ Jsme **inzertní nástěnka, ne prodejce ani zprostředkovatel obchodu**. Za obs
 
 ### 1.1 Zprostředkovatelský charakter služeb
 
-Provozovatel provozuje platformu HobbyUserMarket jako hostingovou službu, která umožňuje registrovaným uživatelům zveřejňovat inzeráty — včetně nabídky a poptávky **zboží, služeb, pracovních příležitostí, nemovitostí a událostí**. Návštěvník bez účtu může připravit koncept inzerátu (včetně nahrání fotografií a náhledu automatické kontroly); **zveřejnění** inzerátu je možné až po registraci a přihlášení. Provozovatel **není** prodejcem, kupujícím, zaměstnavatelem, pronajímatelem ani jiným účastníkem transakcí mezi uživateli.
+Provozovatel provozuje platformu zaPikolou.cz jako hostingovou službu, která umožňuje registrovaným uživatelům zveřejňovat inzeráty — včetně nabídky a poptávky **zboží, služeb, pracovních příležitostí, nemovitostí a událostí**. Návštěvník bez účtu může připravit koncept inzerátu (včetně nahrání fotografií a náhledu automatické kontroly); **zveřejnění** inzerátu je možné až po registraci a přihlášení. Provozovatel **není** prodejcem, kupujícím, zaměstnavatelem, pronajímatelem ani jiným účastníkem transakcí mezi uživateli.
 
 ### 1.2 Vyloučení odpovědnosti
 
@@ -24,7 +24,7 @@ Provozovatel nenese odpovědnost za kvalitu, stav, bezpečnost, legálnost ani p
 
 ### 1.3 Limitace náhrady škody
 
-Provozovatel neodpovídá za ušlý zisk či následné škody způsobené výpadky systému nebo kybernetickými útoky. Celková odpovědnost Provozovatele vůči uživateli je omezena částkou, kterou uživatel prokazatelně zaplatil za konkrétní **placenou inzertní službu** dle [Balíčků inzerce](/balicky-inzerce).
+Provozovatel neodpovídá za ušlý zisk či následné škody způsobené výpadky systému nebo kybernetickými útoky. U **placené** inzertní služby je celková odpovědnost Provozovatele vůči uživateli omezena částkou, kterou uživatel prokazatelně zaplatil za konkrétní placenou inzertní službu dle [Balíčků inzerce](/balicky-inzerce). U **bezplatné** inzertní služby je odpovědnost Provozovatele za škodu omezena v rozsahu, v jakém to kogentní ustanovení právních předpisů dovolují.
 
 ### 1.4 Nemovitosti
 
@@ -34,9 +34,13 @@ Provozovatel **nevykonává činnost realitního zprostředkovatele** ve smyslu 
 
 ## 2. Technické parametry a reklamace
 
-### 2.1 Definice výpadku
+### 2.1 Reklamace
 
-Technickým nedostatkem zakládajícím právo na reklamaci je výhradně **nepřetržitá nefunkčnost placených inzertních služeb** (viz [Balíčky inzerce](/balicky-inzerce)) po dobu delší než **5 hodin** v rámci jednoho kalendářního dne.
+Technickým nedostatkem zakládajícím právo na reklamaci **placené** inzertní služby je výhradně **nepřetržitá nefunkčnost** těchto služeb (viz [Balíčky inzerce](/balicky-inzerce)) po dobu delší než **5 hodin** v rámci jednoho kalendářního dne.
+
+Uživatel může technický problém oznámit na kontaktní e-mail Provozovatele. Provozovatel se jej pokusí odstranit v přiměřené době.
+
+U **bezplatné** inzertní služby výpadek, odstávka nebo omezení provozu **nezakládá** právo na peněžitou náhradu, obnovu kreditů ani jiné peněžité plnění. U **placené** inzertní služby se reklamace a případné vypořádání řídí tímto článkem a [Balíčky inzerce](/balicky-inzerce); **nevzniká** nárok na náhradu škody nad rámec čl. 1.3.
 
 ### 2.2 Výluky
 
@@ -68,7 +72,7 @@ Vložením fotografie nebo jiného autorského díla k inzerátu uděluje Uživa
 
 ### 3.3 Úpravy a vodoznaky
 
-Provozovatel si **vyhrazuje právo** (nikoli povinnost) vkládat do fotografií vodoznak s logem HobbyUserMarket a automaticky upravovat formátování textu (např. převod textu psaného velkými písmeny na malá), pokud to slouží jednotnému zobrazení nebo ochraně platformy. Vodoznak Provozovatel **nepoužívá povinně** — rozhodnutí o jeho použití závisí na technických a provozních potřebách platformy.
+Provozovatel si **vyhrazuje právo** (nikoli povinnost) vkládat do fotografií vodoznak s logem zaPikolou a automaticky upravovat formátování textu (např. převod textu psaného velkými písmeny na malá), pokud to slouží jednotnému zobrazení nebo ochraně platformy. Vodoznak Provozovatel **nepoužívá povinně** — rozhodnutí o jeho použití závisí na technických a provozních potřebách platformy.
 
 ### 3.4 Zákaz recyklace cizího obsahu
 
@@ -199,6 +203,6 @@ Ukončením nebo podstatným omezením provozu zaniká možnost zveřejnění a 
 
 O plánovaném ukončení Provozovatel uživatele informuje přiměřeně předem (typicky e-mailem), pokud to okolnosti dovolí. U uživatelů s profilem Podnikatele se v rozsahu vyžadovaném nařízením (EU) 2019/1150 uplatní příslušné oznamovací lhůty.
 
-**Kontakt:** [e-mail provozovatele]
+**Kontakt:** info@zapikolou.cz · datová schránka: fxetq2k
 
 ---
