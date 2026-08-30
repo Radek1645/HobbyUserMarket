@@ -1,5 +1,6 @@
 import { SetPasswordForm } from "@/components/auth/SetPasswordForm";
 import { BackLink } from "@/components/navigation/BackLink";
+import { sessionHasFreshPasswordRecovery } from "@/lib/auth/password-recovery-session";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -15,6 +16,11 @@ export default async function SetPasswordPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    redirect("/login?tab=forgot");
+  }
+
+  // SEC-M10: běžná session sem nesmí — jen čerstvá obnova z e-mailového odkazu.
+  if (!(await sessionHasFreshPasswordRecovery(supabase))) {
     redirect("/login?tab=forgot");
   }
 

@@ -57,7 +57,8 @@ function parsePromptLine(line: string): DoplnitPromptEntry | null {
   return null;
 }
 
-function publishLabel(field: string): string {
+/** Label v Parametrech / hydrataci: „materiál“ → „Materiál“. */
+export function publishDoplnitLabel(field: string): string {
   const key = foldDoplnitFieldKey(field);
   const mapped = DOPLNIT_PUBLISH_LABELS[key];
   if (mapped) return mapped;
@@ -194,7 +195,7 @@ export function stripDoplnitPlaceholders(text: string): string {
     const parsed = parsePromptLine(line);
     if (parsed) {
       if (isDoplnitFormFieldPrompt(parsed.field) || !parsed.value) continue;
-      out.push(`${publishLabel(parsed.field)}: ${parsed.value}`);
+      out.push(`${publishDoplnitLabel(parsed.field)}: ${parsed.value}`);
       continue;
     }
 
@@ -213,4 +214,65 @@ export function stripDoplnitPlaceholders(text: string): string {
   }
 
   return tidyResolvedText(out.join("\n"));
+}
+
+/** Vyplněné „Doplňte materiál: bronz“ — fakta od uživatele, ne prázdné výzvy. */
+export function collectFilledDoplnitAnswers(
+  description: string,
+): DoplnitPromptEntry[] {
+  return collectPromptEntries(description).entries.filter(
+    (entry) => entry.value.length > 0,
+  );
+}
+
+/**
+ * Pro hydrataci: vyplněné výzvy jako „Materiál: bronz“, prázdné nechá
+ * „Doplňte rozměry: “, ať se AI ptá jen na chybějící údaje.
+ */
+export function resolveDoplnitDescriptionForHydration(
+  description: string,
+): string {
+  if (!hasDoplnitScaffold(description)) {
+    return description.trim();
+  }
+
+  const { prose, entries } = collectPromptEntries(description);
+  if (entries.length === 0) {
+    return prose || description.trim();
+  }
+
+  const lines = entries.map((entry) =>
+    entry.value
+      ? `${publishDoplnitLabel(entry.field)}: ${entry.value}`
+      : toDoplnitPromptLine(entry.field),
+  );
+
+  if (!prose) {
+    return lines.join("\n");
+  }
+
+  return `${prose}\n\n${lines.join("\n")}`;
+}
+
+function escapeFoldedToken(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Otázka hydratace se ptá na údaj, který uživatel už doplnil za „Doplňte …:“. */
+export function questionMatchesFilledDoplnit(
+  question: { label: string; paramLabel?: string },
+  entry: DoplnitPromptEntry,
+): boolean {
+  const haystack = foldDoplnitFieldKey(
+    `${question.paramLabel ?? ""} ${question.label}`,
+  );
+  const tokens = [
+    foldDoplnitFieldKey(entry.field),
+    foldDoplnitFieldKey(publishDoplnitLabel(entry.field)),
+  ].filter((token, index, all) => token.length >= 3 && all.indexOf(token) === index);
+
+  return tokens.some((token) => {
+    const pattern = new RegExp(`(?:^|[^a-z0-9])${escapeFoldedToken(token)}`);
+    return pattern.test(haystack);
+  });
 }

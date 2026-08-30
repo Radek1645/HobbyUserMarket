@@ -18,6 +18,7 @@ const QUESTION_SHORT_LABELS: [RegExp, string][] = [
   [/značk/i, "Značka"],
   [/model/i, "Model"],
   [/materiál|material/i, "Materiál"],
+  [/původ|puvod/i, "Původ"],
   [/výbava|vybavení|doplňk/i, "Výbava"],
   [/technick[ýá]\s+stav|stav\s+zboží|celkov[ýá]\s+stav/i, "Stav"],
   [/bateri/i, "Baterie"],

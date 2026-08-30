@@ -223,6 +223,9 @@ Edge Function po parsování AI odpovědi odfiltruje otázky k polím, která u�
 | `filterRedundantPriceQuestions` | `fixed`/`negotiable` + `priceAmount` | otázky na cenu |
 | `filterRedundantEventDateQuestions` | vyplněný `eventDate` | otázky na datum/čas konání |
 | `filterRedundantLocationQuestions` | vyplněný `locationText` | otázky na lokalitu/místo/adresu |
+| `applyFilledDoplnitToHydration` (klient) | vyplněné „Doplňte materiál: bronz“ v popisu | stejná otázka v hydrataci + doplní `• Materiál: bronz` do Parametrů, pokud AI hodnotu zahodila |
+
+Vyplněné řádky „Doplňte X: hodnota“ se před 1. voláním AI přepíšou na fakta (`Materiál: bronz`); prázdné výzvy zůstanou, ať se hydratace ptá jen na ně. Klient to po odpovědi ještě jednou zkontroluje — AI často vyplněný údaj smaže a položí stejnou otázku.
 
 Pokud po filtrech nezbyde žádná otázka → status se **přepne na `APPROVED`**.
 

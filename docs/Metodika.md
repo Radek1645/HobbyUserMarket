@@ -49,7 +49,7 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 1. Návštěvník otevře úvodní stránku `/`.
 2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); subline **„Vyfotit, párkrát kliknout, hotovo. AI se postará o zbytek. Rovnou pro lidi z vašeho okolí.“**; značka **zaPikolou.cz** a tagline v hlavičce.
 3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání). Těsně nad H1 skleněná pilulka **„20 inzerátů zdarma“** (`HOME_FREE_QUOTA_BADGE_LABEL`, ikona Sparkles v brand zelené); odkaz na `/balicky-inzerce`. Přihlášeným se nezobrazuje.
-4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem **Vytvořeno** (v patičce karty vpravo). Mřížka: **mobil 2×4** (8 karet), **desktop lg+ 3×3** (9 karet); tlačítko **„Zobrazit další“** doplní stejnou dávku (až do načtených 36).
+4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem v patičce vpravo: **Vytvořeno** (`created_at`), u událostí místo toho **Konání** (`event_date`). Mřížka: **mobil 2×4** (8 karet), **desktop lg+ 3×3** (9 karet); tlačítko **„Zobrazit další“** doplní stejnou dávku (až do načtených 36).
 5. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
 
 ### 2.1.1 Časté dotazy (`/faq`)
@@ -213,7 +213,7 @@ Přihlášený uživatel může upravit:
 - avatar (max. 2 MB, komprese v prohlížeči),
 - jméno, příjmení, přezdívku,
 - volitelné telefonní číslo,
-- heslo,
+- heslo — sekce **Změna hesla** na `/profil/nastaveni`: stávající + nové + potvrzení; po uložení odhlášení ze všech zařízení. Obnova zapomenutého hesla (e-mailový odkaz → `/auth/nastavit-heslo`) stávající heslo **nevyžaduje**, ale server povolí změnu jen se session, jejíž JWT má čerstvé AMR `recovery` (jinak redirect na zapomenuté heslo).
 - smazat účet (GDPR) — sekce **`/profil/nastaveni`**: checkbox „nevratné“ + přepsání e-mailu pro potvrzení → odhlášení a redirect na `/login?message=account_deleted`.
 
 **E-mail nelze změnit** — je zobrazen jen ke čtení. Pro jinou adresu je nutné založit nový účet (po smazání lze stejnou adresu znovu registrovat).
@@ -629,7 +629,7 @@ Hydratace vychází z:
 - **všech** nahraných fotografií (vizuální kontext; hlavní fotka navíc pro shodu text ↔ náhled),
 - u jasně identifikovaného výrobku (značka + model / typ / motorizace) v **jakékoli** kategorii zboží i **katalogových vlastností** s jistotou. Kusové údaje (nájezd, vady, příslušenství v balení) jen z textu/fotek.
 
-**Formulář má při hydrataci přednost** (cena, `eventDate`, lokalita, u události `external_url`): neshoda volného textu s polem formuláře **není** důvod k `REJECTED`; Edge přepíše údaj do `cleanedDescription` / Parametrů. Pole `eventDate` se do Edge i do uložení posílá jako **ISO UTC** (zeď `Europe/Prague`) — jinak Vercel v UTC posune 15:00 na 13:00 a publish gate (`content_mismatch`) editaci události zablokuje. U události s vyplněným odkazem (Facebook / Instagram / web) AI **nevkládá** CTA „napište pořadateli zprávu přes web“ — odkaz je samostatné tlačítko pod inzerátem. Technický detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) → *Filtr redundantních otázek (formulář má pravdu)*. Po ruční úpravě textu v modalu už to neplatí stejně — viz §6.8.1.
+**Formulář má při hydrataci přednost** (cena, `eventDate`, lokalita, u události `external_url`): neshoda volného textu s polem formuláře **není** důvod k `REJECTED`; Edge přepíše údaj do `cleanedDescription` / Parametrů. Stejně vyplněné řádky **„Doplňte X: hodnota“** v popisu (např. materiál: bronz) — klient je zapíše do Parametrů a stejnou otázku v hydrataci zahodí; AI je často smaže a zeptá se znovu. Pole `eventDate` se do Edge i do uložení posílá jako **ISO UTC** (zeď `Europe/Prague`) — jinak Vercel v UTC posune 15:00 na 13:00 a publish gate (`content_mismatch`) editaci události zablokuje. U události s vyplněným odkazem (Facebook / Instagram / web) AI **nevkládá** CTA „napište pořadateli zprávu přes web“ — odkaz je samostatné tlačítko pod inzerátem. Technický detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) → *Filtr redundantních otázek (formulář má pravdu)*. Po ruční úpravě textu v modalu už to neplatí stejně — viz §6.8.1.
 
 ### 6.7 Stav NEEDS_QUESTIONS — doplňující dotazník
 
@@ -1017,8 +1017,8 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 
 - Název, galerie (až 6 fotek), strukturovaný popis (úvod + Parametry)
 - U inzerátů s AI textem: v sekci Parametry řádek **„Vytvořeno s pomocí AI: Ano“** s ikonou nápovědy (Podmínky inzerce §3, AI Act)
-- Cena (formát podle kategorie — u služeb např. `500 Kč/h` nebo `od 3 000 Kč za zakázku`), stav, lokalita, typ kategorie, datum **Vytvořeno** (`created_at`)
-- U událostí: datum konání; pokud je vyplněný `external_url`, výrazné CTA pod parametry — label podle domény (**Facebook** / **Instagram** / **Další informace online**), odkaz `target=_blank` + `rel=noopener noreferrer nofollow ugc`
+- Cena (formát podle kategorie — u služeb např. `500 Kč/h` nebo `od 3 000 Kč za zakázku`), stav, lokalita, typ kategorie; u zboží/služeb/práce/nemovitostí datum **Vytvořeno** (`created_at`)
+- U událostí: datum **Konání** (`event_date`) místo **Vytvořeno**; pokud je vyplněný `external_url`, výrazné CTA pod parametry — label podle domény (**Facebook** / **Instagram** / **Další informace online**), odkaz `target=_blank` + `rel=noopener noreferrer nofollow ugc`
 - U nemovitostí: Prodej / Pronájem
 - **Zadavatel** (přezdívka nebo název firmy) — klik vede na **`/uzivatel/[nickname]`** (aktivní inzeráty, 9 na stránku)
 - Štítek **Podnikatel** u firemního profilu (VOP §7.2); milník **Aktivní inzerent · N+** při 5 / 10 / 20 / 40 lifetime publikacích
@@ -1038,6 +1038,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 
 - Nepřihlášený i přihlášený může odeslat zprávu inzerentovi e-mailem.
 |- Před odesláním **Turnstile** (Cloudflare) — bez platného tokenu API vrátí 400; při výpadku ověření 503 a UI nabídne opakování. Token je vázaný na akci `inquiry` a whitelist hostname (`zapikolou.cz` / `www`, stabilní Vercel aliasy + `VERCEL_URL` / branch / production URL). Honeypot a denní limity (IP / inzerát) zůstávají.
+- API navíc vyžaduje `Content-Type: application/json` (jinak 415) a v produkci Origin/Referer z whitelistu stejných hostname (jinak 403). To řeší cross-site spam z prohlížeče; curl Origin zfalšuje — na cílený abuse drží rate limit + Turnstile (SEC-M02 / GO-6).
 - E-mail prodejce zůstává skrytý — doručení přes Resend.
 - U **událostí** je tlačítko **„Mám zájem o účast“** — stejný mechanismus, jiný text e-mailu.
 - U **Práce a brigád** může uchazeč přiložit CV/portfolio (PDF, DOCX, JPG, PNG). Zadavatel volí **„Vyžadovat CV nebo portfolio při odpovědi“** (`job_cv_required`, migrace `046`) — pak bez přílohy formulář neodešle.
@@ -1158,7 +1159,7 @@ Auth: `Authorization: Bearer CRON_SECRET` (stejně jako ostatní crony). Rate-li
 
 ### 9.2 Události
 
-- Platnost se **nevolí** — inzerát vyprší **den po datu konání** (`event_date + 1 den`).
+- Platnost se **nevolí** — inzerát zmizí **o půlnoci v den konání** (`Europe/Prague`). Formulář pod datem: *Inzerát bude viditelný do půlnoci z 31. 8. na 1. 9. 2026.* `expires_at` = začátek následujícího kalendářního dne, ne `event_date + 24 h`. Migrace `080`.
 - Na HP se události řadí podle nejbližšího termínu.
 
 ### 9.3 Smazání inzerátu majitelem

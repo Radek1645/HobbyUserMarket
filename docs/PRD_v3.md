@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.88
+> **Verze dokumentu:** v3.91
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql)  
+> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-29
+> **Datum:** 2026-08-30
 
 ---
 
@@ -393,7 +393,7 @@ rate_limits (volitelné, pro server-side rate limiting)
 | `price_amount` | `NULL` | Cena není primární dimenze |
 | `event_date` | povinné `TIMESTAMPTZ` | Jednorázová: datum akce. Pravidelná: **nejbližší termín** (frekvence v popisu) |
 | Kapacita | v `description` | v0.2 bez strukturovaného pole |
-| `expires_at` | `event_date + 1 den` | **Ne** z `listing_duration_days` — viz §8.4.1 |
+| `expires_at` | půlnoc po dni konání (`Europe/Prague`) | **Ne** z `listing_duration_days` — viz §8.4.1 |
 
 **Mapování UI → DB pro nemovitosti *(v0.3)* — reuse existujících sloupců, bez nových tabulek:**
 
@@ -579,7 +579,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
 * **Ochrana kontaktů před scrapery (Anti-Scraping / Bot protection):**
   * **Tlačítko „Zobrazit kontakt“:** Telefon a e-mail prodejce nejsou v HTML kódu stránky ani v veřejném SELECT na `posts`/`profiles`. Zobrazí se až po kliknutí **přihlášeného** uživatele přes RPC `reveal_listing_contact` (SECURITY DEFINER): ověří viditelnost inzerátu, opt-in vlajky `show_contact_email` / `show_contact_phone`, zapíše `contact_reveals`. Čtení `posts.contact_phone` mají jen SECURITY DEFINER RPC (`reveal_listing_contact`, `get_owned_post_contact_phone`) a `service_role` — role `anon`/`authenticated` sloupec v SELECT grantu nemají (migrace `078`; `025` nestačilo).
   * **Rate limit:** Max **20 zobrazení kontaktů / den / uživatel** (vynuceno v RPC, migrace `026`; konstanta `CONTACT_REVEAL_RATE_LIMIT_PER_DAY` v `app.ts`).
-  * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá. Odeslání vyžaduje **Cloudflare Turnstile** (SEC-M09) plus honeypot a denní rate limit. Po úspěchu se zapíše metadata do `inquiry_events` (bez obsahu zprávy — §11.1 C).
+  * **Anonymní poptávkový formulář:** Možnost napsat prodejci přímo z webu. E-mail se odešle přes Resend API; adresa prodejce zůstává skrytá. Odeslání vyžaduje **Cloudflare Turnstile** (SEC-M09), `Content-Type: application/json` + Origin whitelist (SEC-M02 / GO-6), honeypot a denní rate limit. Po úspěchu se zapíše metadata do `inquiry_events` (bez obsahu zprávy — §11.1 C).
   * **Události *(v0.2)*:** U `category_type = 'udalost'` se formulář chová jako „registrace zájmu o účast“ — tlačítko **„Mám zájem o účast“**, předmět/tělo e-mailu: *„Uživatel [jméno] se chce zúčastnit vaší akce: [Název] — [kontaktní údaje].“* Pořadatel odpovídá ze svého e-mailu; systém neukládá účastníky do DB.
 * **Komunitní moderování inzerátů:**
   * **Inline:** Tlačítko „Nahlásit inzerát“ na detailu (Důvody: Podvod / Nelegální obsah / Sexuální obsah / Drogy / Spam / Nevhodné chování / Jiné). Při **3 nahlášeních od 3 různých přihlášených uživatelů** se inzerát automaticky **zablokuje** (`blocked`, `status_reason_code = 'reports_threshold'`) — spadne do karantény pro moderátory.
@@ -623,7 +623,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
     * **Technicky (provider structured output):** Request i odpověď jdou jako JSON. Gemini: `generationConfig.responseMimeType = "application/json"` + `responseSchema` (`GEMINI_MODERATION_RESPONSE_SCHEMA`). OpenAI fallback: `response_format.type = "json_schema"` + `OPENAI_MODERATION_RESPONSE_SCHEMA` (`strict: true`). Schémata: [`supabase/functions/_shared/moderation/response-schema.ts`](../supabase/functions/_shared/moderation/response-schema.ts); volání: `gemini.ts` / `openai.ts`. System prompt (`build-prompt.ts`) doplňuje sémantiku polí; Edge `parse-response.ts` výsledek normalizuje. Detail: [`moderace-inzeratu.md`](./moderace-inzeratu.md#strukturovaný-json-výstup-gemini--openai).
     1. **Bezpečnostní a podvodový filtr:** Zakázaný obsah (zbraně, drogy, porno, orgány) → status `REJECTED`, proces končí chybou. Sémantická neshoda text/foto → chyba konzistence.
     2. **Čistka kontaktů (AI):** E-maily a telefony v popisu (i na fotce) nahrazeny `[SKRYTO – použij chráněné pole]`.
-    3. **Hydratace podle TS Configu:** AI přebere `aiPrompt` z `categories.ts` (sync do Edge). Metadata z formuláře (cena, stav, datum akce) se **nepřepisují dotazníkem** — na cenu se neptat, pokud je ve formuláři.
+    3. **Hydratace podle TS Configu:** AI přebere `aiPrompt` z `categories.ts` (sync do Edge). Metadata z formuláře (cena, stav, datum akce) se **nepřepisují dotazníkem** — na cenu se neptat, pokud je ve formuláři. Vyplněné řádky `Doplňte X: hodnota` v popisu jsou fakta: klient je před preview přepíše na `X: hodnota`, po odpovědi doplní do Parametrů a stejnou otázku zahodí.
        * *Zboží (auta-moto, elektronika):* Parametry v odrážkách; chybějící kritická data → max **5** otázek (`NEEDS_QUESTIONS`).
        * *Služby:* Otázky jen na chybějící dojezd, materiál, rozsah.
        * *Události (v0.2):* `event_date` z formuláře — AI se na datum neptá; chybí-li lokalita/kapacita → dotazník.
@@ -903,7 +903,10 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.85 | 2026-08-28 | **posts column SELECT:** table `GRANT SELECT` přebíjel `REVOKE (contact_phone)` z 025. Migrace [`078`](../supabase/078_posts_column_select_grants.sql) — allowlist sloupců; `anon` bez `contact_phone` / `location` / `original_*`. `get_nearby_posts` + `search_posts` → SECURITY DEFINER (čtou `location` interně). `authenticated` má `location`/`original_*` do fáze 2 (RPC own/staff). |
 | v3.86 | 2026-08-28 | **Fáze 2 P0:** `location` + `original_*` pryč z `authenticated` SELECT. Čtení jen RPC `get_post_edit_private_fields` (vlastník nebo staff). Migrace [`079`](../supabase/079_posts_edit_private_rpc.sql). |
 | v3.87 | 2026-08-28 | **SEC-M07/M08:** IP helper (`x-vercel-forwarded-for` → `x-real-ip` → XFF **zprava**). Guest mint max. 10 nových cookie/h/IP. Upload Turnstile po 10 fotkách/h. Globální guest AI 40/h + 300/den (`guest_ai_spend`) — bez nové migrace; potřeba deploy Edge. |
-| v3.88 | 2026-08-29 | **SEC-M09 první fáze:** povinný Turnstile u `resendSignupVerificationEmail` a `POST /api/inquiry`; oddělené `action`, hostname whitelist (`zapikolou.cz`/`www` + stabilní Vercel aliasy + `VERCEL_*` URL), Siteverify timeout 10 s a viditelná chyba/retry. Resend navíc 10/h/IP + 3/h/e-mail přes `anonymous_rate_limits`/RPC z 073. Login/signup zatím bez CAPTCHA. |
+| v3.88 | 2026-08-29 | **SEC-M09 první fáze:** povinný Turnstile u `resendSignupVerificationEmail` a `POST /api/inquiry`; oddělené `action`, hostname whitelist (`zapikolou.cz`/`www` + stabilní Vercel aliasy + `VERCEL_*` URL), Siteverify timeout 10 s a viditelná chyba/retry. Resend navíc 10/h/IP + 3/h/e-mail přes `anonymous_rate_limits`/RPC z 073. Login/signup záměrně bez CAPTCHA. |
+| v3.89 | 2026-08-29 | **SEC-M02 / GO-6 + SEC-M10:** inquiry vyžaduje `Content-Type: application/json` a produkční Origin/Referer whitelist (`STABLE_APP_HOSTNAMES`, sdílený s Turnstile). Změna hesla v `/profil/nastaveni` vyžaduje stávající heslo + `signOut({ scope: "global" })`. Obnova po e-mailu stávající heslo nechce, ale jen se čerstvým JWT AMR `recovery` (`getClaims`). |
+| v3.90 | 2026-08-30 | **Expirace událostí:** `expires_at` = půlnoc `Europe/Prague` následujícího dne po dni konání (ne `event_date + 24 h`). Migrace [`080`](../supabase/080_event_expires_end_of_calendar_day.sql). Karty událostí ukazují **Konání** místo **Vytvořeno**. |
+| v3.91 | 2026-08-30 | **Vyplněné `Doplňte …:` v hydrataci:** `Doplňte materiál: bronz` se bere jako fakt — do Parametrů (`• Materiál: bronz`) a hydratace se na něj znovu neptá. Prázdné výzvy zůstanou. Klient `applyFilledDoplnitToHydration` + prompt v `build-prompt.ts`. |
 
 ---
 
@@ -1024,7 +1027,7 @@ CREATE INDEX IF NOT EXISTS posts_event_date_idx
 |--------|---------|
 | Pole platnosti (§9.4) | **Skryté** — uživatel nevolí `listing_duration_days` |
 | `listing_duration_days` | U událostí se **ignoruje** (DB default 30 nemá vliv na `expires_at`) |
-| `expires_at` | DB trigger: **`event_date + INTERVAL '1 day'`** |
+| `expires_at` | DB trigger: **půlnoc `Europe/Prague` následujícího kalendářního dne** (`event_listing_expires_at`, migrace `080`) |
 | Frontend | Posílá `event_date`; **`expires_at` neposílá** |
 | Obnovení (`renew`) | Jen pokud `event_date > now()`; trigger přepočítá `expires_at` |
 | Validace | `event_date` **v budoucnosti** při publikaci (server + klient); při editaci beze změny data projde i minulý termín; max horizont volitelně v `app.ts` |
@@ -1037,7 +1040,7 @@ BEGIN
     IF NEW.event_date IS NULL THEN
       RAISE EXCEPTION 'U kategorie udalost je pole event_date povinne.';
     END IF;
-    NEW.expires_at := NEW.event_date + INTERVAL '1 day';
+    NEW.expires_at := public.event_listing_expires_at(NEW.event_date);
   ELSE
     NEW.event_date := NULL;
     IF NEW.listing_duration_days IS NULL THEN
@@ -1057,7 +1060,7 @@ CREATE TRIGGER trigger_post_expiration_logic
   EXECUTE FUNCTION public.handle_post_expiration_logic();
 ```
 
-> **Pravidlo priority:** Pro `udalost` platí vždy `expires_at = event_date + 1 den`. Logika `now() + listing_duration_days` z §9.2 se na události **nevztahuje**. Kompletní migrace: [`supabase/003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql).
+> **Pravidlo priority:** Pro `udalost` platí vždy `expires_at` = půlnoc `Europe/Prague` po dni konání (`event_listing_expires_at`). Logika `now() + listing_duration_days` z §9.2 se na události **nevztahuje**. Migrace: [`supabase/080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) (původní +24 h: `003` / `049`).
 
 ### 8.5 Implementační checklist
 
@@ -1076,9 +1079,9 @@ CREATE TRIGGER trigger_post_expiration_logic
 
 | Riziko | Mitigace v0.2 | Budoucí (v0.3+) |
 |--------|---------------|-----------------|
-| Expiace dříve než datum akce | **`event_date` + trigger `expires_at = event_date + 1 den`** (§8.4.1) | — |
+| Expiace dříve než datum akce | **`event_date` + trigger půlnoc po dni konání** (§8.4.1, `080`) | — |
 | Kapacita bez enforcementu | Pořadatel odpoví „kapacita naplněna“ nebo skryje inzerát | `capacity_max` + stav „plná kapacita“ |
-| Konec akce neznámý | Expirace den po `event_date` | `event_ends_at` pro vícedenní akce |
+| Konec akce neznámý | Expirace o půlnoci v den `event_date` | `event_ends_at` pro vícedenní akce |
 
 ### 8.7 Vědomá omezení oproti původnímu záměru
 
@@ -1129,7 +1132,7 @@ Při **obnovení:** trigger při UPDATE `listing_duration_days` přepočítá `e
 
 **Absolutní strop životnosti (v3.29):** `expires_at` nesmí překročit `created_at + listing_max_lifetime_days()` (výchozí **365**). Po stropu cron smaže soft-delete (`status = deleted`, `status_reason_code = lifetime_max`). Migrace [`049_listing_max_lifetime.sql`](../supabase/049_listing_max_lifetime.sql); app zrcadlo `src/config/listing-lifetime.ts`.
 
-**Výjimka — události:** §8.4.1 — `expires_at = event_date + 1 den`.
+**Výjimka — události:** §8.4.1 — `expires_at` = půlnoc po dni konání (`080`).
 
 **Migrace:** [`supabase/003_prd_v3_7.sql`](../supabase/003_prd_v3_7.sql) (sloupce `listing_duration_days`, `event_date`, constrainty, trigger); **048**/**049** (výstraha + hard cap).
 
@@ -1174,7 +1177,7 @@ WHERE status = 'active'
 
 Veřejná neviditelnost platí **okamžitě** přes `is_post_publicly_visible()` — cron sjednocuje stav pro klientskou sekci a reporting.
 
-**Poznámka k událostem:** U `udalost` je `expires_at = event_date + 1 den` (§8.4.1) — akce nemůže zmizet před konáním.
+**Poznámka k událostem:** U `udalost` je `expires_at` půlnoc po dni konání (§8.4.1) — akce nezmizí před začátkem dne konání, ale ani nevisí do druhého dne odpoledne.
 
 ### 9.6 Implementační checklist
 

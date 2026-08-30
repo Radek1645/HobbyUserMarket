@@ -28,6 +28,10 @@ import { parseEmailOtpType } from "@/lib/auth/email-otp-types";
 import { resolvePostAuthNextPath } from "@/lib/auth/finish-auth-redirect";
 import { sanitizeInternalPath } from "@/lib/auth/sanitize-internal-path";
 import {
+  PASSWORD_RECOVERY_REQUIRED_ERROR,
+  sessionHasFreshPasswordRecovery,
+} from "@/lib/auth/password-recovery-session";
+import {
   DUPLICATE_EMAIL_MESSAGE,
   mapAuthError,
 } from "@/lib/auth/map-auth-error";
@@ -388,6 +392,11 @@ export async function requestPasswordReset(
   };
 }
 
+/**
+ * Obnova hesla po e-mailovém odkazu — stávající heslo se nevyžaduje (SEC-M10).
+ * Povoleno jen se session, jejíž JWT má čerstvé AMR `recovery`.
+ * Po změně odhlásí všechny session.
+ */
 export async function updatePassword(
   _prev: AuthFormState,
   formData: FormData,
@@ -409,7 +418,11 @@ export async function updatePassword(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Platnost odkazu vypršela. Požádejte znovu o obnovení hesla." };
+    return { error: PASSWORD_RECOVERY_REQUIRED_ERROR };
+  }
+
+  if (!(await sessionHasFreshPasswordRecovery(supabase))) {
+    return { error: PASSWORD_RECOVERY_REQUIRED_ERROR };
   }
 
   const { error } = await supabase.auth.updateUser({ password });
@@ -418,6 +431,64 @@ export async function updatePassword(
     return { error: mapAuthError(error.message) };
   }
 
+  await supabase.auth.signOut({ scope: "global" });
+  redirect("/login?message=password_updated");
+  return { error: "Přesměrování selhalo." };
+}
+
+/**
+ * Změna hesla v nastavení účtu — vyžaduje stávající heslo (SEC-M10).
+ * Po změně odhlásí všechny session.
+ */
+export async function changeAccountPassword(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const password = readPassword(formData);
+  const confirm = String(formData.get("confirmPassword") ?? "");
+
+  if (!currentPassword) {
+    return { error: "Zadejte stávající heslo." };
+  }
+
+  if (!password || password.length < PASSWORD_MIN_LENGTH) {
+    return { error: `Nové heslo musí mít alespoň ${PASSWORD_MIN_LENGTH} znaků.` };
+  }
+
+  if (password !== confirm) {
+    return { error: "Hesla se neshodují." };
+  }
+
+  if (password === currentPassword) {
+    return { error: "Nové heslo se musí lišit od stávajícího." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return { error: "Nejste přihlášeni. Přihlaste se znovu." };
+  }
+
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+
+  if (reauthError) {
+    return { error: "Stávající heslo není správné." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: mapAuthError(error.message) };
+  }
+
+  await supabase.auth.signOut({ scope: "global" });
   redirect("/login?message=password_updated");
   return { error: "Přesměrování selhalo." };
 }

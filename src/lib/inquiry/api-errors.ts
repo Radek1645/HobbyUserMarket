@@ -14,3 +14,10 @@ export const INQUIRY_SERVICE_UNAVAILABLE_ERROR =
   "Služba pro odesílání zpráv není momentálně k dispozici. Zkuste to prosím později.";
 
 export const INQUIRY_HONEYPOT_ERROR = "Neplatný požadavek.";
+
+/** SEC-M02 / GO-6 — prostý form POST bez JSON. */
+export const INQUIRY_UNSUPPORTED_MEDIA_TYPE_ERROR = "Neplatný požadavek.";
+
+/** SEC-M02 / GO-6 — Origin mimo whitelist (cross-site z prohlížeče). */
+export const INQUIRY_FORBIDDEN_ORIGIN_ERROR = "Neplatný požadavek.";
+

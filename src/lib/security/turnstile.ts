@@ -1,5 +1,4 @@
 import {
-  TURNSTILE_STABLE_HOSTNAMES,
   TURNSTILE_TOKEN_MAX_LENGTH,
   TURNSTILE_VERIFY_TIMEOUT_MS,
   TURNSTILE_FAILED_ERROR,
@@ -7,6 +6,10 @@ import {
   TURNSTILE_UNAVAILABLE_ERROR,
   type TurnstileAction,
 } from "@/config/turnstile";
+import {
+  normalizeHostname,
+  resolveAllowedHostnames,
+} from "@/lib/security/allowed-origins";
 import { UNKNOWN_CLIENT_IP } from "@/lib/security/client-ip";
 
 type TurnstileVerificationResult =
@@ -19,39 +22,6 @@ type TurnstileSiteverifyPayload = {
   action?: string;
   "error-codes"?: string[];
 };
-
-function normalizeHostname(raw: string | null | undefined): string | null {
-  const host = raw?.trim().replace(/^https?:\/\//, "").split("/")[0]?.toLowerCase();
-  return host || null;
-}
-
-/**
- * Hostname z Turnstile tokenu. `NODE_ENV=production` platí i pro preview,
- * proto nestačí `SITE_DOMAIN` + `VERCEL_URL` (hash per deploy).
- * Přidáváme stabilní aliasy projektu a Vercel system URL z runtime env.
- */
-function resolveExpectedHostnames(): Set<string> | null {
-  if (process.env.NODE_ENV !== "production") {
-    return null;
-  }
-
-  const hostnames = new Set<string>();
-  for (const host of TURNSTILE_STABLE_HOSTNAMES) {
-    hostnames.add(host.toLowerCase());
-  }
-
-  for (const raw of [
-    process.env.NEXT_PUBLIC_SITE_URL,
-    process.env.VERCEL_URL,
-    process.env.VERCEL_BRANCH_URL,
-    process.env.VERCEL_PROJECT_PRODUCTION_URL,
-  ]) {
-    const host = normalizeHostname(raw);
-    if (host) hostnames.add(host);
-  }
-
-  return hostnames;
-}
 
 async function verifyTurnstileTokenDetailed(params: {
   token: string;
@@ -102,7 +72,7 @@ async function verifyTurnstileTokenDetailed(params: {
       return { ok: false, reason: "invalid" };
     }
 
-    const expectedHostnames = resolveExpectedHostnames();
+    const expectedHostnames = resolveAllowedHostnames();
     const tokenHostname = normalizeHostname(payload.hostname);
     if (
       expectedHostnames &&

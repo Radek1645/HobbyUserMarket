@@ -429,9 +429,9 @@ Související: `ListingCard.tsx`, `format-public-location.ts`, detail `inzerat/[
 
 ## 0. Před testy
 
-- [ ] Vercel build `main` zelený
-- [ ] Otevřít produkci `https://zapikolou.cz` (ne localhost)
-- [ ] Edge secrets: `CRON_SECRET` (= Vercel) + `SITE_URL=https://zapikolou.cz`
+- [x] Vercel build `main` zelený — ✅ 2026-08-30 (`6ebca43` Ready, Production)
+- [x] Otevřít produkci `https://zapikolou.cz` (ne localhost)
+- [x] Edge secrets: `CRON_SECRET` (= Vercel, Secret Production+Preview; hodnota skrytá) + `SITE_URL=https://zapikolou.cz` — ověřeno crony 200 a odkazy v mailech
 
 ---
 
@@ -478,7 +478,7 @@ LIMIT 10;
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
 | A6 | Poptávka Práce: PDF/JPG OK; falešné `.pdf` | Platná OK; falešná → chyba | ☐ |
-| B1–B4 | SQL RLS (ico / payment / renew / expires) | `42501` | ☐ |
+| B1–B4 | REST RLS (ico / payment / renew / expires) jako JWT `authenticated` | HTTP 403 + `42501` | ☑ produkce 2026-08-30 (post `126`) |
 | B5 | UI prodloužení | `renew_count` +1 | ☑ produkce 2026-08-06 (router id 47; `renew_count: 1`, `expires_at` → 2. 10. 2026) |
 | D1 | `/llms.txt` s `[` / `]` v titulku | Markdown OK | ☐ |
 

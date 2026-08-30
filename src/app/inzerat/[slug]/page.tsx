@@ -430,10 +430,12 @@ export default async function ListingDetailPage({
               )}
             </dd>
           </div>
-          <div>
-            <dt className="text-gray-500">Vytvořeno</dt>
-            <dd className="font-medium text-gray-900">{createdLabel}</dd>
-          </div>
+          {post.category_type === "udalost" && eventLabel ? null : (
+            <div>
+              <dt className="text-gray-500">Vytvořeno</dt>
+              <dd className="font-medium text-gray-900">{createdLabel}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-gray-500">{conditionFieldLabel}</dt>
             <dd className="font-medium text-gray-900">{conditionText}</dd>

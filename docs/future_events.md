@@ -17,7 +17,7 @@ Událost = `post` s `category_type = 'udalost'`. Registrace = poptávkový formu
 | Pole | Hodnota |
 |------|---------|
 | `event_date` | povinné (TIMESTAMPTZ) |
-| `expires_at` | trigger: `event_date + 1 den` |
+| `expires_at` | trigger: půlnoc po dni konání (`Europe/Prague`, migrace `080`) |
 | Pole platnosti (§9) | **skryté** v UI |
 
 ## UI

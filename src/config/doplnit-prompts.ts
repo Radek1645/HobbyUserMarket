@@ -60,4 +60,8 @@ export const DOPLNIT_PUBLISH_LABELS: Record<string, string> = {
   motorizace: "Motorizace",
   barvu: "Barva",
   barva: "Barva",
+  rozmery: "Rozměry",
+  rozmer: "Rozměry",
+  puvod: "Původ",
+  puvodu: "Původ",
 };

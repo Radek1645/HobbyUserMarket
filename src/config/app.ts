@@ -83,6 +83,12 @@ export const VERIFICATION_RESEND_EMAIL_LIMIT_PER_HOUR = 3;
 export const VERIFICATION_RESEND_RATE_ACTION =
   TURNSTILE_ACTION.RESEND_SIGNUP_VERIFICATION;
 
+/**
+ * Max. stáří AMR `recovery` (nebo JWT `iat` u string AMR) pro `/auth/nastavit-heslo`.
+ * SEC-M10 — bez čerstvé recovery session nesmí jít měnit heslo bez stávajícího.
+ */
+export const PASSWORD_RECOVERY_SESSION_MAX_AGE_SECONDS = 60 * 60;
+
 /** Max. doba dopředu pro datum události */
 export const EVENT_DATE_MAX_DAYS_AHEAD = 365;
 

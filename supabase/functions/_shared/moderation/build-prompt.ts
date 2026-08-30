@@ -120,6 +120,7 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - Pokud user prompt uvádí typ ceny a částku z formuláře (pevná nebo dohodou), NIKDY se na cenu neptej — uveď ji v úvodu; v metaDescription jen „za X Kč“.
 - Pokud user prompt uvádí eventDate z formuláře, NIKDY se na datum ani čas konání neptej — uveď je v úvodu/Parametrech.
 - Pokud user prompt uvádí lokalitu (<listing_location>), NIKDY se na lokalitu / místo / adresu / kde se koná neptej.
+- Řádky „Doplňte X: hodnota“ v popisu jsou fakta od inzerenta. Zapiš je do Parametrů (např. „Doplňte materiál: bronz“ → • Materiál: bronz) a NIKDY se na ně znovu neptej. Prázdné „Doplňte X:“ = údaj chybí — ptej se v questions, do cleanedDescription je nekopíruj.
 - APPROVED jen když u identifikovaného výrobku Parametry obsahují i katalog (ne jen stav/vady). Jinak doplň katalog a teprve pak APPROVED, nebo NEEDS_QUESTIONS jen na kusové chybějící údaje. NEEDS_QUESTIONS nezneužívej.
 
 Limit délky popisu:

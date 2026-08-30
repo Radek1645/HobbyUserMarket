@@ -60,9 +60,11 @@ import {
 } from "@/config/categories";
 import {
   computeListingExpiresAt,
+  formatEventListingVisibleUntilHint,
   getListingExpiryWarning,
   parseMentionedDatesFromText,
 } from "@/lib/posts/expiry";
+import { parseListingEventDateInput } from "@/lib/posts/format-event-date";
 import { LISTING_QUOTA_EXCEEDED_MESSAGE } from "@/lib/listings/quota-shared";
 import { toModerationEventDateIso } from "@/lib/posts/listing-form";
 import { listingNeedsModeration } from "@/lib/moderation/needs-moderation";
@@ -798,19 +800,19 @@ export function CreateListingForm({
     );
   }, [description, isEvent, listingDurationDays]);
 
+  const eventVisibleUntilHint = useMemo(() => {
+    if (!isEvent || !eventDate) return null;
+    const parsed = parseListingEventDateInput(eventDate);
+    if (!parsed) return null;
+    return formatEventListingVisibleUntilHint(parsed);
+  }, [eventDate, isEvent]);
+
   const expiresPreview = useMemo(() => {
-    if (isEvent && eventDate) {
-      const d = new Date(eventDate);
-      d.setDate(d.getDate() + 1);
-      return d.toLocaleDateString("cs-CZ");
-    }
-    if (!isEvent) {
-      return computeListingExpiresAt(listingDurationDays).toLocaleDateString(
-        "cs-CZ",
-      );
-    }
-    return null;
-  }, [eventDate, isEvent, listingDurationDays]);
+    if (isEvent) return null;
+    return computeListingExpiresAt(listingDurationDays).toLocaleDateString(
+      "cs-CZ",
+    );
+  }, [isEvent, listingDurationDays]);
 
   const titleTrimmed = title.trim();
   const descriptionTrimmed = description.trim();
@@ -1899,10 +1901,8 @@ export function CreateListingForm({
               {eventDateError ? (
                 <p className="mt-1 text-sm text-red-600">{eventDateError}</p>
               ) : null}
-              {expiresPreview && !eventDateError ? (
-                <p className={hintClass}>
-                  Inzerát bude viditelný do {expiresPreview} (den po akci).
-                </p>
+              {eventVisibleUntilHint && !eventDateError ? (
+                <p className={hintClass}>{eventVisibleUntilHint}</p>
               ) : null}
             </div>
           ) : null}

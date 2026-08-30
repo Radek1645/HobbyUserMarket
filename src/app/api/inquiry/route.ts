@@ -10,6 +10,10 @@ import {
   INQUIRY_UNAVAILABLE_ERROR,
 } from "@/lib/inquiry/api-errors";
 import { getClientIpAddress } from "@/lib/inquiry/client-ip";
+import {
+  assertInquiryAllowedOrigin,
+  assertInquiryJsonContentType,
+} from "@/lib/inquiry/request-guards";
 import { assertTurnstileToken } from "@/lib/security/turnstile";
 import { buildInquiryEmail, extractReplyTo } from "@/lib/inquiry/email";
 import {
@@ -30,6 +34,22 @@ import { createClient } from "@/lib/supabase/server";
 import type { CategoryType, PostRow } from "@/types/post";
 
 export async function POST(request: Request) {
+  const contentTypeGuard = assertInquiryJsonContentType(request);
+  if (!contentTypeGuard.ok) {
+    return NextResponse.json(
+      { error: contentTypeGuard.error },
+      { status: contentTypeGuard.status },
+    );
+  }
+
+  const originGuard = assertInquiryAllowedOrigin(request);
+  if (!originGuard.ok) {
+    return NextResponse.json(
+      { error: originGuard.error },
+      { status: originGuard.status },
+    );
+  }
+
   const clientIp = getClientIpAddress(request);
 
   const resendKey = process.env.RESEND_API_KEY;

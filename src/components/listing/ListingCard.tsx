@@ -32,6 +32,23 @@ function intentBadgeClass(categoryType: PublicListingPreview["category_type"]) {
   return listingCardSubcategoryBadgeClass;
 }
 
+function ListingCardDateMeta({
+  eventLabel,
+  createdLabel,
+}: {
+  eventLabel: string | null;
+  createdLabel: string;
+}) {
+  const caption = eventLabel ? "Konání" : "Vytvořeno";
+  const value = eventLabel ?? createdLabel;
+  return (
+    <div className="shrink-0 text-right text-xs">
+      <p className="text-gray-500">{caption}</p>
+      <p className="font-medium text-gray-900">{value}</p>
+    </div>
+  );
+}
+
 export function ListingCard({
   listing,
   imageFirst = false,
@@ -112,12 +129,11 @@ export function ListingCard({
               listing.location_text,
               listing.category_type,
             )}
-            {eventLabel ? ` · ${eventLabel}` : ""}
           </p>
-          <div className="shrink-0 text-right">
-            <p className="text-gray-500">Vytvořeno</p>
-            <p className="font-medium text-gray-900">{createdLabel}</p>
-          </div>
+          <ListingCardDateMeta
+            eventLabel={eventLabel}
+            createdLabel={createdLabel}
+          />
         </div>
       </Link>
     );
@@ -172,10 +188,10 @@ export function ListingCard({
               listing.category_type,
             )}
           </p>
-          <div className="shrink-0 text-right text-xs">
-            <p className="text-gray-500">Vytvořeno</p>
-            <p className="font-medium text-gray-900">{createdLabel}</p>
-          </div>
+          <ListingCardDateMeta
+            eventLabel={eventLabel}
+            createdLabel={createdLabel}
+          />
         </div>
         {descriptionPreview ? (
           <p className="mt-2 line-clamp-2 text-sm text-gray-500">
@@ -184,9 +200,6 @@ export function ListingCard({
         ) : null}
         <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-sm">
           <span className="font-medium text-gray-900">{priceLabel}</span>
-          {eventLabel ? (
-            <span className="text-gray-500">Konání {eventLabel}</span>
-          ) : null}
         </div>
       </div>
     </Link>

@@ -12,6 +12,8 @@ import {
 } from "@/config/moderation";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { applyFilledDoplnitToHydration } from "@/lib/listing/apply-filled-doplnit";
+import { resolveDoplnitDescriptionForHydration } from "@/lib/listing/doplnit-prompts";
 import { normalizeListingDescriptionStructure } from "@/lib/moderation/parse-listing-description";
 import {
   clampListingImageAlt,
@@ -36,7 +38,7 @@ function resolveCleanedDescription(
 function mapResponse(
   response: ModerateListingResponse,
   title: string,
-  description: string,
+  sourceDescription: string,
 ): ListingModerationSuccess | ListingModerationFailure {
   if (response.status === "REJECTED") {
     return {
@@ -59,18 +61,28 @@ function mapResponse(
     ? clampListingImageAlt(altRaw) || undefined
     : undefined;
 
+  const withFilledDoplnit = applyFilledDoplnitToHydration({
+    sourceDescription,
+    cleanedDescription: resolveCleanedDescription(
+      response.cleanedDescription,
+      sourceDescription,
+    ),
+    questions: response.questions,
+  });
+
   if (response.status === "NEEDS_QUESTIONS") {
+    const questions = withFilledDoplnit.questions?.slice(
+      0,
+      MODERATION_MAX_QUESTIONS,
+    );
     return {
       ok: true,
       skipped: false,
       cleanedTitle: response.cleanedTitle ?? title,
-      cleanedDescription: resolveCleanedDescription(
-        response.cleanedDescription,
-        description,
-      ),
+      cleanedDescription: withFilledDoplnit.cleanedDescription,
       metaDescription,
       imageAlt,
-      questions: response.questions?.slice(0, MODERATION_MAX_QUESTIONS),
+      questions,
       approvalToken: response.approvalToken ?? undefined,
     };
   }
@@ -79,10 +91,7 @@ function mapResponse(
     ok: true,
     skipped: false,
     cleanedTitle: response.cleanedTitle ?? title,
-    cleanedDescription: resolveCleanedDescription(
-      response.cleanedDescription,
-      description,
-    ),
+    cleanedDescription: withFilledDoplnit.cleanedDescription,
     metaDescription,
     imageAlt,
     approvalToken: response.approvalToken ?? undefined,
@@ -212,7 +221,7 @@ async function invokeModerateListingOnce(
           ? { turnstileToken: input.turnstileToken }
           : {}),
         title: input.title,
-        description: input.description,
+        description: resolveDoplnitDescriptionForHydration(input.description),
         categoryType: input.categoryType,
         subcategorySlug: input.subcategorySlug,
         ...(input.conditionLabel

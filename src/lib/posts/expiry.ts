@@ -2,6 +2,10 @@ import {
   LISTING_DURATION_DEFAULT_DAYS,
   clampListingDurationDays,
 } from "@/config/app";
+import {
+  LISTING_DISPLAY_TIME_ZONE,
+  parseListingEventDateInput,
+} from "@/lib/posts/format-event-date";
 
 export const LISTING_EXPIRY_WARNING =
   "Pozor: Platnost inzerátu končí dříve než vámi zmíněné datum. Opravte platnost nebo datum.";
@@ -17,10 +21,56 @@ export function computeListingExpiresAt(
   return result;
 }
 
+/**
+ * Půlnoc Europe/Prague následujícího kalendářního dne po dni konání.
+ * Zrcadlo DB `event_listing_expires_at` (migrace 080) — ne event_date + 24 h.
+ */
 export function computeEventExpiresAt(eventDate: Date): Date {
-  const result = new Date(eventDate);
-  result.setDate(result.getDate() + 1);
-  return result;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: LISTING_DISPLAY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(eventDate);
+  const num = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  const next = new Date(Date.UTC(num("year"), num("month") - 1, num("day") + 1));
+  const year = next.getUTCFullYear();
+  const month = String(next.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(next.getUTCDate()).padStart(2, "0");
+  const parsed = parseListingEventDateInput(`${year}-${month}-${day}T00:00`);
+  return parsed ?? next;
+}
+
+function pragueDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: LISTING_DISPLAY_TIME_ZONE,
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    day: value("day"),
+    month: value("month"),
+    year: value("year"),
+  };
+}
+
+/**
+ * Hint pod datetime pickerem události: „… do půlnoci z 31. 8. na 1. 9. 2026.“
+ */
+export function formatEventListingVisibleUntilHint(eventDate: Date): string {
+  const expiresAt = computeEventExpiresAt(eventDate);
+  const from = pragueDateParts(eventDate);
+  const to = pragueDateParts(expiresAt);
+  const fromLabel =
+    from.year === to.year
+      ? `${from.day}. ${from.month}.`
+      : `${from.day}. ${from.month}. ${from.year}`;
+  const toLabel = `${to.day}. ${to.month}. ${to.year}`;
+  return `Inzerát bude viditelný do půlnoci z ${fromLabel} na ${toLabel}.`;
 }
 
 /**

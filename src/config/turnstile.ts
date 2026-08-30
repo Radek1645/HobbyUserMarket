@@ -1,6 +1,7 @@
 /** Cloudflare Turnstile — veřejný site key, akce a hlášky (SEC-M09). */
 
-import { SITE_DOMAIN } from "@/config/site";
+/** Alias — kanonický seznam je `STABLE_APP_HOSTNAMES` v `allowed-origins.ts`. */
+export { STABLE_APP_HOSTNAMES as TURNSTILE_STABLE_HOSTNAMES } from "@/lib/security/allowed-origins";
 
 export const TURNSTILE_ACTION = {
   INQUIRY: "inquiry",
@@ -15,17 +16,6 @@ export const TURNSTILE_TOKEN_MAX_LENGTH = 2048;
 
 /** Siteverify nesmí držet Next.js request až do platformního timeoutu. */
 export const TURNSTILE_VERIFY_TIMEOUT_MS = 10_000;
-
-/**
- * Stabilní hostname mimo `VERCEL_URL` (ten je hash per deploy).
- * `local-market-pwa.vercel.app` neexistuje (404). Team/git aliasy jsou za SSO.
- */
-export const TURNSTILE_STABLE_HOSTNAMES = [
-  SITE_DOMAIN,
-  `www.${SITE_DOMAIN}`,
-  "local-market-pwa-rho-team-1.vercel.app",
-  "local-market-pwa-git-main-rho-team-1.vercel.app",
-] as const;
 
 export function resolveTurnstileSiteKey(): string | null {
   const key = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();

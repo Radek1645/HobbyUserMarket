@@ -1,3 +1,4 @@
+import { ChangePasswordSection } from "@/components/account/ChangePasswordSection";
 import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
 import { ListingQuotaSection } from "@/components/account/ListingQuotaSection";
 import { BackHomeLink } from "@/components/navigation/BackHomeLink";
@@ -93,6 +94,8 @@ export default async function ProfileSettingsPage({
         {quota ? (
           <ListingQuotaSection quota={quota} upsellPackage={upsellPackage} />
         ) : null}
+
+        <ChangePasswordSection />
 
         <div className="mt-6">
           <DeleteAccountSection email={user.email} />
