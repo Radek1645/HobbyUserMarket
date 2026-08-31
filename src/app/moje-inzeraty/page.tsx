@@ -1,4 +1,6 @@
 import { getCategoryLabel, getSubcategoryLabel } from "@/config/categories";
+import { LISTING_PRIVATE_EVENT_UI } from "@/config/listing-form-ui";
+import { listingPrivateEventBadgeClass } from "@/config/ui-primitives";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { MyListingActions } from "@/components/listing/MyListingActions";
 import { ListingBlockedNotice } from "@/components/listing/ListingBlockedNotice";
@@ -62,7 +64,7 @@ const STATUS_BADGE: Record<
 const MY_LISTING_COLUMNS =
   "id, user_id, title, description, category_type, subcategory_slug, " +
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
-  "status, status_reason_code, expires_at, listing_duration_days, event_date, renew_count, " +
+  "status, status_reason_code, expires_at, listing_duration_days, event_date, event_end_date, is_private, renew_count, " +
   "payment_status, main_image_url, slug, show_contact_email, " +
   "show_contact_phone, created_at, updated_at, view_count";
 
@@ -218,6 +220,11 @@ export default async function MyListingsPage({
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_BADGE[displayStatus]!.className}`}
                         >
                           {STATUS_BADGE[displayStatus]!.label}
+                        </span>
+                      ) : null}
+                      {post.is_private ? (
+                        <span className={listingPrivateEventBadgeClass}>
+                          {LISTING_PRIVATE_EVENT_UI.checkboxLabel}
                         </span>
                       ) : null}
                     </div>

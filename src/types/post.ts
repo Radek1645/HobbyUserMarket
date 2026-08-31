@@ -98,6 +98,9 @@ export type PostRow = {
   expires_at: string | null;
   listing_duration_days: number;
   event_date: string | null;
+  event_end_date?: string | null;
+  /** Soukromá událost — není ve výpisech, detail podle slugu ano. */
+  is_private?: boolean;
   renew_count: number;
   payment_status: PaymentStatus;
   listing_quota_consumed?: boolean;
@@ -129,6 +132,7 @@ export type PublicListingPreview = {
   slug: string;
   main_image_url: string | null;
   event_date: string | null;
+  event_end_date?: string | null;
   created_at: string;
   distance_km?: number | null;
   /** Vyplněno RPC get_nearby_posts — skutečně použitý rádius (adaptivní kroky). */
@@ -156,6 +160,8 @@ export type PostInsert = Pick<
       | "status"
       | "listing_duration_days"
       | "event_date"
+      | "event_end_date"
+      | "is_private"
       | "main_image_url"
       | "payment_status"
       | "show_contact_email"

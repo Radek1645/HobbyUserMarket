@@ -92,7 +92,7 @@ import {
   dateToDatetimeLocalValue,
   type ListingFormInitialValues,
 } from "@/lib/posts/listing-form";
-import { validateFutureEventDate } from "@/lib/posts/validation";
+import { validateEventEndDate, validateFutureEventDate } from "@/lib/posts/validation";
 import { CONTACT_PHONE_MAX_LENGTH, CONTACT_PHONE_PLACEHOLDER } from "@/lib/posts/contact-phone";
 import { formatEmailPreviewForForm } from "@/lib/posts/contact-display";
 import { parsePriceInput } from "@/lib/posts/price-input";
@@ -140,6 +140,8 @@ import {
   LISTING_FORM_SAVING_UI,
   LISTING_FORM_STEPPER_MANUAL,
   LISTING_FORM_STEPPER_PHOTO_FIRST,
+  LISTING_MULTI_DAY_EVENT_UI,
+  LISTING_PRIVATE_EVENT_UI,
 } from "@/config/listing-form-ui";
 import { EXTERNAL_URL_FIELD_UI } from "@/config/listing-external-url";
 import { parseListingExternalUrl } from "@/lib/posts/external-url";
@@ -365,6 +367,9 @@ export function CreateListingForm({
       setLatitude(draft.latitude);
       setLongitude(draft.longitude);
       setEventDate(draft.eventDate);
+      setHasEventEndDate(Boolean(draft.eventEndDate?.trim()));
+      setEventEndDate(draft.eventEndDate ?? "");
+      setIsPrivate(draft.isPrivate === true);
       setListingDurationDays(draft.listingDurationDays);
       setHasExternalUrl(Boolean(draft.externalUrl?.trim()));
       setExternalUrl(draft.externalUrl ?? "");
@@ -502,6 +507,17 @@ export function CreateListingForm({
           "eventDate",
           toModerationEventDateIso(draft.eventDate) ?? draft.eventDate,
         );
+        formData.set(
+          "hasEventEndDate",
+          draft.categoryType === "udalost" && Boolean(draft.eventEndDate?.trim())
+            ? "true"
+            : "false",
+        );
+        formData.set(
+          "eventEndDate",
+          toModerationEventDateIso(draft.eventEndDate) ?? draft.eventEndDate ?? "",
+        );
+        formData.set("isPrivate", draft.isPrivate === true ? "true" : "false");
         formData.set("listingDurationDays", String(draft.listingDurationDays));
         formData.set(
           "hasExternalUrl",
@@ -589,6 +605,15 @@ export function CreateListingForm({
     initialValues?.customDuration ?? false,
   );
   const [eventDate, setEventDate] = useState(initialValues?.eventDate ?? "");
+  const [hasEventEndDate, setHasEventEndDate] = useState(
+    Boolean(initialValues?.eventEndDate?.trim()),
+  );
+  const [eventEndDate, setEventEndDate] = useState(
+    initialValues?.eventEndDate ?? "",
+  );
+  const [isPrivate, setIsPrivate] = useState(
+    initialValues?.isPrivate === true,
+  );
   const [hasExternalUrl, setHasExternalUrl] = useState(
     Boolean(initialValues?.externalUrl?.trim()),
   );
@@ -681,6 +706,9 @@ export function CreateListingForm({
       latitude,
       longitude,
       eventDate,
+      eventEndDate:
+        categoryType === "udalost" && hasEventEndDate ? eventEndDate : "",
+      isPrivate: categoryType === "udalost" && isPrivate,
       listingDurationDays,
       showContactEmail,
       showContactPhone,
@@ -802,10 +830,14 @@ export function CreateListingForm({
 
   const eventVisibleUntilHint = useMemo(() => {
     if (!isEvent || !eventDate) return null;
-    const parsed = parseListingEventDateInput(eventDate);
-    if (!parsed) return null;
-    return formatEventListingVisibleUntilHint(parsed);
-  }, [eventDate, isEvent]);
+    const start = parseListingEventDateInput(eventDate);
+    if (!start) return null;
+    const end =
+      !isRecurringEvent && hasEventEndDate
+        ? parseListingEventDateInput(eventEndDate)
+        : null;
+    return formatEventListingVisibleUntilHint(end ?? start);
+  }, [eventDate, eventEndDate, hasEventEndDate, isEvent, isRecurringEvent]);
 
   const expiresPreview = useMemo(() => {
     if (isEvent) return null;
@@ -845,6 +877,30 @@ export function CreateListingForm({
   const eventDateError = eventDateValidation.ok
     ? null
     : eventDateValidation.error;
+  const eventEndDateValidation = useMemo(() => {
+    if (!isEvent || isRecurringEvent || !hasEventEndDate) {
+      return { ok: true as const };
+    }
+    const start = parseListingEventDateInput(eventDate);
+    if (!start) {
+      return { ok: false as const, error: "Zadejte datum a čas akce." };
+    }
+    return validateEventEndDate(eventEndDate, start, {
+      existingEventEndDate: isEdit ? initialValues?.eventEndDate : undefined,
+    });
+  }, [
+    eventDate,
+    eventEndDate,
+    hasEventEndDate,
+    initialValues?.eventEndDate,
+    isEdit,
+    isEvent,
+    isRecurringEvent,
+  ]);
+  const isEventEndDateValid = eventEndDateValidation.ok;
+  const eventEndDateError = eventEndDateValidation.ok
+    ? null
+    : eventEndDateValidation.error;
   const eventDateMin = useMemo(
     () => (mode === "create" ? dateToDatetimeLocalValue(new Date()) : undefined),
     [mode],
@@ -870,6 +926,7 @@ export function CreateListingForm({
     isDescriptionValid &&
     isPriceValid &&
     isEventDateValid &&
+    isEventEndDateValid &&
     isExternalUrlValid;
 
   const showPrefillConditionHighlight = fromAiPrefill && !hasCondition;
@@ -891,6 +948,7 @@ export function CreateListingForm({
     if (!isDescriptionValid) missing.push("popis");
     if (!isPriceValid) missing.push("cenu");
     if (!isEventDateValid) missing.push("datum události");
+    if (!isEventEndDateValid) missing.push("datum konce akce");
     if (!isExternalUrlValid) missing.push("odkaz na web nebo sociální síť");
     return missing;
   })();
@@ -1231,6 +1289,9 @@ export function CreateListingForm({
     if (isEvent && !isEventDateValid) {
       return;
     }
+    if (isEvent && !isEventEndDateValid) {
+      return;
+    }
 
     const form = event.currentTarget;
     pendingPublishFormRef.current = form;
@@ -1556,11 +1617,34 @@ export function CreateListingForm({
         />
       ) : null}
       {isEvent ? (
-        <input
-          type="hidden"
-          name="eventDate"
-          value={toModerationEventDateIso(eventDate) ?? eventDate}
-        />
+        <>
+          <input
+            type="hidden"
+            name="eventDate"
+            value={toModerationEventDateIso(eventDate) ?? eventDate}
+          />
+          <input
+            type="hidden"
+            name="hasEventEndDate"
+            value={
+              !isRecurringEvent && hasEventEndDate ? "true" : "false"
+            }
+          />
+          <input
+            type="hidden"
+            name="eventEndDate"
+            value={
+              !isRecurringEvent && hasEventEndDate
+                ? (toModerationEventDateIso(eventEndDate) ?? eventEndDate)
+                : ""
+            }
+          />
+          <input
+            type="hidden"
+            name="isPrivate"
+            value={isPrivate ? "true" : "false"}
+          />
+        </>
       ) : null}
 
       <nav aria-label="Kroky formuláře" className="flex items-center gap-2 text-sm">
@@ -1879,7 +1963,7 @@ export function CreateListingForm({
           </div>
 
           {isEvent ? (
-            <div>
+            <div className="space-y-3">
               <label htmlFor="eventDate" className={labelClass}>
                 {isRecurringEvent
                   ? "Datum a čas nejbližšího konání"
@@ -1901,9 +1985,86 @@ export function CreateListingForm({
               {eventDateError ? (
                 <p className="mt-1 text-sm text-red-600">{eventDateError}</p>
               ) : null}
-              {eventVisibleUntilHint && !eventDateError ? (
+
+              {!isRecurringEvent ? (
+                <label
+                  className={`${listingFormContactOptionBaseClass} ${
+                    hasEventEndDate
+                      ? listingFormContactOptionActiveClass
+                      : listingFormContactOptionIdleClass
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={hasEventEndDate}
+                    onChange={(event) =>
+                      setHasEventEndDate(event.target.checked)
+                    }
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-400 text-blue-600 focus:ring-blue-600"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-neutral-900">
+                      {LISTING_MULTI_DAY_EVENT_UI.checkboxLabel}
+                    </span>
+                  </span>
+                </label>
+              ) : null}
+
+              {!isRecurringEvent && hasEventEndDate ? (
+                <div>
+                  <label htmlFor="eventEndDate" className={labelClass}>
+                    {LISTING_MULTI_DAY_EVENT_UI.endDateLabel}
+                    <span
+                      className={listingFormRequiredMarkClass}
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
+                  </label>
+                  <input
+                    id="eventEndDate"
+                    type="datetime-local"
+                    required
+                    min={eventDate || eventDateMin}
+                    value={eventEndDate}
+                    onChange={(e) => setEventEndDate(e.target.value)}
+                    className={inputClass}
+                    aria-invalid={eventEndDateError ? true : undefined}
+                  />
+                  {eventEndDateError ? (
+                    <p className="mt-1 text-sm text-red-600">
+                      {eventEndDateError}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {eventVisibleUntilHint && !eventDateError && !eventEndDateError ? (
                 <p className={hintClass}>{eventVisibleUntilHint}</p>
               ) : null}
+
+              <label
+                className={`${listingFormContactOptionBaseClass} ${
+                  isPrivate
+                    ? listingFormContactOptionActiveClass
+                    : listingFormContactOptionIdleClass
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isPrivate}
+                  onChange={(event) => setIsPrivate(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-400 text-blue-600 focus:ring-blue-600"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-neutral-900">
+                    {LISTING_PRIVATE_EVENT_UI.checkboxLabel}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-neutral-600">
+                    {LISTING_PRIVATE_EVENT_UI.checkboxHint}
+                  </span>
+                </span>
+              </label>
             </div>
           ) : null}
 
@@ -2378,7 +2539,9 @@ export function CreateListingForm({
                   : !canPublish
                   ? isEvent && eventDateError
                     ? eventDateError
-                    : missingPublishFieldsLabel || undefined
+                    : isEvent && eventEndDateError
+                      ? eventEndDateError
+                      : missingPublishFieldsLabel || undefined
                   : undefined
               }
               className={`flex flex-1 items-center justify-center gap-2 ${listingFormPrimaryButtonClass}`}

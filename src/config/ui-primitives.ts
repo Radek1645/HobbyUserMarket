@@ -162,6 +162,10 @@ export const listingIntentDemandBadgeClass =
 export const listingCardSubcategoryBadgeClass =
   "inline-block max-w-full truncate rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-medium text-gray-800 shadow-sm";
 
+/** Štítek soukromé události — jen odkaz, ne ve veřejném přehledu. */
+export const listingPrivateEventBadgeClass =
+  "inline-flex items-center rounded-full bg-violet-700 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm";
+
 /** Štítek Podnikatel (VOP §7.2) — solidní, hned odlišný od milníků. */
 export const advertiserPodnikatelBadgeClass =
   "inline-flex items-center rounded-full bg-slate-900 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-sm";

@@ -11,8 +11,9 @@ import {
   formatContactPhoneForStorage,
   isValidContactPhone,
 } from "@/lib/posts/contact-phone";
-import { parseListingEventDateInput } from "@/lib/posts/format-event-date";
+import { parseListingEventDateInput, pragueCalendarDayKey } from "@/lib/posts/format-event-date";
 import { EXTERNAL_URL_FIELD_UI } from "@/config/listing-external-url";
+import { LISTING_MULTI_DAY_EVENT_UI } from "@/config/listing-form-ui";
 import { parseListingExternalUrl } from "@/lib/posts/external-url";
 import { parsePriceInput } from "@/lib/posts/price-input";
 import {
@@ -46,6 +47,8 @@ export type CreateListingInput = {
   exchangeFor: string | null;
   listingDurationDays: number;
   eventDate: string | null;
+  eventEndDate: string | null;
+  isPrivate: boolean;
   showContactEmail: boolean;
   showContactPhone: boolean;
   contactPhone: string | null;
@@ -62,6 +65,7 @@ export type ValidationResult =
 export type ValidateListingOptions = {
   /** Při editaci — stejné datum akce jako v DB projde i když je v minulosti. */
   existingEventDate?: string | null;
+  existingEventEndDate?: string | null;
 };
 
 export type FutureEventDateResult =
@@ -92,6 +96,43 @@ export function validateFutureEventDate(
 
   if (!isUnchanged && parsed <= now) {
     return { ok: false, error: "Datum akce musí být v budoucnosti." };
+  }
+
+  return { ok: true, parsed };
+}
+
+/** Konec vícedenní akce: jiný kalendářní den v Praze než začátek. */
+export function validateEventEndDate(
+  rawEnd: string,
+  start: Date,
+  options?: Pick<ValidateListingOptions, "existingEventEndDate">,
+  now: Date = new Date(),
+): FutureEventDateResult {
+  const trimmed = rawEnd.trim();
+  if (!trimmed) {
+    return { ok: false, error: LISTING_MULTI_DAY_EVENT_UI.required };
+  }
+
+  const parsed = parseListingEventDateInput(trimmed);
+  if (!parsed) {
+    return { ok: false, error: LISTING_MULTI_DAY_EVENT_UI.invalid };
+  }
+
+  if (parsed < start) {
+    return { ok: false, error: LISTING_MULTI_DAY_EVENT_UI.beforeStartError };
+  }
+
+  if (pragueCalendarDayKey(parsed) === pragueCalendarDayKey(start)) {
+    return { ok: false, error: LISTING_MULTI_DAY_EVENT_UI.sameDayError };
+  }
+
+  const existingRaw = options?.existingEventEndDate;
+  const existing = parseListingEventDateInput(existingRaw);
+  const isUnchanged =
+    existing != null && parsed.getTime() === existing.getTime();
+
+  if (!isUnchanged && parsed <= now) {
+    return { ok: false, error: LISTING_MULTI_DAY_EVENT_UI.mustBeFuture };
   }
 
   return { ok: true, parsed };
@@ -234,6 +275,8 @@ export function validateListingForm(
 
     let listingDurationDays = LISTING_DURATION_DEFAULT_DAYS;
     let eventDate: string | null = null;
+    let eventEndDate: string | null = null;
+    let isPrivate = false;
 
     if (categoryType === "udalost") {
       const rawEvent = String(form.get("eventDate") ?? "");
@@ -242,6 +285,23 @@ export function validateListingForm(
         return { ok: false, error: eventValidation.error };
       }
       eventDate = eventValidation.parsed.toISOString();
+
+      isPrivate = form.get("isPrivate") === "true";
+
+      const wantsEventEnd = form.get("hasEventEndDate") === "true";
+      const rawEventEnd = String(form.get("eventEndDate") ?? "").trim();
+      const isRecurring = conditionLabel === "long_term";
+      if (!isRecurring && (wantsEventEnd || rawEventEnd)) {
+        const endValidation = validateEventEndDate(
+          rawEventEnd,
+          eventValidation.parsed,
+          options,
+        );
+        if (!endValidation.ok) {
+          return { ok: false, error: endValidation.error };
+        }
+        eventEndDate = endValidation.parsed.toISOString();
+      }
     } else {
       listingDurationDays = Number.parseInt(
         String(form.get("listingDurationDays") ?? LISTING_DURATION_DEFAULT_DAYS),
@@ -323,6 +383,8 @@ export function validateListingForm(
         exchangeFor,
         listingDurationDays,
         eventDate,
+        eventEndDate,
+        isPrivate,
         showContactEmail,
         showContactPhone,
         contactPhone,
@@ -345,6 +407,10 @@ export function validateCreateListing(form: FormData): ValidationResult {
 export function validateUpdateListing(
   form: FormData,
   existingEventDate: string | null,
+  existingEventEndDate: string | null = null,
 ): ValidationResult {
-  return validateListingForm(form, { existingEventDate });
+  return validateListingForm(form, {
+    existingEventDate,
+    existingEventEndDate,
+  });
 }

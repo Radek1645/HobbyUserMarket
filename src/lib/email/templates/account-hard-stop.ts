@@ -35,7 +35,7 @@ Co to znamená:
 - Po přihlášení uvidíte stránku s informacemi o pozastavení: ${params.suspendedPageUrl}
 ${reasonLine}
 Právní / smluvní základ:
-VOP (§4.5 Hard stop — CSAM a závažné zneužití) a Pravidla inzerce (§2.4).
+VOP čl. 4 a Pravidla inzerce.
 
 Pokud jde o omyl, napište nám na ${SITE_OPERATOR_CONTACT_EMAIL} nebo použijte stížnost dle DSA:
 ${params.dsaUrl}

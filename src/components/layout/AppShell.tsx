@@ -6,6 +6,7 @@ import { VirtualPageviewTracker } from "@/components/analytics/VirtualPageviewTr
 import { UserProvider } from "@/components/auth/UserContext";
 import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
 import { CookieConsentProvider } from "@/components/consent/CookieConsentProvider";
+import { VopReconsentGate } from "@/components/legal/VopReconsentGate";
 import { CreateListingFab } from "@/components/layout/CreateListingFab";
 import { Header } from "@/components/layout/Header";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -39,6 +40,7 @@ export function AppShell({ user, children }: AppShellProps) {
           </Suspense>
           <SiteNoticeBar />
           {hideSiteHeader ? null : <Header user={user} />}
+          {user?.needsVopReconsent ? <VopReconsentGate /> : null}
           <main className={mainClassName}>{children}</main>
           <CreateListingFab user={user} />
           <SiteFooter />

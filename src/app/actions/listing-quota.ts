@@ -22,6 +22,8 @@ export async function adminGrantListingPackage(
   }
 
   const supabase = await createClient();
+  // B5: až polezou platby, u standard_20 nepřipisovat dřív než za 14 dní
+  // bez obou potvrzení (zahájení plnění + ztráta práva odstoupit).
   const { error } = await supabase.rpc("admin_grant_listing_package", {
     p_user_id: userId,
     p_package_slug: packageSlug,

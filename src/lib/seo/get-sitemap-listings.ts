@@ -17,6 +17,7 @@ export async function getSitemapListings(): Promise<SitemapListing[]> {
     .select("slug, updated_at")
     .eq("status", "active")
     .or(`expires_at.is.null,expires_at.gt.${now}`)
+    .eq("is_private", false)
     .order("updated_at", { ascending: false });
 
   if (error || !data) {

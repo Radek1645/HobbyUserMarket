@@ -820,7 +820,7 @@ serve(async (req) => {
           if (nudity.rejected) {
             let accountBlocked = false;
             if (userId) {
-              const storagePath = await uploadNsfwEvidenceImage(
+              const uploaded = await uploadNsfwEvidenceImage(
                 userId,
                 imageBase64,
                 imageIndex,
@@ -831,7 +831,8 @@ serve(async (req) => {
                 kind: "nsfw_image",
                 reason: nudity.reason,
                 titleSnippet: title,
-                storagePath: storagePath ?? undefined,
+                storagePath: uploaded?.storagePath,
+                imageSha256: uploaded?.imageSha256,
                 imageIndex,
                 sightengineResponses,
               });

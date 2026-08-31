@@ -127,6 +127,7 @@ export function ListingContactReveal({
             </li>
           ) : null}
         </ul>
+        <MeetingSafetyNotice className="mt-3" categoryType={categoryType} />
       </div>
     );
   }

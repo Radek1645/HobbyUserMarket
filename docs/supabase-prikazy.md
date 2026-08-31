@@ -174,6 +174,8 @@ Jeden řádek = jeden účet. `id` = stejné UUID jako v Auth.
 | `name`, `surname`, `email`, `phone`, `avatar_url` | Základní údaje |
 | `is_company`, `company_name`, `company_ico`, `company_ico_verified` | Firemní profil / IČO |
 | `age_confirmed_at`, `vop_accepted_at`, `vop_version`, `marketing_consent_at` | Souhlasy při registraci |
+| `gdpr_version`, `pricing_version` | Verze GDPR / ceníku v okamžiku souhlasu (`081`) |
+| `listing_credits_consumed_archived` | Kredity ze smazaných řádků `posts` (`081`) |
 | `role` | `user` / `moderator` / `admin` |
 | `created_at`, `updated_at` | Časové značky |
 
@@ -194,7 +196,8 @@ Hlavní tabulka. Kategorie žijí jako textové sloupce — taxonomie je v kódu
 | Místo | `location_text`, `location` | Text lokality + PostGIS bod |
 | Kontakt | `show_contact_email`, `show_contact_phone`, `contact_phone` | Co smí odhalit „Zobrazit kontakt“ |
 | Práce | `job_cv_required` | Zda inzerát práce chce CV |
-| Životní cyklus | `status`, `status_reason_code`, `deletion_reason`, `expires_at`, `listing_duration_days`, `event_date`, `external_url`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, proč blocked, důvod smazání majitelem (`069`), expirace, událost, volitelný https odkaz (`077`). U `udalost` je `expires_at` = půlnoc `Europe/Prague` následujícího dne po dni konání (`event_listing_expires_at`, migrace `080`) — ne `event_date + 24 h`. |
+| Životní cyklus | `status`, `status_reason_code`, `deletion_reason`, `expires_at`, `listing_duration_days`, `event_date`, `event_end_date`, `is_private`, `external_url`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, expirace, událost (začátek/konec, soukromá), volitelný https odkaz (`077`). U `udalost` je `expires_at` = půlnoc `Europe/Prague` po dni `COALESCE(event_end_date, event_date)` (`080` + `082`). `is_private` jen u `udalost`; **není** v `is_post_publicly_visible` (RLS) — filtr ve výpisech. Grant SELECT (`082`) pro `anon`/`authenticated`. |
+| Retence (ne v REST SELECT) | `hidden_at`, `blocked_stale_warned_at` | Razítko archived/deleted a varování blocked (`081`). **Nejsou** v `GRANT SELECT` pro `anon`/`authenticated`. |
 | Ostatní | `payment_status`, `view_count`, `created_at`, `updated_at` | Platba (free/paid), zobrazení |
 
 **`status`:** `draft` · `active` · `archived` · `hidden` · `blocked` · `deleted`  
@@ -299,6 +302,7 @@ Každé volání Edge Function: publish moderace (náhled / `issueApproval`) i p
 | `kind` | `hard_hit_text` / `nsfw_image` / `sightengine_unavailable` / `hard_reject_threshold_reached` |
 | `matched_category`, `matched_term`, `reason`, `title_snippet` | Proč |
 | `storage_path`, `image_index`, `sightengine_responses` | Fotka v `moderation-evidence` + JSON Sightengine |
+| `image_sha256` | SHA-256 evidenční fotky (`081`) |
 
 ---
 

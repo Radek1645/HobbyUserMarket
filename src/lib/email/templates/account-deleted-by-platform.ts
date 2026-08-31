@@ -5,6 +5,7 @@ import { getAccountDeletionReasonLabel } from "@/config/moderation/account-delet
 type BuildAccountDeletedEmailParams = {
   nickname: string;
   dsaUrl: string;
+  vopUrl: string;
   reasonCode: string;
   reasonNote?: string;
 };
@@ -16,7 +17,7 @@ export function buildAccountDeletedByPlatformEmail(
   const note = params.reasonNote?.trim();
 
   const appealLines = [
-    `Stížnost nebo odvolání: ${params.dsaUrl}`,
+    `Odvolání proti tomuto opatření můžete podat do 6 měsíců od doručení tohoto oznámení: ${params.dsaUrl}`,
     OPERATOR_CONTACT_EMAIL
       ? `Kontakt provozovatele: ${OPERATOR_CONTACT_EMAIL}`
       : null,
@@ -30,7 +31,9 @@ Důvod:
 ${reasonLabel}${note ? `\n\nPoznámka moderátora:\n${note}` : ""}
 
 Právní / smluvní základ:
-VOP (§4.5) a Pravidla inzerce.
+VOP čl. 4 a Pravidla inzerce.
+
+Související dokumentace: ${params.vopUrl}
 
 ${appealLines.join("\n")}
 

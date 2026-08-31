@@ -1,3 +1,4 @@
+import { CURRENT_VOP_VERSION } from "@/config/legal";
 import { resolveAvatarUrl } from "@/lib/auth/avatar-url";
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +15,7 @@ type ProfileRow = {
   role: UserRole;
   is_company: boolean;
   company_name: string | null;
+  vop_version: string | null;
 };
 
 function buildDisplayName(
@@ -50,7 +52,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, nickname, name, surname, avatar_url, role, is_company, company_name")
+    .select("id, email, nickname, name, surname, avatar_url, role, is_company, company_name, vop_version")
     .eq("id", user.id)
     .maybeSingle<ProfileRow>();
 
@@ -74,6 +76,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       needsNicknameSetup: true,
       isCompany: false,
       companyName: null,
+      needsVopReconsent: false,
     };
   }
 
@@ -93,5 +96,8 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     needsNicknameSetup: isPlaceholderNickname(nickname),
     isCompany: profile.is_company,
     companyName: profile.company_name,
+    needsVopReconsent: Boolean(
+      profile.vop_version && profile.vop_version !== CURRENT_VOP_VERSION,
+    ),
   };
 });

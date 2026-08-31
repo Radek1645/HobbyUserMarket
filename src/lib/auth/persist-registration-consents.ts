@@ -1,4 +1,8 @@
-import { CURRENT_VOP_VERSION } from "@/config/legal";
+import {
+  CURRENT_GDPR_VERSION,
+  CURRENT_PRICING_VERSION,
+  CURRENT_VOP_VERSION,
+} from "@/config/legal";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const PENDING_CONSENTS_METADATA_KEY = "pending_registration_consents";
@@ -12,6 +16,8 @@ export type RegistrationConsentRowUpdate = {
   age_confirmed_at: string;
   vop_accepted_at: string;
   vop_version: string;
+  gdpr_version: string;
+  pricing_version: string;
   marketing_consent_at: string | null;
 };
 
@@ -24,6 +30,8 @@ function buildConsentRowUpdate(
     age_confirmed_at: now,
     vop_accepted_at: now,
     vop_version: vopVersion,
+    gdpr_version: CURRENT_GDPR_VERSION,
+    pricing_version: CURRENT_PRICING_VERSION,
     marketing_consent_at: marketing ? now : null,
   };
 }

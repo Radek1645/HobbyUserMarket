@@ -1,6 +1,6 @@
 # Security & UX backlog — zaPikolou.cz
 
-> **Jediný živý backlog** (od 2026-08-06, naposledy 2026-08-28).  
+> **Jediný živý backlog** (od 2026-08-06, naposledy 2026-08-31).  
 > Originály auditů jsou v [`archive/audits/`](./archive/audits/). Sem patří stav a pořadí práce, ne plný zápis auditu.  
 > **Operativní smoke / produktové TO-DO:** [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md)
 
@@ -47,7 +47,7 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-28.
 
 | Oblast | Otevřené High | Otevřené Medium | Low / backlog |
 |--------|:-------------:|:---------------:|:-------------:|
-| Security | 0 (SEC-H01–H05 ✅) | 4 (M01, M03, M04, M06) | L01–L12 + rezidua |
+| Security | 0 (SEC-H01–H05 ✅) | 4 (M01, M03, M04, M06) | L01–L13 + rezidua |
 | Proces (Fable) | — | P5, P13, P16, P18, P28 ops, P29, P30 UI, P32, P33 právník | P25, P34, P36, P40 |
 | UX | — | loading/error boundaries, silent errors, 2 AI modaly | a11y drobnosti |
 
@@ -104,6 +104,7 @@ Incident SEC-H05 (logy 21.–28. 8., retence 7 dní PRO): `%2Ccontact_phone` zve
 | **SEC-L10** | `LegalMarkdown` propustí `javascript:` v `href` | 2026-08-28 L3 | Zdroj je repo markdown |
 | **SEC-L11** | `.gitignore` jen `.env*.local` | 2026-08-28 L4 | Doplnit `.env`, `.env.production` |
 | **SEC-L12** | Bucket `post-images` veřejný; skrytý inzerát dokud neprobehne cleanup | 2026-08-28 L6 | UUID cesty; přijmout nebo signed URL |
+| **SEC-L13** | `COALESCE(auth.role(), '') NOT IN ('anon','authenticated')` — NULL role = privileged (fail-open) | 2026-08-31, 081 | Úklidová vlna: `COALESCE(…, 'anon')`. PostgREST JWT role nastavuje vždy (B1–B4 = 42501). DEFINER trigger nesmí použít `current_user` (je vždy owner). Migrace/SQL editor po změně musí `set_config('request.jwt.claim.role','service_role')`. Výskyt: 027, 031, 036, 047, 048, 049, 063, 066, 081. |
 | ~~H2-R~~ | CAPTCHA u inquiry | 2026-07-27 | ✅ v **SEC-M09** — produkce 29. 8. |
 | L1 | Min. heslo 8 | 2026-07-27 | Záměr; strength meter ✅ |
 
@@ -247,6 +248,7 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 ### P3 — později / triggery
 
 - [ ] P32 P2B před IČO · monetizace v0.6 · AV příloh · P40 inventář AI · dependency CI gate · SEC-L01/L02/L04/L05
+- [ ] **SEC-L13** `auth.role()` NULL = privileged (fail-open v write guardech) — úklidová vlna, ne teď
 
 ---
 
@@ -275,6 +277,7 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 
 | Datum | Změna |
 |-------|-------|
+| 2026-08-31 | **SEC-L13** (low, úklid): `COALESCE(auth.role(), '')` ve write guardech bere NULL jako privileged. PostgREST JWT roli nastavuje; objevilo se u 081 v SQL editoru. Oprava `COALESCE(…, 'anon')` + JWT v migracích. Ne teď. |
 | 2026-08-30 | **GO-2 uzavřeno:** B1–B4 produkční REST jako `authenticated` (post `126` / `kovova-soska-buddhy-1w8o`) → HTTP 403 + `42501`. B5 UI už 6. 8. **SEC-M10** změna hesla: produkce chtěla stávající heslo. |
 | 2026-08-30 | **Hydratace `Doplňte`:** vyplněné výzvy jdou do Parametrů, stejná otázka se neptá. Edge `moderate-listing` deploy + migrace `080` (půlnoc události). App po Vercel pushi. |
 | 2026-08-30 | **GO-4 uzavřeno:** Vercel `6ebca43` Ready Production; `CRON_SECRET` Secret (Production+Preview, hodnota skrytá — ověřeno crony 200); `SITE_URL` z mailů `https://zapikolou.cz`. |

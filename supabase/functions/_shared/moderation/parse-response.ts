@@ -426,6 +426,36 @@ export function applyFormPriceToCleanedDescription(
   return result.trim();
 }
 
+const EVENT_FREE_ENTRY_MENTION =
+  /vstup(?:né)?(?:\s+je)?\s+zdarma|vstup(?:né)?\s+voln[ýé]/i;
+
+function sourceMentionsEventFreeEntry(
+  title: string,
+  description: string,
+): boolean {
+  return EVENT_FREE_ENTRY_MENTION.test(`${title}\n${description}`);
+}
+
+/**
+ * U události s typem ceny „Vstup zdarma“ nenech AI dopsat tu frázi,
+ * pokud ji inzerent sám nenapsal v názvu nebo popisu.
+ */
+export function omitForcedEventFreeEntry(text: string): string {
+  let result = text.replace(
+    /(?:^|[ \t])Vstup(?:né)?(?:\s+je)?\s+zdarma\.?/gi,
+    "",
+  );
+  result = result.replace(/(?:^|[ \t])Vstup(?:né)?\s+voln[ýé]\.?/gi, "");
+  result = result.replace(
+    /^\s*•\s*(?:Typ ceny|Vstup(?:né)?):\s*(?:Vstup\s+)?zdarma[^\n]*\n?/gim,
+    "",
+  );
+  result = result.replace(/[ \t]{2,}/g, " ");
+  result = result.replace(/ +([,.])/g, "$1");
+  result = result.replace(/\n{3,}/g, "\n\n");
+  return result.trim();
+}
+
 function formatEventDateParts(iso: string): {
   display: string;
 } | null {
@@ -693,8 +723,8 @@ export function normalizeModerationResult(
     };
   }
 
-  const cleanedTitle = (result.cleanedTitle ?? fallbackTitle).trim();
-  const cleanedDescription = applyListingPlatformCta(
+  const cleanedTitleRaw = (result.cleanedTitle ?? fallbackTitle).trim();
+  const cleanedDescriptionRaw = applyListingPlatformCta(
     applyFormEventDateToCleanedDescription(
       applyFormPriceToCleanedDescription(
         stripContactInfo(
@@ -708,7 +738,21 @@ export function normalizeModerationResult(
     categoryType,
     { omitCta: omitPlatformCta === true },
   );
-  const metaDescription = clampMetaDescription(result.metaDescription);
+  const skipForcedFreeEntry =
+    categoryType === "udalost" &&
+    priceType === "free_pickup" &&
+    !sourceMentionsEventFreeEntry(fallbackTitle, fallbackDescription);
+  const cleanedTitle = skipForcedFreeEntry
+    ? omitForcedEventFreeEntry(cleanedTitleRaw)
+    : cleanedTitleRaw;
+  const cleanedDescription = skipForcedFreeEntry
+    ? omitForcedEventFreeEntry(cleanedDescriptionRaw)
+    : cleanedDescriptionRaw;
+  const metaDescription = clampMetaDescription(
+    skipForcedFreeEntry && result.metaDescription
+      ? omitForcedEventFreeEntry(result.metaDescription)
+      : result.metaDescription,
+  );
   const imageAlt = clampImageAlt(result.imageAlt);
 
   if (result.status === "NEEDS_QUESTIONS") {

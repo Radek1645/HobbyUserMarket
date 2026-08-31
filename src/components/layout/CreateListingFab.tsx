@@ -30,7 +30,8 @@ function shouldHideFab(pathname: string, user: AppUser | null): boolean {
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/login") ||
     isFbPromoLandingPath(pathname) ||
-    Boolean(user?.needsNicknameSetup)
+    Boolean(user?.needsNicknameSetup) ||
+    Boolean(user?.needsVopReconsent)
   );
 }
 

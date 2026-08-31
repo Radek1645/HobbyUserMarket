@@ -98,6 +98,49 @@ export function parseListingEventDateInput(
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+/** Kalendářní den v Praze (YYYY-MM-DD) — stejný vzor jako event_listing_expires_at. */
+export function pragueCalendarDayKey(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: LISTING_DISPLAY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function pragueWeekdayShort(date: Date): string {
+  return date
+    .toLocaleDateString("cs-CZ", {
+      weekday: "short",
+      timeZone: LISTING_DISPLAY_TIME_ZONE,
+    })
+    .replace(/\.$/, "");
+}
+
+function pragueClock(date: Date): string {
+  return date.toLocaleTimeString("cs-CZ", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: LISTING_DISPLAY_TIME_ZONE,
+  });
+}
+
+function pragueDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: LISTING_DISPLAY_TIME_ZONE,
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    day: value("day"),
+    month: value("month"),
+    year: value("year"),
+  };
+}
+
 /** cs-CZ medium + short v Europe/Prague (formulářová pravda pro uživatele v ČR). */
 export function formatListingEventDate(
   iso: string | null | undefined,
@@ -110,4 +153,43 @@ export function formatListingEventDate(
     timeStyle: "short",
     timeZone: LISTING_DISPLAY_TIME_ZONE,
   });
+}
+
+/**
+ * Jednodenní = stávající formát. Vícedenní: „pá 4. 9. 10:00 – ne 6. 9. 2026 18:00“.
+ * Stejný kalendářní den (DB CHECK to teoreticky pustí) formátuje defenzivně.
+ */
+export function formatListingEventDateRange(
+  startIso: string | null | undefined,
+  endIso: string | null | undefined,
+): string | null {
+  const start = parseListingEventDateInput(startIso);
+  if (!start) return null;
+
+  const end = parseListingEventDateInput(endIso);
+  if (!end) return formatListingEventDate(startIso);
+
+  const startKey = pragueCalendarDayKey(start);
+  const endKey = pragueCalendarDayKey(end);
+  const startParts = pragueDateParts(start);
+  const endParts = pragueDateParts(end);
+  const weekdayStart = pragueWeekdayShort(start);
+  const weekdayEnd = pragueWeekdayShort(end);
+  const clockStart = pragueClock(start);
+  const clockEnd = pragueClock(end);
+
+  if (startKey === endKey) {
+    return `${weekdayStart} ${startParts.day}. ${startParts.month}. ${startParts.year} ${clockStart}–${clockEnd}`;
+  }
+
+  const sameYear = startParts.year === endParts.year;
+  const sameMonth = sameYear && startParts.month === endParts.month;
+  const startDateLabel = sameMonth
+    ? `${startParts.day}.`
+    : sameYear
+      ? `${startParts.day}. ${startParts.month}.`
+      : `${startParts.day}. ${startParts.month}. ${startParts.year}`;
+  const endDateLabel = `${endParts.day}. ${endParts.month}. ${endParts.year}`;
+
+  return `${weekdayStart} ${startDateLabel} ${clockStart} – ${weekdayEnd} ${endDateLabel} ${clockEnd}`;
 }

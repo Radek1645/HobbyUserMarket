@@ -40,6 +40,7 @@ export const GTM_CTA = {
   DETAIL_EDIT_LISTING: "cta_detail_edit_listing",
   DETAIL_DELETE_LISTING: "cta_detail_delete_listing",
   DETAIL_EXTERNAL_URL: "cta_detail_external_url",
+  DETAIL_SHARE_LISTING: "cta_detail_share_listing",
   MY_LISTINGS_EDIT: "cta_my_listings_edit",
   MY_LISTINGS_VIEW: "cta_my_listings_view",
   MY_LISTINGS_DELETE: "cta_my_listings_delete",

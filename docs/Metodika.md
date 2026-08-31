@@ -397,6 +397,8 @@ Uživatel vybere (manuální cesta, nebo doplnění po Prefillu):
 | Typ ceny | Podle kategorie — detail v [§12](#12-speciální-typy-inzerátů). U **zboží**: Pevná, Za odvoz, Dohodou, Výměnou, Nabídni. U **služeb**: Hodinová sazba, Cena za zakázku, Dohodou. |
 | Platnost | U zboží, služeb a nemovitostí: 1–365 dní (výchozí 30); u událostí se nevybírá — platí datum akce |
 | Datum akce | U událostí povinné; musí být v budoucnosti (při novém založení) |
+| Vícedenní akce | Checkbox **Vícedenní akce** — konec musí být **jiný kalendářní den** (Praha) než začátek. U pravidelné akce (`long_term`) konec není. |
+| Soukromá událost | Checkbox **Soukromá událost** — hint: *Akce nebude zobrazená na webu, jen přes odkaz.* Není na HP / ve vyhledávání; detail podle slugu ano. |
 | Odkaz (událost) | Volitelný checkbox „Mám další informace na webu nebo sociálních sítích“ → pole URL. Server normalizuje na `https://`, odmítne mezery, IP, credentials a známé adult/tube/cam domény (`src/lib/posts/external-url.ts`). |
 | Kontaktní preference | Volitelné zobrazení e-mailu / telefonu po kliknutí na „Zobrazit kontakt“ |
 
@@ -1018,7 +1020,9 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - Název, galerie (až 6 fotek), strukturovaný popis (úvod + Parametry)
 - U inzerátů s AI textem: v sekci Parametry řádek **„Vytvořeno s pomocí AI: Ano“** s ikonou nápovědy (Podmínky inzerce §3, AI Act)
 - Cena (formát podle kategorie — u služeb např. `500 Kč/h` nebo `od 3 000 Kč za zakázku`), stav, lokalita, typ kategorie; u zboží/služeb/práce/nemovitostí datum **Vytvořeno** (`created_at`)
-- U událostí: datum **Konání** (`event_date`) místo **Vytvořeno**; pokud je vyplněný `external_url`, výrazné CTA pod parametry — label podle domény (**Facebook** / **Instagram** / **Další informace online**), odkaz `target=_blank` + `rel=noopener noreferrer nofollow ugc`
+- U událostí: datum **Konání** (`event_date` … volitelně `event_end_date`); pokud je vyplněný `external_url`, výrazné CTA pod parametry — label podle domény (**Facebook** / **Instagram** / **Další informace online**), odkaz `target=_blank` + `rel=noopener noreferrer nofollow ugc`
+- Soukromá událost: fialový štítek **Soukromá událost** pod H1 — **jen majitel a staff**
+- **Sdílet:** bílé kolečko s ikonou (`Share2`) vpravo nahoře na úvodní fotce (i na výchozí ilustraci bez fotky). Dialog: kopírovat odkaz, native share, QR, stáhnout PNG. Dole u **Nahlásit inzerát** sdílení **není**.
 - U nemovitostí: Prodej / Pronájem
 - **Zadavatel** (přezdívka nebo název firmy) — klik vede na **`/uzivatel/[nickname]`** (aktivní inzeráty, 9 na stránku)
 - Štítek **Podnikatel** u firemního profilu (VOP §7.2); milník **Aktivní inzerent · N+** při 5 / 10 / 20 / 40 lifetime publikacích
@@ -1066,6 +1070,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 - **Meta description** = `posts.meta_description` (AI); soft cíl ~155; **bez CTA** (produkt + lokalita + cena + benefit); clamp dropne CTA jako pojistka; cena jen `za X Kč`. Fallback: úvod popisu před `---`.
 - **Alt** = `posts.image_alt` na hlavní i náhledy galerie (bez lokality); avatar v chrome `alt=""`.
 - **JSON-LD Offer.price** u pevné ceny, dohodou (orientační částka) i zdarma; ne u „Nabídni“ / výměny.
+- **Soukromá událost:** `robots: noindex, nofollow`; není v sitemap / llms.txt / kategoriálním SEO.
 - **Lokální SEO:** spádové město jen jako blízkost / dojezdová vzdálenost — bez slibu dovozu (SEO bible §3.4).
 - Dohoda o ceně patří do **těla** inzerátu (`Cena X Kč, dohodou.`), ne do meta.
 
@@ -1154,13 +1159,14 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 | `/api/cron/gdpr-retention` | `15 3 * * *` | Neaktivní účty: varování 7 dní předem, po **90 dnech** bez přihlášení a bez aktivního inzerátu anonymizace profilu + smazání auth (`045`, `src/config/gdpr-retention.ts`) |
 | `/api/cron/anonymize-inquiry-ips` | `45 3 * * *` | Zkrácení IP v `inquiry_events` starších než **7 dní** (IPv4 → `x.x.x.0`, jinak `anonymized`). RPC `anonymize_old_inquiry_ips`, migrace **050**, config `src/config/ip-anonymization.ts` |
 | `/api/cron/purge-hard-stop-evidence` | `0 4 * * *` | Evidence hard-stop + snapshoty + historie blacklistu starší než **730 dní** (`HARD_STOP_EVIDENCE_RETENTION_DAYS`); aktivní blacklist se nemaže |
+| `/api/cron/purge-legal-retention` | `30 4 * * *` | Úklid PII po `hidden_at` + 30 dní, DELETE po 12 měsících, varování blocked (`081`) |
 
 Auth: `Authorization: Bearer CRON_SECRET` (stejně jako ostatní crony). Rate-limit poptávek používá IP jen v okně 24 h — anonymizace po 7 dnech ho neovlivní.
 
 ### 9.2 Události
 
-- Platnost se **nevolí** — inzerát zmizí **o půlnoci v den konání** (`Europe/Prague`). Formulář pod datem: *Inzerát bude viditelný do půlnoci z 31. 8. na 1. 9. 2026.* `expires_at` = začátek následujícího kalendářního dne, ne `event_date + 24 h`. Migrace `080`.
-- Na HP se události řadí podle nejbližšího termínu.
+- Platnost se **nevolí** — inzerát zmizí **o půlnoci po posledním dni konání** (`Europe/Prague`): jednodenní = den `event_date`, vícedenní = den `event_end_date`. Formulář pod datem: *Inzerát bude viditelný do půlnoci z … na …* Migrace `080` + `082`.
+- Na HP se události řadí podle nejbližšího termínu. **Soukromé** (`is_private`) na HP, ve vyhledávání ani v sitemap **nejsou**.
 
 ### 9.3 Smazání inzerátu majitelem
 
@@ -1617,7 +1623,9 @@ Detailní technická reference: [`supabase-prikazy.md` § Ruční přidělení b
 
 ### 12.1 Události
 
-- Povinné datum a čas konání.
+- Povinné datum a čas konání (`event_date`). Volitelně **Vícedenní akce** (`event_end_date` — jiný kalendářní den v Praze).
+- **Soukromá událost:** není na webu ve výpisech, jen přímý odkaz; štítek vidí zadavatel a staff; `noindex`.
+- Typ ceny **Vstup zdarma** se do textu inzerátu nepropisuje, pokud to inzerent sám nenapsal.
 - Registrace účastníků = poptávkový formulář (žádná tabulka účastníků v DB).
 - Pořadatel odpovídá ze svého e-mailu.
 

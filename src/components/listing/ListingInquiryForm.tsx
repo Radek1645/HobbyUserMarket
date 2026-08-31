@@ -40,7 +40,7 @@ type ListingInquiryFormProps = {
   categoryType: CategoryType;
   /** Práce/brigády — zadavatel vyžaduje CV při odpovědi. */
   cvRequired?: boolean;
-  /** Uvnitř společné karty kontaktu na detailu — bez odděleného rámečku u CTA. */
+  /** Uvnitř společné karty kontaktu — bez rámečku u CTA a bez druhého bezpečnostního boxu (ten je v ListingContactReveal). */
   embedded?: boolean;
   /** Řízené otevření formuláře (tlačítko může být v nadřazeném stacku). */
   open?: boolean;
@@ -229,7 +229,10 @@ export function ListingInquiryForm({
         </p>
       </div>
 
-      <MeetingSafetyNotice categoryType={categoryType} />
+      {/* Embedded: stejný text už je v ListingContactReveal nad formulářem. */}
+      {embedded ? null : (
+        <MeetingSafetyNotice categoryType={categoryType} />
+      )}
 
       <div>
         <label htmlFor="inquiry-name" className={labelClass}>

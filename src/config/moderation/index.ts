@@ -105,7 +105,11 @@ export {
   ACCOUNT_BLACKLIST_REASON_AUTOMATIC,
   ACCOUNT_BLACKLIST_SOURCE,
   ACCOUNT_SUSPENDED_PATH,
-  HARD_STOP_EVIDENCE_RETENTION_DAYS,
   normalizeBlacklistEmail,
   type AccountBlacklistSource,
 } from "@/config/account-blacklist";
+
+export {
+  EVIDENCE_IMAGE_DAYS,
+  RETENTION_MONTHS,
+} from "@/config/gdpr-retention";

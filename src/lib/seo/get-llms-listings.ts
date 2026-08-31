@@ -19,6 +19,7 @@ export async function getLlmsListings(): Promise<LlmsListing[]> {
     .select("slug, title")
     .eq("status", "active")
     .or(`expires_at.is.null,expires_at.gt.${now}`)
+    .eq("is_private", false)
     .order("updated_at", { ascending: false })
     .limit(LLMS_TXT_LISTINGS_LIMIT);
 

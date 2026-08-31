@@ -1,14 +1,16 @@
 import {
-  HARD_STOP_EVIDENCE_RETENTION_DAYS,
-} from "@/config/account-blacklist";
+  EVIDENCE_IMAGE_DAYS,
+  RETENTION_MONTHS,
+} from "@/config/gdpr-retention";
 import { MODERATION_EVIDENCE_BUCKET } from "@/config/moderation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
+const BATCH_LIMIT = 500;
+
 /**
- * Denní cron — smaže starou hard-stop evidenci (tabulka + storage) a
- * historické (odebrané) blacklist záznamy starší než retence.
- * Aktivní blacklist se nemaže.
+ * Denní cron — hard-stop evidence: soubor po EVIDENCE_IMAGE_DAYS,
+ * řádek a historie unban po RETENTION_MONTHS. Aktivní blacklist se nemaže.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -24,22 +26,26 @@ export async function GET(request: Request) {
   }
 
   const admin = adminResult.client;
-  const cutoff = new Date(
-    Date.now() - HARD_STOP_EVIDENCE_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  const imageCutoff = new Date(
+    Date.now() - EVIDENCE_IMAGE_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
+  const rowCutoffDate = new Date();
+  rowCutoffDate.setMonth(rowCutoffDate.getMonth() - RETENTION_MONTHS);
+  const rowCutoff = rowCutoffDate.toISOString();
 
-  const { data: evidenceRows, error: evidenceSelectError } = await admin
+  const { data: imageRows, error: imageSelectError } = await admin
     .from("moderation_hard_reject_evidence")
     .select("id, storage_path")
-    .lt("created_at", cutoff)
-    .limit(500);
+    .not("storage_path", "is", null)
+    .lt("created_at", imageCutoff)
+    .limit(BATCH_LIMIT);
 
-  if (evidenceSelectError) {
-    console.error("hard-stop evidence select:", evidenceSelectError);
+  if (imageSelectError) {
+    console.error("hard-stop evidence image select:", imageSelectError);
     return NextResponse.json({ error: "DB error" }, { status: 500 });
   }
 
-  const storagePaths = (evidenceRows ?? [])
+  const storagePaths = (imageRows ?? [])
     .map((row) => row.storage_path)
     .filter((path): path is string => Boolean(path));
 
@@ -52,28 +58,32 @@ export async function GET(request: Request) {
       console.error("hard-stop storage remove:", storageError);
     } else {
       storageDeleted = storagePaths.length;
+      const imageIds = (imageRows ?? []).map((row) => row.id);
+      const { error: clearPathError } = await admin
+        .from("moderation_hard_reject_evidence")
+        .update({ storage_path: null })
+        .in("id", imageIds);
+      if (clearPathError) {
+        console.error("hard-stop storage_path null:", clearPathError);
+      }
     }
   }
 
-  const evidenceIds = (evidenceRows ?? []).map((row) => row.id);
-  let evidenceDeleted = 0;
-  if (evidenceIds.length > 0) {
-    const { error: deleteError, count } = await admin
-      .from("moderation_hard_reject_evidence")
-      .delete({ count: "exact" })
-      .in("id", evidenceIds);
-    if (deleteError) {
-      console.error("hard-stop evidence delete:", deleteError);
-      return NextResponse.json({ error: "DB error" }, { status: 500 });
-    }
-    evidenceDeleted = count ?? evidenceIds.length;
+  const { error: evidenceDeleteError, count: evidenceDeleted } = await admin
+    .from("moderation_hard_reject_evidence")
+    .delete({ count: "exact" })
+    .lt("created_at", rowCutoff);
+
+  if (evidenceDeleteError) {
+    console.error("hard-stop evidence delete:", evidenceDeleteError);
+    return NextResponse.json({ error: "DB error" }, { status: 500 });
   }
 
   const { error: blacklistDeleteError, count: blacklistDeleted } = await admin
     .from("account_blacklist")
     .delete({ count: "exact" })
     .not("removed_at", "is", null)
-    .lt("removed_at", cutoff);
+    .lt("removed_at", rowCutoff);
 
   if (blacklistDeleteError) {
     console.error("hard-stop blacklist history delete:", blacklistDeleteError);
@@ -82,9 +92,10 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    retentionDays: HARD_STOP_EVIDENCE_RETENTION_DAYS,
-    evidenceDeleted,
+    evidenceImageDays: EVIDENCE_IMAGE_DAYS,
+    retentionMonths: RETENTION_MONTHS,
     storageDeleted,
+    evidenceDeleted: evidenceDeleted ?? 0,
     blacklistHistoryDeleted: blacklistDeleted ?? 0,
   });
 }

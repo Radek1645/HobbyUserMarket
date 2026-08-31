@@ -79,6 +79,17 @@ export default async function NewListingPage({
     redirect(`/onboarding?next=${encodeURIComponent(next)}`);
   }
 
+  if (user.needsVopReconsent) {
+    return (
+      <div className="px-4 py-8 sm:px-6">
+        <h1 className="text-xl font-semibold text-gray-900">
+          {LEGAL_UI.reconsentTitle}
+        </h1>
+        <p className="mt-2 text-sm text-gray-600">{LEGAL_UI.reconsentBody}</p>
+      </div>
+    );
+  }
+
   const quota = await getUserListingQuota(user.id);
   const publishBlockedByQuota = isNewPublicationQuotaBlocked(quota);
 

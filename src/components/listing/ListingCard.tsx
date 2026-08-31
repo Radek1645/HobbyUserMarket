@@ -11,7 +11,7 @@ import {
 } from "@/config/ui-primitives";
 import { ListingDefaultCover } from "@/components/listing/ListingDefaultCover";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
-import { formatListingEventDate } from "@/lib/posts/format-event-date";
+import { formatListingEventDateRange } from "@/lib/posts/format-event-date";
 import { formatPublicListingLocation } from "@/lib/posts/format-public-location";
 import { getListingPath } from "@/lib/posts/listing-path";
 import type { PublicListingPreview } from "@/types/post";
@@ -68,7 +68,10 @@ export function ListingCard({
     { jobRewardPrefix: true },
   );
 
-  const eventLabel = formatListingEventDate(listing.event_date);
+  const eventLabel = formatListingEventDateRange(
+    listing.event_date,
+    listing.event_end_date,
+  );
 
   const createdLabel = new Date(listing.created_at).toLocaleDateString("cs-CZ");
 

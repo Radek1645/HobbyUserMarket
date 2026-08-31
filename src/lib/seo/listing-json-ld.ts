@@ -15,6 +15,7 @@ export type ListingJsonLdInput = {
     | "location_text"
     | "expires_at"
     | "event_date"
+    | "event_end_date"
     | "created_at"
     | "slug"
     | "external_url"
@@ -145,6 +146,7 @@ function buildEventJsonLd(input: ListingJsonLdInput): JsonLd {
     "@type": "Event",
     ...baseFields(input),
     ...(post.event_date ? { startDate: post.event_date } : {}),
+    ...(post.event_end_date ? { endDate: post.event_end_date } : {}),
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: "https://schema.org/EventScheduled",
     location: publicPlaceFromPost(post),

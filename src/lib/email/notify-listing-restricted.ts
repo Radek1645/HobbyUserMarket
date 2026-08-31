@@ -1,6 +1,8 @@
 import {
   buildListingRestrictedEmail,
+  listingRestrictionSourceFromReason,
   type ListingRestrictionAction,
+  type ListingRestrictionSource,
 } from "@/lib/email/templates/listing-restricted";
 import { sendTransactionalEmail } from "@/lib/email/send";
 import { resolveOwnerEmail } from "@/lib/inquiry/resolve-owner-email";
@@ -14,9 +16,10 @@ export type NotifyListingRestrictedParams = {
   action: ListingRestrictionAction;
   reasonCode: PostStatusReasonCode;
   reasonDetail?: string;
+  source?: ListingRestrictionSource;
 };
 
-/** Statement of Reasons (VOP §4.6) — nevyhazuje výjimku při chybě odeslání. */
+/** Statement of Reasons (VOP čl. 4) — nevyhazuje výjimku při chybě odeslání. */
 export async function notifyListingRestricted(
   params: NotifyListingRestrictedParams,
 ): Promise<void> {
@@ -57,6 +60,8 @@ export async function notifyListingRestricted(
     action: params.action,
     reasonCode: params.reasonCode,
     reasonDetail: params.reasonDetail,
+    source:
+      params.source ?? listingRestrictionSourceFromReason(params.reasonCode),
   });
 
   await sendTransactionalEmail({

@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.91
+> **Verze dokumentu:** v3.92
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql)  
+> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-08-30
+> **Datum:** 2026-09-01
 
 ---
 
@@ -300,6 +300,8 @@ posts
   - expiry_warning_for_expires_at (TIMESTAMPTZ, nullable — idempotence e-mailu před expirací; migrace `048`)
   - listing_duration_days (INTEGER, NOT NULL, DEFAULT 30 — od v0.1.1; viz §9; u `udalost` se nevyužívá)
   - event_date (TIMESTAMPTZ, NULL — od v0.2; povinné pokud `category_type = 'udalost'`)
+  - event_end_date (TIMESTAMPTZ, NULL — konec vícedenní akce; jen `udalost`; migrace [`082`](../supabase/082_posts_private_events.sql); **není** v content fingerprint)
+  - is_private (BOOLEAN NOT NULL DEFAULT false — soukromá událost: mimo výpisy, detail podle slugu ano; migrace `082`; **není** v content fingerprint)
   - external_url (TEXT, NULL — volitelný https odkaz u `udalost`; migrace [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql); **není** v content fingerprint / publish gate)
   - show_contact_email, show_contact_phone (BOOLEAN), contact_phone (TEXT, nullable — migrace [`019_post_contact_phone.sql`](../supabase/019_post_contact_phone.sql))
   - main_image_url, slug
@@ -907,6 +909,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.89 | 2026-08-29 | **SEC-M02 / GO-6 + SEC-M10:** inquiry vyžaduje `Content-Type: application/json` a produkční Origin/Referer whitelist (`STABLE_APP_HOSTNAMES`, sdílený s Turnstile). Změna hesla v `/profil/nastaveni` vyžaduje stávající heslo + `signOut({ scope: "global" })`. Obnova po e-mailu stávající heslo nechce, ale jen se čerstvým JWT AMR `recovery` (`getClaims`). |
 | v3.90 | 2026-08-30 | **Expirace událostí:** `expires_at` = půlnoc `Europe/Prague` následujícího dne po dni konání (ne `event_date + 24 h`). Migrace [`080`](../supabase/080_event_expires_end_of_calendar_day.sql). Karty událostí ukazují **Konání** místo **Vytvořeno**. |
 | v3.91 | 2026-08-30 | **Vyplněné `Doplňte …:` v hydrataci:** `Doplňte materiál: bronz` se bere jako fakt — do Parametrů (`• Materiál: bronz`) a hydratace se na něj znovu neptá. Prázdné výzvy zůstanou. Klient `applyFilledDoplnitToHydration` + prompt v `build-prompt.ts`. |
+| v3.92 | 2026-09-01 | **Soukromá / vícedenní událost + sdílení:** `is_private` (mimo výpisy, detail podle slugu, `noindex`; **ne** v `is_post_publicly_visible`). `event_end_date` (jiné kalendářní dny, Praha); `expires_at` z konce. Sdílení: QR + stáhnout PNG, ikona přes roh fotky. Hydratace: `free_pickup` u události („Vstup zdarma“) se do textu nepropisuje, pokud to inzerent nenapsal. Migrace [`082`](../supabase/082_posts_private_events.sql). Právní retence [`081`](../supabase/081_legal_retention_and_hidden_at.sql) (`hidden_at`, kredity archived, cron `purge-legal-retention`). |
 
 ---
 
@@ -954,9 +957,11 @@ U pravidelné akce: `event_date` = nejbližší termín; frekvence (např. každ
 
 #### Prezentace události
 
-- Chová se jako klasický post: název, fotka/galerie, popis, lokalita, štítek stavu, typ vstupu (zdarma / nabídni), **datum a čas konání** (`event_date`), volitelně **odkaz** (`external_url`) na web nebo sociální síť.
-- V popisu zadavatel uvede kapacitu (pokud ji chce limitovat) a doplňující informace; **strukturované datum konání** jde do sloupce `event_date`.
-- Fotka, geolokace, AI guardrail, moderování — beze změny oproti ostatním kategoriím.
+- Chová se jako klasický post: název, fotka/galerie, popis, lokalita, štítek stavu, typ vstupu (zdarma / nabídni), **datum a čas konání** (`event_date`), volitelně **konec vícedenní akce** (`event_end_date`), volitelně **soukromá událost** (`is_private`), volitelně **odkaz** (`external_url`) na web nebo sociální síť.
+- V popisu zadavatel uvede kapacitu (pokud ji chce limitovat) a doplňující informace; **strukturované datum konání** jde do sloupce `event_date` (začátek), konec do `event_end_date`.
+- **Soukromá událost** (`is_private`): není na HP, ve vyhledávání, sitemap, llms.txt ani kategoriálním SEO. Detail `/inzerat/[slug]` je dostupný přímým odkazem (žádný token). `robots: noindex, nofollow`. **Nesmí** se dávat do `is_post_publicly_visible` — to je RLS USING na veřejný SELECT a 404 by spadl i detail. Filtr `AND NOT is_private` je v nearby/search/recent/advertiser RPC a v SEO fetchech. Není záruka utajení.
+- `is_private` a `event_end_date` **nejsou** v content fingerprint / publish gate.
+- Fotka, geolokace, AI guardrail, moderování — beze změny oproti ostatním kategoriím. Sdílení (QR + stáhnout PNG) je na **každém** inzerátu, ikona přes roh úvodní fotky.
 
 #### Registrace účastníků (= poptávkový formulář)
 
@@ -975,7 +980,7 @@ U pravidelné akce: `event_date` = nejbližší termín; frekvence (např. každ
 | Krok | Chování pro `udalost` |
 |------|------------------------|
 | 1 — Kategorie | Výběr `udalost` + podsekce; pole **Opakování**: Jednorázová (`one_time`) / Pravidelná (`long_term`) |
-| 2 — Obsah | Povinný **datetime picker** `event_date` (u pravidelné: „nejbližší termín“); validace **datum v budoucnosti** (klient + server; při editaci projde nezměněné staré datum); hint kapacity a frekvence v popisu; cena: **Vstup zdarma** / **Pevná cena (vstupné)** / **Nabídni**; **pole platnosti (§9) se nezobrazuje**; volitelný checkbox + `external_url` (https, veřejný host; denylist adult/tube/cam — UT-03) |
+| 2 — Obsah | Povinný **datetime picker** `event_date` (u pravidelné: „nejbližší termín“); volitelně **Vícedenní akce** → `event_end_date` (jiný kalendářní den v `Europe/Prague` než začátek; ne u `long_term`); checkbox **Soukromá událost** (`is_private`); validace **datum v budoucnosti**; hint kapacity; cena: **Vstup zdarma** / **Pevná cena (vstupné)** / **Nabídni** — „Vstup zdarma“ se do textu inzerátu **nepropisuje**, pokud to inzerent nenapsal; **pole platnosti (§9) se nezobrazuje**; volitelný checkbox + `external_url` |
 | 3 — Média | Beze změny (max 6 fotek) |
 
 ### 8.4 Datový model a DB migrace
@@ -1027,9 +1032,9 @@ CREATE INDEX IF NOT EXISTS posts_event_date_idx
 |--------|---------|
 | Pole platnosti (§9.4) | **Skryté** — uživatel nevolí `listing_duration_days` |
 | `listing_duration_days` | U událostí se **ignoruje** (DB default 30 nemá vliv na `expires_at`) |
-| `expires_at` | DB trigger: **půlnoc `Europe/Prague` následujícího kalendářního dne** (`event_listing_expires_at`, migrace `080`) |
-| Frontend | Posílá `event_date`; **`expires_at` neposílá** |
-| Obnovení (`renew`) | Jen pokud `event_date > now()`; trigger přepočítá `expires_at` |
+| `expires_at` | DB trigger: **půlnoc `Europe/Prague` následujícího kalendářního dne** po dni `COALESCE(event_end_date, event_date)` (`event_listing_expires_at`, migrace `080` + `082`) |
+| Frontend | Posílá `event_date` a volitelně `event_end_date`; **`expires_at` neposílá** |
+| Obnovení (`renew`) | Jen pokud poslední den (`COALESCE(event_end_date, event_date)`) je v budoucnosti; trigger přepočítá `expires_at` |
 | Validace | `event_date` **v budoucnosti** při publikaci (server + klient); při editaci beze změny data projde i minulý termín; max horizont volitelně v `app.ts` |
 
 ```sql
@@ -1040,7 +1045,9 @@ BEGIN
     IF NEW.event_date IS NULL THEN
       RAISE EXCEPTION 'U kategorie udalost je pole event_date povinne.';
     END IF;
-    NEW.expires_at := public.event_listing_expires_at(NEW.event_date);
+    NEW.expires_at := public.event_listing_expires_at(
+      COALESCE(NEW.event_end_date, NEW.event_date)
+    );
   ELSE
     NEW.event_date := NULL;
     IF NEW.listing_duration_days IS NULL THEN
@@ -1054,13 +1061,13 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trigger_post_expiration_logic ON public.posts;
 CREATE TRIGGER trigger_post_expiration_logic
-  BEFORE INSERT OR UPDATE OF category_type, event_date, listing_duration_days
+  BEFORE INSERT OR UPDATE OF category_type, event_date, event_end_date, listing_duration_days
   ON public.posts
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_post_expiration_logic();
 ```
 
-> **Pravidlo priority:** Pro `udalost` platí vždy `expires_at` = půlnoc `Europe/Prague` po dni konání (`event_listing_expires_at`). Logika `now() + listing_duration_days` z §9.2 se na události **nevztahuje**. Migrace: [`supabase/080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) (původní +24 h: `003` / `049`).
+> **Pravidlo priority:** Pro `udalost` platí vždy `expires_at` = půlnoc `Europe/Prague` po **posledním** dni konání (`event_listing_expires_at(COALESCE(event_end_date, event_date))`). Logika `now() + listing_duration_days` z §9.2 se na události **nevztahuje**. Migrace: [`080`](../supabase/080_event_expires_end_of_calendar_day.sql), [`082`](../supabase/082_posts_private_events.sql).
 
 ### 8.5 Implementační checklist
 
@@ -1081,7 +1088,7 @@ CREATE TRIGGER trigger_post_expiration_logic
 |--------|---------------|-----------------|
 | Expiace dříve než datum akce | **`event_date` + trigger půlnoc po dni konání** (§8.4.1, `080`) | — |
 | Kapacita bez enforcementu | Pořadatel odpoví „kapacita naplněna“ nebo skryje inzerát | `capacity_max` + stav „plná kapacita“ |
-| Konec akce neznámý | Expirace o půlnoci v den `event_date` | `event_ends_at` pro vícedenní akce |
+| Konec akce neznámý | Expirace o půlnoci po posledním dni (`event_end_date` nebo `event_date`, `082`) | — |
 
 ### 8.7 Vědomá omezení oproti původnímu záměru
 
@@ -1095,7 +1102,7 @@ CREATE TRIGGER trigger_post_expiration_logic
 
 ### 8.8 Roadmap v0.3+ (mimo v0.2)
 
-- Strukturovaná pole: `event_ends_at`, `capacity_max` (`event_date` je už ve v0.2)
+- Strukturovaná pole: `capacity_max` (`event_date` / `event_end_date` / `is_private` jsou ve v0.2 + `082`)
 - Počítadlo poptávek (log odeslaných mailů, ne plná registrace)
 - Automatická archivace po datu akce
 - Waitlist / stav „kapacita naplněna“

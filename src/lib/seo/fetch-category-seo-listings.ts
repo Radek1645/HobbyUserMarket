@@ -16,10 +16,11 @@ export const fetchCategorySeoListings = cache(
     const { data, error } = await supabase
       .from("posts")
       .select(
-        "id, title, description, category_type, subcategory_slug, price_type, price_amount, location_text, slug, main_image_url, event_date, created_at",
+        "id, title, description, category_type, subcategory_slug, price_type, price_amount, location_text, slug, main_image_url, event_date, event_end_date, created_at",
       )
       .eq("subcategory_slug", subcategorySlug)
       .eq("status", "active")
+      .eq("is_private", false)
       .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order("created_at", { ascending: false })
       .limit(HOME_LISTINGS_FETCH_LIMIT);
@@ -45,6 +46,7 @@ export async function countActiveListingsBySubcategorySlug(
     .select("id", { count: "exact", head: true })
     .eq("subcategory_slug", subcategorySlug)
     .eq("status", "active")
+    .eq("is_private", false)
     .or(`expires_at.is.null,expires_at.gt.${now}`);
 
   if (error) {

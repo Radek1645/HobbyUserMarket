@@ -1,6 +1,7 @@
 "use server";
 
 import { MODERATION_IMAGE_STAGING_BUCKET } from "@/config/app";
+import { LEGAL_UI } from "@/config/legal";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { GUEST_PUBLISH_LOCK_TIMEOUT_MS } from "@/config/guest-listing";
@@ -87,6 +88,11 @@ async function publishWithApprovalToken(
     return MODERATION_TOKEN_MISSING_ERROR;
   }
 
+  const actor = await getCurrentUser();
+  if (actor?.needsVopReconsent) {
+    return LEGAL_UI.reconsentRequiredError;
+  }
+
   const imageBindingResult = await buildStoredListingImageBindings(
     supabase,
     postId,
@@ -160,8 +166,12 @@ function buildListingPayload(data: CreateListingInput) {
 
   if (data.categoryType === "udalost" && data.eventDate) {
     payload.event_date = data.eventDate;
+    payload.event_end_date = data.eventEndDate;
+    payload.is_private = data.isPrivate;
   } else {
     payload.event_date = null;
+    payload.event_end_date = null;
+    payload.is_private = false;
   }
 
   if (
@@ -200,6 +210,9 @@ export async function createListing(
   const user = await getCurrentUser();
   if (!user) {
     return { error: "Pro založení inzerátu se musíte přihlásit." };
+  }
+  if (user.needsVopReconsent) {
+    return { error: LEGAL_UI.reconsentRequiredError };
   }
 
   const validated = validateCreateListing(formData);
@@ -419,13 +432,14 @@ export async function updateListing(
   const supabase = await createClient();
   const { data: existing, error: fetchError } = await supabase
     .from("posts")
-    .select("id, slug, user_id, event_date, status, listing_quota_consumed")
+    .select("id, slug, user_id, event_date, event_end_date, status, listing_quota_consumed")
     .eq("id", postId)
     .maybeSingle<{
       id: number;
       slug: string;
       user_id: string;
       event_date: string | null;
+      event_end_date: string | null;
       status: string;
       listing_quota_consumed: boolean;
     }>();
@@ -445,7 +459,11 @@ export async function updateListing(
     return { error: "Tento inzerát už nelze upravovat." };
   }
 
-  const validated = validateUpdateListing(formData, existing.event_date);
+  const validated = validateUpdateListing(
+    formData,
+    existing.event_date,
+    existing.event_end_date,
+  );
   if (!validated.ok) {
     return { error: validated.error };
   }

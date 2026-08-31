@@ -189,7 +189,7 @@ export const CATEGORIES: CategoryConfig[] = [
     descriptionPlaceholderRecurring:
       "Frekvence (každý čtvrtek 18:00…), kapacita, co s sebou, jak se přihlásit…",
     aiPrompt:
-      "Analyzuj akci. Datum a čas z formuláře (eventDate) jsou závazné — použij je v úvodu i Parametrech; starý/jiný čas v popisu ignoruj a NIKDY kvůli tomu nezamítej. Pokud je eventDate ve formuláři, na datum ani čas se neptej. Lokalita z formuláře (locationText) je závazná — pokud je vyplněná, na lokalitu/místo se neptej. Kritické parametry ptej jen když chybí ve formuláři i v textu: DATUM/ČAS (bez eventDate), LOKALITA (bez locationText). U opakovaných akcí chtěj upřesnit frekvenci (např. „Které dny v týdnu akce platí?“).",
+      "Analyzuj akci. Datum a čas z formuláře (eventDate) jsou závazné — použij je v úvodu i Parametrech; starý/jiný čas v popisu ignoruj a NIKDY kvůli tomu nezamítej. Pokud je eventDate ve formuláři, na datum ani čas se neptej. Lokalita z formuláře (locationText) je závazná — pokud je vyplněná, na lokalitu/místo se neptej. Typ ceny „Vstup zdarma“ do úvodu, Parametrů ani meta NEVKLÁDEJ, pokud to inzerent sám nenapsal v názvu nebo popisu. Kritické parametry ptej jen když chybí ve formuláři i v textu: DATUM/ČAS (bez eventDate), LOKALITA (bez locationText). U opakovaných akcí chtěj upřesnit frekvenci (např. „Které dny v týdnu akce platí?“).",
   },
   {
     type: "nemovitost",

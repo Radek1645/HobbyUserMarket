@@ -25,7 +25,7 @@ const EDIT_COLUMNS =
   "id, user_id, title, description, " +
   "category_type, subcategory_slug, price_type, price_amount, exchange_for, " +
   "condition_label, location_text, status, status_reason_code, expires_at, listing_duration_days, " +
-  "event_date, renew_count, payment_status, listing_quota_consumed, main_image_url, slug, " +
+  "event_date, event_end_date, is_private, renew_count, payment_status, listing_quota_consumed, main_image_url, slug, " +
   "show_contact_email, show_contact_phone, created_at, updated_at, job_cv_required, " +
   "external_url";
 

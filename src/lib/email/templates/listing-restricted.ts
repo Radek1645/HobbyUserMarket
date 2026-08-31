@@ -8,6 +8,9 @@ import type { PostStatusReasonCode } from "@/types/post";
 
 export type ListingRestrictionAction = "blocked" | "deleted";
 
+/** Statement of Reasons — automat vs. hlášení vs. člověk (DSA / VOP čl. 4). */
+export type ListingRestrictionSource = "reports" | "moderator" | "automatic";
+
 type BuildListingRestrictedEmailParams = {
   postTitle: string;
   myListingsUrl: string;
@@ -16,13 +19,32 @@ type BuildListingRestrictedEmailParams = {
   action: ListingRestrictionAction;
   reasonCode: PostStatusReasonCode;
   reasonDetail?: string;
+  source: ListingRestrictionSource;
 };
 
 function legalBasis(reasonCode: PostStatusReasonCode): string {
   if (reasonCode === "reports_threshold") {
-    return "Pravidla inzerce (§4) a VOP (§4.5) — inzerát byl nahlášen třemi různými uživateli.";
+    return "Pravidla inzerce a VOP čl. 4 — inzerát byl nahlášen třemi různými uživateli.";
   }
-  return "VOP (§4.5) a Pravidla inzerce — rozhodnutí moderátora webu.";
+  return "VOP čl. 4 a Pravidla inzerce — rozhodnutí moderátora webu.";
+}
+
+function sourceLabel(source: ListingRestrictionSource): string {
+  if (source === "reports") {
+    return "hlášení uživatelů (automatické skrytí po třech nezávislých hlášeních)";
+  }
+  if (source === "automatic") {
+    return "automatické rozhodnutí systému";
+  }
+  return "rozhodnutí moderátora";
+}
+
+export function listingRestrictionSourceFromReason(
+  reasonCode: PostStatusReasonCode,
+): ListingRestrictionSource {
+  if (reasonCode === "reports_threshold") return "reports";
+  if (reasonCode === "moderation") return "moderator";
+  return "automatic";
 }
 
 function actionLabel(action: ListingRestrictionAction): string {
@@ -43,11 +65,10 @@ export function buildListingRestrictedEmail(
     "Inzerát porušuje pravidla webu nebo zákon.";
   const detail = params.reasonDetail?.trim();
   const appealLines = [
-    `Stížnost nebo odvolání: ${params.dsaUrl}`,
+    `Odvolání proti tomuto opatření můžete podat do 6 měsíců od doručení tohoto oznámení: ${params.dsaUrl}`,
     OPERATOR_CONTACT_EMAIL
       ? `Kontakt provozovatele: ${OPERATOR_CONTACT_EMAIL}`
       : null,
-    `Podrobnosti: ${params.dsaUrl} (VOP §4.7)`,
   ].filter(Boolean);
 
   const recoveryBlock =
@@ -59,13 +80,16 @@ export function buildListingRestrictedEmail(
 
 váš inzerát „${params.postTitle}" byl ${actionLabel(params.action)}.
 
+Zdroj opatření:
+${sourceLabel(params.source)}
+
 Důvod opatření:
 ${reason}${detail ? `\n\nDoplňující informace:\n${detail}` : ""}
 
 Právní / smluvní základ:
 ${legalBasis(params.reasonCode)}
 
-Související dokumentace: ${params.vopUrl} (VOP §4.6)${recoveryBlock}
+Související dokumentace: ${params.vopUrl} (VOP čl. 4)${recoveryBlock}
 
 ${appealLines.join("\n")}
 

@@ -91,7 +91,7 @@ export function Header({ user }: HeaderProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-          {user && !user.needsNicknameSetup ? (
+          {user && !user.needsNicknameSetup && !user.needsVopReconsent ? (
             <Link
               href="/inzerat/novy"
               prefetch={false}

@@ -212,6 +212,7 @@ async function runModeratorListingAction(
       action: "blocked",
       reasonCode: POST_STATUS_REASON.moderation,
       reasonDetail: reasonNote,
+      source: "moderator",
     });
   } else if (action === "delete") {
     await notifyListingRestricted({
@@ -219,6 +220,7 @@ async function runModeratorListingAction(
       action: "deleted",
       reasonCode: POST_STATUS_REASON.moderation,
       reasonDetail: reasonNote,
+      source: "moderator",
     });
   }
 
@@ -285,6 +287,7 @@ async function afterReportInserted(params: {
       postId: params.postId,
       action: "blocked",
       reasonCode: POST_STATUS_REASON.reports_threshold,
+      source: "reports",
     });
     return { autoBlocked: true };
   }

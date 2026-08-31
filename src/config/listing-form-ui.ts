@@ -110,6 +110,21 @@ export const LISTING_FORM_STEPPER_MANUAL = [
   "Publikace",
 ] as const;
 
+export const LISTING_PRIVATE_EVENT_UI = {
+  checkboxLabel: "Soukromá událost",
+  checkboxHint: "Akce nebude zobrazená na webu, jen přes odkaz.",
+} as const;
+
+export const LISTING_MULTI_DAY_EVENT_UI = {
+  checkboxLabel: "Vícedenní akce",
+  endDateLabel: "Datum a čas konce",
+  sameDayError: "Konec musí být jiný den než začátek.",
+  beforeStartError: "Konec akce musí být po začátku.",
+  required: "Zadejte datum a čas konce, nebo políčko vypněte.",
+  invalid: "Neplatné datum konce.",
+  mustBeFuture: "Datum konce musí být v budoucnosti.",
+} as const;
+
 /** Sekundární banner — ruční cesta (reality / služby / práce / události). */
 export const listingFormManualBannerClass =
   "mt-2 flex flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:p-5";

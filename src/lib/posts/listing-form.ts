@@ -25,6 +25,8 @@ export type ListingFormInitialValues = {
   exchangeFor: string;
   listingDurationDays: number;
   eventDate: string;
+  eventEndDate: string;
+  isPrivate: boolean;
   customDuration: boolean;
   showContactEmail: boolean;
   showContactPhone: boolean;
@@ -96,6 +98,8 @@ export function postToListingFormInitialValues(
     exchangeFor: post.exchange_for ?? "",
     listingDurationDays,
     eventDate: toDatetimeLocalValue(post.event_date),
+    eventEndDate: toDatetimeLocalValue(post.event_end_date ?? null),
+    isPrivate: post.is_private === true,
     customDuration,
     showContactEmail: post.show_contact_email ?? false,
     showContactPhone: post.show_contact_phone ?? false,

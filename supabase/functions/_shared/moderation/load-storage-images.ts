@@ -9,6 +9,7 @@ import {
   decodeBase64Bytes,
   detectImageMimeType,
 } from "./assert-image-limits.ts";
+import { sha256Hex } from "./sha256.ts";
 
 export type StorageImageReference = {
   bucket: string;
@@ -37,16 +38,6 @@ function bytesToBase64(bytes: Uint8Array): string {
     );
   }
   return btoa(binary);
-}
-
-async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    Uint8Array.from(bytes).buffer,
-  );
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 function assertOwnedReference(

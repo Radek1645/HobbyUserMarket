@@ -14,12 +14,6 @@ export const ACCOUNT_BLACKLIST_REASON_AUTOMATIC = "3_hard_rejects_24h";
 /** Stop stránka pro blacklisted účet. */
 export const ACCOUNT_SUSPENDED_PATH = "/ucet-pozastaven";
 
-/**
- * Retence evidence hard-stop / CSAM gate + historie unban záznamů (dny).
- * Aktivní blacklist se jen kvůli věku nemaže.
- */
-export const HARD_STOP_EVIDENCE_RETENTION_DAYS = 730;
-
 export function normalizeBlacklistEmail(email: string): string {
   return email.trim().toLowerCase();
 }

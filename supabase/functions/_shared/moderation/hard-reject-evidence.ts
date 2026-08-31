@@ -11,6 +11,7 @@ import {
   HARD_REJECT_WINDOW_MS,
   MODERATION_EVIDENCE_BUCKET,
 } from "./constants.ts";
+import { sha256Hex } from "./sha256.ts";
 
 export type HardRejectEvidenceKind =
   | "hard_hit_text"
@@ -26,6 +27,7 @@ export type RecordHardRejectEvidenceParams = {
   matchedTerm?: string;
   titleSnippet?: string;
   storagePath?: string;
+  imageSha256?: string;
   imageIndex?: number;
   /** Až 6 Sightengine odpovědí v jednom poli. */
   sightengineResponses?: unknown;
@@ -49,13 +51,18 @@ function stripBase64Payload(imageBase64: string): string {
   return trimmed;
 }
 
+export type NsfwEvidenceUpload = {
+  storagePath: string;
+  imageSha256: string;
+};
+
 /** Uloží přesný moderovaný soubor do privátního bucketu. */
 export async function uploadNsfwEvidenceImage(
   userId: string,
   imageBase64: string,
   imageIndex: number,
   mimeType = "image/jpeg",
-): Promise<string | null> {
+): Promise<NsfwEvidenceUpload | null> {
   try {
     const admin = createServiceClient();
     const payload = stripBase64Payload(imageBase64);
@@ -64,6 +71,7 @@ export async function uploadNsfwEvidenceImage(
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
+    const imageSha256 = await sha256Hex(bytes);
 
     const extension =
       mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
@@ -79,7 +87,7 @@ export async function uploadNsfwEvidenceImage(
       console.error("evidence upload:", error);
       return null;
     }
-    return path;
+    return { storagePath: path, imageSha256 };
   } catch (error) {
     console.error("evidence upload exception:", error);
     return null;
@@ -101,6 +109,7 @@ export async function recordHardRejectEvidence(
         ? params.titleSnippet.slice(0, 80)
         : null,
       storage_path: params.storagePath ?? null,
+      image_sha256: params.imageSha256 ?? null,
       image_index: params.imageIndex ?? null,
       sightengine_responses: params.sightengineResponses ?? null,
     });

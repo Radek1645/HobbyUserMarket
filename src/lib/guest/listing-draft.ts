@@ -23,6 +23,8 @@ export type GuestListingDraft = {
   latitude: number | null;
   longitude: number | null;
   eventDate: string;
+  eventEndDate?: string;
+  isPrivate?: boolean;
   listingDurationDays: number;
   showContactEmail: boolean;
   showContactPhone: boolean;

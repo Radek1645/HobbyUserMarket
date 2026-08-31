@@ -13,6 +13,16 @@ export const REPORT_LISTING_PATH = "/nahlasit";
 /** Verze VOP v okamžiku registrace — sync s docs/pravni/vop-*.md. */
 export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.6-osvc" : "1.11-fo";
 
+/** Verze GDPR textu — sync s docs/pravni/ochrana-osobnich-udaju-*.md. */
+export const CURRENT_GDPR_VERSION = MONETIZATION_ENABLED
+  ? "1.2-osvc"
+  : "1.5-fo";
+
+/** Verze ceníku / limitů — sync s docs/pravni/balicky-inzerce-*.md. */
+export const CURRENT_PRICING_VERSION = MONETIZATION_ENABLED
+  ? "1.1-osvc"
+  : "1.4-fo";
+
 export const SAFETY_UI = {
   /** Fallback / zboží, móda, služby — osobní předání věci. */
   meetingSafetyNotice:
@@ -89,4 +99,10 @@ export const LEGAL_UI = {
     "Prohlašuji, že mi je alespoň 15 let. V případě věku 15–18 let mám k této činnosti souhlas zákonného zástupce, je-li vyžadován. (Povinné)",
   registrationAgeConsentError:
     "Pro založení účtu je nutné potvrdit, že vám je alespoň 15 let.",
+  reconsentTitle: "Aktualizovali jsme podmínky",
+  reconsentBody:
+    "Abychom mohli dál poskytovat inzerci, potřebujeme váš souhlas s aktuálním zněním VOP. Prohlížení webu, správa inzerátů a nastavení účtu fungují i bez nového souhlasu.",
+  reconsentAccept: "Souhlasím s aktuálními VOP",
+  reconsentRequiredError:
+    "Než založíte nebo zveřejníte inzerát, potvrďte aktuální znění VOP.",
 } as const;

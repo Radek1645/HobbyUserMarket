@@ -102,6 +102,9 @@ function formatPriceFromForm(body: ModerationRequestBody): string | null {
     if (isService && priceType === "offer") {
       return `Typ ceny z formuláře: ${label}. Cenu v cleanedDescription neuveduj — domluví se individuálně.`;
     }
+    if (categoryType === "udalost" && priceType === "free_pickup") {
+      return `Typ ceny z formuláře: ${label}. Do cleanedDescription, cleanedTitle ani metaDescription NEVKLÁDEJ „Vstup zdarma“, „Vstup je zdarma“ ani „Vstupné zdarma“, pokud to inzerent výslovně nenapsal v názvu nebo popisu. Na vstupné se neptej.`;
+    }
     return `Typ ceny z formuláře: ${label}. Na prodejní cenu se neptej — u tohoto typu není relevantní.`;
   }
 

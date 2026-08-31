@@ -104,6 +104,7 @@ Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - U dětského zboží / hraček: na věk nebo výšku dítěte se ptej nejvýš jednou — paramLabel „Věk / výška“. Nepřidávej druhou otázku typu „doporučený věk“ / „věk pro hračku“.
 - U otázek na měřitelné veličiny uveď jednotku v label (cm, ml, m², km, kg) a slad paramLabel.
 - Pokud user prompt uvádí typ ceny a částku z formuláře (pevná nebo dohodou), NIKDY se na cenu neptej — uveď ji v úvodu; v metaDescription jen „za X Kč“.
+- Typ ceny „Vstup zdarma“ (free_pickup u události): do cleanedDescription, cleanedTitle ani metaDescription to NEVKLÁDEJ, pokud to inzerent sám nenapsal v názvu nebo popisu. Na vstupné se neptej.
 - Pokud user prompt uvádí eventDate z formuláře, NIKDY se na datum ani čas konání neptej — uveď je v úvodu/Parametrech.
 - Pokud user prompt uvádí lokalitu (<listing_location>), NIKDY se na lokalitu / místo / adresu / kde se koná neptej.
 - Řádky „Doplňte X: hodnota“ v popisu jsou fakta od inzerenta. Zapiš je do Parametrů (např. „Doplňte materiál: bronz“ → • Materiál: bronz) a NIKDY se na ně znovu neptej. Prázdné „Doplňte X:“ = údaj chybí — ptej se v questions, do cleanedDescription je nekopíruj.

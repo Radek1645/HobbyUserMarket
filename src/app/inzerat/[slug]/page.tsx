@@ -10,6 +10,8 @@ import {
   getListingSubcategoryHref,
 } from "@/config/category-seo";
 import { SITE_DISPLAY_NAME } from "@/config/site";
+import { LISTING_PRIVATE_EVENT_UI } from "@/config/listing-form-ui";
+import { listingPrivateEventBadgeClass } from "@/config/ui-primitives";
 import { ListingPublishedConversionBeacon } from "@/components/analytics/ConversionBeacons";
 import { AdvertiserBadges } from "@/components/listing/AdvertiserBadges";
 import { ListingContactSection } from "@/components/listing/ListingContactSection";
@@ -20,6 +22,7 @@ import { ListingExternalLink } from "@/components/listing/ListingExternalLink";
 import { ListingImageGallery } from "@/components/listing/ListingImageGallery";
 import { ListingViewBeacon } from "@/components/listing/ListingViewBeacon";
 import { ReportListingButton } from "@/components/listing/ReportListingButton";
+import { ShareListingButton } from "@/components/listing/ShareListingButton";
 import { ModeratorListingBar } from "@/components/mod/ModeratorListingBar";
 import { BackLink } from "@/components/navigation/BackLink";
 import { loadModeratorNotesForPost } from "@/lib/mod/moderator-notes";
@@ -35,7 +38,7 @@ import { getAdvertiserProfile } from "@/lib/auth/get-advertiser";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { isStaffRole } from "@/lib/auth/is-staff-role";
 import { formatListingPrice } from "@/lib/posts/format-listing-price";
-import { formatListingEventDate } from "@/lib/posts/format-event-date";
+import { formatListingEventDateRange } from "@/lib/posts/format-event-date";
 import {
   formatMetaTitleLocality,
   formatPublicListingLocation,
@@ -93,7 +96,7 @@ const POST_DETAIL_COLUMNS =
   "id, user_id, title, description, description_ai_assisted, meta_description, image_alt, " +
   "category_type, subcategory_slug, " +
   "price_type, price_amount, exchange_for, condition_label, location_text, " +
-  "status, status_reason_code, expires_at, event_date, main_image_url, slug, " +
+  "status, status_reason_code, expires_at, event_date, event_end_date, is_private, main_image_url, slug, " +
   "show_contact_email, show_contact_phone, created_at, updated_at, job_cv_required, " +
   "view_count, external_url";
 
@@ -105,7 +108,11 @@ async function getPostBySlug(slug: string): Promise<PostRow | null> {
     .eq("slug", slug)
     .maybeSingle<PostRow>();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("getPostBySlug:", error.message, error.code);
+    return null;
+  }
+  if (!data) return null;
   return data;
 }
 
@@ -133,6 +140,9 @@ export async function generateMetadata({
     title: documentTitle,
     description,
     alternates: { canonical: pageUrl },
+    ...(post.is_private
+      ? { robots: { index: false, follow: false } }
+      : {}),
     openGraph: {
       title: documentTitle,
       description,
@@ -214,7 +224,10 @@ export default async function ListingDetailPage({
     post.condition_label === "long_term" && post.category_type === "udalost"
       ? "Nejbližší termín"
       : "Konání";
-  const eventLabel = formatListingEventDate(post.event_date);
+  const eventLabel = formatListingEventDateRange(
+    post.event_date,
+    post.event_end_date,
+  );
 
   const priceTypeLabel = getPriceTypeLabel(post.category_type, post.price_type);
   const isService = post.category_type === "sluzby";
@@ -358,6 +371,11 @@ export default async function ListingDetailPage({
         <h1 className="mt-1 text-2xl font-semibold text-gray-900 sm:text-3xl">
           {post.title}
         </h1>
+        {post.is_private && (isOwner || isStaff) ? (
+          <p className={`mt-2 ${listingPrivateEventBadgeClass}`}>
+            {LISTING_PRIVATE_EVENT_UI.checkboxLabel}
+          </p>
+        ) : null}
       </header>
 
       {galleryImages.length > 0 ? (
@@ -366,10 +384,18 @@ export default async function ListingDetailPage({
             images={galleryImages}
             title={post.title}
             imageAlt={post.image_alt}
+            shareOverlay={
+              post.status === "active" ? (
+                <ShareListingButton pageUrl={pageUrl} title={post.title} />
+              ) : null
+            }
           />
         </div>
       ) : (
         <div className="relative mt-6 aspect-[16/10] overflow-hidden rounded-2xl border border-gray-200 sm:aspect-[21/9]">
+          {post.status === "active" ? (
+            <ShareListingButton pageUrl={pageUrl} title={post.title} />
+          ) : null}
           <ListingDefaultCover
             categoryType={post.category_type}
             subcategorySlug={post.subcategory_slug}
@@ -461,7 +487,8 @@ export default async function ListingDetailPage({
                 </span>
               </dd>
             </div>
-          ) : (
+          ) : post.category_type === "udalost" &&
+            post.price_type === "free_pickup" ? null : (
             <div>
               <dt className="text-gray-500">Typ ceny</dt>
               <dd className="font-medium text-gray-900">{priceTypeLabel}</dd>
@@ -533,7 +560,7 @@ export default async function ListingDetailPage({
               showContactPhone={post.show_contact_phone === true}
               isLoggedIn={Boolean(user)}
             />
-            <div className="mt-4 text-center">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
               <ReportListingButton
                 postId={post.id}
                 postSlug={post.slug}
