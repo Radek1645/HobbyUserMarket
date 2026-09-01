@@ -1745,6 +1745,8 @@ NEXT_PUBLIC_SITE_NOTICE_MESSAGE=Pozvěte souseda a sdílejte odkaz na Hobby User
 
 ### 13.4 Produkce (Vercel)
 
+Funkce běží v regionu **`dub1` (Dublin)** — `vercel.json` `regions`. Crony i API u EU databáze.
+
 **Přes web (doporučeno):** Vercel → projekt → **Settings → Environment Variables** → přidej proměnné → **Redeploy**.
 
 **Ověření env (checklist U13):**
