@@ -960,7 +960,7 @@ U pravidelné akce: `event_date` = nejbližší termín; frekvence (např. každ
 
 - Chová se jako klasický post: název, fotka/galerie, popis, lokalita, štítek stavu, typ vstupu (zdarma / nabídni), **datum a čas konání** (`event_date`), volitelně **konec vícedenní akce** (`event_end_date`), volitelně **soukromá událost** (`is_private`), volitelně **odkaz** (`external_url`) na web nebo sociální síť.
 - V popisu zadavatel uvede kapacitu (pokud ji chce limitovat) a doplňující informace; **strukturované datum konání** jde do sloupce `event_date` (začátek), konec do `event_end_date`.
-- **Soukromá událost** (`is_private`): není na HP, ve vyhledávání, sitemap, llms.txt ani kategoriálním SEO. Detail `/inzerat/[slug]` je dostupný přímým odkazem (žádný token). `robots: noindex, nofollow`. **Nesmí** se dávat do `is_post_publicly_visible` — to je RLS USING na veřejný SELECT a 404 by spadl i detail. Filtr `AND NOT is_private` je v nearby/search/recent/advertiser RPC a v SEO fetchech. Není záruka utajení.
+- **Soukromá událost** (`is_private`): není na HP, ve vyhledávání, sitemap, llms.txt ani kategoriálním SEO. Detail `/inzerat/[slug]` je dostupný přímým odkazem (žádný token); fialový štítek **Soukromá událost** pod H1 vidí každý návštěvník. `robots: noindex, nofollow`. **Nesmí** se dávat do `is_post_publicly_visible` — to je RLS USING na veřejný SELECT a 404 by spadl i detail. Filtr `AND NOT is_private` je v nearby/search/recent/advertiser RPC a v SEO fetchech. Není záruka utajení.
 - `is_private` a `event_end_date` **nejsou** v content fingerprint / publish gate.
 - Fotka, geolokace, AI guardrail, moderování — beze změny oproti ostatním kategoriím. Sdílení (QR + stáhnout PNG) je na **každém** inzerátu, ikona přes roh úvodní fotky.
 

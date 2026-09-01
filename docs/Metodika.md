@@ -1021,7 +1021,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - U inzerátů s AI textem: v sekci Parametry řádek **„Vytvořeno s pomocí AI: Ano“** s ikonou nápovědy (Podmínky inzerce §3, AI Act)
 - Cena (formát podle kategorie — u služeb např. `500 Kč/h` nebo `od 3 000 Kč za zakázku`), stav, lokalita, typ kategorie; u zboží/služeb/práce/nemovitostí datum **Vytvořeno** (`created_at`)
 - U událostí: datum **Konání** (`event_date` … volitelně `event_end_date`); pokud je vyplněný `external_url`, výrazné CTA pod parametry — label podle domény (**Facebook** / **Instagram** / **Další informace online**), odkaz `target=_blank` + `rel=noopener noreferrer nofollow ugc`
-- Soukromá událost: fialový štítek **Soukromá událost** pod H1 — **jen majitel a staff**
+- Soukromá událost: fialový štítek **Soukromá událost** pod H1 — vidí ho každý, kdo otevře přímý odkaz
 - **Sdílet:** bílé kolečko s ikonou (`Share2`) vpravo nahoře na úvodní fotce (i na výchozí ilustraci bez fotky). Dialog: kopírovat odkaz, native share, QR, stáhnout PNG. Dole u **Nahlásit inzerát** sdílení **není**.
 - U nemovitostí: Prodej / Pronájem
 - **Zadavatel** (přezdívka nebo název firmy) — klik vede na **`/uzivatel/[nickname]`** (aktivní inzeráty, 9 na stránku)
@@ -1624,7 +1624,7 @@ Detailní technická reference: [`supabase-prikazy.md` § Ruční přidělení b
 ### 12.1 Události
 
 - Povinné datum a čas konání (`event_date`). Volitelně **Vícedenní akce** (`event_end_date` — jiný kalendářní den v Praze).
-- **Soukromá událost:** není na webu ve výpisech, jen přímý odkaz; štítek vidí zadavatel a staff; `noindex`.
+- **Soukromá událost:** není na webu ve výpisech, jen přímý odkaz; štítek **Soukromá událost** pod H1 vidí každý návštěvník; `noindex`.
 - Typ ceny **Vstup zdarma** se do textu inzerátu nepropisuje, pokud to inzerent sám nenapsal.
 - Registrace účastníků = poptávkový formulář (žádná tabulka účastníků v DB).
 - Pořadatel odpovídá ze svého e-mailu.

@@ -371,7 +371,7 @@ export default async function ListingDetailPage({
         <h1 className="mt-1 text-2xl font-semibold text-gray-900 sm:text-3xl">
           {post.title}
         </h1>
-        {post.is_private && (isOwner || isStaff) ? (
+        {post.is_private ? (
           <p className={`mt-2 ${listingPrivateEventBadgeClass}`}>
             {LISTING_PRIVATE_EVENT_UI.checkboxLabel}
           </p>
