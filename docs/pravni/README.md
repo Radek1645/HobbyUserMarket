@@ -1,6 +1,6 @@
 # Právní dokumentace — draft (Legal Design)
 
-> **Stav:** Web FO VOP **1.11-fo** (účinnost 15.08.2026) · GDPR FO **1.5-fo** · cookies **1.3** · Pravidla **1.5** · Limity FO **1.4-fo** · OSVČ VOP draft **1.6-osvc** · GDPR OSVČ **1.2-osvc** · Balíčky OSVČ **1.1-osvc** (IČO / datum účinnosti k doplnění; bez adresy) · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
+> **Stav:** Web FO VOP **1.11-fo** (účinnost 15.08.2026) · GDPR FO **1.6-fo** (účinnost 01.09.2026; oprava falešného odkazu na VOP §6) · cookies **1.3** · Pravidla **1.5** · Limity FO **1.4-fo** · OSVČ VOP draft **1.6-osvc** · GDPR OSVČ **1.2-osvc** · Balíčky OSVČ **1.1-osvc** (IČO / datum účinnosti k doplnění; bez adresy) · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
 > **Projekt:** HobbyUserMarket (specifikace [`PRD_v3.md`](../PRD_v3.md) §11.3)
 
 Modulární sada právních textů pro web. Každý dokument obsahuje srozumitelné shrnutí (TL;DR) a plné znění pro publikaci na samostatné URL.

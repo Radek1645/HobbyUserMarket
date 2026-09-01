@@ -1,6 +1,8 @@
 /**
  * Guest listing draft (FB funnel C) — feature flag a limity.
  * AI preview bez loginu; publish vždy po auth + nové final AI.
+ * Env musí být přesně `"true"`; bez něj je flow vypnutý (login wall).
+ * Na produkci zapnuto (2026-09-01) — viz `docs/fb-promo-campaign.md`.
  */
 export const GUEST_LISTING_DRAFT_ENABLED =
   process.env.NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED === "true";

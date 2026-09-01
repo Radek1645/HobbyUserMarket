@@ -78,7 +78,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 1. Kampaň míří na **`/prodejte-snadno`**, ne na homepage. Cíl: první inzerát (CTA → `/inzerat/novy`).
 2. Globální **header (vyhledávání, poloha, účet) je skrytý**. Stránka má vlastní lištu (logo + Jak to funguje + Vložit inzerát). **Patička webu zůstává** (`SiteFooter`). Mobilní FAB je skrytý — stránka má vlastní CTA.
 3. Cookie lišta, GTM a Pixel zůstávají. Po analytickém souhlasu jde do `dataLayer` event `lp_view`. Po **marketingovém** souhlasu Pixel pošle `ViewContent` (`content_name: landing_fb`). CTA mají `data-gtm-id` `cta_lp_header` / `cta_lp_hero` / `cta_lp_footer` a `data-gtm-position`.
-4. UTM a `fbclid` se uloží do `localStorage` a přenesou na `/inzerat/novy`. Pokud guest flag C není zapnutý, login wall je zachová v `next`. Přiloží se k Pixel události `Lead`.
+4. UTM a `fbclid` se uloží do `localStorage` a přenesou na `/inzerat/novy`. Flag C je na produkci **zapnutý** — host jde rovnou do formuláře. Kdyby se vypnul, login wall je zachová v `next`. Přiloží se k Pixel události `Lead`.
 5. V patičce (sloupec **Co je zaPikolou?**) je odkaz **Prodejte snadno**.
 6. Texty: vykání, žádné časové claimy, AI nedoplňuje cenu, registrace před publikací je zmíněná. Copy: [`src/config/fb-promo-landing.ts`](../src/config/fb-promo-landing.ts). Design: [`docs/fb-ads/Landing page pro Facebook reklamu/`](./fb-ads/Landing%20page%20pro%20Facebook%20reklamu/).
 
@@ -261,7 +261,7 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 
 Cesta (přihlášený): **`/inzerat/novy` → (volitelně Prefill) → Kategorie / Obsah → Kontrola → Hydratace → Publikace**.
 
-Cesta (host, flag `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED`): stejný formulář **bez loginu** → při Publikovat login/registrace → návrat na `/inzerat/novy?resume=1` → claim staging + finální AI → publikace. Draft je v **localStorage**; cíl po OAuth drží `sessionStorage` + httpOnly cookie `pending_auth_return_path` (přežije **Zpět** z Google výběru účtu). Detail: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
+Cesta (host, produkce — `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED=true`): stejný formulář **bez loginu** → při Publikovat login/registrace → návrat na `/inzerat/novy?resume=1` → claim staging + finální AI → publikace. Draft je v **localStorage**; cíl po OAuth drží `sessionStorage` + httpOnly cookie `pending_auth_return_path` (přežije **Zpět** z Google výběru účtu). Detail: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
 
 ### Pracovní názvy kroků
 
@@ -1846,7 +1846,7 @@ Ověření: GTM Preview → událost **Inicializace souhlasu** ukazuje výchozí
 
 ### 14.4 Meta Pixel
 
-Pixel ID `1774699993535627` — `src/config/meta-pixel.ts` (env `NEXT_PUBLIC_META_PIXEL_ID` přepíše; prázdný string vypne). Načte se až po marketingovém souhlasu.
+Pixel ID `1774699993535627` — `src/config/meta-pixel.ts` (env `NEXT_PUBLIC_META_PIXEL_ID` přepíše; prázdný string vypne). Načte se až po marketingovém souhlasu. `autoConfig` je **vypnutý** (`set` před `init`) — Pixel nesbírá kliknutí/submity (`SubscribedButtonClick`). Eventy jen přes `trackEvent()`. Detail: [`fb-ads/MERENI-pixel.md`](./fb-ads/MERENI-pixel.md).
 
 | Event | Trigger |
 |---|---|

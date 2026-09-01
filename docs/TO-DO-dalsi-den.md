@@ -87,11 +87,14 @@ Dočasný workaround bez O1 už není potřeba (kód posílá Custom Event). `lp
 
 ## L. Priorita — smoke FB funnel C + AI prefill
 
-> **2026-08-08.** Manuální průchod před ads switch. Flag C: `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED=true`. Prefill: `SUGGEST_FROM_PHOTOS_ENABLED`. Migrace `073` + `074`, Edge `moderate-listing` + `suggest-listing-from-photos`, Turnstile. Testuj v anonymním okně. Detail: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
+> **Kanonický stav** tohoto funnelu (hotové / zbývá). Ostatní docs (`fb-promo-campaign.md`, `navod-na-fb-reklamu.md`) sem odkazují — status sem nekopírovat.
+>
+> **2026-08-08.** Manuální průchod před ads switch. Flag C: `NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED=true`. Prefill: `SUGGEST_FROM_PHOTOS_ENABLED`. Migrace `073` + `074`, Edge `moderate-listing` + `suggest-listing-from-photos`, Turnstile. Testuj v anonymním okně. Technika: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
 
 **Minimum před ads:** A1, A3, C3, D1, B1, **B5, B6** (kvalita textu).  
 **Localhost 2026-08-09:** A1–A3, B1–B7/B9, C3, D2 hotovo; zbývá hlavně **D1** (explicitně FAB/header copy), Pixel **E3/E4**, produkční mobil.  
-**Rychlý smoke po 076 / Prefill lab (2026-08-10):** T2 + T3 ✅ localhost; zbývá **T1** (Prefill lab).
+**Rychlý smoke po 076 / Prefill lab (2026-08-10):** T2 + T3 ✅ localhost; zbývá **T1** (Prefill lab).  
+**2026-09-01:** Flag C na produkci **zapnutý**. Desktop happy path (e-mail) prošel: A2 + E1 + E2 + E3 + E4. D1 hotovo (2026-09-01). Zbývá **mobil**, C4.
 
 **Doporučené pořadí:** B1 → **B5 → B6 → B7** → A1 → A3 → B2/B3a → C3 → D1/D2 → (A2, B8) → E3/E4.
 
@@ -100,7 +103,7 @@ Dočasný workaround bez O1 už není potřeba (kód posílá Custom Event). `lp
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
 | A1 | Host `/inzerat/novy` → 1–2 fotky zboží → AI prefill → doplnit cenu/stav/lokalitu → AI náhled → Publikovat → **Google** OAuth → onboarding (VOP/věk už z registrace) → resume | Krok 0 guest UI; po prefillu title/desc/cat, **cena prázdná**; bez auth nejde publish; draft v localStorage; po OAuth `/inzerat/novy?resume=1` → aktivní inzerát `?published=<id>`; hlavní fotka = zvolená; Pixel ListingPublished 1× | ☑ 2026-08-08 + **2026-08-09** (Google Zpět → správný účet → resume OK; Opel Zafira) |
-| A2 | Stejné jako A1, ale **e-mail** registrace + verify odkaz **v nové kartě** | Draft přežije (localStorage); po verify resume → publish; fotky/text beze ztráty | ☑ 2026-08-08 (Buddha 25b5; captcha + e-mail verify + onboarding Parak) |
+| A2 | Stejné jako A1, ale **e-mail** registrace + verify odkaz **v nové kartě** | Draft přežije (localStorage); po verify resume → publish; fotky/text beze ztráty | ☑ 2026-08-08 (Buddha); **prod 2026-09-01** Škoda Rapid Spaceback → `/inzerat/skoda-rapid-spaceback-2018-xcbd` |
 | A3 | Host prefill → Publikovat → přihlásit **existující** hotový účet | `next` + resume; publish bez znovu VOP/věku; jeden inzerát (ne duplicita) | ☑ 2026-08-08 (potvrzeno) |
 
 ### B. Prefill (nová úprava + kvalita textu)
@@ -135,7 +138,7 @@ Dočasný workaround bez O1 už není potřeba (kód posílá Custom Event). `lp
 
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
-| D1 | Hotový účet → header/FAB `/inzerat/novy` | Klasický create + prefill; **bez** „účet až při publikaci“ | ☐ |
+| D1 | Hotový účet → header/FAB `/inzerat/novy` | Klasický create + prefill; **bez** „účet až při publikaci“ | ☑ 2026-09-01 (prod — guest flag řeší jen odklad registrace, ne jinou UI; přihlášený žádnou registraci nevidí, sedí i s B1) |
 | D2 | Přihlášený vyplnit → AI → Publikovat | Žádný OAuth/login redirect | ☑ 2026-08-09 (edit Opel / změna ceny → hydratace, bez registrace) |
 | D3 | Účet bez přezdívky → `/inzerat/novy` | Onboarding → návrat na create / `?resume=1` | ☐ |
 | D4 | Přihlášený bez cizího guest draftu | Žádný claim cizího stagingu | ☐ |
@@ -144,10 +147,10 @@ Dočasný workaround bez O1 už není potřeba (kód posílá Custom Event). `lp
 
 | # | Scénář | Očekávání | ✓ |
 |---|--------|-----------|---|
-| E1 | Landing A: `/login?next=/inzerat/novy&message=create_listing&tab=register` | Zelený box (profil + 20 inzerátů); po registraci → create | ☐ |
-| E2 | Landing C: přímo `/inzerat/novy` | Guest + prefill (site-wide) | ☐ |
-| E3 | Nová registrace z funnelu | Pixel CompleteRegistration / `registered=1` jen u **nové** registrace | ☐ |
-| E4 | Publish | `Lead` s `published=<postId>` + `content_category`; bez duplicity při refresh | ☐ |
+| E1 | Landing A: `/login?next=/inzerat/novy&message=create_listing&tab=register` | Zelený box (profil + 20 inzerátů); po registraci → create | ☑ 2026-09-01 (prod, po guest Publikovat: `next=…resume=1`) |
+| E2 | Landing C: přímo `/inzerat/novy` | Guest + prefill (site-wide) | ☑ 2026-09-01 (prod: Prefill + 1 fotka Škoda) |
+| E3 | Nová registrace z funnelu | Pixel CompleteRegistration / `registered=1` jen u **nové** registrace | ☑ 2026-09-01 22:20:54 Test Events (e-mail, holínky `Claude_20`). Škoda Rapid Events Manager **neřešila** (jen screeny) — to nebyl fail. **Google OAuth registrace event nespustila** — ověřeno jen pro e-mail, OAuth cestu prověřit zvlášť. |
+| E4 | Publish | `Lead` s `published=<postId>` + `content_category`; bez duplicity při refresh | ☑ 2026-09-01 `ev=Lead` `content_category=auto` pixel `2.9.390` (refresh/dedupe neověřen) |
 | E5 | Logo / „Zpět“ z onboardingu | HP, bez smyčky login↔onboarding | ☐ |
 
 ### T. Rychlý smoke — Prefill lab / 076 / odkazy (2026-08-10)

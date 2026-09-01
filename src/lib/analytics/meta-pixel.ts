@@ -137,7 +137,7 @@ function loadFbeventsScript(): void {
 }
 
 /**
- * Stub + fbevents.js + `init`. Eventy jdou přes `trackEvent`, ne přes `fbq` zvenku.
+ * Stub + fbevents.js + `init`. `autoConfig` vypnutý — eventy jdou jen přes `trackEvent`.
  */
 export function ensureMetaPixel(pixelId: string): void {
   if (typeof window === "undefined") {
@@ -148,6 +148,9 @@ export function ensureMetaPixel(pixelId: string): void {
   loadFbeventsScript();
 
   if (initializedPixelId !== pixelId) {
+    // Meta: autoConfig vypnout PŘED init — jinak fbevents.js stihne
+    // nasadit DOM listenery (SubscribedButtonClick) dřív, než set dorazí.
+    window.fbq!("set", "autoConfig", false, pixelId);
     window.fbq!("init", pixelId);
     initializedPixelId = pixelId;
   }

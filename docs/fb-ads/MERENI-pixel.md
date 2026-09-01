@@ -10,6 +10,7 @@ V Next.js, ne v GTM. Důvod: `Lead` musí jít až po serverovém potvrzení pub
 - Env `NEXT_PUBLIC_META_PIXEL_ID` přepíše default; **prázdný string Pixel vypne** (eventy jdou do `dataLayer` pro případný GTM fallback)
 - Loader: `src/components/analytics/MetaPixelLoader.tsx` (consent + SPA + ViewContent + InitiateCheckout)
 - `Lead` / registrace: `src/components/analytics/ConversionBeacons.tsx`
+- `autoConfig` je záměrně vypnutý: v `ensureMetaPixel` jde `fbq('set', 'autoConfig', false, pixelId)` **před** `init` (Meta docs; `init` je moment, kdy fbevents.js nasazuje DOM listenery). Platí i po `revokeMetaPixel` → novém souhlasu. Jinak Pixel sám posílá kliknutí/submity (`SubscribedButtonClick`) včetně textu UI a placeholderů — i ze stránek mimo marketing. Eventy jdou jen přes `trackEvent()`. Redundantní pojistka v Events Manageru: **Automatické události** / **Automatické párování webů** / **Sledujte události automaticky bez kódu** — ověřeno Vyp 2026-09-01. **Localhost plošně ověřeno (2026-09-01):** klik na kategorii/filtr, hamburger menu, footer link, přihlášení se špatným heslem, otevření formuláře smazání účtu — `SubscribedButtonClick` se neobjevil ani jednou. Pořadí `set`→`init` **na produkci** v Test Events / Network **ještě ověřit**.
 
 ## Události
 
@@ -48,6 +49,7 @@ Příkazy do konzole (souhlas, Pixel, GA4, UTM): [MERENI-console.md](./MERENI-co
 2. Events Manager → aktivita do několika minut.
 3. **Test Events** — landing → `/inzerat/novy` → přihlášení → publikace. Pořadí: PageView, ViewContent, InitiateCheckout, Lead.
 4. `Lead` se nesmí poslat dvakrát (dedupe v localStorage podle `postId`).
+5. **Žádný** `SubscribedButtonClick` (ani jiné automatic-config eventy) — kliknutí na tlačítka a submity formulářů Pixel nesmí sbírat sám.
 
 ## Domain verification
 
@@ -69,4 +71,24 @@ Host `@`. Stávající Google/SPF TXT nemazat. Žlutý banner Cloudflare o proxy
 - [x] Pixel blokovaný do souhlasu s marketingovými cookies
 - [x] Doména zapikolou.cz ověřená (TXT DNS, Cloudflare + Meta Verify)
 - [x] Funnel ověřen na **localhostu** (Lead 1×, UTM v `cd[]`, Jen analytika → `fbq` undefined)
+- [x] Kompletní funnel od nuly na **localhostu** (2026-09-01): `ViewContent`/`InitiateCheckout`/`Lead` každý přesně 1×, GA4 `generate_lead` 1× se stejnými UTM, žádný `SubscribedButtonClick`
 - [ ] Ověřeno Pixel Helperem i Test Events na **produkci** po deployi
+
+## Otevřené
+
+**Dvojitý `ViewContent` / `InitiateCheckout` (2026-09-01, Test Events).** Funnel: landing → e-mail registrace → onboarding → `/inzerat/novy?resume=1` → Lead. `ViewContent` 2× (11 s od sebe), `InitiateCheckout` 2× (druhý po resume). Docs i kuchařka tvrdí „jednou za tab“ — nepotvrzeno, jestli stejná karta (bug) nebo dvě karty (false positive).
+
+Kód (`MetaPixelLoader.tsx` + klíče v `src/config/meta-pixel.ts`) — ověřeno čtením, ne fix:
+- Guard je `sessionStorage` `zapikolou:view_content_sent` / `zapikolou:initiate_checkout_sent`. PENDING se při každém vstupu na `/prodejte-snadno` resp. `/inzerat/novy` zapíše znovu; flush skončí, pokud SENT=`1`. Stejná karta po resume by druhý event **neměla** poslat.
+- `revokeMetaPixel` ani auth redirect SENT nemaže. `sessionStorage` přežije reload i odchod na jiný origin a návrat **ve stejné kartě**.
+- E-mail confirm z Gmailu/jiné karty = nová karta = prázdný `sessionStorage` = druhý `InitiateCheckout` je při „jednou za tab“ očekávaný.
+- `ViewContent` 11 s od sebe: není StrictMode (ten je v ms) ani resume (resume není landing). Nejspíš druhá karta / druhý vstup na landing v novém kontextu.
+
+Rozhodnutí: před odchodem na e-mail a po resume
+`sessionStorage.getItem('zapikolou:view_content_sent')` a
+`sessionStorage.getItem('zapikolou:initiate_checkout_sent')`.
+SENT po resume chybí → nový kontext. SENT=`1` a event přesto přišel → bug v loaderu.
+
+**Produkční Test Events (2026-09-01, dataset):** Pixel/FB strana funnelu + autoConfig. GA4 Realtime tam **nebyla**. Localhost mezitím `generate_lead` 1× ověřil (viz update níž). DoD produkce (Pixel Helper + Test Events po deployi `set`→`init`) zůstává odškrtnutá.
+
+**Update 2026-09-01 (localhost, čerstvá `sessionStorage`, jedna karta, funnel od nuly):** `ViewContent` na `/prodejte-snadno?utm_...` 1×, `InitiateCheckout` na `/inzerat/novy` 1×, `Lead` po publikaci 1× (UTM kompletní), GA4 `generate_lead` 1× se stejnými UTM — žádná duplicita. **Nepokrývá to** ale přímo scénář výš (e-mail verify v nové kartě po resume) — ten měl vlastní `sessionStorage`, a tenhle test ho nereprodukoval. Dvojitý `ViewContent`/`InitiateCheckout` pro tenhle konkrétní resume-přes-novou-kartu případ zůstává neuzavřený.

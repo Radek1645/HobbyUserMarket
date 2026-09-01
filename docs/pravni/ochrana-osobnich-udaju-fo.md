@@ -1,7 +1,7 @@
 # Zásady ochrany osobních údajů
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.5-fo · **Datum účinnosti:** 20.08.2026  
+**Verze:** 1.6-fo · **Datum účinnosti:** 01.09.2026  
 **Správce:** Radek Horák, fyzická osoba · **Kontakt pro GDPR:** info@zapikolou.cz · datová schránka: fxetq2k
 
 ---
@@ -93,7 +93,7 @@ Abychom minimalizovali zpracování osobních údajů, účet **automaticky anon
 1. Uživatel se **nepřihlásil déle než 90 dní** (poslední přihlášení dle účtu v autentizační službě).
 2. Uživatel **nemá žádný aktivní inzerát**.
 
-**7 dní před anonymizací** zašleme upozornění na e-mail uvedený u účtu. Přihlášení během této lhůty proces anonymizace zastaví. Po anonymizaci jsou identifikační údaje v profilu nahrazeny a autentizační účet je odstraněn — viz [VOP](/vop) §6.
+**7 dní před anonymizací** zašleme upozornění na e-mail uvedený u účtu. Přihlášení během této lhůty proces anonymizace zastaví. Po anonymizaci jsou identifikační údaje v profilu nahrazeny a autentizační účet je odstraněn.
 
 ### 6.2 Věk a souhlas dětí
 

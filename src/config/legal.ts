@@ -16,7 +16,7 @@ export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.6-osvc" : "1.11-fo"
 /** Verze GDPR textu — sync s docs/pravni/ochrana-osobnich-udaju-*.md. */
 export const CURRENT_GDPR_VERSION = MONETIZATION_ENABLED
   ? "1.2-osvc"
-  : "1.5-fo";
+  : "1.6-fo";
 
 /** Verze ceníku / limitů — sync s docs/pravni/balicky-inzerce-*.md. */
 export const CURRENT_PRICING_VERSION = MONETIZATION_ENABLED

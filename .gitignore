@@ -44,7 +44,7 @@ yarn-error.log*
 /docs/Vercel_logy/
 /docs/Supabase_logy/
 /docs/Subreg/
-/docs/fb-ads/SecurityData_*.xlsx
+/docs/fb-ads/
 
 # Pracovní koš — nikdy do gitu
 /koš/

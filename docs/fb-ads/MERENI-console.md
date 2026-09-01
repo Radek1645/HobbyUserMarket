@@ -94,11 +94,13 @@ Vrátí `undefined` a v odposlechu se objeví řádek. Když projde ručně, ale
 - `ev=Lead` — až po úspěšné publikaci (`?published=`)
 - `ev=CompleteRegistration` — až po novém účtu (`?registered=1`)
 
+> E-mail confirm v **nové** kartě (Gmail) má vlastní `sessionStorage` — druhý `InitiateCheckout` po resume pak není nutně bug. Otevřené: [MERENI-pixel.md](./MERENI-pixel.md) (dvojitý ViewContent / InitiateCheckout).
+
 V URL klidně ignorujte `cdl=API_unavailable` a `coo=false` — interní pole Meta, ne chyba nasazení. `pmd[title]` může o jednu stránku zaostávat (SPA).
 
-> Dvě věci, které **nejsou** vaše události:
-> `noscript=1` — fallback obrázek, ne JavaScript. Když vidíte jen tohle, pixel neposílá nic.
-> `ev=SubscribedButtonClick` — automatická událost, kterou Meta pálí sama. Znamená, že pixel žije, ale vlastní události neověřuje.
+> `noscript=1` **není** vaše událost — fallback obrázek, ne JavaScript. Když vidíte jen tohle, pixel neposílá nic.
+>
+> `ev=SubscribedButtonClick` se po vypnutí `autoConfig` **nemá objevit vůbec**. Když se objeví: `set('autoConfig', false)` musí být **před** `init` (Meta docs); jinak se autoConfig stihne rozjet. Zkontrolovat `ensureMetaPixel()` i **Automatické události** v Nastavení datasetu.
 
 ## 3 — Google Analytics 4
 
@@ -216,6 +218,7 @@ Tohle je nejdůležitější test celého měření. Postup: otevřete stránku 
 | Jen `noscript=1` v Network | JavaScriptová část pixelu neposílá nic. Volání `fbq('track', ...)` v kódu chybí nebo propadá |
 | PageView jen při prvním vstupu | Není navázaný na změnu routy — v Next.js se stránka znovu nenačítá |
 | UTM po přihlášení zmizely | Neukládají se do localStorage, jen se čtou z adresy. Konverze se pak nespáruje s kampaní |
+| `SubscribedButtonClick` se objevuje | autoConfig znovu aktivní — `set` musí být **před** `init` v `meta-pixel.ts`; zkontrolovat i Nastavení datasetu |
 
 ## Ještě jednodušší cesta
 

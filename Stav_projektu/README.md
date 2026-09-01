@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-09-01 (večer) | [2026-09-01-vecer.md](./2026-09-01-vecer.md) — Pixel `autoConfig` vypnutý; Funnel C prod + E3; docs status → TO-DO § L; GDPR 1.6-fo; PRD v3.95 |
 | 2026-09-01 | [2026-09-01.md](./2026-09-01.md) — 082 soukromá/vícedenní + sdílení; **083** PII `location` nullable; cron retry; P41 backlog; PRD v3.93 |
 | 2026-08-30 (večer) | [2026-08-30.md](./2026-08-30.md) — Doplňte v hydrataci, expirace událostí 080, SEC-M02/M10; PRD v3.91 |
 | 2026-08-28 (odpoledne) | [2026-08-28-vecer.md](./2026-08-28-vecer.md) — P0 078/079, SEC-M07/M08; **ověřeno produkce 29. 8.** (smoke, založení inzerátu) |

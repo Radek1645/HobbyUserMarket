@@ -1,7 +1,8 @@
 # Návod na FB reklamu — zaPikolou.cz
 
 Kreativní brief + nastavení Ads Manageru.  
-Technický funnel (guest draft, Pixel, smoke): [`fb-promo-campaign.md`](./fb-promo-campaign.md).  
+Technický funnel (flag, architektura, deploy): [`fb-promo-campaign.md`](./fb-promo-campaign.md).  
+Aktuální stav smoke / Pixel / mobil: [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L.  
 Před první platbou Meta: [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/povinnosti-urady-fb-reklama.md).
 
 ---
@@ -45,21 +46,15 @@ Před první platbou Meta: [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/po
 - **Cíl kampaně:** Konverze, ne kliknutí/traffic.
 - **Optimalizace:** standardní event Meta Pixel — **`Lead`** (publikace inzerátu; nepoužívat `Inzerat_Vytvoren` / `Post_Ad_Success`) — spouštěný až po úspěšném podání inzerátu, ne na kliknutí.
 
-### Thank you page (blocker před spuštěním)
+### Thank you page
 
 Na webu **není samostatná thank-you stránka**. Konverze se má spustit až po úspěšném vytvoření inzerátu (ne na odeslání formuláře, které může selhat validací).
 
-Aktuální trigger: redirect na detail inzerátu s `?published=<postId>` → klientský beacon `Lead`. To je správný moment (po `publish_approved_post`, ne po kliknutí na Publikovat).
-
-Před kampaní ověřit na **produkci** (ne jen localhost):
-- Pixel Helper vidí `1774699993535627` po marketingovém souhlasu
-- marketingový souhlas v cookie liště (bez něj se Pixel nenačte)
-- event `Lead` 1×, bez duplicity při refresh
-- event se neposílá u republish / editace
+Trigger: redirect na detail inzerátu s `?published=<postId>` → klientský beacon `Lead` (po `publish_approved_post`, ne po kliknutí na Publikovat).
 
 Hodnotu inzerátu (cenu) do eventu **zatím nedávat** — optimalizace na value by tlačila algoritmus k drahým věcem, ne k počtu nových inzerentů. Volume na `Lead` stačí.
 
-Pokud E3/E4 na produkci neprojde, kampaň nespouštět — bez konverze nejde optimalizovat na Konverze. Checklist: [`fb-promo-campaign.md`](./fb-promo-campaign.md).
+Jestli Pixel/smoke stačí ke spuštění kampaně: [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L.
 
 ---
 
@@ -74,10 +69,10 @@ Pokud E3/E4 na produkci neprojde, kampaň nespouštět — bez konverze nejde op
 | V reklamě | Na webu |
 |-----------|---------|
 | Headline „Stačí fotka a pár slov“ | HP H1: „Online bazar, kde stačí fotka a pár slov.“ |
-| CTA „Přidat inzerát“ | Na webu je „Vytvořit inzerát s AI“ / FAB. Landing z ads: `/inzerat/novy` (po zapnutí guest flagu C) |
+| CTA „Přidat inzerát“ | Na webu je „Vytvořit inzerát s AI“ / FAB. Landing z ads: `/inzerat/novy` (guest flag C — stav viz [`TO-DO § L`](./TO-DO-dalsi-den.md)) |
 | „Jen 3 pole“ | Reálný tok je fotky → AI náhled → doplnit cenu/stav/lokalitu → publikovat. Screenshot musí být skutečné UI, ne fiktivní 3-polový formulář. |
 | „Zdarma“ | Platí pro kvótu zdarma (`HOME_FREE_QUOTA_BADGE_LABEL`), ne „navždy vše zdarma“. |
 
 Karusel karta 2 přesněji: „Doplň cenu. Text ti napíše AI.“ — slib „pár slov“ drží, ale neslibuje ruční psaní, když landing je AI formulář.
 
-**Landing bez guest flagu** (login wall před fotkou) rozbije slib „pár kliků“. Flag C (`NEXT_PUBLIC_GUEST_LISTING_DRAFT_ENABLED`) zapnout až po produkčním smoke — viz [`fb-promo-campaign.md`](./fb-promo-campaign.md).
+Při zapnutém flagu C host na `/inzerat/novy` vidí formulář, ne login wall — vypnutí by rozbilo slib „pár kliků“. Stav flagu: [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L.
