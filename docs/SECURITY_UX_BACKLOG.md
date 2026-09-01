@@ -1,6 +1,6 @@
 # Security & UX backlog — zaPikolou.cz
 
-> **Jediný živý backlog** (od 2026-08-06, naposledy 2026-08-31).  
+> **Jediný živý backlog** (od 2026-08-06, naposledy 2026-09-01).  
 > Originály auditů jsou v [`archive/audits/`](./archive/audits/). Sem patří stav a pořadí práce, ne plný zápis auditu.  
 > **Operativní smoke / produktové TO-DO:** [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md)
 
@@ -48,7 +48,7 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-28.
 | Oblast | Otevřené High | Otevřené Medium | Low / backlog |
 |--------|:-------------:|:---------------:|:-------------:|
 | Security | 0 (SEC-H01–H05 ✅) | 4 (M01, M03, M04, M06) | L01–L13 + rezidua |
-| Proces (Fable) | — | P5, P13, P16, P18, P28 ops, P29, P30 UI, P32, P33 právník | P25, P34, P36, P40 |
+| Proces (Fable) | — | P5, P13, P16, P18, P28 ops, P29, P30 UI, P32, P33 právník, **P41** | P25, P34, P36, P40 |
 | UX | — | loading/error boundaries, silent errors, 2 AI modaly | a11y drobnosti |
 
 **Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **Hard stop H1/H3/H5 produkce:** 2026-08-06 ✅ · **P0 column grants 078+079:** 2026-08-28 ✅ ověřeno · **SEC-M07/M08/M09:** ✅ ověřeno/uzavřeno produkce 2026-08-29 · **SEC-M02/GO-6:** ✅ v kódu 2026-08-29 · **SEC-M10:** ✅ změna hesla smoke produkce 2026-08-30 · **GO-2 B1–B5:** ✅ · **I6:** ⏳
@@ -176,6 +176,7 @@ P0 (28. 8. 2026): `anon`/`authenticated` + `location` → `42501`; search „tep
 | **P34/b** | LCP preload + GSC | Volitelné | Po |
 | **P36** | GTM ID cookie tlačítka | `gtmCtaProps` | Po |
 | **P40** | Prompt version v logu | Částečně 064 (`prompt_version`…); inventář AI | Budoucí |
+| **P41** | Obnova archived po PII purge | Po 30 dnech `location` NULL (`083`). `extendListingBy30Days` → `active` → `23514`, tichý redirect na `/moje-inzeraty` (stejný vzor jako P29). Hláška „doplňte polohu“ nebo `/upravit`. Ne teď. | Po 083 |
 
 Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …): viz archiv Fable.
 
@@ -235,6 +236,7 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 - [ ] SEC-L07 Report rate limit
 - [ ] SEC-L11 `.gitignore` `.env`
 - [ ] P29 Silent management errors
+- [ ] **P41** Prodloužit archived po úklidu GPS (`location` NULL → CHECK 083)
 
 ### P2 — produkt / UX / SEO
 
@@ -277,6 +279,7 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 
 | Datum | Změna |
 |-------|-------|
+| 2026-09-01 | **083** na produkci: `posts.location` nullable + CHECK jen `archived`/`deleted`. Cron PII znovu projde. **P41** (ne teď): Prodloužit archived po purge GPS → `23514`, tichý redirect. |
 | 2026-08-31 | **SEC-L13** (low, úklid): `COALESCE(auth.role(), '')` ve write guardech bere NULL jako privileged. PostgREST JWT roli nastavuje; objevilo se u 081 v SQL editoru. Oprava `COALESCE(…, 'anon')` + JWT v migracích. Ne teď. |
 | 2026-08-30 | **GO-2 uzavřeno:** B1–B4 produkční REST jako `authenticated` (post `126` / `kovova-soska-buddhy-1w8o`) → HTTP 403 + `42501`. B5 UI už 6. 8. **SEC-M10** změna hesla: produkce chtěla stávající heslo. |
 | 2026-08-30 | **Hydratace `Doplňte`:** vyplněné výzvy jdou do Parametrů, stejná otázka se neptá. Edge `moderate-listing` deploy + migrace `080` (půlnoc události). App po Vercel pushi. |

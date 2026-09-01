@@ -193,7 +193,7 @@ Hlavní tabulka. Kategorie žijí jako textové sloupce — taxonomie je v kódu
 | SEO | `meta_description`, `image_alt`, `main_image_url`, `search_vector` | Meta, alt, náhledová URL, fulltext (**bez diakritiky** — `071` + `immutable_unaccent`) |
 | Zařazení | `category_type`, `subcategory_slug`, `condition_label` | Typ, podkategorie, stav/typ nabídky |
 | Cena | `price_type`, `price_amount`, `exchange_for` | Typ ceny, částka, text výměny |
-| Místo | `location_text`, `location` | Text lokality + PostGIS bod |
+| Místo | `location_text`, `location` | Text lokality (NOT NULL) + PostGIS bod. `location` je NULL jen u `archived`/`deleted` po úklidu PII (`083`); REST SELECT nemá (079). |
 | Kontakt | `show_contact_email`, `show_contact_phone`, `contact_phone` | Co smí odhalit „Zobrazit kontakt“ |
 | Práce | `job_cv_required` | Zda inzerát práce chce CV |
 | Životní cyklus | `status`, `status_reason_code`, `deletion_reason`, `expires_at`, `listing_duration_days`, `event_date`, `event_end_date`, `is_private`, `external_url`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, expirace, událost (začátek/konec, soukromá), volitelný https odkaz (`077`). U `udalost` je `expires_at` = půlnoc `Europe/Prague` po dni `COALESCE(event_end_date, event_date)` (`080` + `082`). `is_private` jen u `udalost`; **není** v `is_post_publicly_visible` (RLS) — filtr ve výpisech. Grant SELECT (`082`) pro `anon`/`authenticated`. |

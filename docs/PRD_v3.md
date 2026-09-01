@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.92
+> **Verze dokumentu:** v3.93
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql)  
+> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql) · [`083_posts_location_nullable_for_pii_purge.sql`](../supabase/083_posts_location_nullable_for_pii_purge.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
 > **Datum:** 2026-09-01
 
@@ -910,6 +910,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.90 | 2026-08-30 | **Expirace událostí:** `expires_at` = půlnoc `Europe/Prague` následujícího dne po dni konání (ne `event_date + 24 h`). Migrace [`080`](../supabase/080_event_expires_end_of_calendar_day.sql). Karty událostí ukazují **Konání** místo **Vytvořeno**. |
 | v3.91 | 2026-08-30 | **Vyplněné `Doplňte …:` v hydrataci:** `Doplňte materiál: bronz` se bere jako fakt — do Parametrů (`• Materiál: bronz`) a hydratace se na něj znovu neptá. Prázdné výzvy zůstanou. Klient `applyFilledDoplnitToHydration` + prompt v `build-prompt.ts`. |
 | v3.92 | 2026-09-01 | **Soukromá / vícedenní událost + sdílení:** `is_private` (mimo výpisy, detail podle slugu, `noindex`; **ne** v `is_post_publicly_visible`). `event_end_date` (jiné kalendářní dny, Praha); `expires_at` z konce. Sdílení: QR + stáhnout PNG, ikona přes roh fotky. Hydratace: `free_pickup` u události („Vstup zdarma“) se do textu nepropisuje, pokud to inzerent nenapsal. Migrace [`082`](../supabase/082_posts_private_events.sql). Právní retence [`081`](../supabase/081_legal_retention_and_hidden_at.sql) (`hidden_at`, kredity archived, cron `purge-legal-retention`). |
+| v3.93 | 2026-09-01 | **PII purge + `location`:** `apply_hidden_listing_pii_purge` nastavuje GPS na NULL; sloupec byl NOT NULL (`23502`, cron 04:31). Migrace [`083`](../supabase/083_posts_location_nullable_for_pii_purge.sql) — `location` nullable jen u `archived`/`deleted`. `location_text` B1 nemaže. |
 
 ---
 

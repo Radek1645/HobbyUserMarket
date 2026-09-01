@@ -27,7 +27,8 @@ type BlockedWarningRow = {
 /**
  * Denní úklid právní retence (B1–B2): PII + fotky, DELETE starých řádků,
  * provozní tabulky, varování a překlopení stale blocked.
- * Do vercel.json až po produkčním SELECT count(*) — viz migrace 081.
+ * Storage před apply (cesty jsou v post_images). Batch apply; při chybě retry
+ * po jednom ID, B2/B3 dál běží. location smí být NULL jen archived/deleted (083).
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -79,16 +80,30 @@ export async function GET(request: Request) {
   }
 
   let piiApplied = 0;
+  let piiApplyFailed = false;
   if (purgedPostIds.length > 0) {
     const { data: applied, error: applyError } = await admin.rpc(
       "apply_hidden_listing_pii_purge",
       { p_post_ids: purgedPostIds },
     );
-    if (applyError) {
+    if (!applyError) {
+      piiApplied = typeof applied === "number" ? applied : purgedPostIds.length;
+    } else {
+      // Jeden 23502 v batchi rollbackne celé pole. Retry po jednom ID.
       console.error("apply_hidden_listing_pii_purge:", applyError);
-      return NextResponse.json({ error: "DB error" }, { status: 500 });
+      for (const postId of purgedPostIds) {
+        const { error: oneError } = await admin.rpc(
+          "apply_hidden_listing_pii_purge",
+          { p_post_ids: [postId] },
+        );
+        if (oneError) {
+          console.error("apply_hidden_listing_pii_purge:", postId, oneError);
+          piiApplyFailed = true;
+          continue;
+        }
+        piiApplied += 1;
+      }
     }
-    piiApplied = typeof applied === "number" ? applied : purgedPostIds.length;
   }
 
   const { data: rowsDeleted, error: rowsError } = await admin.rpc(
@@ -149,6 +164,21 @@ export async function GET(request: Request) {
   if (flipError) {
     console.error("flip_blocked_stale_listings:", flipError);
     return NextResponse.json({ error: "DB error" }, { status: 500 });
+  }
+
+  if (piiApplyFailed) {
+    return NextResponse.json(
+      {
+        error: "DB error",
+        piiCandidates: pathsByPost.size,
+        piiApplied,
+        rowsDeleted: rowsDeleted ?? 0,
+        retention,
+        blockedWarned,
+        blockedFlipped: blockedFlipped ?? 0,
+      },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({

@@ -1159,7 +1159,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 | `/api/cron/gdpr-retention` | `15 3 * * *` | Neaktivní účty: varování 7 dní předem, po **90 dnech** bez přihlášení a bez aktivního inzerátu anonymizace profilu + smazání auth (`045`, `src/config/gdpr-retention.ts`) |
 | `/api/cron/anonymize-inquiry-ips` | `45 3 * * *` | Zkrácení IP v `inquiry_events` starších než **7 dní** (IPv4 → `x.x.x.0`, jinak `anonymized`). RPC `anonymize_old_inquiry_ips`, migrace **050**, config `src/config/ip-anonymization.ts` |
 | `/api/cron/purge-hard-stop-evidence` | `0 4 * * *` | Evidence hard-stop + snapshoty + historie blacklistu starší než **730 dní** (`HARD_STOP_EVIDENCE_RETENTION_DAYS`); aktivní blacklist se nemaže |
-| `/api/cron/purge-legal-retention` | `30 4 * * *` | Úklid PII po `hidden_at` + 30 dní, DELETE po 12 měsících, varování blocked (`081`) |
+| `/api/cron/purge-legal-retention` | `30 4 * * *` | Úklid PII po `hidden_at` + 30 dní (telefon, GPS `location`, original_*, fotky), DELETE po 12 měsících, varování blocked (`081` + `083`). `location_text` zůstává do smazání řádku. |
 
 Auth: `Authorization: Bearer CRON_SECRET` (stejně jako ostatní crony). Rate-limit poptávek používá IP jen v okně 24 h — anonymizace po 7 dnech ho neovlivní.
 
