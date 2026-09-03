@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-09-04 | [2026-09-04.md](./2026-09-04.md) — FB landing copy (funnel C), hero hint vedle CTA |
 | 2026-09-03 | [2026-09-03.md](./2026-09-03.md) — imprint `/kontakt`, VOP 1.12-fo bez reconsent, GDPR 1.8, SEC-H06, PRD v3.96 |
 | 2026-09-01 (večer) | [2026-09-01-vecer.md](./2026-09-01-vecer.md) — Pixel `autoConfig` vypnutý; Funnel C prod + E3; docs status → TO-DO § L; GDPR 1.6-fo; PRD v3.95 |
 | 2026-09-01 | [2026-09-01.md](./2026-09-01.md) — 082 soukromá/vícedenní + sdílení; **083** PII `location` nullable; cron retry; P41 backlog; PRD v3.93 |

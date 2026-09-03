@@ -80,7 +80,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 3. Cookie lišta, GTM a Pixel zůstávají. Po analytickém souhlasu jde do `dataLayer` event `lp_view`. Po **marketingovém** souhlasu Pixel pošle `ViewContent` (`content_name: landing_fb`). CTA mají `data-gtm-id` `cta_lp_header` / `cta_lp_hero` / `cta_lp_footer` a `data-gtm-position`.
 4. UTM a `fbclid` se uloží do `localStorage` a přenesou na `/inzerat/novy`. Flag C je na produkci **zapnutý** — host jde rovnou do formuláře. Kdyby se vypnul, login wall je zachová v `next`. Přiloží se k Pixel události `Lead`.
 5. V patičce (sloupec **Co je zaPikolou?**) je odkaz **Prodejte snadno**.
-6. Texty: vykání, žádné časové claimy, AI nedoplňuje cenu, registrace před publikací je zmíněná. Copy: [`src/config/fb-promo-landing.ts`](../src/config/fb-promo-landing.ts). Design: [`docs/fb-ads/Landing page pro Facebook reklamu/`](./fb-ads/Landing%20page%20pro%20Facebook%20reklamu/).
+6. Texty: vykání, žádné časové claimy, AI nedoplňuje cenu. Funnel C: inzerát se začíná bez účtu, přihlášení (Google nebo e-mail) až před publikací — hero hint vedle CTA (`sm+`), FAQ i závěrečné CTA. Krok 3: ještě vyplnit stav, lokalitu a cenu, zkontrolovat návrh. Copy: [`src/config/fb-promo-landing.ts`](../src/config/fb-promo-landing.ts). Design: [`docs/fb-ads/Landing page pro Facebook reklamu/`](./fb-ads/Landing%20page%20pro%20Facebook%20reklamu/).
 
 ### 2.2 Jak se inzeráty na HP vybírají a řadí
 

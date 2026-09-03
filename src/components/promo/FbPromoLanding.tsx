@@ -62,17 +62,17 @@ export function FbPromoLanding() {
             <p className="max-w-[490px] text-[21px] leading-[1.55] text-[#46584D] text-pretty">
               {ui.heroSubtitle}
             </p>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
               <FbPromoCtaLink
                 href={FB_PROMO_CREATE_LISTING_PATH}
                 createListing
                 gtmId={GTM_CTA.LP_CTA_HERO}
                 position="hero"
-                className={landingPrimaryCtaClass}
+                className={`${landingPrimaryCtaClass} shrink-0`}
               >
                 {ui.heroCta}
               </FbPromoCtaLink>
-              <p className="max-w-[210px] text-[15px] text-[#6B7F73]">
+              <p className="min-w-0 max-w-[280px] text-[15px] leading-snug text-[#6B7F73]">
                 {ui.heroCtaHint}
               </p>
             </div>

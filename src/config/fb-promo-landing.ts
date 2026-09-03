@@ -32,7 +32,8 @@ export const FB_PROMO_LANDING_UI = {
   headerHowItWorks: "Jak to funguje",
   headerCta: "Vložit inzerát",
   heroCta: "Vložit inzerát zdarma",
-  heroCtaHint: "Přihlášení jedním klikem přes Google, pak už jen publikujete",
+  heroCtaHint:
+    "Začít můžete hned. Přihlásíte se až před publikací — Google nebo e-mailem.",
   bullets: [
     `${LISTING_QUOTA_FREE_DEFAULT} inzerátů zdarma`,
     "Bez provizí z prodeje",
@@ -50,8 +51,8 @@ export const FB_PROMO_LANDING_UI = {
       text: "„Starý router, funguje.“ Když bude něco chybět, AI se sama doptá.",
     },
     {
-      title: "Zkontrolujete a publikujete",
-      text: "Text si přečtete, cenu zadáte sami a dáte publikovat. Poslední text je vždycky váš.",
+      title: "Zkontrolujete návrh a publikujete",
+      text: "Ještě vyplníte stav, lokalitu a cenu. Text si přečtete, případně upravíte, a dáte publikovat. Poslední text je vždycky váš.",
     },
   ] as const,
   aiEyebrow: "Co za vás udělá AI",
@@ -90,7 +91,7 @@ export const FB_PROMO_LANDING_UI = {
     "Inzeráty se dají filtrovat podle obce, takže vidíte hlavně to, co je poblíž.",
   faqTitle: "Časté dotazy",
   closingTitle: "Vyberte si doma jednu věc a zkuste to",
-  closingText: `Vyfotíte, napíšete pár slov, přihlásíte se přes Google a inzerát je venku. Prvních ${LISTING_QUOTA_FREE_DEFAULT} je zdarma.`,
+  closingText: `Vyfotíte, napíšete pár slov, vyplníte stav, lokalitu a cenu a dáte publikovat. Přihlásíte se až na konci — Google nebo e-mailem. Prvních ${LISTING_QUOTA_FREE_DEFAULT} je zdarma.`,
   mockupBeforeEyebrow: "Co napíšete",
   mockupBeforeText: "„Starý router, funguje“",
   mockupBannerTitle: "AI vám vylepšila inzerát",
