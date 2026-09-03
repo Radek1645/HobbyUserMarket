@@ -148,7 +148,8 @@ Interní prefixy `hum_*` v localStorage **neměnit** — uživatel je nevidí.
 
 ## Otevřené body (neblokují provoz)
 
-- [ ] Právní název provozovatele (IČO, sídlo) v patičce a VOP — až OSVČ
+- [x] Identita provozovatele na `/kontakt` (IČO, sídlo, zápis) — 2026-09-03; VOP FO odkazuje, nekopíruje IČO
+- [ ] IČO ve VOP OSVČ / ceníku — až `NEXT_PUBLIC_MONETIZATION_ENABLED` (draft 2.1 v `navrh-claude/`, mimo git)
 - [ ] Revize právních textů u právníka
 - [x] Favicon (zelené zP)
 - [ ] OG obrázek pro sdílení na sociálních sítích

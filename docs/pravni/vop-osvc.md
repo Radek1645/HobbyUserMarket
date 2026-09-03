@@ -2,7 +2,7 @@
 
 **Platforma:** zaPikolou.cz  
 **Verze:** 1.6-osvc · **Datum účinnosti:** [doplnit]  
-**Provozovatel:** Radek Horák, podnikající fyzická osoba · IČO: [doplnit] (přiděleno Českým statistickým úřadem) · zapsán v živnostenském rejstříku · kontaktní e-mail: info@zapikolou.cz · datová schránka: fxetq2k
+**Provozovatel:** Radek Horák, podnikající fyzická osoba · IČO: [doplnit] (přiděleno Českým statistickým úřadem) · zapsán v živnostenském rejstříku · kontaktní e-mail: info@zapikolou.cz · datová schránka: 8q4nyyt
 
 ---
 
@@ -203,6 +203,6 @@ Ukončením nebo podstatným omezením provozu zaniká možnost zveřejnění a 
 
 O plánovaném ukončení Provozovatel uživatele informuje přiměřeně předem (typicky e-mailem), pokud to okolnosti dovolí. U uživatelů s profilem Podnikatele se v rozsahu vyžadovaném nařízením (EU) 2019/1150 uplatní příslušné oznamovací lhůty.
 
-**Kontakt:** info@zapikolou.cz · datová schránka: fxetq2k
+**Kontakt:** info@zapikolou.cz · datová schránka: 8q4nyyt
 
 ---

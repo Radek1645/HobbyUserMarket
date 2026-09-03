@@ -1,8 +1,10 @@
 # Zásady ochrany osobních údajů
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.6-fo · **Datum účinnosti:** 01.09.2026  
-**Správce:** Radek Horák, fyzická osoba · **Kontakt pro GDPR:** info@zapikolou.cz · datová schránka: fxetq2k
+**Verze:** 1.8-fo · **Datum účinnosti:** 03.09.2026  
+**Správce:** Radek Horák · **Kontakt pro GDPR:** info@zapikolou.cz · datová schránka: 8q4nyyt
+
+Údaje o provozovateli (jméno, sídlo, IČO, zápis v rejstříku, e-mail, datová schránka) najdete na stránce [Provozovatel webu](/kontakt).
 
 ---
 
@@ -103,6 +105,6 @@ Platforma je určena uživatelům od **15 let**. Při registraci vyžadujeme **p
 
 ## 7. Kontakt
 
-Dotazy ke zpracování osobních údajů směřujte na: **info@zapikolou.cz** · datová schránka: **fxetq2k**
+Dotazy ke zpracování osobních údajů směřujte na: **info@zapikolou.cz** · datová schránka: **8q4nyyt** · identifikační údaje na [Provozovatel webu](/kontakt).
 
 ---

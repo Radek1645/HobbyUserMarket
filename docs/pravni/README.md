@@ -1,6 +1,6 @@
 # Právní dokumentace — draft (Legal Design)
 
-> **Stav:** Web FO VOP **1.11-fo** (účinnost 15.08.2026) · GDPR FO **1.6-fo** (účinnost 01.09.2026; oprava falešného odkazu na VOP §6) · cookies **1.3** · Pravidla **1.5** · Limity FO **1.4-fo** · OSVČ VOP draft **1.6-osvc** · GDPR OSVČ **1.2-osvc** · Balíčky OSVČ **1.1-osvc** (IČO / datum účinnosti k doplnění; bez adresy) · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
+> **Stav:** Web FO VOP **1.12-fo** (účinnost 03.09.2026; IČO/sídlo na `/kontakt`; **bez reconsent**) · GDPR FO **1.8-fo** · cookies **1.4** · Pravidla **1.5** · Limity FO **1.5-fo** · DSA **1.3** · OSVČ VOP draft **1.6-osvc** · GDPR OSVČ **1.2-osvc** · Balíčky OSVČ **1.1-osvc** (IČO / datum účinnosti k doplnění; bez adresy) · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
 > **Projekt:** HobbyUserMarket (specifikace [`PRD_v3.md`](../PRD_v3.md) §11.3)
 
 Modulární sada právních textů pro web. Každý dokument obsahuje srozumitelné shrnutí (TL;DR) a plné znění pro publikaci na samostatné URL.
@@ -64,7 +64,7 @@ Pokud uživatel při registraci odsouhlasí VOP, musíme umět **kdykoli doloži
 - `vop_version` musí odpovídat **verzovanému artefaktu**, který je dlouhodobě dostupný:
   - PDF v `public/docs/` se verzí v názvu (např. `vop-v1.8-fo.pdf`, `vop-v1.6-osvc.pdf`)
   - a/nebo HTML snapshot verze (nesmí se zpětně měnit)
-- Aktuální FO (web): `CURRENT_VOP_VERSION = "1.11-fo"` → snapshot [`snapshots/vop-v1.11-fo.md`](./snapshots/vop-v1.11-fo.md). Starší snapshoty (`vop-v1.5-fo` … `vop-v1.10-fo`) ponechány pro dříve odsouhlasené účty.
+- Aktuální FO (web): `CURRENT_VOP_VERSION = "1.12-fo"` → snapshot [`snapshots/vop-v1.12-fo.md`](./snapshots/vop-v1.12-fo.md). **Bez reconsent** — 1.12 jen opravuje fakt o provozovateli (DS `8q4nyyt`, identita na `/kontakt` místo „fyzická osoba“); práva, ceny ani pravidla se nemění. P2B 15 dní se váže jen na profil Podnikatele; v DB zatím žádný není. Dialog spouští jen tabulka [`VOP_RECONSENT_REQUIRED`](../../src/config/vop-reconsent-required.ts) (default prázdná). Starší (`vop-v1.5-fo` … `vop-v1.11-fo`) ponechány pro dříve odsouhlasené účty.
 - OSVČ draft (až `NEXT_PUBLIC_MONETIZATION_ENABLED=true`): `"1.6-osvc"` → [`snapshots/vop-v1.6-osvc.md`](./snapshots/vop-v1.6-osvc.md). Starší [`vop-v1.5-osvc.md`](./snapshots/vop-v1.5-osvc.md) beze změny.
 - Jakmile je verze jednou v produkci a někdo ji odsouhlasí, **nesmí se přepsat** „na místě“ bez navýšení verze (jen nový soubor + nová verze).
 
@@ -150,6 +150,14 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 | OSVČ GDPR §5.1 — stejný řádek Cloudflare (draft, před monetizací) | ✅ |
 | Ops: [`branding-a-domeny.md`](../branding-a-domeny.md) — Subreg = jen registrace | ✅ |
 
+## Sync 2026-09-03 — identita provozovatele
+
+| Bod | Stav |
+|-----|------|
+| VOP FO → **1.12-fo** + snapshot; `CURRENT_VOP_VERSION`; **bez** `VOP_RECONSENT_REQUIRED` | ✅ |
+| GDPR FO **1.8-fo**, cookies **1.4**, limity **1.5-fo**, DSA **1.3** — odkaz na `/kontakt` | ✅ |
+| IČO / sídlo jen na `/kontakt`, ne v těle VOP | ✅ |
+
 ## Draft 2026-08-29 — VOP OSVČ 1.6
 
 | Bod | Stav |
@@ -157,7 +165,7 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 | VOP OSVČ → **1.6-osvc** + snapshot; `CURRENT_VOP_VERSION` při monetizaci | ✅ |
 | Základ FO **1.11** (brand, guest draft, `/nahlasit`, CSAM, statistiky, §8.3) + reklamace / ceník / limitace z OSVČ 1.5 | ✅ |
 | Placeholdery: IČO, datum účinnosti | ⏳ až přidělení IČO |
-| Web `/vop` | beze změny (**1.11-fo**, monetizace vypnutá) |
+| Web `/vop` | **1.12-fo** (03.09.2026; bez reconsent — viz verzování výše) |
 | Balíčky OSVČ → **1.1-osvc** (brand zaPikolou, ceník, nákup převodem, odstoupení); snapshot [`snapshots/balicky-inzerce-v1.0-osvc.md`](./snapshots/balicky-inzerce-v1.0-osvc.md) | ✅ draft |
 | GDPR OSVČ → **1.2-osvc** (brand zaPikolou, guest draft, Meta Pixel, veřejný profil, nákup balíčku); snapshot [`snapshots/ochrana-osobnich-udaju-v1.1-osvc.md`](./snapshots/ochrana-osobnich-udaju-v1.1-osvc.md) | ✅ draft |
 

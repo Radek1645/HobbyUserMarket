@@ -1,7 +1,7 @@
 # DSA kontaktní centrum (hlášení obsahu)
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.2 · **Datum účinnosti:** 10.08.2026
+**Verze:** 1.3 · **Datum účinnosti:** 03.09.2026
 
 ---
 
@@ -19,7 +19,7 @@ V souladu s **nařízením Evropského parlamentu a Rady (EU) 2022/2065 (DSA)** 
 |---------|------|
 | E-mail pro úřady | info@zapikolou.cz |
 | E-mail pro uživatele (hlášení obsahu) | info@zapikolou.cz |
-| Datová schránka | fxetq2k |
+| Datová schránka | 8q4nyyt |
 | Komunikační jazyky | Čeština, angličtina |
 
 ---
@@ -55,6 +55,6 @@ Provozovatel může zveřejňovat agregované přehledy o přijatých hlášení
 
 ## 5. Kontakt pro tisk a úřady
 
-Údaje o provozovateli (jméno, e-mail, datová schránka) najdete na stránce [Provozovatel webu](/kontakt).
+Údaje o provozovateli (jméno, sídlo, IČO, zápis v rejstříku, e-mail, datová schránka) najdete na stránce [Provozovatel webu](/kontakt).
 
 ---

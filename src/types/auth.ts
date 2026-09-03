@@ -12,6 +12,6 @@ export type AppUser = {
   needsNicknameSetup: boolean;
   isCompany: boolean;
   companyName: string | null;
-  /** true, když uložená vop_version existuje a liší se od CURRENT_VOP_VERSION. */
+  /** true, když aktuální VOP je v `VOP_RECONSENT_REQUIRED` a účet má starší verzi. */
   needsVopReconsent: boolean;
 };

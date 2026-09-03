@@ -1,8 +1,10 @@
 # Limity inzerce
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.4-fo · **Datum účinnosti:** 15.08.2026  
-**Provozovatel:** Radek Horák, fyzická osoba · kontaktní e-mail: info@zapikolou.cz
+**Verze:** 1.5-fo · **Datum účinnosti:** 03.09.2026  
+**Provozovatel:** Radek Horák · kontaktní e-mail: info@zapikolou.cz
+
+Údaje o provozovateli (jméno, sídlo, IČO, zápis v rejstříku, e-mail, datová schránka) najdete na stránce [Provozovatel webu](/kontakt).
 
 ---
 

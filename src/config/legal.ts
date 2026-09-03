@@ -1,4 +1,5 @@
 import { MONETIZATION_ENABLED } from "@/config/monetization";
+import { getVopReconsentSummary } from "@/config/vop-reconsent-required";
 
 /** Právní dokumenty — cesty a popisky (PRD §5.2, §11.3). */
 
@@ -10,18 +11,22 @@ export const COOKIES_PATH = "/cookies";
 export const DSA_CONTACT_PATH = "/dsa";
 export const REPORT_LISTING_PATH = "/nahlasit";
 
-/** Verze VOP v okamžiku registrace — sync s docs/pravni/vop-*.md. */
-export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.6-osvc" : "1.11-fo";
+/**
+ * Verze VOP v okamžiku registrace — sync s docs/pravni/vop-*.md.
+ * Číslo můžeš zvednout i u drobnosti. Dialog souhlasu spouští jen
+ * tabulka `VOP_RECONSENT_REQUIRED` v `src/config/vop-reconsent-required.ts`.
+ */
+export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.6-osvc" : "1.12-fo";
 
 /** Verze GDPR textu — sync s docs/pravni/ochrana-osobnich-udaju-*.md. */
 export const CURRENT_GDPR_VERSION = MONETIZATION_ENABLED
   ? "1.2-osvc"
-  : "1.6-fo";
+  : "1.8-fo";
 
 /** Verze ceníku / limitů — sync s docs/pravni/balicky-inzerce-*.md. */
 export const CURRENT_PRICING_VERSION = MONETIZATION_ENABLED
   ? "1.1-osvc"
-  : "1.4-fo";
+  : "1.5-fo";
 
 export const SAFETY_UI = {
   /** Fallback / zboží, móda, služby — osobní předání věci. */
@@ -102,6 +107,8 @@ export const LEGAL_UI = {
   reconsentTitle: "Aktualizovali jsme podmínky",
   reconsentBody:
     "Abychom mohli dál poskytovat inzerci, potřebujeme váš souhlas s aktuálním zněním VOP. Prohlížení webu, správa inzerátů a nastavení účtu fungují i bez nového souhlasu.",
+  reconsentSummary: getVopReconsentSummary(CURRENT_VOP_VERSION),
+  reconsentSummaryLabel: "Co se změnilo",
   reconsentAccept: "Souhlasím s aktuálními VOP",
   reconsentRequiredError:
     "Než založíte nebo zveřejníte inzerát, potvrďte aktuální znění VOP.",

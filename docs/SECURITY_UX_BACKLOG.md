@@ -47,11 +47,11 @@ Blokátory spuštění (ne „nice to have“). Stav k 2026-08-28.
 
 | Oblast | Otevřené High | Otevřené Medium | Low / backlog |
 |--------|:-------------:|:---------------:|:-------------:|
-| Security | 0 (SEC-H01–H05 ✅) | 4 (M01, M03, M04, M06) | L01–L13 + rezidua |
+| Security | 0 (SEC-H01–H06 ✅) | 4 (M01, M03, M04, M06) | L01–L13 + rezidua |
 | Proces (Fable) | — | P5, P13, P16, P18, P28 ops, P29, P30 UI, P32, P33 právník, **P41** | P25, P34, P36, P40 |
 | UX | — | loading/error boundaries, silent errors, 2 AI modaly | a11y drobnosti |
 
-**Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **Hard stop H1/H3/H5 produkce:** 2026-08-06 ✅ · **P0 column grants 078+079:** 2026-08-28 ✅ ověřeno · **SEC-M07/M08/M09:** ✅ ověřeno/uzavřeno produkce 2026-08-29 · **SEC-M02/GO-6:** ✅ v kódu 2026-08-29 · **SEC-M10:** ✅ změna hesla smoke produkce 2026-08-30 · **GO-2 B1–B5:** ✅ · **I6:** ⏳
+**Nasazení 062–066 + Edge:** 2026-07-28 ✅ · **I5 Sharp/renditions:** 2026-08-05/06 ✅ · **Hard stop H1/H3/H5 produkce:** 2026-08-06 ✅ · **P0 column grants 078+079:** 2026-08-28 ✅ ověřeno · **SEC-M07/M08/M09:** ✅ ověřeno/uzavřeno produkce 2026-08-29 · **SEC-M02/GO-6:** ✅ v kódu 2026-08-29 · **SEC-M10:** ✅ změna hesla smoke produkce 2026-08-30 · **GO-2 B1–B5:** ✅ · **SEC-H06** migrace 010 + overload cleanup: ✅ produkce 2026-09-03 · **I6:** ⏳
 
 **Další bezpečnostní práce:** SEC-M03 hlavičky → SEC-M01/M04/M06 → L\*.
 
@@ -70,8 +70,11 @@ ID `SEC-*` jsou kanonická. Sloupec **Zdroj** odkazuje na archivovaný audit (`2
 | SEC-H03 | Bypass `rate_limits` | 2026-07-27 | ✅ 062 |
 | SEC-H04 | Vulnerable deps | 2026-07-27 | ✅ Next 15.5.22 |
 | **SEC-H05** | Table `GRANT SELECT` na `posts` přebíjel column `REVOKE` — `anon` (pak i `authenticated`) četli `contact_phone`, přesné `location`, `original_*` | 2026-08-28 P0 | ✅ **078 + 079** na produkci 28. 8. 2026. Detail / edit vlastního inzerátu OK. Hint `GRANT SELECT ON posts` **nepoužívat**. |
+| **SEC-H06** | Migrace 010 (`get_inquiry_recipient_email`) na produkci nikdy neproběhla — RPC vrstva pro e-mail zadavatele tiše běžela jen na fallbacku. `issue_moderation_approval` mělo navíc živý 4-arg overload (063) vedle 5-arg (067) — obcházel binding hlavní fotky ze SEC-H02. | 2026-09-03, náhoda přes Vercel log | ✅ 010 doplněna + `NOTIFY pgrst` 2026-09-03; 4-arg overload dropnut. Sken 73 funkcí/22 tabulek/61 sloupců proti `pg_proc`/`information_schema` bez dalšího rozdílu. |
 
 Incident SEC-H05 (logy 21.–28. 8., retence 7 dní PRO): `%2Ccontact_phone` zvenku **0**; `original_description` jen vlastní appka. Zneužití v dostupném okně nenalezeno; starší období nejde ověřit. Není právní posouzení. Důkazy a SQL: [`archive/audits/SECURITY_AUDIT_20260828.md`](./archive/audits/SECURITY_AUDIT_20260828.md).
+
+Incident SEC-H06 (3. 9. 2026): `supabase_migrations.schema_migrations` na produkci **neexistuje** (jen interní `auth`/`realtime`/`storage`) — číslo v názvu souboru `supabase/*.sql` není důkaz, že migrace tam je. Objeveno náhodou přes Vercel log (`PGRST202` na `get_inquiry_recipient_email`), ne review procesem. Ověření proto šlo objekt po objektu (`pg_proc` / `information_schema.columns`), ne podle čísla souboru — potvrdilo, že chybí jen 010. `issue_moderation_approval`: 067 udělalo `CREATE OR REPLACE` na 5-arg signaturu bez `DROP` staré 4-arg z 063 — jiná arita = nový overload, ne náhrada, takže stará verze zůstala vydávat token s `main_image_index = -1` (default), což v `publish_approved_post` přeskočí kontrolu hlavní fotky. Zneužitelné jen s `service_role` klíčem (žádná REST cesta, grant jen pro `service_role`), nikdo v kódu 4-arg verzi nevolal — dropnuto jako hygiena, ne jako aktivně zneužitá díra.
 
 ### Střední — otevřené (priorita shora dolů)
 
@@ -118,6 +121,8 @@ Detail P0 / M1–M5 / L1–L6 a kontrolní SQL: [`archive/audits/SECURITY_AUDIT_
 3. Nový sloupec na `posts` musí stejná migrace přidat do `GRANT SELECT (…)` — jinak `42501`.
 4. `get_nearby_posts` / `search_posts` jsou DEFINER: viditelnost drží `is_post_publicly_visible` v těle.
 5. Sloupcové granty jsou per-role. Citlivé pole = SECURITY DEFINER RPC, ne REST SELECT.
+6. **Produkce nevede `supabase_migrations.schema_migrations`** (SEC-H06, 3. 9. 2026) — číslo v názvu souboru `supabase/*.sql` není důkaz nasazení. Ověřovat objekt po objektu (`pg_proc`, `information_schema.columns`), ne podle čísla migrace.
+7. `CREATE OR REPLACE FUNCTION` s **jinou aritou** je nový overload, ne náhrada — starý zůstává živý i s nesprávnou logikou (SEC-H06, `issue_moderation_approval` 063 vs. 067). Přidávat parametr do existující funkce vždy doprovodit `DROP FUNCTION IF EXISTS` staré signatury.
 
 ---
 

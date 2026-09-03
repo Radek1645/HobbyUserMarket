@@ -162,15 +162,42 @@ V patičce je také odkaz **Nastavení cookies** (znovu otevře cookie lištu), 
 | `/co-je-zapikolou` | Co web je a není (inzertní nástěnka, ne e-shop); patička **O webu zaPikolou** |
 | `/prodejte-snadno` | Landing pro FB reklamu (CTA → `/inzerat/novy`); patička **Prodejte snadno** |
 | `/jak-vytvorit-inzerat` | Průvodce v 5 krocích (photo-first prefill → doplnit údaje → kontrola → AI náhled → publikace); demo Elektronika / Kolo / Spotřebič včetně fotek a OCR štítku |
-| `/kontakt` | Provozovatel (jméno, e-mail, datová schránka) |
+| `/kontakt` | Provozovatel (jméno, sídlo, IČO, zápis v živnostenském rejstříku, e-mail, datová schránka) |
 | `/faq` | Časté dotazy — accordion, texty v `src/config/faq.ts` (PRD §11.3) |
 | `/cookies` | Zásady používání souborů cookie (právní text z `docs/pravni/cookies.md`) |
 | `/gdpr` | Zásady ochrany osobních údajů (`docs/pravni/ochrana-osobnich-udaju-fo.md` / `-osvc.md` dle monetizace) |
 | `/marketingovy-souhlas` | Marketingový souhlas (stav „zatím nezasíláme“, odvolání e-mailem) |
 | `/dsa` | DSA kontaktní centrum |
-| `/vop` | Všeobecné obchodní podmínky (`CURRENT_VOP_VERSION` = `1.11-fo`, snapshoty v `docs/pravni/snapshots/`) |
+| `/vop` | Všeobecné obchodní podmínky (`CURRENT_VOP_VERSION` = `1.12-fo`, snapshoty v `docs/pravni/snapshots/`) |
 
 Stránky jsou veřejné, indexovatelné a v `sitemap.xml` (včetně `/gdpr`).
+
+### 2.9 Změna VOP a nový souhlas
+
+Nové znění na `/vop` **samo o sobě dialog nespustí**. Souhlas (žlutý pruh + tlačítko) se žádá jen u verzí uvedených v tabulce [`src/config/vop-reconsent-required.ts`](../src/config/vop-reconsent-required.ts). Default je **prázdná tabulka**.
+
+| Krok | Co udělat | Výsledek |
+|------|-----------|----------|
+| 1 | Upravit `docs/pravni/vop-*.md`, zvednout `CURRENT_VOP_VERSION` v [`src/config/legal.ts`](../src/config/legal.ts), přidat snapshot do `docs/pravni/snapshots/` | Na `/vop` je nové znění. Účty se starší verzí **nejsou** blokované. |
+| 2 | *Jen u zásadní změny* (ceník, limity, moderace, práva) — přidat aktuální verzi do `VOP_RECONSENT_REQUIRED` včetně `summary` | Přihlášení se starším souhlasem vidí pruh **Aktualizovali jsme podmínky** a větu **Co se změnilo**. Prohlížení, správa inzerátů a nastavení jdou dál. Založit / zveřejnit inzerát až po **Souhlasím s aktuálními VOP**. |
+
+Do tabulky **nepatří** drobnosti: datová schránka, IČO / sídlo na `/kontakt`, překlepy, odkazy. Stačí krok 1, nebo i jen úprava textu bez nového čísla verze.
+
+Po kliknutí na souhlas se do `profiles` zapíše `vop_version` + `vop_accepted_at`. Pruh zmizí. Až změna přestane vyžadovat souhlas, řádek z tabulky smaž.
+
+**Příklad — zásada změna (až budeme chtít souhlas):**
+
+```ts
+// src/config/vop-reconsent-required.ts
+export const VOP_RECONSENT_REQUIRED = {
+  "2.1-osvc": {
+    summary:
+      "Placené kredity, lhůty uchování údajů a pravidla odstoupení od smlouvy.",
+  },
+};
+```
+
+`CURRENT_VOP_VERSION` musí být stejné číslo (`2.1-osvc`). `summary` je 1–2 věty do pruhu, ne kopie celých VOP.
 
 ---
 
@@ -192,7 +219,7 @@ Stránky jsou veřejné, indexovatelné a v `sitemap.xml` (včetně `/gdpr`).
 | Sloupec | Kdy se vyplní |
 |---------|----------------|
 | `age_confirmed_at` | Při registraci / onboardingu |
-| `vop_accepted_at`, `vop_version` | Při souhlasu s VOP |
+| `vop_accepted_at`, `vop_version` | Při souhlasu s VOP (registrace, nebo později pruh dle §2.9) |
 | `marketing_consent_at` | Jen pokud uživatel zaškrtl marketing; jinak `NULL` |
 
 U **e-mail registrace** bez aktivní session se souhlasy dočasně uloží do auth metadata a po prvním přihlášení se přesunou do `profiles` (`flushPendingRegistrationConsents`). U **Google OAuth** se souhlasy vyplní na **onboardingu** (`/onboarding`), pokud ještě nejsou v DB. Při smazání účtu se audit souhlasů anonymizuje spolu s profilem (RPC `prepare_user_account_deletion`).
@@ -1882,7 +1909,7 @@ Zadání: [`fb-ads/MERENI-pixel.md`](./fb-ads/MERENI-pixel.md). Příkazy do kon
 | Cookie lišta / GTM | `src/config/cookie-consent.ts`, `src/config/gtm.ts`, `src/components/consent/`, `src/components/analytics/` |
 | [`docs/pravni/cookies.md`](./pravni/cookies.md) | Právní text zásad cookies |
 | [`docs/pravni/ochrana-osobnich-udaju-fo.md`](./pravni/ochrana-osobnich-udaju-fo.md) | GDPR — zásady ochrany osobních údajů (veřejně `/gdpr`) |
-| [`docs/pravni/README.md`](./pravni/README.md) | Přehled právních docs + checklist data v EU (P33) |
+| [`docs/pravni/README.md`](./pravni/README.md) | Přehled právních docs + checklist data v EU (P33); dialog souhlasu s VOP: Metodika §2.9, kód `src/config/vop-reconsent-required.ts` |
 | [`docs/branding-a-domeny.md`](./branding-a-domeny.md) | DNS, e-mail, Vercel — Cloudflare Email Routing + Subreg jen registrace |
 | [`fb-ads/MERENI-pixel.md`](./fb-ads/MERENI-pixel.md) | Meta Pixel — eventy, UTM, consent |
 | [`fb-ads/MERENI-console.md`](./fb-ads/MERENI-console.md) | Příkazy do DevTools konzole pro kontrolu měření |

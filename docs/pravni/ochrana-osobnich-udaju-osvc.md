@@ -2,7 +2,7 @@
 
 **Platforma:** zaPikolou.cz  
 **Verze:** 1.2-osvc · **Datum účinnosti:** [doplnit]  
-**Správce:** Radek Horák, podnikající fyzická osoba · IČO: [doplnit] (přiděleno Českým statistickým úřadem) · zapsán v živnostenském rejstříku · **Kontakt pro GDPR:** info@zapikolou.cz · datová schránka: fxetq2k
+**Správce:** Radek Horák, podnikající fyzická osoba · IČO: [doplnit] (přiděleno Českým statistickým úřadem) · zapsán v živnostenském rejstříku · **Kontakt pro GDPR:** info@zapikolou.cz · datová schránka: 8q4nyyt
 
 ---
 
@@ -106,6 +106,6 @@ Platforma je určena uživatelům od **15 let**. Při registraci vyžadujeme **p
 
 ## 7. Kontakt
 
-Dotazy ke zpracování osobních údajů směřujte na: **info@zapikolou.cz** · datová schránka: **fxetq2k**
+Dotazy ke zpracování osobních údajů směřujte na: **info@zapikolou.cz** · datová schránka: **8q4nyyt**
 
 ---

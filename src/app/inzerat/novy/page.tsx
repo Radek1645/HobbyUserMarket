@@ -86,6 +86,12 @@ export default async function NewListingPage({
           {LEGAL_UI.reconsentTitle}
         </h1>
         <p className="mt-2 text-sm text-gray-600">{LEGAL_UI.reconsentBody}</p>
+        {LEGAL_UI.reconsentSummary ? (
+          <p className="mt-3 text-sm text-gray-800">
+            <span className="font-semibold">{LEGAL_UI.reconsentSummaryLabel}: </span>
+            {LEGAL_UI.reconsentSummary}
+          </p>
+        ) : null}
       </div>
     );
   }

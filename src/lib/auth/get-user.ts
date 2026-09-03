@@ -1,4 +1,5 @@
 import { CURRENT_VOP_VERSION } from "@/config/legal";
+import { needsVopReconsent } from "@/config/vop-reconsent-required";
 import { resolveAvatarUrl } from "@/lib/auth/avatar-url";
 import { isPlaceholderNickname } from "@/lib/auth/nickname";
 import { createClient } from "@/lib/supabase/server";
@@ -96,8 +97,9 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     needsNicknameSetup: isPlaceholderNickname(nickname),
     isCompany: profile.is_company,
     companyName: profile.company_name,
-    needsVopReconsent: Boolean(
-      profile.vop_version && profile.vop_version !== CURRENT_VOP_VERSION,
+    needsVopReconsent: needsVopReconsent(
+      profile.vop_version,
+      CURRENT_VOP_VERSION,
     ),
   };
 });

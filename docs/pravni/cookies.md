@@ -1,7 +1,7 @@
 # Zásady používání souborů cookie
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.3 · **Datum účinnosti:** 10.08.2026
+**Verze:** 1.4 · **Datum účinnosti:** 03.09.2026
 
 ---
 
@@ -65,5 +65,7 @@ U analytických a marketingových nástrojů nasazených po souhlasu (GA4 / GTM 
 ## 5. Kontakt
 
 Dotazy k cookies: **info@zapikolou.cz**
+
+Údaje o provozovateli (jméno, sídlo, IČO, zápis v rejstříku, e-mail, datová schránka) najdete na stránce [Provozovatel webu](/kontakt).
 
 ---

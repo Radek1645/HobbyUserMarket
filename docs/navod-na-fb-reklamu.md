@@ -3,7 +3,7 @@
 Kreativní brief + nastavení Ads Manageru.  
 Technický funnel (flag, architektura, deploy): [`fb-promo-campaign.md`](./fb-promo-campaign.md).  
 Aktuální stav smoke / Pixel / mobil: [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L.  
-Před první platbou Meta: [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/povinnosti-urady-fb-reklama.md).
+Před první platbou Meta: [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/povinnosti-urady-fb-reklama.md). **IČO přidělené (2026-09-01)** — Business Manager účet lze založit rovnou jako "Obchodní".
 
 ---
 
@@ -13,36 +13,40 @@ Před první platbou Meta: [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/po
 
 **Cílovka:** Brno + okolí (15–20 km). Rodiče vyklízející pokojíčky, lidé po stěhování, kutilové.
 
-**Proč bez videa:** Video je pro tenhle účel drahé a odvádí pozornost. Statické vizuály + karusel lépe ukážou jednoduchost rozhraní přímo.
+**Proč bez videa:** Video je pro tenhle účel drahé a odvádí pozornost.
+
+**Proč bez telefonního mockupu:** Zkoušeno (screenshot formuláře v rámečku telefonu) — v náhledu feedu moc malé a nepřehledné. Zamítnuto na základě reálného testu, ne teoreticky.
+
+**Proč jen statika, bez karuselu:** Karusel se v tuhle chvíli nedělá — kapacita/čas na výrobu. Jedna kreativa, dvě barevné varianty místo dvou formátů.
 
 ---
 
-### Kreativy (2, bez srovnávacího banneru — ten je vhodný spíš na přetahování uživatelů konkurence, ne na nové publikum)
+### Kreativa — finální (2026-09-01)
 
-**1. Statický banner** — 4:5, 1080×1350 px
-- Vizuál: mobilní obrazovka s formulářem, jen 3 pole (Foto, Název, Cena)
-- Text na fotce: „Stačí fotka a pár slov. Inzerát je hotový během pár kliků."
-- Doplňkový text: „Brněnský bazar bez zbytečných formulářů."
+**Statický banner** — 4:5, 1080×1350 px, 2 barevné varianty (zelená / růžová — viz níže)
+- Vizuál: reálná fotka produktu (příklad použitý v kreativě: kočárek Bugaboo) + bublina „✓ Popis během okamžiku" s ukázkou AI popisu
+- Text v bublině **není vymyšlený** — je to skutečný výstup AI prefillu pro tu samou fotku (ověřeno screenshotem z appky, ne mockup)
+- CTA tlačítko dole na kreativě
 
-**2. Karuselový návod** — 1:1, 1080×1080 px
-- Karta 1: „1. Vyfoť to, co chceš prodat." (vizuál: focení mobilem)
-- Karta 2: „2. Napiš cenu a pár slov o věci." (vizuál: vyplněný formulář)
-- Karta 3: „3. Hotovo. Ozvou se lidi z okolí." (vizuál: zpráva od zájemce)
-- Karta 4 (CTA): „Zkus zaPikolou.cz. Zdarma." (vizuál: logo/tlačítko)
+**Barevné varianty:**
+- Zelená — brand barva, 1:1 s tím, co uvidí po prokliku na webu
+- Růžová — mimo brand, ale z vlastní zkušenosti vyšší predikovaný CTR; testujeme vědomě jako druhou variantu
+
+**Karusel:** odloženo, nedělá se v této vlně.
 
 ---
 
 ### Copywriting
 
-- **Primární text:** „Uklízíš skříň nebo sklep? Na zaPikolou.cz stačí fotka a pár slov – inzerát je hotový během pár kliků."
-- **Headline:** „Stačí fotka a pár slov"
-- **Tlačítko (CTA):** „Přidat inzerát"
+- **Primární text (caption nad obrázkem):** „Máš doma věci, co už nepoužíváš? Stačí fotka a pár slov – inzerát na zaPikolou.cz je hotový za pár kliků." *(opraveno 2026-09-03 — původní „Uklízíš skříň nebo sklep?" neseděl ke kreativě s kočárkem, nová verze je univerzální pro libovolný produkt)*
+- **Headline (na obrázku):** „Vyfotit, párkrát kliknout, hotovo." — nahrazuje původní „Stačí fotka a pár slov", popisuje proces přímo
+- **Tlačítko (CTA):** „Vytvořit inzerát zdarma" — nahrazuje původní „Přidat inzerát"
 
 ---
 
 ### Ads Manager nastavení
 
-- **Struktura Ad Setů:** Statika a Karusel nejdou do jednoho Ad Setu bez rozmyslu. Buď CBO napříč Ad Sety, nebo přímý A/B test měřící CPA na "podání inzerátu".
+- **Struktura Ad Setů:** carousel odpadl, takže se neřeší CBO statika/carousel. **Potvrzeno:** 2 Ad Sety (zelená vs. růžová) — čistý A/B test na CPA. Detaily viz `zadani-ads-manager`.
 - **Cíl kampaně:** Konverze, ne kliknutí/traffic.
 - **Optimalizace:** standardní event Meta Pixel — **`Lead`** (publikace inzerátu; nepoužívat `Inzerat_Vytvoren` / `Post_Ad_Success`) — spouštěný až po úspěšném podání inzerátu, ne na kliknutí.
 
@@ -60,7 +64,7 @@ Jestli Pixel/smoke stačí ke spuštění kampaně: [`TO-DO-dalsi-den.md`](./TO-
 
 ### Výroba
 
-Šablona v Canvě — Statika 1080×1350 px, Karusel 1080×1080 px. Reálný screenshot z webu/appky vložený do rámečku telefonu, doplněný velkým čitelným textem na kontrastním pozadí. Žádný složitý design — čím víc to připomíná skutečné UI, tím vyšší konverze.
+Hotovo (2026-09-01) — statický banner, 2 barevné varianty. Zdroj obrázků: `docs/fb-ads/ads/`.
 
 ---
 
@@ -68,11 +72,9 @@ Jestli Pixel/smoke stačí ke spuštění kampaně: [`TO-DO-dalsi-den.md`](./TO-
 
 | V reklamě | Na webu |
 |-----------|---------|
-| Headline „Stačí fotka a pár slov“ | HP H1: „Online bazar, kde stačí fotka a pár slov.“ |
-| CTA „Přidat inzerát“ | Na webu je „Vytvořit inzerát s AI“ / FAB. Landing z ads: `/inzerat/novy` (guest flag C — stav viz [`TO-DO § L`](./TO-DO-dalsi-den.md)) |
-| „Jen 3 pole“ | Reálný tok je fotky → AI náhled → doplnit cenu/stav/lokalitu → publikovat. Screenshot musí být skutečné UI, ne fiktivní 3-polový formulář. |
+| Headline „Vyfotit, párkrát kliknout, hotovo.“ | HP H1: „Online bazar, kde stačí fotka a pár slov.“ — jiná formulace, stejné téma (rychlost/jednoduchost procesu) |
+| CTA „Vytvořit inzerát zdarma“ | Na webu je „Vytvořit inzerát s AI“ / FAB. Landing z ads: `/inzerat/novy` (guest flag C — stav viz [`TO-DO § L`](./TO-DO-dalsi-den.md)) |
+| Bublina „Popis během okamžiku“ + AI text | Reálný výstup AI prefillu pro danou fotku — ověřeno screenshotem z appky, není to vymyšlený text |
 | „Zdarma“ | Platí pro kvótu zdarma (`HOME_FREE_QUOTA_BADGE_LABEL`), ne „navždy vše zdarma“. |
-
-Karusel karta 2 přesněji: „Doplň cenu. Text ti napíše AI.“ — slib „pár slov“ drží, ale neslibuje ruční psaní, když landing je AI formulář.
 
 Při zapnutém flagu C host na `/inzerat/novy` vidí formulář, ne login wall — vypnutí by rozbilo slib „pár kliků“. Stav flagu: [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L.

@@ -31,7 +31,9 @@ import {
   SITE_DISPLAY_NAME,
   SITE_OPERATOR_CONTACT_EMAIL,
   SITE_OPERATOR_DATA_BOX_ID,
-  SITE_OPERATOR_NAME,
+  SITE_OPERATOR_ICO,
+  SITE_OPERATOR_REGISTERED_NAME,
+  SITE_OPERATOR_REGISTERED_OFFICE,
 } from "@/config/site";
 
 /** Patička — cesty a popisky sloupců. */
@@ -82,11 +84,16 @@ export const FOOTER_ABOUT_LINKS = [
 
 export const KONTAKT_PAGE_UI = {
   metaTitle: `Provozovatel webu | ${SITE_DISPLAY_NAME}`,
-  metaDescription: `Provozovatel ${SITE_DISPLAY_NAME} — ${SITE_OPERATOR_NAME}, fyzická osoba. E-mail ${SITE_OPERATOR_CONTACT_EMAIL}, datová schránka ${SITE_OPERATOR_DATA_BOX_ID}.`,
+  metaDescription: `Provozovatel ${SITE_DISPLAY_NAME} — ${SITE_OPERATOR_REGISTERED_NAME}, IČO ${SITE_OPERATOR_ICO}. E-mail ${SITE_OPERATOR_CONTACT_EMAIL}, datová schránka ${SITE_OPERATOR_DATA_BOX_ID}.`,
   pageTitle: "Provozovatel webu",
-  providerHeading: "Provozovatel",
-  providerName: SITE_OPERATOR_NAME,
-  providerLegalForm: "fyzická osoba",
+  providerName: SITE_OPERATOR_REGISTERED_NAME,
+  registeredOfficeLabel: "Sídlo",
+  registeredOffice: SITE_OPERATOR_REGISTERED_OFFICE,
+  icoLabel: "IČO",
+  ico: SITE_OPERATOR_ICO,
+  legalFormText:
+    "Fyzická osoba podnikající dle živnostenského zákona zapsaná v živnostenském rejstříku.",
+  contactHeading: "Kontakt",
   emailLabel: "E-mail",
   dataBoxLabel: "Datová schránka",
   dataBoxId: SITE_OPERATOR_DATA_BOX_ID,

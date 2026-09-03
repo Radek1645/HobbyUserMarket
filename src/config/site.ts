@@ -15,8 +15,28 @@ export const SITE_OPERATOR_CONTACT_EMAIL = `info@${SITE_DOMAIN}`;
 /** Jméno provozovatele — sync s docs/pravni/*-fo.md. */
 export const SITE_OPERATOR_NAME = "Radek Horák";
 
+/**
+ * Označení dle výpisu z živnostenského rejstříku — stránka `/kontakt`.
+ * Titul je na výpisu; FO právní texty dál používají `SITE_OPERATOR_NAME`.
+ */
+export const SITE_OPERATOR_REGISTERED_NAME = "Bc. Radek Horák";
+
+/** IČO provozovatele (živnost od 26. 8. 2026). */
+export const SITE_OPERATOR_ICO = "29956803";
+
+/** Sídlo podnikání dle výpisu z živnostenského rejstříku. */
+export const SITE_OPERATOR_REGISTERED_OFFICE =
+  "Palackého třída 2509/147, 612 00 Brno - Královo Pole";
+
+export const SITE_OPERATOR_REGISTERED_OFFICE_PARTS = {
+  streetAddress: "Palackého třída 2509/147",
+  postalCode: "612 00",
+  addressLocality: "Brno - Královo Pole",
+  addressCountry: "CZ",
+} as const;
+
 /** ID datové schránky provozovatele — sync s docs/pravni/*-fo.md. */
-export const SITE_OPERATOR_DATA_BOX_ID = "fxetq2k";
+export const SITE_OPERATOR_DATA_BOX_ID = "8q4nyyt";
 
 export const SITE_DESCRIPTION =
   "Inzeráty a bazar pro všechny. Lokální inzerce ve vašem okolí — zboží, služby, práce, nemovitosti i události. Stačí fotka a pár kliků, AI se postará o zbytek.";

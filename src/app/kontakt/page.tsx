@@ -3,6 +3,7 @@ import { KONTAKT_PAGE_UI, KONTAKT_PATH } from "@/config/footer";
 import {
   SITE_DISPLAY_NAME,
   SITE_OPERATOR_CONTACT_EMAIL,
+  SITE_OPERATOR_REGISTERED_OFFICE_PARTS,
 } from "@/config/site";
 import { getSiteUrl } from "@/lib/supabase/env";
 import type { Metadata } from "next";
@@ -33,11 +34,25 @@ function buildOperatorContactJsonLd() {
     "@type": "Person",
     name: ui.providerName,
     email: SITE_OPERATOR_CONTACT_EMAIL,
-    identifier: {
-      "@type": "PropertyValue",
-      propertyID: ui.dataBoxLabel,
-      value: ui.dataBoxId,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: SITE_OPERATOR_REGISTERED_OFFICE_PARTS.streetAddress,
+      postalCode: SITE_OPERATOR_REGISTERED_OFFICE_PARTS.postalCode,
+      addressLocality: SITE_OPERATOR_REGISTERED_OFFICE_PARTS.addressLocality,
+      addressCountry: SITE_OPERATOR_REGISTERED_OFFICE_PARTS.addressCountry,
     },
+    identifier: [
+      {
+        "@type": "PropertyValue",
+        propertyID: ui.icoLabel,
+        value: ui.ico,
+      },
+      {
+        "@type": "PropertyValue",
+        propertyID: ui.dataBoxLabel,
+        value: ui.dataBoxId,
+      },
+    ],
     worksFor: {
       "@type": "WebSite",
       name: SITE_DISPLAY_NAME,
@@ -47,6 +62,12 @@ function buildOperatorContactJsonLd() {
   };
 }
 
+function serializeOperatorJsonLd(
+  data: ReturnType<typeof buildOperatorContactJsonLd>,
+): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 export default function KontaktPage() {
   const operatorContactJsonLd = buildOperatorContactJsonLd();
 
@@ -54,7 +75,9 @@ export default function KontaktPage() {
     <div className="px-4 py-8 sm:px-6 sm:py-10">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(operatorContactJsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: serializeOperatorJsonLd(operatorContactJsonLd),
+        }}
       />
 
       <BackHomeLink />
@@ -62,33 +85,29 @@ export default function KontaktPage() {
       <div className="mx-auto max-w-lg">
         <h1 className="text-2xl font-semibold text-gray-900">{ui.pageTitle}</h1>
 
-        <section className="mt-6 space-y-4 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900">
-              {ui.providerHeading}
-            </h2>
-            <p className="mt-1 text-base text-gray-900">{ui.providerName}</p>
-            <p className="text-sm text-gray-600">{ui.providerLegalForm}</p>
-          </div>
+        <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 text-base leading-relaxed text-gray-900 sm:p-6">
+          <p className="font-semibold">{ui.providerName}</p>
+          <p>
+            {ui.registeredOfficeLabel}: {ui.registeredOffice}
+          </p>
+          <p>
+            {ui.icoLabel}: {ui.ico}
+          </p>
+          <p className="mt-3">{ui.legalFormText}</p>
 
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900">
-              {ui.emailLabel}
-            </h2>
+          <p className="mt-4 font-semibold">{ui.contactHeading}:</p>
+          <p>
+            {ui.emailLabel}:{" "}
             <a
               href={`mailto:${SITE_OPERATOR_CONTACT_EMAIL}`}
-              className="mt-1 inline-block font-medium text-gray-900 underline-offset-2 hover:underline"
+              className="font-medium underline-offset-2 hover:underline"
             >
               {SITE_OPERATOR_CONTACT_EMAIL}
             </a>
-          </div>
-
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900">
-              {ui.dataBoxLabel}
-            </h2>
-            <p className="mt-1 font-mono text-base text-gray-900">{ui.dataBoxId}</p>
-          </div>
+          </p>
+          <p>
+            {ui.dataBoxLabel}: {ui.dataBoxId}
+          </p>
         </section>
 
         <p className="mt-4 text-sm leading-relaxed text-gray-600">
