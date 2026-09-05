@@ -7,8 +7,7 @@ import {
 } from "@/lib/promo/campaign-query";
 import { resolveCampaignSearchParams } from "@/lib/promo/campaign-storage";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 type FbPromoCtaLinkProps = {
   href: string;
@@ -21,7 +20,20 @@ type FbPromoCtaLinkProps = {
   createListing?: boolean;
 };
 
-function FbPromoCtaLinkInner({
+function hrefWithStoredCampaign(href: string, createListing?: boolean): string {
+  const campaign = resolveCampaignSearchParams(
+    new URLSearchParams(window.location.search),
+  );
+  return createListing
+    ? createListingHrefWithCampaign(campaign, href)
+    : withCampaignQuery(href, campaign);
+}
+
+/**
+ * CTA z FB landing. UTM / fbclid se připojí až po mountu — jinak SSR HTML
+ * (`/inzerat/novy`) nesedí s clientem (URL nebo localStorage).
+ */
+export function FbPromoCtaLink({
   href,
   gtmId,
   className,
@@ -30,11 +42,11 @@ function FbPromoCtaLinkInner({
   category,
   createListing,
 }: FbPromoCtaLinkProps) {
-  const searchParams = useSearchParams();
-  const campaign = resolveCampaignSearchParams(searchParams);
-  const to = createListing
-    ? createListingHrefWithCampaign(campaign, href)
-    : withCampaignQuery(href, campaign);
+  const [to, setTo] = useState(href);
+
+  useEffect(() => {
+    setTo(hrefWithStoredCampaign(href, createListing));
+  }, [href, createListing]);
 
   return (
     <Link
@@ -45,28 +57,5 @@ function FbPromoCtaLinkInner({
     >
       {children}
     </Link>
-  );
-}
-
-/** CTA z FB landing — zachová UTM / fbclid. */
-export function FbPromoCtaLink(props: FbPromoCtaLinkProps) {
-  return (
-    <Suspense
-      fallback={
-        <Link
-          href={props.href}
-          prefetch={false}
-          {...gtmCtaProps(props.gtmId, {
-            position: props.position,
-            category: props.category,
-          })}
-          className={props.className}
-        >
-          {props.children}
-        </Link>
-      }
-    >
-      <FbPromoCtaLinkInner {...props} />
-    </Suspense>
   );
 }
