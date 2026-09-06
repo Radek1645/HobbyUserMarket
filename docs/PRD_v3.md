@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.96
+> **Verze dokumentu:** v3.97
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql) · [`083_posts_location_nullable_for_pii_purge.sql`](../supabase/083_posts_location_nullable_for_pii_purge.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-09-01
+> **Datum:** 2026-09-06
 
 ---
 
@@ -209,6 +209,7 @@ I v rámci modulu v0.5 se **neimplementuje:**
 
 * **Frontend/Backend:** Next.js (App Router), Tailwind CSS.
 * **Hosting / Deployment:** Vercel (Free / Hobby tier).
+* **Edge middleware:** `src/middleware.ts` obnovuje session (`updateSession`). Známé junk cesty v `src/config/junk-probe-paths.ts` (`/meta.json` od Meta Ads crawleru, WordPress / `.git` / `.env` scannery) vrací prázdné 404 **před** session i catch-all `[slug]`. Úspora je Vercel invocation + SSR 404, ne Auth API — anonymní `getUser()` bez cookie síť nevolá. `/meta.json` na webu neexistuje; Meta ho oficiálně nedokumentovala.
 * **Database & Auth:** Supabase (PostgreSQL + PostGIS extenze pro geolokaci, Supabase Auth, Supabase Storage). Přechod na Pro Tier ($25/měsíc) při ostrém startu kvůli garanci záloh a neusínání DB.
 * **Geocoding API:** Mapy.cz REST (`/v1/suggest`, `/v1/rgeocode`) **jen ze serveru** — Next.js `POST /api/mapy/suggest` a `/api/mapy/rgeocode`. Klíč `MAPY_CZ_API_KEY` (ne `NEXT_PUBLIC_`). Rate limit 60 suggest / 20 rgeocode za hodinu na hashed IP (`increment_anonymous_rate_limit`, `action_type` `mapy_suggest` / `mapy_rgeocode`). IP z `getClientIpAddress` (Vercel / XFF zprava). Prohlížeč volá jen naše routy; Seznam vidí IP serveru, ne návštěvníka.
 * **AI Vrstva:** Supabase Edge Functions — **prefill** (`suggest-listing-from-photos`) + **dvě fáze moderace** (`moderate-listing`: náhled vs. finále) s oddělitelnými modely + staff **prefill lab** (`compare-suggest-from-photos`). Defaults (aktualizace **2026-08-25**): Prefill primary `SUGGEST_LISTING_MODEL` = `gemini-3.5-flash-lite`, fallback `SUGGEST_FALLBACK_MODEL` = `gpt-5.4-nano`; lab A/B default `gemini-3.5-flash-lite` vs `gpt-5.4-nano`; preview `GEMINI_MODEL` = `gemini-2.5-flash`; final `MODERATION_FINAL_*` = `gemini-3.5-flash-lite` (A/B OpenAI `gpt-4o-mini`). Tabulka: §5.4 · Metodika §6 · [`moderace-inzeratu.md`](./moderace-inzeratu.md). Edge limit: **30 s**; Prefill má celkový deadline 28 s, uvnitř nejvýše 12 s + 8 s pro AI.
@@ -744,6 +745,7 @@ Vestavěný systém rolí navázaný na produkční UI — **bez enterprise admi
   * Vyhledávání: min. 3 znaky.
   * Kontakty: skrytí v HTML, anonymní formulář, server-side strip v popisu.
   * V DB ani v HTML odpovědi nikdy není surový e-mail/telefon v poli `description`.
+  * Junk sondy (`/meta.json`, `/wp-login.php`, …) — prázdné 404 v middleware, bez SSR catch-allu (viz §3).
 * **Rate limiting (ochrana rozpočtu 1 000 Kč/měsíc):**
 
 | Akce | Limit | Při překročení |
@@ -916,6 +918,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.94 | 2026-09-01 | **Funnel C na produkci:** flag zapnutý; desktop smoke host → prefill → e-mail registrace → resume → publish (`/inzerat/skoda-rapid-spaceback-2018-xcbd`) + Pixel `Lead`. E3 (`CompleteRegistration`) ověřeno Test Events 22:20:54 (e-mail, holínky) — Škoda Events Manager neřešila; Google OAuth cestou event nespustil. Ads pořád blokuje mobil a Ads Manager. |
 | v3.95 | 2026-09-01 | **Pixel `autoConfig` vypnutý** (`set` před `init`) — žádný `SubscribedButtonClick`. Localhost funnel 1× ViewContent/InitiateCheckout/Lead + GA4 `generate_lead`. Stav smoke jen v [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L. GDPR FO **1.6-fo** (bez falešného odkazu na VOP §6). |
 | v3.96 | 2026-09-03 | **Identita provozovatele + VOP 1.12-fo:** IČO `29956803`, sídlo a zápis na `/kontakt`; FO VOP/GDPR/cookies/limity odkazují tam (ne „fyzická osoba“). `CURRENT_VOP_VERSION` **1.12-fo** bez reconsent (`VOP_RECONSENT_REQUIRED` prázdná). GDPR FO **1.8-fo**, DSA **1.3**. **SEC-H06:** produkce neměla migraci 010 + 4-arg overload `issue_moderation_approval`. Monetizace vypnutá; 2.1-osvc draft mimo git (`navrh-claude/`). |
+| v3.97 | 2026-09-06 | **Junk sondy v middleware:** prázdné 404 na `/meta.json` (Meta Ads crawler) a scanner cesty dřív, než doběhne session a catch-all `[slug]`. Úspora invocation + SSR, ne Auth API. |
 
 ---
 
