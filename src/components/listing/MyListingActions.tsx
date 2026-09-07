@@ -10,14 +10,14 @@ import {
   MY_LISTINGS_VIEW_FIELD,
   type MyListingsView,
 } from "@/config/my-listings";
-import { LISTING_EXTEND_DAYS } from "@/config/listing-lifetime";
+import { LISTING_EXTEND_BUTTON_LABEL } from "@/config/listing-lifetime";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { DeleteListingControl } from "@/components/listing/DeleteListingControl";
 import { canExtendListingLifetime } from "@/lib/posts/listing-lifetime";
-import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
+import { getListingEditPath } from "@/lib/posts/listing-path";
 import { getOwnerDisplayStatus } from "@/lib/posts/listing-status";
 import type { CategoryType, PostStatus } from "@/types/post";
-import { CalendarPlus, Eye, Pause, Pencil, Play } from "lucide-react";
+import { CalendarPlus, Pause, Pencil, Play } from "lucide-react";
 import Link from "next/link";
 
 type MyListingActionsProps = {
@@ -29,9 +29,6 @@ type MyListingActionsProps = {
   createdAt: string;
   listView: MyListingsView;
 };
-
-const iconButtonClass =
-  "inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50";
 
 const secondaryButtonClass =
   "inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50";
@@ -80,20 +77,6 @@ export function MyListingActions({
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {displayStatus === "active" ? (
-        <Link
-          href={getListingPath(slug)}
-          {...gtmCtaProps(GTM_CTA.MY_LISTINGS_VIEW, {
-            "listing-id": postId,
-          })}
-          className={iconButtonClass}
-          title="Náhled"
-          aria-label="Náhled"
-        >
-          <Eye className="h-4 w-4" aria-hidden />
-        </Link>
-      ) : null}
-
       {canManage && canExtend ? (
         <form action={extendListingBy30Days}>
           <input type="hidden" name="postId" value={postId} />
@@ -106,27 +89,11 @@ export function MyListingActions({
             className={
               isArchived
                 ? `${primaryButtonClass} bg-emerald-600 hover:bg-emerald-700`
-                : iconButtonClass
-            }
-            title={
-              isArchived
-                ? "Obnovit inzerát"
-                : `Prodloužit až o ${LISTING_EXTEND_DAYS} dnů`
-            }
-            aria-label={
-              isArchived
-                ? "Obnovit inzerát"
-                : `Prodloužit až o ${LISTING_EXTEND_DAYS} dnů`
+                : `${secondaryButtonClass} whitespace-nowrap`
             }
           >
-            {isArchived ? (
-              <>
-                <CalendarPlus className="h-4 w-4" aria-hidden />
-                Obnovit
-              </>
-            ) : (
-              <CalendarPlus className="h-4 w-4" aria-hidden />
-            )}
+            <CalendarPlus className="h-4 w-4" aria-hidden />
+            {isArchived ? "Obnovit" : LISTING_EXTEND_BUTTON_LABEL}
           </button>
         </form>
       ) : null}
