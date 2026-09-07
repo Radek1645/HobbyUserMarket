@@ -1,8 +1,16 @@
 import { getCategoryLabel, getSubcategoryLabel } from "@/config/categories";
 import { LISTING_PRIVATE_EVENT_UI } from "@/config/listing-form-ui";
+import {
+  MY_LISTINGS_EMPTY_EXPIRED,
+  MY_LISTINGS_EMPTY_LIVE,
+  MY_LISTINGS_LIFETIME_EXHAUSTED_BADGE,
+  MY_LISTINGS_LIFETIME_EXHAUSTED_NOTICE,
+  MY_LISTINGS_VIEW,
+} from "@/config/my-listings";
 import { listingPrivateEventBadgeClass } from "@/config/ui-primitives";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { MyListingActions } from "@/components/listing/MyListingActions";
+import { MyListingsViewTabs } from "@/components/listing/MyListingsViewTabs";
 import { ListingBlockedNotice } from "@/components/listing/ListingBlockedNotice";
 import { ListingQuotaSummary } from "@/components/account/ListingQuotaSummary";
 import { getCurrentUser } from "@/lib/auth/get-user";
@@ -15,7 +23,12 @@ import { SITE_DISPLAY_NAME } from "@/config/site";
 import { formatInquiryCount } from "@/lib/i18n/czech-plural";
 import { loadDeliveredInquiryCounts } from "@/lib/inquiry/delivered-counts";
 import { archiveExpiredPosts } from "@/lib/posts/archive-expired";
+import { canExtendListingLifetime } from "@/lib/posts/listing-lifetime";
 import { getListingPath } from "@/lib/posts/listing-path";
+import {
+  parseMyListingsView,
+  partitionMyListings,
+} from "@/lib/posts/my-listings-view";
 import {
   getOwnerDisplayStatus,
   isListingExpired,
@@ -89,6 +102,7 @@ export default async function MyListingsPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    view?: string;
     deleteError?: string;
     quotaError?: string;
     lifetimeError?: string;
@@ -96,7 +110,7 @@ export default async function MyListingsPage({
   }>;
 }) {
   const user = await getCurrentUser();
-  const { deleteError, quotaError, lifetimeError, ok } = await searchParams;
+  const { view, deleteError, quotaError, lifetimeError, ok } = await searchParams;
 
   if (!user) {
     redirect("/login?next=/moje-inzeraty");
@@ -114,6 +128,11 @@ export default async function MyListingsPage({
   const inquiryCounts = await loadDeliveredInquiryCounts(
     listings.map((post) => post.id),
   );
+  const activeView = parseMyListingsView(view);
+  const { live, expired } = partitionMyListings(listings);
+  const visibleListings =
+    activeView === MY_LISTINGS_VIEW.expired ? expired : live;
+
 
   return (
     <div className="px-4 py-8 sm:px-6">
@@ -131,6 +150,14 @@ export default async function MyListingsPage({
       </p>
 
       {quota ? <ListingQuotaSummary quota={quota} /> : null}
+
+      {listings.length > 0 ? (
+        <MyListingsViewTabs
+          activeView={activeView}
+          liveCount={live.length}
+          expiredCount={expired.length}
+        />
+      ) : null}
 
       {ok === "paused" ? (
         <p
@@ -192,9 +219,17 @@ export default async function MyListingsPage({
             Vytvořit první inzerát
           </Link>
         </div>
+      ) : visibleListings.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-10 text-center">
+          <p className="text-sm text-gray-600">
+            {activeView === MY_LISTINGS_VIEW.expired
+              ? MY_LISTINGS_EMPTY_EXPIRED
+              : MY_LISTINGS_EMPTY_LIVE}
+          </p>
+        </div>
       ) : (
         <ul className="mt-6 space-y-3">
-          {listings.map((post) => {
+          {visibleListings.map((post) => {
             const subcategory = getSubcategoryLabel(
               post.category_type,
               post.subcategory_slug,
@@ -205,11 +240,18 @@ export default async function MyListingsPage({
             const displayStatus = getOwnerDisplayStatus(post.status, post.expires_at);
             const expired = isListingExpired(post.expires_at);
             const canOpenPublicDetail = displayStatus === "active";
+            const lifetimeExhausted =
+              displayStatus === "archived" &&
+              !canExtendListingLifetime(post.created_at, post.expires_at);
 
             return (
               <li
                 key={post.id}
-                className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
+                className={
+                  lifetimeExhausted
+                    ? "rounded-2xl border border-neutral-300 bg-neutral-50 p-4 sm:p-5"
+                    : "rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
+                }
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -223,6 +265,11 @@ export default async function MyListingsPage({
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_BADGE[displayStatus]!.className}`}
                         >
                           {STATUS_BADGE[displayStatus]!.label}
+                        </span>
+                      ) : null}
+                      {lifetimeExhausted ? (
+                        <span className="inline-flex rounded-full bg-neutral-800 px-2 py-0.5 text-xs font-medium text-white">
+                          {MY_LISTINGS_LIFETIME_EXHAUSTED_BADGE}
                         </span>
                       ) : null}
                       {post.is_private ? (
@@ -256,6 +303,11 @@ export default async function MyListingsPage({
                       {` · ${post.view_count ?? 0} zobrazení`}
                       {` · ${formatInquiryCount(inquiryCounts.get(post.id) ?? 0)}`}
                     </p>
+                    {lifetimeExhausted ? (
+                      <p className="mt-1 text-sm text-neutral-700">
+                        {MY_LISTINGS_LIFETIME_EXHAUSTED_NOTICE}
+                      </p>
+                    ) : null}
                   </div>
 
                   <MyListingActions
@@ -265,6 +317,7 @@ export default async function MyListingsPage({
                     categoryType={post.category_type}
                     expiresAt={post.expires_at}
                     createdAt={post.created_at}
+                    listView={activeView}
                   />
                 </div>
 

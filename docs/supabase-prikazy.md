@@ -197,7 +197,7 @@ Hlavní tabulka. Kategorie žijí jako textové sloupce — taxonomie je v kódu
 | Kontakt | `show_contact_email`, `show_contact_phone`, `contact_phone` | Co smí odhalit „Zobrazit kontakt“ |
 | Práce | `job_cv_required` | Zda inzerát práce chce CV |
 | Životní cyklus | `status`, `status_reason_code`, `deletion_reason`, `expires_at`, `listing_duration_days`, `event_date`, `event_end_date`, `is_private`, `external_url`, `renew_count`, `expiry_warning_for_expires_at`, `listing_quota_consumed` | draft→active…, expirace, událost (začátek/konec, soukromá), volitelný https odkaz (`077`). U `udalost` je `expires_at` = půlnoc `Europe/Prague` po dni `COALESCE(event_end_date, event_date)` (`080` + `082`). `is_private` jen u `udalost`; **není** v `is_post_publicly_visible` (RLS) — filtr ve výpisech. Grant SELECT (`082`) pro `anon`/`authenticated`. |
-| Retence (ne v REST SELECT) | `hidden_at`, `blocked_stale_warned_at` | Razítko archived/deleted a varování blocked (`081`). **Nejsou** v `GRANT SELECT` pro `anon`/`authenticated`. |
+| Retence (ne v REST SELECT) | `hidden_at`, `blocked_stale_warned_at`, `expiry_notice_for_expires_at` | Razítko archived/deleted, varování blocked (`081`), e-mail po stažení (`085`). **Nejsou** v `GRANT SELECT` pro `anon`/`authenticated`. |
 | Ostatní | `payment_status`, `view_count`, `created_at`, `updated_at` | Platba (free/paid), zobrazení |
 
 **`status`:** `draft` · `active` · `archived` · `hidden` · `blocked` · `deleted`  

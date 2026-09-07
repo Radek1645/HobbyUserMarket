@@ -272,7 +272,7 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 
 | Činnost | Kde | Poznámka |
 |---------|-----|----------|
-| Zobrazit své inzeráty | `/moje-inzeraty` | Včetně expirovaných, pozastavených a zablokovaných |
+| Zobrazit své inzeráty | `/moje-inzeraty` | Pilulky **Živé** (výchozí) / **Expirované**; pozastavené, koncepty a zablokované jsou v Živých |
 | Založit nový inzerát | `/inzerat/novy` | Wizard (fotky/kategorie/obsah) + AI náhled; host může začít bez účtu |
 | Upravit vlastní inzerát | `/inzerat/[slug]/upravit` | Změna publikovaného obsahu nebo fotek vyžaduje finální AI kontrolu |
 | Obnovit expirovaný inzerát | `/moje-inzeraty` | Prodloužení platnosti |
@@ -281,6 +281,19 @@ Po přihlášení a dokončení onboardingu má uživatel k dispozici:
 | Napsat prodejci / pořadateli | Detail inzerátu | Anonymní e-mail |
 | Nahlásit inzerát | Detail | Inline tlačítko |
 | Prohlížet HP a cizí inzeráty | `/` | Stejně jako nepřihlášený |
+
+### 4.1 Filtr na `/moje-inzeraty`
+
+Dvě pilulky (`?view=expired` vs výchozí bez parametru). Ne checkbox.
+
+| Pilulka | Co tam je | Řazení |
+|---------|-----------|--------|
+| **Živé** | Aktivní, pozastavené, koncepty, zablokované | Aktivní nahoře (bližší `expires_at` výš), pak pauza, koncepty a blokace dolů |
+| **Expirované** | `archived` a vypršené active/hidden | `expires_at` sestupně — nejnovější expirace nahoru |
+
+U expirovaných, kde už nejde Obnovit (strop 365 dní od `created_at`): štítek **Nelze obnovit**, šedší karta, bez tlačítka Obnovit. Jinak zelené **Obnovit**. Po obnovení redirect na Živé.
+
+Konfigurace: `src/config/my-listings.ts`. Řazení: `src/lib/posts/my-listings-view.ts`.
 
 ---
 
@@ -841,6 +854,7 @@ SELECT
   mc.rejection_reason,
   mc.rejected_image_index,
   mc.title_preview,
+  mc.suggest_description,
   p.nickname,
   p.email
 FROM public.moderation_checks mc
@@ -1173,7 +1187,7 @@ Stejný create formulář jako při založení (bez **Prefillu**), předvyplněn
 ### 7.3 Co se nemění
 
 - **URL slug** zůstává stejný (stabilita odkazů a SEO).
-- Majitel vidí inzerát ve svém seznamu i ve stavech, které nejsou veřejné (expirovaný, pozastavený, zablokovaný).
+- Majitel vidí inzerát ve svém seznamu i ve stavech, které nejsou veřejné (expirovaný v záložce **Expirované**, pozastavený / zablokovaný / koncept v **Živé**).
 
 ### 7.4 Zablokovaný inzerát (`blocked`)
 
@@ -1213,7 +1227,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - Štítek **Podnikatel** u firemního profilu (VOP §7.2); milník **Aktivní inzerent · N+** při 5 / 10 / 20 / 40 lifetime publikacích
 - Majitel u svého inzerátu vidí stejné odznaky s vysvětlením, že je vidí zájemci
 - Majitel vidí **počet zobrazení** detailu (`posts.view_count`, migrace `052`) — bez identifikace prohlížečů.
-- Na **`/moje-inzeraty`** u každé karty: zobrazení + **počet doručených poptávek** (`inquiry_events` kde `delivered = true`); nápověda, že detaily jsou jen v e-mailu. Stejný počet ve sloupci **Poptávky** v God Mode (`/mod/inzeraty`, `/mod/karantena`). Titulek aktivního inzerátu je odkaz na detail (stejně jako ikona náhledu).
+- Na **`/moje-inzeraty`** u každé karty: zobrazení + **počet doručených poptávek** (`inquiry_events` kde `delivered = true`); nápověda, že detaily jsou jen v e-mailu. Stejný počet ve sloupci **Poptávky** v God Mode (`/mod/inzeraty`, `/mod/karantena`). Titulek aktivního inzerátu je odkaz na detail (stejně jako ikona náhledu). Filtr: §4.1.
 - **Zpět** na detailu vrací na předchozí stránku na webu (Moje inzeráty, HP včetně filtru, kategorie, profil…). Přímý vstup nebo příchod zvenku (Google) → úvod. Ne `history.back()` — v nové kartě by to mohlo opustit web.
 
 ### 8.2 Zobrazení kontaktu
@@ -1320,7 +1334,7 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 - Uživatel zvolí platnost **1–365 dní** (výchozí 30).
 - Datum expirace (`expires_at`) počítá **databáze**, ne frontend.
 - Po expiraci inzerát **zmizí z webu**, ale **zůstane v databázi** ve stavu `archived`.
-- Majitel ho vidí v `/moje-inzeraty` a může:
+- Majitel ho vidí v `/moje-inzeraty` → **Expirované** a může:
   - **Obnovit** — znovu aktivovat a prodloužit platnost,
   - **Upravit**,
   - **Smazat** (soft delete).
@@ -1332,11 +1346,11 @@ Web je připravený pro vyhledávače (Google, Seznam) a AI crawlery. Samotná t
 - Po překročení stropu denní cron (`archive-expired` → `purge_listings_past_max_lifetime`) nastaví `status = deleted`, `status_reason_code = lifetime_max`.
 - UI: tlačítko Obnovit/Prodloužit zmizí, když už lifetime nezbývá. Migrace: `049_listing_max_lifetime.sql`.
 
-### 9.1.2 E-mail před expirací
+### 9.1.2 E-maily k platnosti
 
-- Denní cron `/api/cron/listing-expiry-warning` (Vercel, 03:30) pošle majiteli e-mail, pokud aktivní inzerát expiruje do **3 dní**.
-- Idempotentní: sloupec `posts.expiry_warning_for_expires_at` = `expires_at`, pro které už výstraha odešla. Po prodloužení se `expires_at` změní → nová výstraha až blízko nového data.
-- Copy rozlišuje, zda ještě lze obnovit v rámci lifetime. Migrace: `048_listing_expiry_warning.sql` (+ úprava kandidátů v 049). Konfigurace: `src/config/listing-expiry.ts`.
+- **3 dny předem:** denní cron `/api/cron/listing-expiry-warning` (Vercel, 03:30) pošle majiteli e-mail, pokud aktivní inzerát expiruje do **3 dní**. Copy rozlišuje, zda ještě lze obnovit v rámci lifetime. Idempotence: `posts.expiry_warning_for_expires_at` = `expires_at`, pro které už výstraha odešla. Po prodloužení se `expires_at` změní → nová výstraha až blízko nového data. Migrace: `048` (+ kandidáti v `049`).
+- **Po stažení:** tentýž denní cron `/api/cron/archive-expired` (03:00), který archivuje `active` → `archived`, hned potom pošle e-mail „inzerát už není na webu“. Copy: běžný inzerát (obnovit v Moje inzeráty / lifetime vyčerpán) vs. událost (upravte termín). Veřejný odkaz na inzerát se neposílá — URL po expiraci 404. Idempotence: `posts.expiry_notice_for_expires_at`. Migrace: `085_listing_expired_notice.sql`.
+- Konfigurace: `src/config/listing-expiry.ts`.
 
 ### 9.1.3 GDPR crony (účty a IP)
 

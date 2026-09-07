@@ -1,10 +1,11 @@
 import { archiveExpiredPosts } from "@/lib/posts/archive-expired";
+import { notifyExpiredListings } from "@/lib/posts/notify-expired-listings";
 import { purgeListingsPastMaxLifetime } from "@/lib/posts/purge-past-lifetime";
 import { NextResponse } from "next/server";
 
 /**
- * Denní cron — archivace expirovaných inzerátů + soft-delete po max. lifetime.
- * Vercel Cron posílá Authorization: Bearer CRON_SECRET.
+ * Denní cron — archivace expirovaných inzerátů, e-mail majiteli, soft-delete
+ * po max. lifetime. Vercel Cron posílá Authorization: Bearer CRON_SECRET.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -15,7 +16,8 @@ export async function GET(request: Request) {
   }
 
   const archived = await archiveExpiredPosts();
+  const expiredNotified = await notifyExpiredListings();
   const purged = await purgeListingsPastMaxLifetime();
 
-  return NextResponse.json({ ok: true, archived, purged });
+  return NextResponse.json({ ok: true, archived, expiredNotified, purged });
 }

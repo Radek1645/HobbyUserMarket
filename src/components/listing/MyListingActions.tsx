@@ -5,6 +5,11 @@ import {
   pauseListing,
   publishListing,
 } from "@/app/actions/listing-management";
+import {
+  MY_LISTINGS_VIEW,
+  MY_LISTINGS_VIEW_FIELD,
+  type MyListingsView,
+} from "@/config/my-listings";
 import { LISTING_EXTEND_DAYS } from "@/config/listing-lifetime";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import { DeleteListingControl } from "@/components/listing/DeleteListingControl";
@@ -22,6 +27,7 @@ type MyListingActionsProps = {
   categoryType: CategoryType;
   expiresAt: string | null;
   createdAt: string;
+  listView: MyListingsView;
 };
 
 const iconButtonClass =
@@ -40,6 +46,7 @@ export function MyListingActions({
   categoryType,
   expiresAt,
   createdAt,
+  listView,
 }: MyListingActionsProps) {
   const displayStatus = getOwnerDisplayStatus(status, expiresAt);
 
@@ -59,6 +66,15 @@ export function MyListingActions({
     canManage || status === "blocked" || status === "draft";
   const isArchived = displayStatus === "archived";
   const canExtend = canExtendListingLifetime(createdAt, expiresAt);
+
+  const listViewField = () =>
+    listView === MY_LISTINGS_VIEW.expired ? (
+      <input
+        type="hidden"
+        name={MY_LISTINGS_VIEW_FIELD}
+        value={MY_LISTINGS_VIEW.expired}
+      />
+    ) : null;
 
   if (!canEdit && !canDelete) return null;
 
@@ -81,6 +97,7 @@ export function MyListingActions({
       {canManage && canExtend ? (
         <form action={extendListingBy30Days}>
           <input type="hidden" name="postId" value={postId} />
+          {listViewField()}
           <button
             type="submit"
             {...gtmCtaProps(GTM_CTA.MY_LISTINGS_EXTEND, {
@@ -130,6 +147,7 @@ export function MyListingActions({
       {displayStatus === "active" ? (
         <form action={pauseListing}>
           <input type="hidden" name="postId" value={postId} />
+          {listViewField()}
           <button
             type="submit"
             {...gtmCtaProps(GTM_CTA.MY_LISTINGS_PAUSE, {
@@ -146,6 +164,7 @@ export function MyListingActions({
       {displayStatus === "hidden" ? (
         <form action={publishListing}>
           <input type="hidden" name="postId" value={postId} />
+          {listViewField()}
           <button
             type="submit"
             {...gtmCtaProps(GTM_CTA.MY_LISTINGS_PUBLISH, {
@@ -164,6 +183,7 @@ export function MyListingActions({
           postId={postId}
           categoryType={categoryType}
           variant="icon"
+          listView={listView}
         />
       ) : null}
     </div>

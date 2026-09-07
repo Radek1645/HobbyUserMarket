@@ -176,6 +176,17 @@ Logika prahů a labelů: `src/config/advertiser-badges.ts`. Komponenta: `Adverti
 
 ---
 
+## 3d. Přepínač Živé / Expirované (`/moje-inzeraty`)
+
+| Konstanta | Použití |
+|-----------|---------|
+| `myListingsViewTabActiveClass` | Aktivní pilulka — `bg-gray-900`, `rounded-full`, `text-sm` |
+| `myListingsViewTabInactiveClass` | Neaktivní — bílý podklad, `border-gray-200` |
+
+Komponenta: `MyListingsViewTabs`. Stav v URL `?view=expired` (výchozí = živé). Copy a počty: `src/config/my-listings.ts`.
+
+---
+
 ## 4. Postup při novém prvku
 
 1. Zkontroluj, zda už existuje konstanta v `ui-primitives.ts`.

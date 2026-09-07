@@ -11,14 +11,17 @@ export function isListingExpired(
 
 /**
  * Stav pro badge a akce v /moje-inzeraty.
- * active + expires_at <= now() → zobraz jako archived (PRD §4.1, P4).
+ * active/hidden + expires_at <= now() → archived (PRD §4.1, P4).
  */
 export function getOwnerDisplayStatus(
   status: PostStatus,
   expiresAt: string | null,
   now: Date = new Date(),
 ): PostStatus {
-  if (status === "active" && isListingExpired(expiresAt, now)) {
+  if (
+    (status === "active" || status === "hidden") &&
+    isListingExpired(expiresAt, now)
+  ) {
     return "archived";
   }
   return status;

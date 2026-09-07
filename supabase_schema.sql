@@ -170,6 +170,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   job_cv_required   BOOLEAN NOT NULL DEFAULT false,
   listing_quota_consumed BOOLEAN NOT NULL DEFAULT false,
   expiry_warning_for_expires_at TIMESTAMPTZ,
+  expiry_notice_for_expires_at TIMESTAMPTZ,
   publish_request_id UUID,
   publish_started_at TIMESTAMPTZ,
   expires_at        TIMESTAMPTZ,

@@ -2,10 +2,15 @@
 
 import { isListingDeletionReason } from "@/config/listing-deletion-reasons";
 import { LISTING_EXTEND_DAYS } from "@/config/listing-lifetime";
+import {
+  MY_LISTINGS_VIEW,
+  MY_LISTINGS_VIEW_FIELD,
+} from "@/config/my-listings";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { isListingQuotaExceededError } from "@/lib/listings/quota";
 import { clampExpiresAtToLifetime } from "@/lib/posts/listing-lifetime";
-import { getListingPath } from "@/lib/posts/listing-path";
+import { getListingPath, getMyListingsPath } from "@/lib/posts/listing-path";
+import { parseMyListingsView } from "@/lib/posts/my-listings-view";
 import { isListingExpired } from "@/lib/posts/listing-status";
 import { createClient } from "@/lib/supabase/server";
 import { isGoodsCategoryType } from "@/config/goods-categories";
@@ -41,6 +46,27 @@ async function getOwnedPost(postId: number): Promise<OwnedPost | null> {
   return data;
 }
 
+function redirectMyListings(
+  formData: FormData,
+  extra?: {
+    ok?: string;
+    deleteError?: string;
+    quotaError?: string;
+    lifetimeError?: string;
+    view?: ReturnType<typeof parseMyListingsView>;
+  },
+): never {
+  redirect(
+    getMyListingsPath({
+      view: extra?.view ?? parseMyListingsView(formData.get(MY_LISTINGS_VIEW_FIELD)),
+      ok: extra?.ok,
+      deleteError: extra?.deleteError,
+      quotaError: extra?.quotaError,
+      lifetimeError: extra?.lifetimeError,
+    }),
+  );
+}
+
 function revalidateListingPaths(slug: string) {
   revalidatePath("/moje-inzeraty", "page");
   revalidatePath("/");
@@ -49,17 +75,17 @@ function revalidateListingPaths(slug: string) {
 
 export async function deleteListing(formData: FormData): Promise<void> {
   const postId = Number.parseInt(String(formData.get("postId") ?? ""), 10);
-  if (Number.isNaN(postId)) redirect("/moje-inzeraty");
+  if (Number.isNaN(postId)) redirectMyListings(formData);
 
   const post = await getOwnedPost(postId);
-  if (!post || post.status === "deleted") redirect("/moje-inzeraty");
+  if (!post || post.status === "deleted") redirectMyListings(formData);
 
   const rawReason = String(formData.get("deletionReason") ?? "").trim();
   let deletionReason: ListingDeletionReason | null = null;
 
   if (isGoodsCategoryType(post.category_type)) {
     if (!isListingDeletionReason(rawReason)) {
-      redirect("/moje-inzeraty?deleteError=1");
+      redirectMyListings(formData, { deleteError: "1" });
     }
     deletionReason = rawReason;
   }
@@ -75,16 +101,16 @@ export async function deleteListing(formData: FormData): Promise<void> {
 
   if (error || !data || data.status !== "deleted") {
     console.error("deleteListing:", error, data);
-    redirect("/moje-inzeraty?deleteError=1");
+    redirectMyListings(formData, { deleteError: "1" });
   }
 
   revalidateListingPaths(post.slug);
-  redirect("/moje-inzeraty");
+  redirectMyListings(formData);
 }
 
 export async function pauseListing(formData: FormData): Promise<void> {
   const postId = Number.parseInt(String(formData.get("postId") ?? ""), 10);
-  if (Number.isNaN(postId)) redirect("/moje-inzeraty");
+  if (Number.isNaN(postId)) redirectMyListings(formData);
 
   const post = await getOwnedPost(postId);
   if (
@@ -92,7 +118,7 @@ export async function pauseListing(formData: FormData): Promise<void> {
     post.status !== "active" ||
     isListingExpired(post.expires_at)
   ) {
-    redirect("/moje-inzeraty");
+    redirectMyListings(formData);
   }
 
   const supabase = await createClient();
@@ -104,19 +130,19 @@ export async function pauseListing(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("pauseListing:", error);
-    redirect("/moje-inzeraty");
+    redirectMyListings(formData);
   }
 
   revalidateListingPaths(post.slug);
-  redirect("/moje-inzeraty?ok=paused");
+  redirectMyListings(formData, { ok: "paused" });
 }
 
 export async function publishListing(formData: FormData): Promise<void> {
   const postId = Number.parseInt(String(formData.get("postId") ?? ""), 10);
-  if (Number.isNaN(postId)) redirect("/moje-inzeraty");
+  if (Number.isNaN(postId)) redirectMyListings(formData);
 
   const post = await getOwnedPost(postId);
-  if (!post || post.status !== "hidden") redirect("/moje-inzeraty");
+  if (!post || post.status !== "hidden") redirectMyListings(formData);
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -128,18 +154,18 @@ export async function publishListing(formData: FormData): Promise<void> {
   if (error) {
     console.error("publishListing:", error);
     if (isListingQuotaExceededError(error.message)) {
-      redirect("/moje-inzeraty?quotaError=1");
+      redirectMyListings(formData, { quotaError: "1" });
     }
-    redirect("/moje-inzeraty");
+    redirectMyListings(formData);
   }
 
   revalidateListingPaths(post.slug);
-  redirect("/moje-inzeraty?ok=restored");
+  redirectMyListings(formData, { ok: "restored" });
 }
 
 export async function extendListingBy30Days(formData: FormData): Promise<void> {
   const postId = Number.parseInt(String(formData.get("postId") ?? ""), 10);
-  if (Number.isNaN(postId)) redirect("/moje-inzeraty");
+  if (Number.isNaN(postId)) redirectMyListings(formData);
 
   const post = await getOwnedPost(postId);
   if (
@@ -147,7 +173,7 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
     post.status === "deleted" ||
     post.status === "draft"
   ) {
-    redirect("/moje-inzeraty");
+    redirectMyListings(formData);
   }
 
   const nowMs = Date.now();
@@ -164,7 +190,7 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
   );
 
   if (!clamped || clamped.getTime() <= Math.max(currentExpiry, nowMs)) {
-    redirect("/moje-inzeraty?lifetimeError=1");
+    redirectMyListings(formData, { lifetimeError: "1" });
   }
 
   const updates: Record<string, unknown> = {
@@ -172,7 +198,9 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
     renew_count: post.renew_count + 1,
   };
 
-  if (post.status === "archived" || isListingExpired(post.expires_at)) {
+  const restoringExpired =
+    post.status === "archived" || isListingExpired(post.expires_at);
+  if (restoringExpired) {
     updates.status = "active";
   }
 
@@ -186,14 +214,17 @@ export async function extendListingBy30Days(formData: FormData): Promise<void> {
   if (error) {
     console.error("extendListingBy30Days:", error);
     if (isListingQuotaExceededError(error.message)) {
-      redirect("/moje-inzeraty?quotaError=1");
+      redirectMyListings(formData, { quotaError: "1" });
     }
     if (error.message?.includes("max lifetime")) {
-      redirect("/moje-inzeraty?lifetimeError=1");
+      redirectMyListings(formData, { lifetimeError: "1" });
     }
-    redirect("/moje-inzeraty");
+    redirectMyListings(formData);
   }
 
   revalidateListingPaths(post.slug);
-  redirect("/moje-inzeraty?ok=extended");
+  redirectMyListings(formData, {
+    ok: "extended",
+    view: restoringExpired ? MY_LISTINGS_VIEW.live : undefined,
+  });
 }

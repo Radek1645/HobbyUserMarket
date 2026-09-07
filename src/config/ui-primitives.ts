@@ -166,6 +166,13 @@ export const listingCardSubcategoryBadgeClass =
 export const listingPrivateEventBadgeClass =
   "inline-flex items-center rounded-full bg-violet-700 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm";
 
+/** Přepínač Živé / Expirované na /moje-inzeraty (bílé pozadí stránky). */
+export const myListingsViewTabActiveClass =
+  `rounded-full bg-gray-900 px-3.5 py-2 text-sm font-medium text-white ${emeraldFocusRingClass}`;
+
+export const myListingsViewTabInactiveClass =
+  `rounded-full border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 ${emeraldFocusRingClass}`;
+
 /** Štítek Podnikatel (VOP §7.2) — solidní, hned odlišný od milníků. */
 export const advertiserPodnikatelBadgeClass =
   "inline-flex items-center rounded-full bg-slate-900 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-sm";

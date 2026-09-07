@@ -47,6 +47,8 @@ export const GTM_CTA = {
   MY_LISTINGS_PAUSE: "cta_my_listings_pause",
   MY_LISTINGS_PUBLISH: "cta_my_listings_publish",
   MY_LISTINGS_EXTEND: "cta_my_listings_extend",
+  MY_LISTINGS_FILTER_LIVE: "cta_my_listings_filter_live",
+  MY_LISTINGS_FILTER_EXPIRED: "cta_my_listings_filter_expired",
 
   // Poptávkový formulář
   INQUIRY_OPEN: "cta_inquiry_open",

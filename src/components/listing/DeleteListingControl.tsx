@@ -5,6 +5,11 @@ import {
   LISTING_DELETION_REASON,
   LISTING_DELETION_REASON_LABELS,
 } from "@/config/listing-deletion-reasons";
+import {
+  MY_LISTINGS_VIEW,
+  MY_LISTINGS_VIEW_FIELD,
+  type MyListingsView,
+} from "@/config/my-listings";
 import { GTM_CTA, gtmCtaProps, type GtmCtaId } from "@/config/gtm-ids";
 import {
   emeraldPrimaryButtonCompactClass,
@@ -23,6 +28,7 @@ type DeleteListingControlProps = {
   categoryType: CategoryType;
   variant: "icon" | "labeled";
   gtmId?: GtmCtaId;
+  listView?: MyListingsView;
 };
 
 const iconButtonClass =
@@ -36,12 +42,22 @@ export function DeleteListingControl({
   categoryType,
   variant,
   gtmId = GTM_CTA.MY_LISTINGS_DELETE,
+  listView,
 }: DeleteListingControlProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const dialogTitleId = useId();
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const askSoldOnPlatform = isGoodsCategoryType(categoryType);
   const gtmProps = gtmCtaProps(gtmId, { "listing-id": postId });
+  const listViewField =
+    listView === MY_LISTINGS_VIEW.expired ? (
+      <input
+        type="hidden"
+        name={MY_LISTINGS_VIEW_FIELD}
+        value={MY_LISTINGS_VIEW.expired}
+      />
+    ) : null;
+
 
   useEffect(() => {
     if (!deleteDialogOpen) return;
@@ -107,6 +123,7 @@ export function DeleteListingControl({
         }}
       >
         <input type="hidden" name="postId" value={postId} />
+        {listViewField}
         {variant === "labeled" ? (
           <button type="submit" {...gtmProps} className={labeledButtonClass}>
             Smazat inzerát
@@ -156,6 +173,7 @@ export function DeleteListingControl({
 
             <form action={deleteListing} className="mt-5 space-y-2">
               <input type="hidden" name="postId" value={postId} />
+              {listViewField}
               <button
                 type="submit"
                 name="deletionReason"
