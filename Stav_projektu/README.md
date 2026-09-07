@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-09-07 (noc) | [2026-09-07-noc.md](./2026-09-07-noc.md) — prefill `suggest_description` (084), GDPR 1.9-fo, PRD v3.100 |
 | 2026-09-07 (večer) | [2026-09-07-vecer.md](./2026-09-07-vecer.md) — prefill lab hydratace, mezery gitignore, PRD v3.99 |
 | 2026-09-07 | [2026-09-07.md](./2026-09-07.md) — title zaPikolou.cz, prefill prompt/GA, PRD v3.98 |
 | 2026-09-06 | [2026-09-06.md](./2026-09-06.md) — junk sondy `/meta.json` v middleware (PRD v3.97) |

@@ -17,6 +17,11 @@ export type ModerationCheckLog = {
   rejectedImageIndex?: number;
   errorCode?: string;
   titlePreview?: string;
+  /**
+   * Plný AI popis z Prefillu. Volat jen s intent suggest_from_photos;
+   * DB CHECK jinak insert odmítne.
+   */
+  suggestDescription?: string | null;
   /** Až 6 Sightengine odpovědí v jednom poli. */
   sightengineResponses?: unknown;
   /** AI telemetrie kategorií (058) — neautomatické vytváření. */
@@ -37,6 +42,15 @@ function truncatePreview(text: string, max = 120): string {
   const trimmed = text.trim();
   if (trimmed.length <= max) return trimmed;
   return `${trimmed.slice(0, max - 1)}…`;
+}
+
+const SUGGEST_DESCRIPTION_MAX_LENGTH = 2000;
+
+function clampSuggestDescription(text: string | null | undefined): string | null {
+  const trimmed = text?.trim() ?? "";
+  if (!trimmed) return null;
+  if (trimmed.length <= SUGGEST_DESCRIPTION_MAX_LENGTH) return trimmed;
+  return trimmed.slice(0, SUGGEST_DESCRIPTION_MAX_LENGTH);
 }
 
 /** Append-only log; volající rozhodne, zda jeho selhání smí zablokovat approval. */
@@ -60,6 +74,7 @@ export async function logModerationCheck(
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
+  const suggestDescription = clampSuggestDescription(entry.suggestDescription);
   const { error } = await admin.from("moderation_checks").insert({
     user_id: userId,
     guest_visitor_id: guestVisitorId,
@@ -75,6 +90,7 @@ export async function logModerationCheck(
     title_preview: entry.titlePreview
       ? truncatePreview(entry.titlePreview)
       : null,
+    ...(suggestDescription ? { suggest_description: suggestDescription } : {}),
     sightengine_responses: entry.sightengineResponses ?? null,
     category_fit: entry.categoryFit?.trim() || null,
     suggested_category_type: entry.suggestedCategoryType?.trim() || null,

@@ -482,6 +482,7 @@ serve(async (req) => {
       subcategorySlug: suggestion.subcategorySlug ?? undefined,
       imageCount: geminiImagesBase64.length,
       titlePreview: suggestion.title,
+      suggestDescription: suggestion.description,
       sightengineResponses,
       aiProvider: inference.provider,
       aiModel: inference.model,

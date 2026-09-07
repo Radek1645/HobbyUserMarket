@@ -1,6 +1,6 @@
 # Právní dokumentace — draft (Legal Design)
 
-> **Stav:** Web FO VOP **1.12-fo** (účinnost 03.09.2026; IČO/sídlo na `/kontakt`; **bez reconsent**) · GDPR FO **1.8-fo** · cookies **1.4** · Pravidla **1.5** · Limity FO **1.5-fo** · DSA **1.3** · OSVČ VOP draft **1.6-osvc** · GDPR OSVČ **1.2-osvc** · Balíčky OSVČ **1.1-osvc** (IČO / datum účinnosti k doplnění; bez adresy) · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
+> **Stav:** Web FO VOP **1.12-fo** (účinnost 03.09.2026; IČO/sídlo na `/kontakt`; **bez reconsent**) · GDPR FO **1.9-fo** · cookies **1.4** · Pravidla **1.5** · Limity FO **1.5-fo** · DSA **1.3** · OSVČ VOP draft **1.6-osvc** · GDPR OSVČ **1.3-osvc** · Balíčky OSVČ **1.1-osvc** (IČO / datum účinnosti k doplnění; bez adresy) · **Legislativní kontext:** DSA, GDPR, AI Act (2026)  
 > **Projekt:** HobbyUserMarket (specifikace [`PRD_v3.md`](../PRD_v3.md) §11.3)
 
 Modulární sada právních textů pro web. Každý dokument obsahuje srozumitelné shrnutí (TL;DR) a plné znění pro publikaci na samostatné URL.
@@ -130,7 +130,7 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 | Veřejný profil `/uzivatel/[nickname]` v GDPR FO | ✅ |
 | Odkazy [Moje inzeráty](/moje-inzeraty) / [Nastavení](/profil/nastaveni) v Balíčcích | ✅ |
 | `REVIZE_PRAVNI/` FO kopie — **neaktualizováno** v tomto kroku (webové soubory jsou zdroj pravdy; před další syncem srovnat) | ⚠️ |
-| OSVČ GDPR / brand — před monetizací | ✅ **1.2-osvc** (2026-08-30) |
+| OSVČ GDPR / brand — před monetizací | ✅ **1.3-osvc** (2026-09-07; log moderace + prefill popis) |
 
 ## Sync 2026-08-15 — FO bez úmyslu placené inzerce
 
@@ -167,7 +167,7 @@ Detail: [`SECURITY_UX_BACKLOG.md`](../SECURITY_UX_BACKLOG.md) **P33**.
 | Placeholdery: IČO, datum účinnosti | ⏳ až přidělení IČO |
 | Web `/vop` | **1.12-fo** (03.09.2026; bez reconsent — viz verzování výše) |
 | Balíčky OSVČ → **1.1-osvc** (brand zaPikolou, ceník, nákup převodem, odstoupení); snapshot [`snapshots/balicky-inzerce-v1.0-osvc.md`](./snapshots/balicky-inzerce-v1.0-osvc.md) | ✅ draft |
-| GDPR OSVČ → **1.2-osvc** (brand zaPikolou, guest draft, Meta Pixel, veřejný profil, nákup balíčku); snapshot [`snapshots/ochrana-osobnich-udaju-v1.1-osvc.md`](./snapshots/ochrana-osobnich-udaju-v1.1-osvc.md) | ✅ draft |
+| GDPR OSVČ → **1.3-osvc** (log kontroly obsahu 12 měsíců, vč. návrhu z předvyplnění); starší **1.2-osvc** v git historii; snapshot [`snapshots/ochrana-osobnich-udaju-v1.1-osvc.md`](./snapshots/ochrana-osobnich-udaju-v1.1-osvc.md) | ✅ draft |
 
 ## K potvrzení právníkem
 

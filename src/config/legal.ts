@@ -20,8 +20,8 @@ export const CURRENT_VOP_VERSION = MONETIZATION_ENABLED ? "1.6-osvc" : "1.12-fo"
 
 /** Verze GDPR textu — sync s docs/pravni/ochrana-osobnich-udaju-*.md. */
 export const CURRENT_GDPR_VERSION = MONETIZATION_ENABLED
-  ? "1.2-osvc"
-  : "1.8-fo";
+  ? "1.3-osvc"
+  : "1.9-fo";
 
 /** Verze ceníku / limitů — sync s docs/pravni/balicky-inzerce-*.md. */
 export const CURRENT_PRICING_VERSION = MONETIZATION_ENABLED

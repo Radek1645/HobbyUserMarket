@@ -8,7 +8,7 @@ description: Uzavírá vývojovou session — ověření, dokumentace (Metodika,
 Postupuj shora dolů. Session log patří do `Stav_projektu/`, ne do samostatného TO-DO.
 
 ```
-1. Ověřit funkčnost  →  2. Infrastruktura  →  3. Dokumentace
+1. Ověřit funkčnost  →  2. Infra + rozsah gitu  →  3. Dokumentace
         →  4. Stav_projektu  →  5. Commit  →  6. Push
 ```
 
@@ -18,15 +18,19 @@ Postupuj shora dolů. Session log patří do `Stav_projektu/`, ne do samostatné
 - Regrese u souvisejících flow
 - Žádné nové chyby v konzoli / terminálu ze session
 
-## 2. Infrastruktura — vždy se zeptat uživatele
+## 2. Infrastruktura a rozsah gitu — vždy se zeptat uživatele
 
-Použij **AskQuestion** (nebo výslovnou otázku v chatu):
+Nejdřív `git status` (i untracked). Pak **AskQuestion** (nebo výslovná otázka v chatu):
 
-1. **Supabase migrace** — spustil uživatel všechny nové SQL soubory z `supabase/` této session? (např. přes SQL editor / `supabase db push`)
-2. **Edge Functions** — pokud session měnila AI moderaci: proběhl `npm run sync:moderation` + deploy `moderate-listing`?
-3. **Env / Resend / Vercel** — nastaveno v `.env.local` **i** na Vercel? (bez commitu secrets)
+1. **Git — co commitnout a pushnout** — default je **všechny** necommitnuté úpravy (kromě secrets). Zeptat se vždy, i když session sahala jen na část stromu.
+   - **Všechno** (default) — celý working tree: staged + unstaged + relevantní untracked
+   - **Jen specifické** — uživatel řekne soubory / téma; zbytek nechat v working tree
+   - Do otázky vypiš krátký seznam cest ze `git status`, ať je vidět, co by šlo ven. Nesahaj jen na „soubory z této session“, dokud uživatel nevybere subset. Častá chyba: ven jde jedna oprava, ostatní úpravy zůstanou lokálně.
+2. **Supabase migrace** — spustil uživatel všechny nové SQL soubory z `supabase/` této session? (např. přes SQL editor / `supabase db push`)
+3. **Edge Functions** — pokud session měnila AI moderaci: proběhl `npm run sync:moderation` + deploy `moderate-listing`?
+4. **Env / Resend / Vercel** — nastaveno v `.env.local` **i** na Vercel? (bez commitu secrets)
    - `INQUIRY_FROM_EMAIL` musí být `@ověřená-doména`, ne `onboarding@resend.dev` pro produkci
-4. **GTM / DNS** — jen pokud session se týkala analytiky nebo domény
+5. **GTM / DNS** — jen pokud session se týkala analytiky nebo domény
 
 Necommituj bez odpovědi; neověřené migrace zapiš do `Stav_projektu` jako **TODO**.
 
@@ -60,6 +64,8 @@ Pokud uživatel nepotvrdil infrastrukturu z kroku 2, audit nesmí tvrdit
 
 ## 5. Git commit
 
+Rozsah ber z odpovědi v kroku 2. **Default = všechno** (kromě secrets). Bez explicitního „jen toto“ nezužuj `git add` na soubory z aktuální session.
+
 ```powershell
 git status
 git diff
@@ -68,8 +74,11 @@ git diff
 - Bez `.env`, `.env.local`, credentials
 - Commit message ve stylu repo (`feat:`, `fix:`, `docs:`)
 - Velká session: kód + docs v jednom nebo dvou commitech — dle rozsahu
+- Po commitu znovu `git status`: nesmí zůstat opomenuté související úpravy, pokud uživatel chtěl všechno
 
 ## 6. Push *(poslední krok)*
+
+Pushuje se to, co bylo v commitu podle rozsahu z kroku 2. Default zase **všechno** (všechny lokální commity větve, které ještě nejsou na origin).
 
 ```powershell
 git push -u origin HEAD
@@ -86,7 +95,7 @@ Po pushi připomeň: Vercel build, případně manuální test na produkci.
 | Dokumentace srovnaná s kódem | ☐ |
 | DB schéma v `supabase-prikazy.md` aktuální *(pokud změna DB)* | ☐ |
 | `Stav_projektu` aktualizován | ☐ |
-| Commit na `main` | ☐ |
+| Commit na `main` — **všechny** úpravy, pokud uživatel nevybral subset | ☐ |
 | Push na `origin` | ☐ |
 
 ## Rychlé odkazy

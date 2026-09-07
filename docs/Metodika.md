@@ -380,7 +380,7 @@ Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace +
 
 #### DB
 
-Žádné nové tabulky. Jen enum hodnota `suggest_from_photos` (migrace `074`) a textová guest akce ve stávající `anonymous_rate_limits` (`073`). Denní SQL na Prefill bez odeslání + cesty k fotkám: [§6.12 H](#h-denní-hluchá-místa--prefill-bez-odeslání).
+Žádné nové tabulky. Jen enum hodnota `suggest_from_photos` (migrace `074`) a textová guest akce ve stávající `anonymous_rate_limits` (`073`). Úspěšný Prefill ukládá AI popis do `moderation_checks.suggest_description` (`084`). Denní SQL na Prefill bez odeslání + cesty k fotkám: [§6.12 H](#h-denní-hluchá-místa--prefill-bez-odeslání).
 
 #### Co v MVP záměrně není
 
@@ -403,7 +403,7 @@ Ruční A/B bez zásahu do produkčního trafficu. Cíl: často měnit kandidát
 | **Default A** | `gemini` / `gemini-3.5-flash-lite` (Edge fallback: secret `COMPARE_SUGGEST_ARM_A_MODEL` → `SUGGEST_LISTING_MODEL` → kódový default) |
 | **Default B** | `openai` / `gpt-5.4-nano` (Edge fallback: `COMPARE_SUGGEST_ARM_B_MODEL` → kódový default) |
 | **UI override** | Provider + model u obou ramen editovatelné před každým během |
-| **Hydratace (2. krok)** | Tlačítko **Hydratovat** u každého úspěšného ramene. Volá produkční `moderate-listing` (preview, `issueApproval: false`) — **jiný** prompt a model než Prefill (`GEMINI_MODEL` / `gemini-2.5-flash`). Formulářový fixture: použité, 100 Kč, Brno (ať se hydratace neptá na pole formuláře). Zápis do `moderation_checks` + rate limit jako u Publikovat. Bez approval tokenu. |
+| **Hydratace (2. krok)** | Tlačítko **Hydratovat** u každého úspěšného ramene. Volá produkční `moderate-listing` (preview, `issueApproval: false`) — **jiný** prompt a model než Prefill (`GEMINI_MODEL` / `gemini-2.5-flash`). Fixture: použité, **cena dohodou** (bez částky — 100 Kč u DualSense shodilo `scam_fraud`), Brno. Zápis do `moderation_checks` + rate limit jako u Publikovat. Bez approval tokenu. |
 
 Konfig UI defaultů: `src/config/compare-suggest-from-photos.ts`. Deploy labu (prefill A/B): `npx supabase functions deploy compare-suggest-from-photos`. Hydratace v labu **nenasazuje** novou Edge funkci — používá stávající `moderate-listing`.
 
@@ -797,7 +797,8 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 | `status` | `APPROVED` / `REJECTED` / `NEEDS_QUESTIONS` |
 | `error_code` | Např. `HARD_HIT_TEXT`, `NSFW_IMAGE`, `SIGHTENGINE_UNAVAILABLE`, `RATE_LIMIT`… |
 | `rejection_reason` | Text důvodu (pokud REJECTED) |
-| `title_preview` | Zkrácený název pro orientaci (ne plný popis) |
+| `title_preview` | Zkrácený název pro orientaci |
+| `suggest_description` | Plný AI popis z Prefillu (`084`, jen `intent = suggest_from_photos`) |
 | `sightengine_responses` | JSONB pole až 6 Sightengine odpovědí (`056`) |
 | `category_fit` | AI telemetrie (`058`): `match` / `better_existing` / `missing_taxonomy` |
 | `suggested_category_type` / `suggested_subcategory_slug` | Návrh existujícího páru (ne nové slugy) |
@@ -1027,6 +1028,7 @@ WITH prefill AS (
     mc.error_code,
     mc.image_count,
     mc.title_preview,
+    mc.suggest_description,
     mc.category_type,
     mc.subcategory_slug,
     left(lower(trim(both FROM coalesce(mc.title_preview, ''))), 16) AS title_prefix,
@@ -1055,6 +1057,7 @@ SELECT
   p.category_type,
   p.subcategory_slug,
   p.title_preview,
+  p.suggest_description,
   p.guest_visitor_id,
   CASE
     WHEN p.guest_visitor_id IS NOT NULL
@@ -1106,6 +1109,7 @@ SELECT
   mc.error_code,
   mc.image_count,
   mc.title_preview,
+  mc.suggest_description,
   mc.category_type,
   mc.subcategory_slug,
   mc.guest_visitor_id,
@@ -1146,7 +1150,7 @@ ORDER BY bucket_id, name;
 
 Fotky žijí **~24 h** (cron `/api/cron/purge-moderation-image-staging` v 04:15 UTC = 06:15 Praha, `MODERATION_IMAGE_STAGING_RETENTION_HOURS`). Po claimu (host se přihlásí) se originály ze `guest/…` smažou a zkopírují pod `{user_id}/`. Když H3 nic nevrátí, buď už běžel purge, nebo došli k registraci.
 
-Popis inzerátu se u Prefillu **neukládá** — v logu je jen `title_preview`. IP hosta jen jako hash v `anonymous_rate_limits`, nespáruješ ji na visitor UUID bez saltu.
+Popis z úspěšného Prefillu je v `suggest_description` (migrace `084`, retence 12 měsíců). NSFW / výpadek Sightengine ho nemají. IP hosta jen jako hash v `anonymous_rate_limits`, nespáruješ ji na visitor UUID bez saltu.
 
 ---
 
@@ -1209,7 +1213,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - Štítek **Podnikatel** u firemního profilu (VOP §7.2); milník **Aktivní inzerent · N+** při 5 / 10 / 20 / 40 lifetime publikacích
 - Majitel u svého inzerátu vidí stejné odznaky s vysvětlením, že je vidí zájemci
 - Majitel vidí **počet zobrazení** detailu (`posts.view_count`, migrace `052`) — bez identifikace prohlížečů.
-- Na **`/moje-inzeraty`** u každé karty: zobrazení + **počet doručených poptávek** (`inquiry_events` kde `delivered = true`); nápověda, že detaily jsou jen v e-mailu. Stejný počet ve sloupci **Poptávky** v God Mode (`/mod/inzeraty`, `/mod/karantena`).
+- Na **`/moje-inzeraty`** u každé karty: zobrazení + **počet doručených poptávek** (`inquiry_events` kde `delivered = true`); nápověda, že detaily jsou jen v e-mailu. Stejný počet ve sloupci **Poptávky** v God Mode (`/mod/inzeraty`, `/mod/karantena`). Titulek aktivního inzerátu je odkaz na detail (stejně jako ikona náhledu).
 
 ### 8.2 Zobrazení kontaktu
 

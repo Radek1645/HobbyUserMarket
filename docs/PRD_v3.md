@@ -1,11 +1,11 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.99
+> **Verze dokumentu:** v3.100
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql) · [`083_posts_location_nullable_for_pii_purge.sql`](../supabase/083_posts_location_nullable_for_pii_purge.sql)  
+> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql) · [`083_posts_location_nullable_for_pii_purge.sql`](../supabase/083_posts_location_nullable_for_pii_purge.sql) · [`084_moderation_checks_suggest_description.sql`](../supabase/084_moderation_checks_suggest_description.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
 > **Datum:** 2026-09-07
 
@@ -921,6 +921,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.97 | 2026-09-06 | **Junk sondy v middleware:** prázdné 404 na `/meta.json` (Meta Ads crawler) a scanner cesty dřív, než doběhne session a catch-all `[slug]`. Úspora invocation + SSR, ne Auth API. |
 | v3.98 | 2026-09-07 | **Title značka:** 7 stránek s hardcoded `HobbyUserMarket` přepsáno na `SITE_DISPLAY_NAME` (`zaPikolou.cz`). GA historická zobrazení zůstanou pod starým názvem. |
 | v3.99 | 2026-09-07 | **Prefill jazyk + lab hydratace:** bazarová čeština (overal/kombinéza); čitelný štítek do nabídky, ne `Doplňte velikost:`. `/mod/prefill-lab` má 2. krok **Hydratovat** (produkční preview). Terénní mezery lokálně `docs/prefill-mezery.md` (gitignore). |
+| v3.100 | 2026-09-07 | **Prefill popis v logu:** `moderation_checks.suggest_description` (migrace `084`, jen `suggest_from_photos`, max 2000). GDPR FO **1.9-fo** / OSVČ **1.3-osvc**. Deploy `suggest-listing-from-photos` až po SQL. |
 
 ---
 

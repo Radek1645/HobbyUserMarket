@@ -290,6 +290,7 @@ Každé volání Edge Function: publish moderace (náhled / `issueApproval`) i p
 |---------|----------|
 | Identita | `log_no`, `user_id` (nullable od 076), `guest_visitor_id` (076), `created_at`, `intent` |
 | Výsledek | `status` (`APPROVED` / `REJECTED` / `NEEDS_QUESTIONS`), `category_type`, `subcategory_slug`, `image_count` |
+| Prefill text | `title_preview`; `suggest_description` (084, jen `suggest_from_photos`) |
 | Zamítnutí | `rejected_topic_id`, `rejection_reason`, `error_code`, `title_preview`, `rejected_image_index` |
 | Návrh kategorie | `category_fit`, `suggested_category_type`, `suggested_subcategory_slug`, `category_taxonomy_hint` |
 | Audit AI | `sightengine_responses`, `prompt_version`, `ai_provider`, `ai_model`, `used_fallback`, `policy_hash`, `input_fingerprint`, `image_hashes` |

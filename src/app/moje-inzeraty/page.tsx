@@ -15,6 +15,7 @@ import { SITE_DISPLAY_NAME } from "@/config/site";
 import { formatInquiryCount } from "@/lib/i18n/czech-plural";
 import { loadDeliveredInquiryCounts } from "@/lib/inquiry/delivered-counts";
 import { archiveExpiredPosts } from "@/lib/posts/archive-expired";
+import { getListingPath } from "@/lib/posts/listing-path";
 import {
   getOwnerDisplayStatus,
   isListingExpired,
@@ -203,6 +204,7 @@ export default async function MyListingsPage({
               : null;
             const displayStatus = getOwnerDisplayStatus(post.status, post.expires_at);
             const expired = isListingExpired(post.expires_at);
+            const canOpenPublicDetail = displayStatus === "active";
 
             return (
               <li
@@ -230,7 +232,19 @@ export default async function MyListingsPage({
                       ) : null}
                     </div>
                     <h2 className="mt-1 text-base font-semibold text-gray-900">
-                      {post.title}
+                      {canOpenPublicDetail ? (
+                        <Link
+                          href={getListingPath(post.slug)}
+                          {...gtmCtaProps(GTM_CTA.MY_LISTINGS_VIEW, {
+                            "listing-id": post.id,
+                          })}
+                          className="block underline-offset-2 hover:underline"
+                        >
+                          {post.title}
+                        </Link>
+                      ) : (
+                        post.title
+                      )}
                     </h2>
                     <p className="mt-0.5 text-sm text-gray-600">
                       {post.location_text}

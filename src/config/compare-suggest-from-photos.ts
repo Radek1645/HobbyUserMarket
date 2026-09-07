@@ -21,13 +21,12 @@ export const COMPARE_SUGGEST_DEFAULT_ARM_B = {
 };
 
 /**
- * Fixtures před hydratací — jako vyplněný formulář na Obsahu (cena/stav/lokalita).
- * Prázdné `Doplňte …:` v popisu zůstanou; testuje se, jestli katalog dopsala hydratace.
+ * Fixtures před hydratací. Bez částky — fixních 100 Kč u DualSense shodilo scam_fraud.
+ * Typ ceny Dohodou, ať se hydratace na cenu neptá a nesrovnává s trhem.
  */
 export const COMPARE_HYDRATE_LAB_FIXTURE = {
   conditionLabel: "used" as const,
-  priceType: "fixed" as const,
-  priceAmount: 100,
+  priceType: "negotiable" as const,
   locationText: "Brno",
 } as const;
 
@@ -60,7 +59,7 @@ export const COMPARE_SUGGEST_UI = {
   hydratingLabel: "Hydratuju…",
   hydrateHeading: "Hydratace (produkční preview)",
   hydrateHint:
-    "Stejný prompt a model jako Publikovat → Kontrola. Formulář: použité, 100 Kč, Brno. Bez approval tokenu.",
+    "Stejný prompt a model jako Publikovat → Kontrola. Fixture: použité, cena dohodou, Brno — bez částky, ať to nespadne na podvod. Bez approval tokenu.",
   hydrateNeedSubcategory:
     "Hydratace potřebuje podkategorii — prefill ji nevrátil.",
   hydrateRejectedLabel: "Zamítnuto",

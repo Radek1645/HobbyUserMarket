@@ -1,7 +1,7 @@
 # Zásady ochrany osobních údajů
 
 **Platforma:** zaPikolou.cz  
-**Verze:** 1.2-osvc · **Datum účinnosti:** [doplnit]  
+**Verze:** 1.3-osvc · **Datum účinnosti:** [doplnit]  
 **Správce:** Radek Horák, podnikající fyzická osoba · IČO: [doplnit] (přiděleno Českým statistickým úřadem) · zapsán v živnostenském rejstříku · **Kontakt pro GDPR:** info@zapikolou.cz · datová schránka: 8q4nyyt
 
 ---
@@ -25,6 +25,7 @@ Správcem osobních údajů je Provozovatel platformy zaPikolou.cz. Zpracovává
 | Správa účtu a inzerce | E-mail, přezdívka (nickname), text inzerátu, fotografie; u firemního profilu název firmy (a IČO, pokud je uvedeno); volitelně kontaktní telefon u konkrétního inzerátu — jen pokud ho inzerent sám vyplní | Plnění smlouvy (čl. 6 odst. 1 písm. b) | Po dobu existence aktivního účtu; po vypršení inzerát skryjeme (archivace) a uchováme nejvýše **365 dní od založení**, poté soft-delete (viz VOP a §6.1) |
 | Veřejný profil zadavatele | Veřejný nickname (a případně název firmy), odkaz na zveřejněné inzeráty | Plnění smlouvy (čl. 6 odst. 1 písm. b) | Po dobu existence účtu; po anonymizaci profilu již není veřejně dostupný |
 | Příprava inzerátu před registrací (guest draft) | Text a fotografie konceptu, technický identifikátor návštěvníka, IP (rate-limit), dočasné soubory ve staging úložišti | Oprávněný zájem — umožnit přípravu inzerátu a ochrana před zneužitím (čl. 6 odst. 1 písm. f); po registraci plnění smlouvy | Koncept v prohlížeči nejvýše **24 hodin**; staging soubory dočasně do dokončení registrace a claimu, nebo do uplynutí provozní lhůty úklidu; rate-limit záznamy dle provozní potřeby |
+| Kontrola obsahu inzerátu (moderace) | Název, kategorie, výsledek automatické kontroly; u nových inzerátů i návrh popisu z předvyplnění | Oprávněný zájem — moderace obsahu a zlepšování přesnosti kontroly (čl. 6 odst. 1 písm. f) | **12 měsíců** |
 | Nákup placeného inzertního balíčku | E-mail účtu, požadovaný balíček, částka, variabilní symbol, datum připsání platby; údaje z bankovního výpisu (typicky číslo účtu plátce); korespondence k objednávce; případný souhlas se zahájením plnění před uplynutím lhůty k odstoupení | Plnění smlouvy (čl. 6 odst. 1 písm. b); daňové a účetní povinnosti (čl. 6 odst. 1 písm. c) | Korespondence k objednávce po dobu existence účtu, nejdéle do vypořádání; účetní a daňové doklady po dobu stanovenou právními předpisy (zpravidla **5 let** od konce příslušného zdaňovacího období). Postup nákupu viz [Balíčky inzerce](/balicky-inzerce). |
 | Automatická anonymizace neaktivních účtů | Identifikační a kontaktní údaje v profilu | Oprávněný zájem — minimalizace údajů (čl. 6 odst. 1 písm. f) | Spuštění po **90 dnech** od posledního přihlášení, pokud uživatel nemá aktivní inzerát; viz §6.1 |
 | Novinky a tipy e-mailem (připravujeme) | E-mailová adresa | Souhlas (čl. 6 odst. 1 písm. a) | Souhlas můžeme uložit při registraci; obchodní sdělení zatím nezasíláme. Po spuštění do odvolání souhlasu — viz [Marketingový souhlas](/marketingovy-souhlas) |
@@ -47,7 +48,7 @@ U poptávek ukládáme IP adresu v databázi z bezpečnostních a anti-spam dův
 
 ### 3.3 Příprava inzerátu bez účtu
 
-Bez přihlášení můžete na stránce vytvoření inzerátu připravit **koncept** (text, fotografie, náhled automatické kontroly). Koncept ukládáme v prohlížeči (local storage, nejvýše 24 hodin). Pro rate-limiting a staging používáme technický cookie identifikátor návštěvníka. Fotografie se dočasně ukládají ve staging úložišti a text i fotografie mohou být odeslány ke kontrole zpracovatelům AI / předfiltrace (viz §5.1). **Zveřejnění** inzerátu je možné až po registraci a přihlášení; po úspěšném claimu se koncept a staging přesunou pod účet uživatele. Podrobnosti o cookies viz [Zásady používání cookies](/cookies).
+Bez přihlášení můžete na stránce vytvoření inzerátu připravit **koncept** (text, fotografie, náhled automatické kontroly). Koncept ukládáme v prohlížeči (local storage, nejvýše 24 hodin). Pro rate-limiting a staging používáme technický cookie identifikátor návštěvníka. Fotografie se dočasně ukládají ve staging úložišti a text i fotografie mohou být odeslány ke kontrole zpracovatelům AI / předfiltrace (viz §5.1). Návrh textu vygenerovaný z fotografií se navíc ukládá v logu kontroly obsahu po dobu uvedenou v §2 (řádek Kontrola obsahu inzerátu) — i pokud se neregistrujete. **Zveřejnění** inzerátu je možné až po registraci a přihlášení; po úspěšném claimu se koncept a staging přesunou pod účet uživatele. Podrobnosti o cookies viz [Zásady používání cookies](/cookies).
 
 ---
 

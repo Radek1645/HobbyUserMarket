@@ -2056,6 +2056,7 @@ CREATE TABLE IF NOT EXISTS public.moderation_checks (
   rejected_image_index SMALLINT,
   error_code           TEXT,
   title_preview        TEXT,
+  suggest_description  TEXT,
   category_fit         TEXT,
   suggested_category_type TEXT,
   suggested_subcategory_slug TEXT,
@@ -2071,7 +2072,17 @@ CREATE TABLE IF NOT EXISTS public.moderation_checks (
       OR category_fit IN ('match', 'better_existing', 'missing_taxonomy')
     ),
   CONSTRAINT moderation_checks_actor_check
-    CHECK (user_id IS NOT NULL OR guest_visitor_id IS NOT NULL)
+    CHECK (user_id IS NOT NULL OR guest_visitor_id IS NOT NULL),
+  CONSTRAINT moderation_checks_suggest_description_length
+    CHECK (
+      suggest_description IS NULL
+      OR char_length(suggest_description) <= 2000
+    ),
+  CONSTRAINT moderation_checks_suggest_description_intent
+    CHECK (
+      suggest_description IS NULL
+      OR intent = 'suggest_from_photos'
+    )
 );
 
 CREATE INDEX IF NOT EXISTS moderation_checks_created_at_idx

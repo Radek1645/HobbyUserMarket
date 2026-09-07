@@ -472,7 +472,6 @@ export function PrefillCompareLab() {
         conditionFieldLabel: getConditionFieldLabel(categoryType),
         priceType: fixture.priceType,
         priceTypeLabel: getPriceTypeLabel(categoryType, fixture.priceType),
-        priceAmount: fixture.priceAmount,
         locationText: fixture.locationText,
         listingDurationDays: LISTING_DURATION_DEFAULT_DAYS,
         images: {
