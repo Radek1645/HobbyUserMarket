@@ -1,10 +1,19 @@
 "use client";
 
 import {
+  LISTING_DURATION_DEFAULT_DAYS,
   LISTING_IMAGE_ACCEPT,
   LISTING_IMAGE_MAX_FILE_BYTES,
 } from "@/config/app";
 import {
+  CATEGORIES,
+  getConditionFieldLabel,
+  getConditionLabel,
+  getPriceTypeLabel,
+  isValidSubcategory,
+} from "@/config/categories";
+import {
+  COMPARE_HYDRATE_LAB_FIXTURE,
   COMPARE_SUGGEST_DEFAULT_ARM_A,
   COMPARE_SUGGEST_DEFAULT_ARM_B,
   COMPARE_SUGGEST_MAX_IMAGES,
@@ -14,6 +23,7 @@ import {
   listingFormDropzoneActiveClass,
   listingFormDropzoneClass,
   listingFormPrimaryButtonClass,
+  listingFormSecondaryButtonClass,
 } from "@/config/listing-form-ui";
 import { compressListingImage } from "@/lib/images/compress-listing-image";
 import {
@@ -27,10 +37,16 @@ import {
   type CompareSuggestArmOk,
   type CompareSuggestProvider,
 } from "@/lib/mod/compare-suggest-client";
-import { prepareModerationImages } from "@/lib/moderation/prepare-moderation-images";
+import { invokeModerateListing } from "@/lib/moderation/moderate-listing-client";
+import {
+  prepareModerationImages,
+  type ModerationImageReference,
+} from "@/lib/moderation/prepare-moderation-images";
+import type { ListingModerationOutcome } from "@/lib/moderation/types";
 import { validateListingImageFile } from "@/lib/posts/listing-images";
+import type { CategoryType } from "@/types/post";
 import { Camera, CloudUpload, Loader2, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 
 type LocalPhoto = {
   key: string;
@@ -44,12 +60,116 @@ type ArmFormState = {
   model: string;
 };
 
+type HydrationLabState =
+  | { status: "idle" }
+  | { status: "running" }
+  | { status: "done"; outcome: ListingModerationOutcome };
+
+function parseLabCategoryType(value: string): CategoryType | null {
+  const found = CATEGORIES.find((category) => category.type === value);
+  return found?.type ?? null;
+}
+
+function HydrationLabBlock({
+  state,
+  disabled,
+  missingSubcategory,
+  onHydrate,
+}: {
+  state: HydrationLabState;
+  disabled: boolean;
+  missingSubcategory: boolean;
+  onHydrate: () => void;
+}) {
+  const outcome = state.status === "done" ? state.outcome : null;
+
+  return (
+    <div className="mt-4 border-t border-gray-100 pt-4">
+      <h4 className="text-xs font-medium uppercase tracking-wide text-gray-500">
+        {COMPARE_SUGGEST_UI.hydrateHeading}
+      </h4>
+      <p className="mt-1 text-xs text-gray-500">
+        {COMPARE_SUGGEST_UI.hydrateHint}
+      </p>
+      {missingSubcategory ? (
+        <p className="mt-2 text-xs text-amber-800">
+          {COMPARE_SUGGEST_UI.hydrateNeedSubcategory}
+        </p>
+      ) : (
+        <button
+          type="button"
+          className={`${listingFormSecondaryButtonClass} mt-3`}
+          disabled={disabled || state.status === "running"}
+          onClick={onHydrate}
+        >
+          {state.status === "running" ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              {COMPARE_SUGGEST_UI.hydratingLabel}
+            </>
+          ) : (
+            COMPARE_SUGGEST_UI.hydrateLabel
+          )}
+        </button>
+      )}
+      {outcome && !outcome.ok && outcome.kind === "rejected" ? (
+        <p className="mt-3 text-sm text-red-800">
+          {COMPARE_SUGGEST_UI.hydrateRejectedLabel}: {outcome.reason}
+        </p>
+      ) : null}
+      {outcome && !outcome.ok && outcome.kind === "error" ? (
+        <p className="mt-3 text-sm text-red-800">
+          {COMPARE_SUGGEST_UI.errorLabel}: {outcome.error}
+        </p>
+      ) : null}
+      {outcome?.ok ? (
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              {COMPARE_SUGGEST_UI.titleLabel}
+            </dt>
+            <dd className="mt-1 text-gray-900">{outcome.cleanedTitle}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              {COMPARE_SUGGEST_UI.descriptionLabel}
+            </dt>
+            <dd className="mt-1 whitespace-pre-wrap text-gray-800">
+              {outcome.cleanedDescription}
+            </dd>
+          </div>
+          {outcome.questions && outcome.questions.length > 0 ? (
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                {COMPARE_SUGGEST_UI.hydrateNeedsQuestionsLabel}
+              </dt>
+              <dd className="mt-1">
+                <ul className="list-disc space-y-1 pl-4 text-gray-800">
+                  {outcome.questions.map((question) => (
+                    <li key={question.id}>{question.label}</li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">
+              {COMPARE_SUGGEST_UI.hydrateApprovedLabel}
+            </p>
+          )}
+        </dl>
+      ) : null}
+    </div>
+  );
+}
+
 function ArmResultCard({
   heading,
   result,
+  children,
 }: {
   heading: string;
   result: CompareSuggestArmOk | CompareSuggestArmError | null;
+  children?: ReactNode;
 }) {
   if (!result) {
     return (
@@ -123,6 +243,7 @@ function ArmResultCard({
           </dd>
         </div>
       </dl>
+      {children}
     </div>
   );
 }
@@ -130,10 +251,12 @@ function ArmResultCard({
 export function PrefillCompareLab() {
   const inputRef = useRef<HTMLInputElement>(null);
   const submitLockRef = useRef(false);
+  const imageReferencesRef = useRef<ModerationImageReference[] | null>(null);
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [hydratingArm, setHydratingArm] = useState<"a" | "b" | null>(null);
   const [armAForm, setArmAForm] = useState<ArmFormState>(
     COMPARE_SUGGEST_DEFAULT_ARM_A,
   );
@@ -146,6 +269,12 @@ export function PrefillCompareLab() {
   const [armBResult, setArmBResult] = useState<
     CompareSuggestArmOk | CompareSuggestArmError | null
   >(null);
+  const [armAHydration, setArmAHydration] = useState<HydrationLabState>({
+    status: "idle",
+  });
+  const [armBHydration, setArmBHydration] = useState<HydrationLabState>({
+    status: "idle",
+  });
 
   const clearPhotos = useCallback(() => {
     setPhotos((prev) => {
@@ -244,6 +373,9 @@ export function PrefillCompareLab() {
     setError(null);
     setArmAResult(null);
     setArmBResult(null);
+    setArmAHydration({ status: "idle" });
+    setArmBHydration({ status: "idle" });
+    imageReferencesRef.current = null;
 
     try {
       const prepared = await prepareModerationImages(
@@ -258,6 +390,8 @@ export function PrefillCompareLab() {
         setError(COMPARE_SUGGEST_UI.needPhotos);
         return;
       }
+
+      imageReferencesRef.current = prepared.payload.imageReferences;
 
       const result = await compareSuggestFromPhotos({
         imageReferences: prepared.payload.imageReferences,
@@ -281,6 +415,86 @@ export function PrefillCompareLab() {
     } finally {
       submitLockRef.current = false;
       setBusy(false);
+    }
+  }
+
+  async function handleHydrate(arm: "a" | "b") {
+    const prefill = arm === "a" ? armAResult : armBResult;
+    const setHydration = arm === "a" ? setArmAHydration : setArmBHydration;
+    const imageReferences = imageReferencesRef.current;
+
+    if (
+      hydratingArm ||
+      busy ||
+      !prefill?.ok ||
+      !imageReferences ||
+      imageReferences.length === 0
+    ) {
+      return;
+    }
+
+    const categoryType = parseLabCategoryType(prefill.categoryType);
+    const subcategorySlug = prefill.subcategorySlug;
+    if (
+      !categoryType ||
+      !subcategorySlug ||
+      !isValidSubcategory(categoryType, subcategorySlug)
+    ) {
+      setHydration({
+        status: "done",
+        outcome: {
+          ok: false,
+          kind: "error",
+          error: COMPARE_SUGGEST_UI.hydrateNeedSubcategory,
+        },
+      });
+      return;
+    }
+
+    setHydratingArm(arm);
+    setHydration({ status: "running" });
+    setError(null);
+
+    try {
+      const fixture = COMPARE_HYDRATE_LAB_FIXTURE;
+      const outcome = await invokeModerateListing({
+        intent: "create",
+        issueApproval: false,
+        title: prefill.title,
+        description: prefill.description,
+        categoryType,
+        subcategorySlug,
+        conditionLabel: fixture.conditionLabel,
+        conditionLabelText: getConditionLabel(
+          categoryType,
+          fixture.conditionLabel,
+        ),
+        conditionFieldLabel: getConditionFieldLabel(categoryType),
+        priceType: fixture.priceType,
+        priceTypeLabel: getPriceTypeLabel(categoryType, fixture.priceType),
+        priceAmount: fixture.priceAmount,
+        locationText: fixture.locationText,
+        listingDurationDays: LISTING_DURATION_DEFAULT_DAYS,
+        images: {
+          imageReferences,
+          mainImageIndex: 0,
+        },
+      });
+      setHydration({ status: "done", outcome });
+    } catch (hydrateError) {
+      setHydration({
+        status: "done",
+        outcome: {
+          ok: false,
+          kind: "error",
+          error:
+            hydrateError instanceof Error
+              ? hydrateError.message
+              : COMPARE_SUGGEST_UI.technicalError,
+        },
+      });
+    } finally {
+      setHydratingArm(null);
     }
   }
 
@@ -432,7 +646,7 @@ export function PrefillCompareLab() {
         <button
           type="button"
           className={listingFormPrimaryButtonClass}
-          disabled={busy || photos.length < 1}
+          disabled={busy || photos.length < 1 || hydratingArm !== null}
           onClick={() => void handleCompare()}
         >
           {busy ? (
@@ -460,11 +674,29 @@ export function PrefillCompareLab() {
         <ArmResultCard
           heading={COMPARE_SUGGEST_UI.armAHeading}
           result={armAResult}
-        />
+        >
+          {armAResult?.ok ? (
+            <HydrationLabBlock
+              state={armAHydration}
+              disabled={busy || hydratingArm !== null}
+              missingSubcategory={!armAResult.subcategorySlug}
+              onHydrate={() => void handleHydrate("a")}
+            />
+          ) : null}
+        </ArmResultCard>
         <ArmResultCard
           heading={COMPARE_SUGGEST_UI.armBHeading}
           result={armBResult}
-        />
+        >
+          {armBResult?.ok ? (
+            <HydrationLabBlock
+              state={armBHydration}
+              disabled={busy || hydratingArm !== null}
+              missingSubcategory={!armBResult.subcategorySlug}
+              onHydrate={() => void handleHydrate("b")}
+            />
+          ) : null}
+        </ArmResultCard>
       </div>
     </div>
   );

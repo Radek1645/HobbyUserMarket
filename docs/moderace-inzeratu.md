@@ -315,7 +315,7 @@ supabase functions deploy moderate-listing
 | OpenAI fallback / final openai | `OPENAI_MODERATION_MODEL` | `gpt-4o-mini` |
 | NSFW pre-gate | Sightengine | `nudity-2.1` |
 
-Prefill **nepoužívá** `MODERATION_FINAL_*` ani `OPENAI_MODERATION_MODEL`. Po úspěšném Sightengine volá Gemini (max. 12 s); při timeoutu, HTTP chybě, blokaci nebo chybě parse zkusí OpenAI (max. 8 s). Pokud chybí Gemini klíč, OpenAI je aktuální primary (`used_fallback = false`). Oba neúspěchy jsou technická 503, ne obsahové `REJECTED`. Staff lab `compare-suggest-from-photos` zůstává samostatné ruční srovnání.
+Prefill **nepoužívá** `MODERATION_FINAL_*` ani `OPENAI_MODERATION_MODEL`. Po úspěšném Sightengine volá Gemini (max. 12 s); při timeoutu, HTTP chybě, blokaci nebo chybě parse zkusí OpenAI (max. 8 s). Pokud chybí Gemini klíč, OpenAI je aktuální primary (`used_fallback = false`). Oba neúspěchy jsou technická 503, ne obsahové `REJECTED`. Staff lab `compare-suggest-from-photos` zůstává samostatné ruční A/B. Tlačítko **Hydratovat** v `/mod/prefill-lab` volá produkční `moderate-listing` (preview).
 
 ```bash
 # Explicit final Lite (kód má stejně default):

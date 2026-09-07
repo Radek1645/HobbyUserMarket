@@ -374,6 +374,8 @@ Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy
 
 **Jazyk a štítky (2026-09-07):** prompt `suggest-listing.ts` píše **běžnou inzerátní češtinou** (jak na bazaru), ne knižní / sousedské tvary. U oblečení: **overal** / **kombinéza**, ne „kombinezon“. Kombinéza = jde rozepnout; overal ne. Čitelný štítek (velikost, kg, cm, newborn) se **zapíše do nabídky** — k němu už žádné `Doplňte velikost:`. Anglický nápis z cedulky se překládá, značka zůstane jak je. Nasazeno: `suggest-listing-from-photos` + `compare-suggest-from-photos`. Čísla ze štítku model občas ještě překroutí (viz smoke newborn overal: *56 cm* → *vel. 52/40*) — další vsuvku do promptu nedávat, dokud se to nebude opakovat.
 
+Terénní sběr mezer (Prefill **i** Hydratace): lokální `docs/prefill-mezery.md` (gitignore). Prompt po každém záchytu neupravovat.
+
 Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace + token). Prefill **nenahrazuje** publish gate. Samostatná AI inference pro Prefill a publish je záměr.
 
 #### DB
@@ -397,12 +399,13 @@ Ruční A/B bez zásahu do produkčního trafficu. Cíl: často měnit kandidát
 | **UI** | `/mod/prefill-lab` (God Mode → Prefill lab), jen `moderator` / `admin` |
 | **Edge** | `compare-suggest-from-photos` |
 | **Pipeline** | Stejný prompt + schema + parse jako produkce (`run-suggest-listing.ts`). Dvě **sekvenční** volání; liší se jen `provider` + `model`. |
-| **Bez** | `moderation_checks`, produkční rate limity, Sightengine (srovnává se klasifikace, ne NSFW gate) |
+| **Bez (prefill compare)** | `moderation_checks`, produkční rate limity, Sightengine (srovnává se klasifikace, ne NSFW gate) |
 | **Default A** | `gemini` / `gemini-3.5-flash-lite` (Edge fallback: secret `COMPARE_SUGGEST_ARM_A_MODEL` → `SUGGEST_LISTING_MODEL` → kódový default) |
 | **Default B** | `openai` / `gpt-5.4-nano` (Edge fallback: `COMPARE_SUGGEST_ARM_B_MODEL` → kódový default) |
 | **UI override** | Provider + model u obou ramen editovatelné před každým během |
+| **Hydratace (2. krok)** | Tlačítko **Hydratovat** u každého úspěšného ramene. Volá produkční `moderate-listing` (preview, `issueApproval: false`) — **jiný** prompt a model než Prefill (`GEMINI_MODEL` / `gemini-2.5-flash`). Formulářový fixture: použité, 100 Kč, Brno (ať se hydratace neptá na pole formuláře). Zápis do `moderation_checks` + rate limit jako u Publikovat. Bez approval tokenu. |
 
-Konfig UI defaultů: `src/config/compare-suggest-from-photos.ts`. Deploy labu: `npx supabase functions deploy compare-suggest-from-photos`. Hydratační lab (preview model) = **samostatný** budoucí scope, stejný pattern.
+Konfig UI defaultů: `src/config/compare-suggest-from-photos.ts`. Deploy labu (prefill A/B): `npx supabase functions deploy compare-suggest-from-photos`. Hydratace v labu **nenasazuje** novou Edge funkci — používá stávající `moderate-listing`.
 
 ### Kategorie
 

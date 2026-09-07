@@ -20,10 +20,21 @@ export const COMPARE_SUGGEST_DEFAULT_ARM_B = {
   model: "gpt-5.4-nano",
 };
 
+/**
+ * Fixtures před hydratací — jako vyplněný formulář na Obsahu (cena/stav/lokalita).
+ * Prázdné `Doplňte …:` v popisu zůstanou; testuje se, jestli katalog dopsala hydratace.
+ */
+export const COMPARE_HYDRATE_LAB_FIXTURE = {
+  conditionLabel: "used" as const,
+  priceType: "fixed" as const,
+  priceAmount: 100,
+  locationText: "Brno",
+} as const;
+
 export const COMPARE_SUGGEST_UI = {
   pageTitle: "Prefill lab",
   pageSubtitle:
-    "Stejné fotky a prompt, dva modely vedle sebe. Jen pro staff — bez zápisu do DB.",
+    "Stejné fotky, dva prefill modely vedle sebe. Po výsledku jde každé rameno hydratovat produkčním preview (moderate-listing) — zápis do moderation_checks a rate limit jako u Publikovat.",
   armAHeading: "Model A",
   armBHeading: "Model B",
   providerLabel: "Provider",
@@ -45,4 +56,14 @@ export const COMPARE_SUGGEST_UI = {
   descriptionLabel: "Popis",
   errorLabel: "Chyba",
   emptySubcategory: "— (null)",
+  hydrateLabel: "Hydratovat",
+  hydratingLabel: "Hydratuju…",
+  hydrateHeading: "Hydratace (produkční preview)",
+  hydrateHint:
+    "Stejný prompt a model jako Publikovat → Kontrola. Formulář: použité, 100 Kč, Brno. Bez approval tokenu.",
+  hydrateNeedSubcategory:
+    "Hydratace potřebuje podkategorii — prefill ji nevrátil.",
+  hydrateRejectedLabel: "Zamítnuto",
+  hydrateApprovedLabel: "Bez otázek",
+  hydrateNeedsQuestionsLabel: "Doplňující otázky",
 } as const;

@@ -41,6 +41,7 @@ yarn-error.log*
 # Interní / lokální dokumenty — ne do gitu (logy, osobní drafty, exporty)
 /docs/_local/
 /docs/prefill-kuriozity.md
+/docs/prefill-mezery.md
 /docs/vibe_engineering_blocks.md
 /docs/LinkendIn/
 /docs/Vercel_logy/

@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-09-07 (večer) | [2026-09-07-vecer.md](./2026-09-07-vecer.md) — prefill lab hydratace, mezery gitignore, PRD v3.99 |
 | 2026-09-07 | [2026-09-07.md](./2026-09-07.md) — title zaPikolou.cz, prefill prompt/GA, PRD v3.98 |
 | 2026-09-06 | [2026-09-06.md](./2026-09-06.md) — junk sondy `/meta.json` v middleware (PRD v3.97) |
 | 2026-09-05 | [2026-09-05.md](./2026-09-05.md) — hydratace CTA na `/prodejte-snadno` (UTM až po mountu) |
