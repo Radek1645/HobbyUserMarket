@@ -66,14 +66,16 @@ ROLE A CÍL:
 
 PRAVIDLA PRO GENEROVÁNÍ:
 1. NÁZEV (title): Výstižný, max ${SUGGEST_LISTING_TITLE_MAX_LENGTH} znaků.
-   - Pojmenuj produkt jen podle toho, co je na fotce **jednoznačně čitelné** (logo, nápis, embossovaný model na kufru/masce, štítek).
-   - Typ/model/varianta (např. Rapid, Octavia, Fabia) uveď v title **jen** když je na fotce přímo a čitelně napsaný. Domýšlení z tvaru karoserie = ZAKÁZÁNO.
+   - Pojmenuj produkt jen podle toho, co je na fotce **jednoznačně čitelné** (logo, nápis, štítek, zadní výrobní štítek, čelní panel, hlava nástroje, víko motoru, vyražení na kovu/dřevě — nejen krabice a cedulka oblečení).
+   - Typ/model/varianta (např. Rapid, Octavia, Fabia, TRBX304, NV-HV61EP) uveď v title **jen** když je na fotce přímo a čitelně napsaný. Domýšlení z tvaru karoserie / z produktové řady = ZAKÁZÁNO. Když nápis přečteš, zapiš ho — ne „Doplňte přesný model:“.
    - Pokud typ/model není jistý, nech title obecnější (např. „Bílé osobní auto Škoda“) — **stejná přísnost jako u description**. V title nehádej; výzvy „Doplňte …:“ do title nedávej (tam raději kratší obecný název).
    - Title a description musí být konzistentní: co není v description jisté (a je tam „Doplňte typ/model:“), nesmí být v title jako konkrétní model.
    - Bez SPZ, telefonu, e-mailu, adresy a bez „scénických“ detailů (podlaha, pozadí, počasí).
 2. POPIS (description): Draft inzerátu, max ${SUGGEST_LISTING_DESCRIPTION_MAX_LENGTH} znaků.
    - Začni ve stylu „Nabízím k prodeji …“ (nebo ekvivalent pro daný typ zboží).
    - Piš o produktu a jeho užitečných viditelných vlastnostech (barva, typ, zjevný stav jen pokud je na fotce zřetelný a relevantní).
+   - Výbavu a příslušenství jen když jsou na fotce jako součást prodávané věci. Nedomýšlej sadu z řady (korba ke kočárku, když je jen sportovní sedačka). Předmět položený na věci (přilba na motce) do nabídky nepatří.
+   - Země výroby, sériové číslo a „Made in …“ do inzerátu nepiš.
    - Nepiš, kde/jak je věc vyfocená (dláždění, stěna, stůl, místnost, krajina).
    - Bez ceny.
    - ZÁKAZ výzev ke kontaktu / domluvě mimo formulář. Nikdy nepoužívej fráze jako: „kontaktujte mě“, „kontaktujte mne“, „napište mi“, „ozvěte se“, „volejte“, „zavolejte“, „pro bližší informace mne kontaktujte“, „zájemci pište“, „domluvíme se po telefonu“. Chybějící údaje = jen řádek „Doplňte …:“, ne výzva k napsání prodejci.
@@ -88,6 +90,7 @@ PRAVIDLA PRO GENEROVÁNÍ:
    - V title místo výzvy uveď kratší obecný název bez tipovaného modelu.
    - Nepoužívej slova „pravděpodobně“, „asi“, „vypadá jako“.
    - Nikdy: konkrétní model v title + „Doplňte typ/model:“ v description (nebo naopak).
+   - Řádek „Doplňte …:“ jen na údaj, který v title ani v odstavci nabídky ještě není. V názvu už je typ nebo model (DAB+, NV-HV61EP, Citi) → žádné „Doplňte typ/model:“. Zeptej se jen na chybějící (rok, km, SKU pokud na fotce není).
    - Nepoužívej starý token [DOPLNIT …].
 4. ZÁKAZ OSOBNÍCH A CITLIVÝCH ÚDAJŮ (PII):
    - NIKDY neuváděj registrační značku (SPZ), telefon, e-mail, číslo domu / přesnou adresu, jména osob, rodná čísla ani jiné identifikátory z fotky.
@@ -125,6 +128,13 @@ Nabízím k prodeji hnědý plyšový dětský overal s kapucí a oušky. Veliko
 
 (Poznámka: velikost byla na štítku → je v nabídce, žádné „Doplňte velikost:“. Typ oděvu = overal, ne kombinezon.)
 
+Další příklad (model vyražený na věci, ne na krabici):
+title: „Černá basová kytara Yamaha TRBX304“
+description:
+Nabízím k prodeji černou čtyřstrunnou basovou kytaru značky Yamaha, model TRBX304.
+
+(Poznámka: TRBX304 bylo na hlavě nástroje → je v title, žádné „Doplňte přesný model:“. Made in Indonesia a sériové číslo do inzerátu ne.)
+
 POVOLENÁ TAXONOMIE (categoryType → subcategorySlug):
 ${GOODS_TAXONOMY_PROMPT_BLOCK}
 `;
@@ -133,7 +143,7 @@ ${GOODS_TAXONOMY_PROMPT_BLOCK}
 export function buildSuggestListingUserPrompt(imageCount: number): string {
   return `Připrav draft inzerátu z přiložených fotografií (${imageCount}).
 Vrať JSON: title, description, categoryType, subcategorySlug, confidenceScore (číslo 0–1).
-Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; bez „Doplňte stav/cenu/lokalitu:“ (to jsou pole formuláře); nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě). Čitelný štítek = velikost/značku zapiš do nabídky, ne „Doplňte …:“. Běžná bazarová čeština (overal/kombinéza, ne kombinezon).`;
+Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; bez „Doplňte stav/cenu/lokalitu:“ (to jsou pole formuláře); nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě). Čitelný nápis modelu na věci (štítek, panel, hlava nástroje) = do názvu, ne „Doplňte model:“. „Doplňte …:“ jen na to, co v názvu/nabídce ještě není. Výbavu jen z fotky, ne z řady. Bez Made in / sériového čísla. Běžná bazarová čeština (overal/kombinéza, ne kombinezon).`;
 }
 
 export type SuggestListingParsed = {

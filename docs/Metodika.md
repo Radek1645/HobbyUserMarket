@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **Hydratace / kvalita inzerátu:** [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) · **NSFW / hard-hit brána:** [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
-> **Datum:** 2026-09-07 (poslední sync s kódem — Prefill: bazarová čeština + čitelný štítek)
+> **Datum:** 2026-09-07 (poslední sync s kódem — Prefill: nápis na věci + Doplňte jen na chybějící)
 
 ---
 
@@ -385,9 +385,11 @@ flowchart TD
 
 Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence. Nejisté údaje jdou **pod** odstavec nabídky jako `Doplňte značku: ` (jeden na řádek, psát za dvojtečku) — prompt + `formatDoplnitPlaceholders` (řádky na stav/cenu/lokalitu se zahodí, mají pole formuláře). Při publikaci prázdné výzvy zmizí, vyplněné se změní na `Značka: …` (`stripDoplnitPlaceholders`).
 
-**Jazyk a štítky (2026-09-07):** prompt `suggest-listing.ts` píše **běžnou inzerátní češtinou** (jak na bazaru), ne knižní / sousedské tvary. U oblečení: **overal** / **kombinéza**, ne „kombinezon“. Kombinéza = jde rozepnout; overal ne. Čitelný štítek (velikost, kg, cm, newborn) se **zapíše do nabídky** — k němu už žádné `Doplňte velikost:`. Anglický nápis z cedulky se překládá, značka zůstane jak je. Nasazeno: `suggest-listing-from-photos` + `compare-suggest-from-photos`. Čísla ze štítku model občas ještě překroutí (viz smoke newborn overal: *56 cm* → *vel. 52/40*) — další vsuvku do promptu nedávat, dokud se to nebude opakovat.
+**Jazyk a štítky (2026-09-07):** prompt `suggest-listing.ts` píše **běžnou inzerátní češtinou** (jak na bazaru), ne knižní / sousedské tvary. U oblečení: **overal** / **kombinéza**, ne „kombinezon“. Čitelný štítek (velikost, kg, cm, newborn) se **zapíše do nabídky** — k němu už žádné `Doplňte velikost:`. Anglický nápis z cedulky se překládá, značka zůstane jak je. Čísla ze štítku model občas ještě překroutí (*56 cm* → *vel. 52/40*).
 
-Terénní sběr mezer (Prefill **i** Hydratace): lokální `docs/prefill-mezery.md` (gitignore). Prompt po každém záchytu neupravovat.
+**Nápis na věci + výbava (2026-09-07 večer):** čitelný model platí i mimo krabici — zadní štítek, čelní panel, hlava nástroje, víko motoru, vyražení. Přečtený nápis → do názvu, ne `Doplňte přesný model:`. Řádek `Doplňte …:` jen na údaj, který v názvu/nabídce ještě není. Výbavu jen z fotky (ne korba ke kočárku, když je jen sportovní sedačka; přilba na motce ne). Země výroby a sériové číslo do inzerátu ne. Nasazeno: `suggest-listing-from-photos` + `compare-suggest-from-photos`. Hydratace (DualSense katalog, Volvo automat) a OCR 52/40 se touto vsuvkou **nemění**.
+
+Terénní sběr mezer (Prefill **i** Hydratace): lokální `docs/prefill-mezery.md` (gitignore). Prompt po každém záchytu neupravovat — další vsuvka až z průniku.
 
 Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace + token). Prefill **nenahrazuje** publish gate. Samostatná AI inference pro Prefill a publish je záměr.
 
