@@ -1214,6 +1214,7 @@ Cesta: **Klik na kartu na HP → `/inzerat/[slug]`**.
 - Majitel u svého inzerátu vidí stejné odznaky s vysvětlením, že je vidí zájemci
 - Majitel vidí **počet zobrazení** detailu (`posts.view_count`, migrace `052`) — bez identifikace prohlížečů.
 - Na **`/moje-inzeraty`** u každé karty: zobrazení + **počet doručených poptávek** (`inquiry_events` kde `delivered = true`); nápověda, že detaily jsou jen v e-mailu. Stejný počet ve sloupci **Poptávky** v God Mode (`/mod/inzeraty`, `/mod/karantena`). Titulek aktivního inzerátu je odkaz na detail (stejně jako ikona náhledu).
+- **Zpět** na detailu vrací na předchozí stránku na webu (Moje inzeráty, HP včetně filtru, kategorie, profil…). Přímý vstup nebo příchod zvenku (Google) → úvod. Ne `history.back()` — v nové kartě by to mohlo opustit web.
 
 ### 8.2 Zobrazení kontaktu
 

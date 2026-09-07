@@ -36,7 +36,7 @@ export const GTM_CTA = {
 
   // Výpis / detail
   LISTING_CARD_OPEN: "cta_listing_card_open",
-  DETAIL_BACK_HOME: "cta_detail_back_home",
+  DETAIL_BACK_HOME: "cta_detail_back_home", // cíl může být i Moje inzeráty / filtr; ID neměnit
   DETAIL_EDIT_LISTING: "cta_detail_edit_listing",
   DETAIL_DELETE_LISTING: "cta_detail_delete_listing",
   DETAIL_EXTERNAL_URL: "cta_detail_external_url",

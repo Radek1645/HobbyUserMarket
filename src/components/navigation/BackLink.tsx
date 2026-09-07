@@ -1,9 +1,15 @@
 "use client";
 
 import { gtmCtaProps, type GtmCtaId } from "@/config/gtm-ids";
+import { resolveInAppBackHref } from "@/lib/navigation/in-app-back";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import type { ComponentPropsWithoutRef } from "react";
+import { usePathname } from "next/navigation";
+import {
+  useLayoutEffect,
+  useState,
+  type ComponentPropsWithoutRef,
+} from "react";
 
 export const backLinkClassName =
   "inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50";
@@ -13,12 +19,38 @@ type BackLinkProps = {
   label: string;
   gtmId?: GtmCtaId;
   className?: string;
+  /** Po hydrataci nahradí href předchozí stránkou na webu; `href` zůstane fallback. */
+  restoreInAppHistory?: boolean;
 };
 
-export function BackLink({ href, label, gtmId, className }: BackLinkProps) {
+export function BackLink({
+  href,
+  label,
+  gtmId,
+  className,
+  restoreInAppHistory = false,
+}: BackLinkProps) {
+  const pathname = usePathname();
+  const [resolvedHref, setResolvedHref] = useState(href);
+
+  useLayoutEffect(() => {
+    if (!restoreInAppHistory) {
+      setResolvedHref(href);
+      return;
+    }
+    setResolvedHref(
+      resolveInAppBackHref({
+        currentPathname: pathname,
+        fallbackHref: href,
+        referrer: document.referrer,
+        currentOrigin: window.location.origin,
+      }),
+    );
+  }, [href, pathname, restoreInAppHistory]);
+
   return (
     <Link
-      href={href}
+      href={resolvedHref}
       {...(gtmId ? gtmCtaProps(gtmId) : {})}
       className={className ? `${backLinkClassName} ${className}` : backLinkClassName}
     >

@@ -12,6 +12,7 @@ import { Header } from "@/components/layout/Header";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteNoticeBar } from "@/components/layout/SiteNoticeBar";
 import { VisitorLocationProvider } from "@/components/location/VisitorLocationProvider";
+import { RememberInAppLocation } from "@/components/navigation/RememberInAppLocation";
 import { isFbPromoLandingPath } from "@/config/fb-promo-landing";
 import type { AppUser } from "@/types/auth";
 import { usePathname } from "next/navigation";
@@ -33,6 +34,7 @@ export function AppShell({ user, children }: AppShellProps) {
     <UserProvider user={user}>
       <CookieConsentProvider>
         <VisitorLocationProvider>
+          <RememberInAppLocation />
           <VirtualPageviewTracker />
           <MetaPixelLoader />
           <Suspense fallback={null}>

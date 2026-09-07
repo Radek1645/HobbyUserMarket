@@ -305,6 +305,7 @@ export default async function ListingDetailPage({
         href="/"
         label="Zpět"
         gtmId={GTM_CTA.DETAIL_BACK_HOME}
+        restoreInAppHistory
       />
 
       {isStaff ? (
