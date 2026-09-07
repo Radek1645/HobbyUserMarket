@@ -923,7 +923,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.98 | 2026-09-07 | **Title značka:** 7 stránek s hardcoded `HobbyUserMarket` přepsáno na `SITE_DISPLAY_NAME` (`zaPikolou.cz`). GA historická zobrazení zůstanou pod starým názvem. |
 | v3.99 | 2026-09-07 | **Prefill jazyk + lab hydratace:** bazarová čeština (overal/kombinéza); čitelný štítek do nabídky, ne `Doplňte velikost:`. `/mod/prefill-lab` má 2. krok **Hydratovat** (produkční preview). Terénní mezery lokálně `docs/prefill-mezery.md` (gitignore). |
 | v3.100 | 2026-09-07 | **Prefill popis v logu:** `moderation_checks.suggest_description` (migrace `084`, jen `suggest_from_photos`, max 2000). GDPR FO **1.9-fo** / OSVČ **1.3-osvc**. Deploy `suggest-listing-from-photos` až po SQL. |
-| v3.101 | 2026-09-07 | **E-mail po expiraci:** cron `archive-expired` pošle majiteli, že inzerát zmizel z webu (obnovení / lifetime / událost). Idempotence `expiry_notice_for_expires_at`, migrace `085`. |
+| v3.101 | 2026-09-07 | **E-mail po expiraci:** cron `archive-expired` pošle majiteli, že inzerát zmizel z webu (obnovení / lifetime / událost). Idempotence `expiry_notice_for_expires_at`, migrace `085` (SQL na produkci týž den večer). |
 
 ---
 

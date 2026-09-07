@@ -12,7 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
-| 2026-09-07 (pozdě) | [2026-09-07-pozde.md](./2026-09-07-pozde.md) — UI Moje inzeráty (Prodloužit text, bez oka); **085 ještě nespusť**; prefill průnik na zítra |
+| 2026-09-07 (pozdě) | [2026-09-07-pozde.md](./2026-09-07-pozde.md) — UI Moje inzeráty; **085 nasazeno**; prefill průnik na zítra |
 | 2026-09-07 (noc) | [2026-09-07-noc.md](./2026-09-07-noc.md) — prefill `suggest_description` (084), GDPR 1.9-fo, PRD v3.100 |
 | 2026-09-07 (večer) | [2026-09-07-vecer.md](./2026-09-07-vecer.md) — prefill lab hydratace, mezery gitignore, PRD v3.99 |
 | 2026-09-07 | [2026-09-07.md](./2026-09-07.md) — title zaPikolou.cz, prefill prompt/GA, PRD v3.98 |
