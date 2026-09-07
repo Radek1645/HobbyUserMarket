@@ -195,7 +195,6 @@ Hotové C*/H*/M*/P*/U* (025–061, GDPR texty, God Mode základ, FAQ kód, …):
 2. Chyby pause/publish bez hlášky (P29)
 3. Sloučit AI Approved + Preview (P13)
 4. Po selhání approval tokenu technická chyba hned
-5. Branding: zbývající `HobbyUserMarket` → `SITE_DISPLAY_NAME`
 
 ### SEO / docs
 

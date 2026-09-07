@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.97
+> **Verze dokumentu:** v3.98
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
 > **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql) · [`083_posts_location_nullable_for_pii_purge.sql`](../supabase/083_posts_location_nullable_for_pii_purge.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-09-06
+> **Datum:** 2026-09-07
 
 ---
 
@@ -150,7 +150,7 @@ Modul je hotový, když platí všechny body:
 
 **Logo (schválený směr):** wordmark `za` (`#0C2A1B`) + `Pikolou` (`emerald-600`) + `.cz` (`#6B7F73`) v jednom bloku, `text-lg`, výška `h-10` (shodně s vyhledávačem).
 
-**Migrace copy:** Metadata stránek, e-mailové šablony a právní dokumenty se sjednocují na `zaPikolou` / `zaPikolou.cz` — stav viz checklist v `branding-a-domeny.md`.
+**Migrace copy:** Metadata stránek a e-mailové šablony používají `SITE_DISPLAY_NAME` (`zaPikolou.cz`). Právní snímky v `docs/pravni/snapshots/` a default OG obrázek — stav v `branding-a-domeny.md`.
 
 ---
 
@@ -919,6 +919,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.95 | 2026-09-01 | **Pixel `autoConfig` vypnutý** (`set` před `init`) — žádný `SubscribedButtonClick`. Localhost funnel 1× ViewContent/InitiateCheckout/Lead + GA4 `generate_lead`. Stav smoke jen v [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L. GDPR FO **1.6-fo** (bez falešného odkazu na VOP §6). |
 | v3.96 | 2026-09-03 | **Identita provozovatele + VOP 1.12-fo:** IČO `29956803`, sídlo a zápis na `/kontakt`; FO VOP/GDPR/cookies/limity odkazují tam (ne „fyzická osoba“). `CURRENT_VOP_VERSION` **1.12-fo** bez reconsent (`VOP_RECONSENT_REQUIRED` prázdná). GDPR FO **1.8-fo**, DSA **1.3**. **SEC-H06:** produkce neměla migraci 010 + 4-arg overload `issue_moderation_approval`. Monetizace vypnutá; 2.1-osvc draft mimo git (`navrh-claude/`). |
 | v3.97 | 2026-09-06 | **Junk sondy v middleware:** prázdné 404 na `/meta.json` (Meta Ads crawler) a scanner cesty dřív, než doběhne session a catch-all `[slug]`. Úspora invocation + SSR, ne Auth API. |
+| v3.98 | 2026-09-07 | **Title značka:** 7 stránek s hardcoded `HobbyUserMarket` přepsáno na `SITE_DISPLAY_NAME` (`zaPikolou.cz`). GA historická zobrazení zůstanou pod starým názvem. |
 
 ---
 

@@ -11,6 +11,7 @@ import {
   LISTING_QUOTA_EXCEEDED_MESSAGE,
 } from "@/lib/listings/quota";
 import { LISTING_MAX_LIFETIME_DAYS } from "@/config/listing-lifetime";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import { formatInquiryCount } from "@/lib/i18n/czech-plural";
 import { loadDeliveredInquiryCounts } from "@/lib/inquiry/delivered-counts";
 import { archiveExpiredPosts } from "@/lib/posts/archive-expired";
@@ -29,7 +30,7 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Moje inzeráty | HobbyUserMarket",
+  title: `Moje inzeráty | ${SITE_DISPLAY_NAME}`,
 };
 
 const STATUS_BADGE: Record<

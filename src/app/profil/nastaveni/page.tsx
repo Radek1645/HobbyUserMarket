@@ -2,6 +2,7 @@ import { ChangePasswordSection } from "@/components/account/ChangePasswordSectio
 import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
 import { ListingQuotaSection } from "@/components/account/ListingQuotaSection";
 import { BackHomeLink } from "@/components/navigation/BackHomeLink";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import {
   getListingUpsellPackage,
@@ -12,7 +13,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Nastavení účtu | HobbyUserMarket",
+  title: `Nastavení účtu | ${SITE_DISPLAY_NAME}`,
 };
 
 type ProfileSettingsPageProps = {

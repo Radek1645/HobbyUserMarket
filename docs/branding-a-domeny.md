@@ -133,11 +133,11 @@ curl -I https://predpikolou.cz
 
 - `src/config/site.ts`, logo, footer
 - PRD §1.8, `docs/ui-prvky.md`
+- Metadata stránek — `title` přes `SITE_DISPLAY_NAME` (2026-09-07)
+- E-mailové šablony (`SITE_DISPLAY_NAME` v subject i podpisu)
 
 ### Zbývá v kódu
 
-- Metadata stránek (`HobbyUserMarket` → `SITE_DISPLAY_NAME`) kde ještě zbývá
-- E-mailové šablony
 - Default OG obrázek
 
 Interní prefixy `hum_*` v localStorage **neměnit** — uživatel je nevidí.

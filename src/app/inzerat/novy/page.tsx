@@ -8,6 +8,7 @@ import {
   pickCampaignSearchParams,
 } from "@/lib/promo/campaign-query";
 import { LEGAL_UI } from "@/config/legal";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import {
   SUGGEST_FROM_PHOTOS_ENABLED,
   SUGGEST_FROM_PHOTOS_UI,
@@ -24,7 +25,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Založit inzerát | HobbyUserMarket",
+  title: `Založit inzerát | ${SITE_DISPLAY_NAME}`,
 };
 
 type NewListingPageProps = {

@@ -1,12 +1,13 @@
 import { SetPasswordForm } from "@/components/auth/SetPasswordForm";
 import { BackLink } from "@/components/navigation/BackLink";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import { sessionHasFreshPasswordRecovery } from "@/lib/auth/password-recovery-session";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Nové heslo | HobbyUserMarket",
+  title: `Nové heslo | ${SITE_DISPLAY_NAME}`,
 };
 
 export default async function SetPasswordPage() {

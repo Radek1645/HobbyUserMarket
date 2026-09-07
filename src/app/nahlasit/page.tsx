@@ -6,11 +6,12 @@ import {
   REPORT_UI,
 } from "@/config/reports";
 import { emeraldPrimaryButtonCompactClass } from "@/config/ui-primitives";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Nahlásit inzerát | HobbyUserMarket",
+  title: `Nahlásit inzerát | ${SITE_DISPLAY_NAME}`,
 };
 
 const ERROR_MESSAGES: Record<string, string> = {

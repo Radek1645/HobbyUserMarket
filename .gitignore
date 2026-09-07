@@ -40,6 +40,7 @@ yarn-error.log*
 
 # Interní / lokální dokumenty — ne do gitu (logy, osobní drafty, exporty)
 /docs/_local/
+/docs/prefill-kuriozity.md
 /docs/LinkendIn/
 /docs/Vercel_logy/
 /docs/Supabase_logy/

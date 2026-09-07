@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **Hydratace / kvalita inzerátu:** [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) · **NSFW / hard-hit brána:** [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
-> **Datum:** 2026-08-25 (poslední sync s kódem — OpenAI fallback pro Prefill)
+> **Datum:** 2026-09-07 (poslední sync s kódem — Prefill: bazarová čeština + čitelný štítek)
 
 ---
 
@@ -372,11 +372,13 @@ flowchart TD
 
 Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence. Nejisté údaje jdou **pod** odstavec nabídky jako `Doplňte značku: ` (jeden na řádek, psát za dvojtečku) — prompt + `formatDoplnitPlaceholders` (řádky na stav/cenu/lokalitu se zahodí, mají pole formuláře). Při publikaci prázdné výzvy zmizí, vyplněné se změní na `Značka: …` (`stripDoplnitPlaceholders`).
 
+**Jazyk a štítky (2026-09-07):** prompt `suggest-listing.ts` píše **běžnou inzerátní češtinou** (jak na bazaru), ne knižní / sousedské tvary. U oblečení: **overal** / **kombinéza**, ne „kombinezon“. Kombinéza = jde rozepnout; overal ne. Čitelný štítek (velikost, kg, cm, newborn) se **zapíše do nabídky** — k němu už žádné `Doplňte velikost:`. Anglický nápis z cedulky se překládá, značka zůstane jak je. Nasazeno: `suggest-listing-from-photos` + `compare-suggest-from-photos`. Čísla ze štítku model občas ještě překroutí (viz smoke newborn overal: *56 cm* → *vel. 52/40*) — další vsuvku do promptu nedávat, dokud se to nebude opakovat.
+
 Po prefillu publish = stávající `moderate-listing` (Sightengine + hydratace + token). Prefill **nenahrazuje** publish gate. Samostatná AI inference pro Prefill a publish je záměr.
 
 #### DB
 
-Žádné nové tabulky. Jen enum hodnota `suggest_from_photos` (migrace `074`) a textová guest akce ve stávající `anonymous_rate_limits` (`073`).
+Žádné nové tabulky. Jen enum hodnota `suggest_from_photos` (migrace `074`) a textová guest akce ve stávající `anonymous_rate_limits` (`073`). Denní SQL na Prefill bez odeslání + cesty k fotkám: [§6.12 H](#h-denní-hluchá-místa--prefill-bez-odeslání).
 
 #### Co v MVP záměrně není
 
@@ -767,7 +769,7 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 
 | Tabulka | Co obsahuje | Migrace | Inkrementální ID |
 |---------|-------------|---------|------------------|
-| `moderation_checks` | Každé volání `moderate-listing` + volitelně `sightengine_responses` + AI audit metadata | `028` / `056` / `064` | **`log_no`** (PK) |
+| `moderation_checks` | Každé volání `moderate-listing` + Prefill (`intent = suggest_from_photos`); Sightengine JSON; guest přes `guest_visitor_id` (`076`) | `028` / `056` / `064` / `076` | **`log_no`** (PK) |
 | `moderation_approvals` | Jednorázové tokeny: fingerprint obsahu + SHA-256 fotek | `027` / `062`–`065` | — |
 | `moderation_hard_reject_evidence` | Hard-hit / NSFW / Sightengine výpadek / threshold; `sightengine_responses` | `054` / `056` | **`evidence_no`** (+ UUID `id`) |
 | `account_blacklist` | Hard stop podle e-mailu (auto/manual), soft unban | `055` | **`blacklist_no`** (+ UUID `id`) |
@@ -775,6 +777,8 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 | *(grants)* `posts` column SELECT | Allowlist sloupců pro `anon`/`authenticated`; nearby/search = DEFINER | `078` | — |
 | *(fn)* `publish_approved_post` / `enforce_post_publish_gate` | Service-role publish + staff bypass jen cizí inzerát | `063` / `066` | — |
 | Storage bucket `moderation-evidence` | Snapshoty NSFW fotek (privátní, jen service_role) | `054` | — |
+| Storage `moderation-image-staging` | Originály před AI / publikací (privátní). Host: `guest/{visitorId}/…` | — | — |
+| Storage `moderation-image-renditions` | Sharp WebP (Gemini 1024 / Sightengine 512). Stejný prefix jako staging | — | — |
 
 **Inkrementální ID:** stejně jako u `reports.report_no` — v Table Editoru / SQL hledej podle `log_no` / `evidence_no` (1, 2, 3…), ne podle UUID. UUID zůstává technický identifikátor.
 
@@ -783,8 +787,10 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 | Sloupec | Význam |
 |---------|--------|
 | `log_no` | Lidsky čitelné číslo kontroly (1, 2, 3…) — **hlavní ID pro hledání** |
-| `user_id` | Kdo spustil kontrolu |
-| `created_at` | Čas volání |
+| `user_id` | Kdo spustil kontrolu (nullable od `076` — u hosta prázdné) |
+| `guest_visitor_id` | Návštěvnická relace u hosta (`076`); složka fotek ve Storage |
+| `intent` | `suggest_from_photos` (Prefill) · `create` · `update` |
+| `created_at` | Čas volání (timestamptz, UTC; v SQL převáděj na Prahu) |
 | `status` | `APPROVED` / `REJECTED` / `NEEDS_QUESTIONS` |
 | `error_code` | Např. `HARD_HIT_TEXT`, `NSFW_IMAGE`, `SIGHTENGINE_UNAVAILABLE`, `RATE_LIMIT`… |
 | `rejection_reason` | Text důvodu (pokud REJECTED) |
@@ -993,6 +999,151 @@ LIMIT 20;
 ```
 
 Snapshot fotky z `storage_path` v UI Storage u bucketu `moderation-evidence` běžný uživatel neuvidí — bucket je privátní (service_role). Pro prohlížení použij Storage → bucket s elevated přístupem, nebo signed URL přes service role.
+
+#### H) Denní hluchá místa — Prefill bez odeslání
+
+Kdo nahrál fotky na `/inzerat/novy` (Edge `suggest-listing-from-photos`), ale **nepublikoval** inzerát. To je hlavní drop-off: host zůstane na **Obsahu** a zavře tab před registrací / Publikovat.
+
+**Co je „dokončeno“:** pozdější `intent IN ('create','update')` u stejného účtu, nebo nový `posts` / create se stejným začátkem názvu (prvních 16 znaků) do 2 dnů. Host po OAuth nemá v create `guest_visitor_id` — párování je jen přes název. Když po Prefillu přepíšou titulek, SQL je nechá jako nedokončené (false positive).
+
+**Okno:** posledních 24 h, bez posledních 30 min (ještě můžou vyplňovat). Intervaly v CTE uprav.
+
+Sightengine dashboard je **UTC** (`+2 h` v létě). `req_` z JSON níže sedí 1:1 na dashboard.
+
+**H1 — seznam za den** (SQL Editor):
+
+```sql
+-- Prefill s fotkami, bez následné publikace / create
+WITH prefill AS (
+  SELECT
+    mc.log_no,
+    mc.created_at,
+    mc.user_id,
+    mc.guest_visitor_id,
+    mc.status,
+    mc.error_code,
+    mc.image_count,
+    mc.title_preview,
+    mc.category_type,
+    mc.subcategory_slug,
+    left(lower(trim(both FROM coalesce(mc.title_preview, ''))), 16) AS title_prefix,
+    (
+      SELECT string_agg(elem #>> '{response,request,id}', ', ')
+      FROM jsonb_array_elements(COALESCE(mc.sightengine_responses, '[]'::jsonb)) elem
+    ) AS se_req_ids
+  FROM public.moderation_checks mc
+  WHERE mc.intent = 'suggest_from_photos'
+    AND mc.image_count > 0
+    AND mc.created_at >= now() - interval '24 hours'
+    AND mc.created_at < now() - interval '30 minutes'
+)
+SELECT
+  p.log_no,
+  to_char(p.created_at AT TIME ZONE 'Europe/Prague', 'YYYY-MM-DD HH24:MI') AS prague,
+  CASE
+    WHEN p.guest_visitor_id IS NOT NULL THEN 'host'
+    ELSE 'účet'
+  END AS kdo,
+  pr.nickname,
+  pr.email,
+  p.status,
+  p.error_code,
+  p.image_count,
+  p.category_type,
+  p.subcategory_slug,
+  p.title_preview,
+  p.guest_visitor_id,
+  CASE
+    WHEN p.guest_visitor_id IS NOT NULL
+      THEN 'guest/' || p.guest_visitor_id::text
+    ELSE p.user_id::text
+  END AS storage_prefix,
+  p.se_req_ids
+FROM prefill p
+LEFT JOIN public.profiles pr ON pr.id = p.user_id
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public.moderation_checks later
+  WHERE later.intent IN ('create', 'update')
+    AND later.created_at >= p.created_at
+    AND later.created_at < p.created_at + interval '2 days'
+    AND (
+      (p.user_id IS NOT NULL AND later.user_id = p.user_id)
+      OR (
+        p.title_prefix <> ''
+        AND left(lower(trim(both FROM coalesce(later.title_preview, ''))), 16)
+          = p.title_prefix
+      )
+    )
+)
+AND NOT EXISTS (
+  SELECT 1
+  FROM public.posts po
+  WHERE po.created_at >= p.created_at
+    AND po.created_at < p.created_at + interval '2 days'
+    AND (
+      (p.user_id IS NOT NULL AND po.user_id = p.user_id)
+      OR (
+        p.title_prefix <> ''
+        AND left(lower(trim(both FROM po.title)), 16) = p.title_prefix
+      )
+    )
+)
+ORDER BY p.created_at DESC;
+```
+
+**H2 — jeden případ** (log + Sightengine `req_` + cesta k fotkám). Nahraď `log_no`:
+
+```sql
+SELECT
+  mc.log_no,
+  to_char(mc.created_at AT TIME ZONE 'Europe/Prague', 'YYYY-MM-DD HH24:MI:SS') AS prague,
+  mc.intent,
+  mc.status,
+  mc.error_code,
+  mc.image_count,
+  mc.title_preview,
+  mc.category_type,
+  mc.subcategory_slug,
+  mc.guest_visitor_id,
+  mc.user_id,
+  CASE
+    WHEN mc.guest_visitor_id IS NOT NULL
+      THEN 'guest/' || mc.guest_visitor_id::text
+    ELSE mc.user_id::text
+  END AS storage_prefix,
+  (
+    SELECT jsonb_agg(jsonb_build_object(
+      'imageIndex', elem->>'imageIndex',
+      'req', elem #>> '{response,request,id}',
+      'none', elem #>> '{response,nudity,none}',
+      'suggestive', elem #>> '{response,nudity,suggestive}'
+    ) ORDER BY (elem->>'imageIndex')::int)
+    FROM jsonb_array_elements(COALESCE(mc.sightengine_responses, '[]'::jsonb)) elem
+  ) AS sightengine
+FROM public.moderation_checks mc
+WHERE mc.log_no = 685;  -- z H1
+```
+
+**H3 — fotky ve Storage** (stejný `storage_prefix` z H1/H2). Host: `guest/{uuid}`. Účet: samotné `user_id`.
+
+Dashboard: **Storage** → bucket `moderation-image-staging` → složka `guest` → vyhledat UUID. Rendice ve druhém bucketu `moderation-image-renditions` pod stejným prefixem.
+
+```sql
+-- Nahraď prefix. Originály i rendice.
+SELECT
+  bucket_id,
+  name,
+  to_char(created_at AT TIME ZONE 'Europe/Prague', 'YYYY-MM-DD HH24:MI:SS') AS prague,
+  metadata->>'size' AS bytes
+FROM storage.objects
+WHERE name LIKE 'guest/a9ae37e2-fc66-49ec-a052-fbeac2f01f64/%'  -- storage_prefix + /%
+ORDER BY bucket_id, name;
+```
+
+Fotky žijí **~24 h** (cron `/api/cron/purge-moderation-image-staging` v 04:15 UTC = 06:15 Praha, `MODERATION_IMAGE_STAGING_RETENTION_HOURS`). Po claimu (host se přihlásí) se originály ze `guest/…` smažou a zkopírují pod `{user_id}/`. Když H3 nic nevrátí, buď už běžel purge, nebo došli k registraci.
+
+Popis inzerátu se u Prefillu **neukládá** — v logu je jen `title_preview`. IP hosta jen jako hash v `anonymous_rate_limits`, nespáruješ ji na visitor UUID bez saltu.
 
 ---
 

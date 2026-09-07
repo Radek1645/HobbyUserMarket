@@ -1,6 +1,7 @@
 import { CreateListingForm } from "@/components/listing/CreateListingForm";
 import { ListingBlockedNotice } from "@/components/listing/ListingBlockedNotice";
 import { BackLink } from "@/components/navigation/BackLink";
+import { SITE_DISPLAY_NAME } from "@/config/site";
 import { getListingForEdit } from "@/lib/posts/get-listing-for-edit";
 import {
   getListingEditPath,
@@ -35,7 +36,7 @@ export async function generateMetadata({
   const slug = resolveSlugParam(param);
 
   return {
-    title: `Upravit inzerát | ${slug} | HobbyUserMarket`,
+    title: `Upravit inzerát | ${slug} | ${SITE_DISPLAY_NAME}`,
   };
 }
 

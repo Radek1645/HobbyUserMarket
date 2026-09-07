@@ -23,6 +23,7 @@ import {
   SUGGEST_FROM_PHOTOS_MIN_IMAGES,
   SUGGEST_FROM_PHOTOS_UI,
 } from "@/config/suggest-from-photos";
+import { pushAiPrefillSubmit } from "@/lib/analytics/ai-prefill-submit";
 import { compressListingImage } from "@/lib/images/compress-listing-image";
 import {
   listingImageUserError,
@@ -274,6 +275,7 @@ export function AiListingPrefillEntry({
       }
 
       setPhase("analyzing");
+      pushAiPrefillSubmit(photos.length);
       const suggestion = await suggestListingFromPhotos({
         imageReferences: prepared.imageReferences,
         guestVisitorId: guestMode ? guestVisitorId : undefined,

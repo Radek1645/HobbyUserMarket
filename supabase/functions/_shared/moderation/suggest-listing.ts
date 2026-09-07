@@ -94,6 +94,8 @@ PRAVIDLA PRO GENEROVÁNÍ:
    - I když je SPZ na snímku čitelná, do title i description ji nevkládej.
 5. ZÁKAZ HALUCINACÍ ZNAČKY / ŠTÍTKŮ:
    - Značku, velikost, materiál uveď jen když jsou přímo a čitelně vidět (štítek, cedulka, obal, logo).
+   - Je-li údaj na štítku čitelný, ZAPIŠ ho do odstavce nabídky (a do title, pokud se vejde). Nepřidávej k němu „Doplňte velikost:“ / „Doplňte značku:“.
+   - Velikost ze štítku převeď do češtiny: „New Born“ / Newborn → newborn / pro novorozence; „up to 56cm“ → vel. 56 (do 56 cm); „up to 4.5kg“ → do 4,5 kg. Anglický nápis nenechávej v title jako náhradu velikosti.
    - Jinak je vynech, nebo použij „Doplňte …:“ dle bodu 3.
 6. KATEGORIZACE:
    - Vyber přesně jednu categoryType a jednu subcategorySlug z povolené taxonomie níže (closed vocabulary).
@@ -101,7 +103,9 @@ PRAVIDLA PRO GENEROVÁNÍ:
    - Pokud si nejsi jistý přesnou podkategorií, nastav confidenceScore < ${SUGGEST_LISTING_CONFIDENCE_THRESHOLD} a vrať subcategorySlug jako null.
 7. ROZSAH: Jen fyzické zboží. Pokud fotka vypadá jako služba, práce, nemovitost nebo událost, vrať categoryType „ostatni“, subcategorySlug null a nízké confidenceScore.
 8. NIKDY neodhaduj cenu ani formulářový stav (nové/použité jako enum) — to vyplní uživatel. Do description kvůli nim nedávej „Doplňte …:“.
-9. JAZYK: title i description vždy česky.
+9. JAZYK: title i description vždy česky, běžnou inzerátní češtinou (jak se píše na bazaru).
+   - Ne knižní, zastaralé ani sousedské tvary. U oblečení: overal / kombinéza — NE „kombinezon“.
+   - Názvy produktů z cedulky přelož (Newborn → newborn / pro novorozence), značku nech jak je (Mothercare).
 
 PŘÍKLAD VÝSTUPU (styl a formát — napodob; obsah přizpůsob fotce):
 title: „Bílé osobní auto Škoda“
@@ -114,6 +118,13 @@ Doplňte nájezd km:
 Doplňte motorizaci: 
 (Poznámka k příkladu: model na fotce nebyl čitelný → není v title; výzvy jsou pod nabídkou, každá na vlastním řádku, za dvojtečkou prázdno; žádná výzva ke kontaktu.)
 
+Další příklad (čitelný štítek na oblečení — napodob jen styl):
+title: „Hnědý dětský overal newborn“
+description:
+Nabízím k prodeji hnědý plyšový dětský overal s kapucí a oušky. Velikost newborn, vel. 56 (do 4,5 kg).
+
+(Poznámka: velikost byla na štítku → je v nabídce, žádné „Doplňte velikost:“. Typ oděvu = overal, ne kombinezon.)
+
 POVOLENÁ TAXONOMIE (categoryType → subcategorySlug):
 ${GOODS_TAXONOMY_PROMPT_BLOCK}
 `;
@@ -122,7 +133,7 @@ ${GOODS_TAXONOMY_PROMPT_BLOCK}
 export function buildSuggestListingUserPrompt(imageCount: number): string {
   return `Připrav draft inzerátu z přiložených fotografií (${imageCount}).
 Vrať JSON: title, description, categoryType, subcategorySlug, confidenceScore (číslo 0–1).
-Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; bez „Doplňte stav/cenu/lokalitu:“ (to jsou pole formuláře); nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě).`;
+Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; bez „Doplňte stav/cenu/lokalitu:“ (to jsou pole formuláře); nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě). Čitelný štítek = velikost/značku zapiš do nabídky, ne „Doplňte …:“. Běžná bazarová čeština (overal/kombinéza, ne kombinezon).`;
 }
 
 export type SuggestListingParsed = {

@@ -671,6 +671,8 @@ npx supabase functions deploy compare-suggest-from-photos
 
 Plné SELECTY a vysvětlení tabulek: [`Metodika.md` §6.12](./Metodika.md#612-sql--přehled-kontrol-v-supabase).
 
+**Prefill bez odeslání** (denní drop-off + cesty k fotkám ve Storage): [`Metodika.md` §6.12 H](./Metodika.md#h-denní-hluchá-místa--prefill-bez-odeslání).
+
 | Tabulka | Účel | Inkrementální ID |
 |---------|------|------------------|
 | `moderation_checks` | Log každého volání Edge Function (status, error_code, title_preview) | `log_no` |
