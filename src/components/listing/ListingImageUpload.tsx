@@ -4,8 +4,6 @@ import {
   LISTING_IMAGE_CAMERA_ACCEPT,
   LISTING_IMAGE_GALLERY_ACCEPT,
   LISTING_IMAGE_MAX_FILES,
-  LISTING_IMAGE_MAX_FILE_BYTES,
-  LISTING_IMAGE_MAX_SOURCE_BYTES,
   MODERATION_IMAGE_STAGING_BUCKET,
 } from "@/config/app";
 import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
@@ -487,11 +485,6 @@ export const ListingImageUpload = forwardRef<
     })();
   }
 
-  const maxPhotoSizeMb = Math.round(LISTING_IMAGE_MAX_FILE_BYTES / (1024 * 1024));
-  const maxSourceSizeMb = Math.round(
-    LISTING_IMAGE_MAX_SOURCE_BYTES / (1024 * 1024),
-  );
-
   return (
     <div className="space-y-3">
       <div>
@@ -501,10 +494,7 @@ export const ListingImageUpload = forwardRef<
             ⚡ <strong>Tip</strong>: Přidejte fotky, které nejlépe ukazují stav
             a detaily inzerované věci.
           </p>
-          <p>
-            📸 Max. {LISTING_IMAGE_MAX_FILES} fotek — vstup max. {maxSourceSizeMb}{" "}
-            MB před zmenšením, výsledek do {maxPhotoSizeMb} MB.
-          </p>
+          <p>📸 Max. {LISTING_IMAGE_MAX_FILES} fotek.</p>
           <p>⭐ Hvězdičkou vyberte hlavní fotku.</p>
           <p>🛡️ Fotky před publikací zkontrolujeme pomocí AI.</p>
         </div>
