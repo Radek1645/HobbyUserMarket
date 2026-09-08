@@ -23,8 +23,8 @@ const routerDemo = getCreateListingGuideDemo("router");
 export const FB_PROMO_LANDING_UI = {
   footerLinkLabel: "Prodejte snadno",
   metaTitle: `Vyfoťte to. Zbytek dopíše AI. | ${SITE_DISPLAY_NAME}`,
-  metaDescription: `Nahrajete fotku, napíšete pár slov a AI z toho sestaví hotový inzerát. Párkrát kliknout a je to venku — lokální bazar Brno a okolí. Prvních ${LISTING_QUOTA_FREE_DEFAULT} inzerátů zdarma, bez provizí.`,
-  badge: "Lokální bazar · Brno a okolí",
+  metaDescription: `Nahrajete fotku, napíšete pár slov a AI z toho sestaví hotový inzerát. Párkrát kliknout a je to venku — lokální bazar ve vašem okolí. Prvních ${LISTING_QUOTA_FREE_DEFAULT} inzerátů zdarma, bez provizí.`,
+  badge: "Lokální bazar",
   heroTitleLine1: "Vyfoťte to.",
   heroTitleLine2: "Zbytek dopíše AI.",
   heroSubtitle:
