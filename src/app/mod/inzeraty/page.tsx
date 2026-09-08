@@ -83,6 +83,7 @@ export default async function ModInzeratyPage({
               <tr>
                 <th className="px-4 py-3 font-medium">Název</th>
                 <th className="px-4 py-3 font-medium">Stav</th>
+                <th className="px-4 py-3 font-medium">Zdroj</th>
                 <th className="px-4 py-3 font-medium">Zobrazení</th>
                 <th className="px-4 py-3 font-medium">Poptávky</th>
                 <th className="px-4 py-3 font-medium">Nahlášení</th>
@@ -95,6 +96,9 @@ export default async function ModInzeratyPage({
                 <tr key={listing.id} className="text-gray-800">
                   <td className="px-4 py-3 font-medium">{listing.title}</td>
                   <td className="px-4 py-3 font-mono text-xs">{listing.status}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                    {listing.campaignSource}
+                  </td>
                   <td className="px-4 py-3 tabular-nums">{listing.viewCount}</td>
                   <td className="px-4 py-3 tabular-nums">{listing.inquiryCount}</td>
                   <td className="px-4 py-3">{listing.reportCount}</td>

@@ -25,6 +25,7 @@ import {
 } from "@/lib/listings/quota";
 import { syncListingImagesFromForm } from "@/lib/posts/listing-images";
 import { buildStoredListingImageBindings } from "@/lib/posts/listing-image-hashes";
+import { persistListingCampaignAttribution } from "@/lib/promo/listing-campaign-attribution";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isUniqueViolation } from "@/lib/supabase/postgres-errors";
@@ -328,6 +329,14 @@ export async function createListing(
       return { error: "Inzerát se nepodařilo uložit. Zkuste to prosím znovu." };
     }
     row = inserted;
+  }
+
+  if (adminResult.ok) {
+    await persistListingCampaignAttribution(
+      adminResult.client,
+      row.id,
+      formData,
+    );
   }
 
   let shouldSyncImages = true;

@@ -48,11 +48,17 @@ export const MODERATION_FUNCTION_NAME = "moderate-listing" as const;
 /** Max. doplňujících otázek v NEEDS_QUESTIONS (hard limit v parse-response). */
 export const MODERATION_MAX_QUESTIONS = 5;
 
-/** Gemini dostává všechny fotky v rozlišení vhodném i pro technické štítky. */
-export const MODERATION_GEMINI_IMAGE_MAX_DIMENSION = 1024;
+/**
+ * Nejdelší strana Gemini WebP — stejný strop jako originál (`LISTING_IMAGE_MAX_DIMENSION`).
+ * Název souboru rendice nese tohle číslo, ať stará 1024 cache nesedí po změně konstanty.
+ */
+export const MODERATION_GEMINI_IMAGE_MAX_DIMENSION = 1920;
 /** Sightengine nepotřebuje jemné produktové detaily. */
 export const MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION = 512;
 export const MODERATION_IMAGE_RENDITION_QUALITY = 80;
+/** Spodní kvalita WebP, když re-encode při plném rozlišení přeleze 1 MB. */
+export const MODERATION_IMAGE_RENDITION_MIN_QUALITY = 45;
+export const MODERATION_IMAGE_RENDITION_QUALITY_STEP = 7;
 
 /** P11: počet pokusů volání Edge Function při technické chybě (1 + retry). */
 export const MODERATION_CLIENT_MAX_ATTEMPTS = 3;

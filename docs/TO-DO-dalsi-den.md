@@ -312,8 +312,8 @@ Související: `src/config/categories.ts`, listing formulář, SEO Bible / Metod
 
 **Implementace (2026-07-31):** Originály po klientské Storage kompresi (max. 1920 px / 1 MB) se nahrají **jednou** do privátního bucketu `moderation-image-staging`. Autentizovaná Next.js Server Action stáhne originál a přes Sharp uloží hash-addressed WebP varianty do service-role-only bucketu `moderation-image-renditions`:
 
-- Gemini / hydratace: **všechny fotky 1024 px**, kvalita 80 — technické štítky často nejsou na hlavní fotce;
-- Sightengine: všechny fotky 512 px, kvalita 80.
+- Gemini / hydratace: **všechny fotky až 1920 px** (`gemini-1920.webp`), kvalita 80 s fallbackem pod 1 MB — technické štítky často nejsou na hlavní fotce;
+- Sightengine: všechny fotky 512 px (`sightengine-512.webp`), kvalita 80.
 
 Edge nezávisle stáhne originál, spočítá SHA-256 pro SEC-H02 a varianty načte podle tohoto hashe. Klientské hashe ani klientský downscale nejsou autoritativní a uživatel nemá přístup k rendition bucketu. Staging objekty uživatel nesmí UPDATE ani DELETE. Při publikaci Server Action zkopíruje stejné bajty do `post-images`; publish gate znovu ověří hashe, pořadí i hlavní fotku. Originály i dočasné varianty čistí denní cron po 24 hodinách.
 
@@ -333,7 +333,7 @@ DevTools → **Network** → filtr `Fetch/XHR`. Scénář: **Upravit inzerát** 
 **Nejjistější krátký důkaz (mimo „inzerát se uložil“):**
 
 1. Network: úspěšná Sharp Server Action (**200**) + úspěšné obě `moderate-listing` (**200**).
-2. Supabase Storage → bucket `moderation-image-renditions` → `{userId}/{sha256}/` obsahuje **`gemini.webp`** a **`sightengine.webp`**.
+2. Supabase Storage → bucket `moderation-image-renditions` → `{userId}/{sha256}/` obsahuje **`gemini-1920.webp`** a **`sightengine-512.webp`**.
 3. Při editaci **bez nové fotky** staging bucket může zůstat prázdný (originály jdou z `post-images`) — to je OK.
 4. Při **nové fotce** krátce vznikne objekt ve `moderation-image-staging`; po úspěšné publikaci zmizí (nebo ho uklidí cron do 24 h).
 

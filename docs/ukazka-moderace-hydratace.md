@@ -69,9 +69,9 @@ sequenceDiagram
 
 | Krok | Kde | Co se posílá |
 |------|-----|--------------|
-| 1 | `prepareModerationImages()` + Sharp Server Action | Nové originály jednou do privátního immutable stagingu; Sharp uloží 1024/512px varianty pod SHA-256 do service-role-only bucketu |
+| 1 | `prepareModerationImages()` + Sharp Server Action | Nové originály jednou do privátního immutable stagingu; Sharp uloží 1920/512px varianty pod SHA-256 do service-role-only bucketu |
 | 2 | `invokeModerateListing()` — 1. volání | JSON body → Edge Function (text + metadata vč. `locationText` + `imageReferences`, **ne** aiPrompt z klienta). Bez `issueApproval`. |
-| 3 | Edge Function | Stáhne originály, spočítá SHA-256 a podle něj načte Gemini 1024 px / Sightengine 512 px varianty → pre-brána → AI |
+| 3 | Edge Function | Stáhne originály, spočítá SHA-256 a podle něj načte Gemini 1920 px / Sightengine 512 px varianty → pre-brána → AI |
 | 4 | Gemini API | `systemInstruction` + `contents[0].parts` = text + inline_data obrázky |
 | 5 | Edge Function | Parsuje JSON, filtruje otázky o ceně, doplní povinné otázky kategorie, safety checks. **Bez tokenu.** |
 | 6 | Modal | Uživatel vidí `cleanedTitle` / `cleanedDescription` / SEO / dotazník |
@@ -285,7 +285,7 @@ Popis inzerátu:
 Prodám použité auto
 ```
 
-K user promptu Gemini Edge přidá inline WebP varianty **všech fotek**, vytvořené Sharpem z příslušných Storage originálů (max. 1024 px, kvalita 80). Cestu každé varianty Edge odvodí z vlastního SHA-256 plného originálu; approval token se váže na tento hash, ne na AI variantu.
+K user promptu Gemini Edge přidá inline WebP varianty **všech fotek**, vytvořené Sharpem z příslušných Storage originálů (max. 1920 px, kvalita 80). Cestu každé varianty Edge odvodí z vlastního SHA-256 plného originálu (`gemini-1920.webp`); approval token se váže na tento hash, ne na AI variantu.
 
 ---
 

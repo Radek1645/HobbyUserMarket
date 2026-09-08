@@ -3,8 +3,10 @@ import {
   CAMPAIGN_ATTRIBUTION_STORAGE_KEY,
 } from "@/config/meta-pixel";
 import {
+  CAMPAIGN_ATTRIBUTION_FORM_FIELD,
   CAMPAIGN_QUERY_KEYS,
   pickCampaignSearchParams,
+  serializeCampaignAttributionForForm,
   type CampaignQuerySource,
 } from "@/lib/promo/campaign-query";
 
@@ -128,4 +130,15 @@ export function campaignParamsToEventData(
   params: URLSearchParams = readStoredCampaignParams(),
 ): Record<string, string> {
   return paramsToRecord(params);
+}
+
+/** Hidden field při publikaci — first-touch z localStorage / URL. */
+export function appendCampaignAttributionToFormData(formData: FormData): void {
+  const serialized = serializeCampaignAttributionForForm(
+    readStoredCampaignParams(),
+  );
+  if (!serialized) {
+    return;
+  }
+  formData.set(CAMPAIGN_ATTRIBUTION_FORM_FIELD, serialized);
 }

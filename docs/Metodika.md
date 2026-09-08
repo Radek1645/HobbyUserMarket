@@ -78,7 +78,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 1. Kampaň míří na **`/prodejte-snadno`**, ne na homepage. Cíl: první inzerát (CTA → `/inzerat/novy`).
 2. Globální **header (vyhledávání, poloha, účet) je skrytý**. Stránka má vlastní lištu (logo + Jak to funguje + Vložit inzerát). **Patička webu zůstává** (`SiteFooter`). Mobilní FAB je skrytý — stránka má vlastní CTA.
 3. Cookie lišta, GTM a Pixel zůstávají. Po analytickém souhlasu jde do `dataLayer` event `lp_view`. Po **marketingovém** souhlasu Pixel pošle `ViewContent` (`content_name: landing_fb`). CTA mají `data-gtm-id` `cta_lp_header` / `cta_lp_hero` / `cta_lp_footer` a `data-gtm-position`.
-4. UTM a `fbclid` se uloží do `localStorage` (`persistCampaignQuery`) a CTA je po mountu připojí k `/inzerat/novy` (`FbPromoCtaLink`) — ne v prvním SSR HTML, jinak hydratační mismatch proti `localStorage`. Flag C je na produkci **zapnutý** — host jde rovnou do formuláře. Kdyby se vypnul, login wall je zachová v `next`. Přiloží se k Pixel události `Lead`.
+4. UTM a `fbclid` se uloží do `localStorage` (`persistCampaignQuery`) a CTA je po mountu připojí k `/inzerat/novy` (`FbPromoCtaLink`) — ne v prvním SSR HTML, jinak hydratační mismatch proti `localStorage`. Flag C je na produkci **zapnutý** — host jde rovnou do formuláře. Kdyby se vypnul, login wall je zachová v `next`. Přiloží se k Pixel události `Lead`. Při **založení** inzerátu (ne při úpravě) stejné parametry zapíše server do `posts.campaign_attribution` (first-touch, migrace `086`). God Mode je vidí ve sloupci **Zdroj** a v liště na detailu. Historické inzeráty mají prázdné pole.
 5. V patičce (sloupec **Co je zaPikolou?**) je odkaz **Prodejte snadno**.
 6. Texty: vykání, žádné časové claimy, AI nedoplňuje cenu. Funnel C: inzerát se začíná bez účtu, přihlášení (Google nebo e-mail) až před publikací — hero hint vedle CTA (`sm+`), FAQ i závěrečné CTA. Krok 3: ještě vyplnit stav, lokalitu a cenu, zkontrolovat návrh. Copy: [`src/config/fb-promo-landing.ts`](../src/config/fb-promo-landing.ts). Design: [`docs/fb-ads/Landing page pro Facebook reklamu/`](./fb-ads/Landing%20page%20pro%20Facebook%20reklamu/).
 
@@ -378,7 +378,7 @@ flowchart TD
 #### Backend `suggest-listing-from-photos` (stručně)
 
 1. Auth JWT **nebo** guest visitor + token; rate limit `suggest_from_photos` (20/h) / `guest_suggest_from_photos` (5/h, soft=hard). Navíc globální `guest_ai_spend` (40/h, 300/den UTC) — až po per-IP limitu, před Sightengine.
-2. Staging + Sharp renditions (512 Sightengine / 1024 Gemini) — stejné buckety jako u moderace.
+2. Staging + Sharp renditions (512 Sightengine / 1920 Gemini) — stejné buckety jako u moderace.
 3. Sightengine NSFW na všech fotkách.
 4. Gemini structured JSON (max. 12 s); při technickém selhání OpenAI fallback (max. 8 s). Celý request má deadline 28 s, takže čas spotřebovaný načtením fotek a Sightenginem může limit primary zkrátit. Blokace Gemini po úspěšném Sightengine je technické selhání generátoru, ne NSFW verdikt.
 5. Server validace goods páru; odpověď `{ title, description, categoryType, subcategorySlug, confidenceScore }` — **bez** approval tokenu a bez hydratace.
@@ -463,7 +463,7 @@ Konfigurace: `src/config/listing-form-ui.ts` (`listingFormRequiredMarkClass`, `L
 
 - Max. **6 fotek** (JPEG, PNG, WebP).
 - Každá se před nahráním zkomprimuje na max. **1 MB** (nejdelší strana max. 1920 px).
-- Originál se při AI kontrole nahraje **jednou** do privátního stagingu; Server Action přes Sharp připraví menší WebP varianty (Gemini 1024 px, Sightengine 512 px). Uživatel to nevidí — v UI zůstává stejný upload.
+- Originál se při AI kontrole nahraje **jednou** do privátního stagingu; Server Action přes Sharp připraví WebP varianty (Gemini až 1920 px, Sightengine 512 px). Uživatel to nevidí — v UI zůstává stejný upload.
 - Uživatel označí **hlavní fotku** (hvězdička) — ta je náhled na HP a referenční snímek pro cross-validaci text ↔ foto. AI hydratace vychází ze **všech** nahraných fotek.
 - **Všechny** fotky procházejí bezpečnostní kontrolou, nejen hlavní.
 
@@ -796,7 +796,7 @@ Kde hledat výsledky moderace (SQL Editor / Table Editor). Klíče AI/Sightengin
 | *(fn)* `publish_approved_post` / `enforce_post_publish_gate` | Service-role publish + staff bypass jen cizí inzerát | `063` / `066` | — |
 | Storage bucket `moderation-evidence` | Snapshoty NSFW fotek (privátní, jen service_role) | `054` | — |
 | Storage `moderation-image-staging` | Originály před AI / publikací (privátní). Host: `guest/{visitorId}/…` | — | — |
-| Storage `moderation-image-renditions` | Sharp WebP (Gemini 1024 / Sightengine 512). Stejný prefix jako staging | — | — |
+| Storage `moderation-image-renditions` | Sharp WebP (Gemini 1920 / Sightengine 512, soubor `gemini-1920.webp`). Stejný prefix jako staging | — | — |
 
 **Inkrementální ID:** stejně jako u `reports.report_no` — v Table Editoru / SQL hledej podle `log_no` / `evidence_no` (1, 2, 3…), ne podle UUID. UUID zůstává technický identifikátor.
 
@@ -1468,9 +1468,9 @@ Role se **nastavuje v databázi**, ne v aplikaci. Postup je v [`supabase-prikazy
 | Stránka | Účel | Stav |
 |---------|------|------|
 | `/mod/karantena` | Zablokované inzeráty (`blocked`) — obnovit nebo smazat; sloupec poptávek | **ano** |
-| `/mod/inzeraty` | Přehled inzerátů s filtry stavu; sloupce zobrazení, **poptávky**, nahlášení | **ano** |
+| `/mod/inzeraty` | Přehled inzerátů s filtry stavu; sloupce zobrazení, **poptávky**, nahlášení, **zdroj (UTM)** | **ano** |
 | `/mod/uzivatele` | Jen admin — správa uživatelů, smazání účtu, balíčky | **ano** |
-| Detail cizího inzerátu | Lišta: Zablokovat, Smazat, Obnovit, Upravit, Poznámky | **ano** (Poznámky — ano, viz §11.4.1; sjednocená Historie/timeline — zatím ne, viz §11.4) |
+| Detail cizího inzerátu | Lišta: Zablokovat, Smazat, Obnovit, Upravit, Poznámky; **UTM při založení** | **ano** (Poznámky — ano, viz §11.4.1; sjednocená Historie/timeline — zatím ne, viz §11.4) |
 
 Hard-hit / NSFW evidence z pre-Gemini brány (§6.4) je v `moderation_hard_reject_evidence` (+ bucket `moderation-evidence`). Hard stop účtů: `account_blacklist` + UI `/mod/blacklist` (neplést s `/mod/karantena`). Stop stránka: `/ucet-pozastaven`. SQL: [§6.12](#612-sql--přehled-kontrol-v-supabase).
 
@@ -2013,6 +2013,7 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 | `src/components/analytics/MetaPixelLoader.tsx` | Pixel po marketingovém souhlasu; SPA `PageView`; `ViewContent`; `InitiateCheckout` |
 | `src/components/analytics/ConversionBeacons.tsx` | `Lead` po publikaci; `CompleteRegistration` po novém účtu |
 | `src/lib/promo/campaign-storage.ts` | UTM / `fbclid` v localStorage (30 dní) |
+| `src/lib/promo/listing-campaign-attribution.ts` | Zápis first-touch UTM do `posts.campaign_attribution` při založení |
 | `src/components/promo/FbPromoViewBeacon.tsx` | `lp_view` do dataLayer po analytickém souhlasu |
 | `src/lib/analytics/virtual-pageview.ts` | SPA `virtual_pageview` do `dataLayer` (P35) |
 | `src/lib/analytics/generate-lead.ts` | GA4 `generate_lead` po publikaci (i když Pixel běží) |

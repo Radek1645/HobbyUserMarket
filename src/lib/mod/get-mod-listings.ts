@@ -1,5 +1,7 @@
 import { COMMENT_STATUS, POST_STATUS } from "@/config/post-status";
 import { loadDeliveredInquiryCounts } from "@/lib/inquiry/delivered-counts";
+import { formatCampaignAttributionSource } from "@/lib/promo/campaign-query";
+import { loadListingsCampaignAttribution } from "@/lib/promo/listing-campaign-attribution";
 import { createClient } from "@/lib/supabase/server";
 import type { PostStatusReasonCode } from "@/types/post";
 
@@ -14,6 +16,7 @@ export type ModListingSummary = {
   reportCount: number;
   viewCount: number;
   inquiryCount: number;
+  campaignSource: string;
 };
 
 export type ModHiddenComment = {
@@ -82,9 +85,10 @@ export async function loadBlockedListings(): Promise<ModListingSummary[]> {
   if (error || !posts) return [];
 
   const postIds = posts.map((post) => post.id);
-  const [reportCounts, inquiryCounts] = await Promise.all([
+  const [reportCounts, inquiryCounts, campaignByPostId] = await Promise.all([
     loadReportCounts(postIds),
     loadDeliveredInquiryCounts(postIds),
+    loadListingsCampaignAttribution(postIds),
   ]);
 
   return posts.map((post) => ({
@@ -98,6 +102,9 @@ export async function loadBlockedListings(): Promise<ModListingSummary[]> {
     reportCount: reportCounts.get(post.id) ?? 0,
     viewCount: post.view_count ?? 0,
     inquiryCount: inquiryCounts.get(post.id) ?? 0,
+    campaignSource: formatCampaignAttributionSource(
+      campaignByPostId.get(post.id),
+    ),
   }));
 }
 
@@ -135,9 +142,10 @@ export async function loadModListings(params: {
   if (error || !posts) return [];
 
   const postIds = posts.map((post) => post.id);
-  const [reportCounts, inquiryCounts] = await Promise.all([
+  const [reportCounts, inquiryCounts, campaignByPostId] = await Promise.all([
     loadReportCounts(postIds),
     loadDeliveredInquiryCounts(postIds),
+    loadListingsCampaignAttribution(postIds),
   ]);
 
   return posts.map((post) => ({
@@ -151,6 +159,9 @@ export async function loadModListings(params: {
     reportCount: reportCounts.get(post.id) ?? 0,
     viewCount: post.view_count ?? 0,
     inquiryCount: inquiryCounts.get(post.id) ?? 0,
+    campaignSource: formatCampaignAttributionSource(
+      campaignByPostId.get(post.id),
+    ),
   }));
 }
 

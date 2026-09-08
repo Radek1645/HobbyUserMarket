@@ -19,7 +19,10 @@ import {
 } from "@/lib/guest/listing-draft";
 import type { ModerationImageReference } from "@/lib/moderation/prepare-moderation-images";
 import { withCampaignQuery } from "@/lib/promo/campaign-query";
-import { readStoredCampaignParams } from "@/lib/promo/campaign-storage";
+import {
+  appendCampaignAttributionToFormData,
+  readStoredCampaignParams,
+} from "@/lib/promo/campaign-storage";
 import {
   MODERATION_CHECKING_UI,
   MODERATION_ENABLED,
@@ -550,6 +553,7 @@ export function CreateListingForm({
           formData.set("metaDescription", draft.metaDescription ?? "");
           formData.set("imageAlt", draft.imageAlt ?? "");
         }
+        appendCampaignAttributionToFormData(formData);
 
         const orderKeys = imageReferences.map((_, index) => `n:${index}`);
         formData.set("imageOrder", orderKeys.join(","));
@@ -1046,6 +1050,9 @@ export function CreateListingForm({
     }
     if (approvalToken) {
       formData.set("moderationToken", approvalToken);
+    }
+    if (!isEdit) {
+      appendCampaignAttributionToFormData(formData);
     }
     setTitle(titleValue);
     setDescription(descriptionValue);

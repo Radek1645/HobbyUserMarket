@@ -1,8 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 import {
   LISTING_IMAGE_BUCKET,
+  MODERATION_GEMINI_IMAGE_MAX_DIMENSION,
   MODERATION_IMAGE_RENDITION_BUCKET,
   MODERATION_IMAGE_STAGING_BUCKET,
+  MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION,
 } from "./constants.ts";
 import {
   assertModerationImagesWithinLimits,
@@ -112,10 +114,13 @@ export async function loadModerationImagesFromStorage(
     assertModerationImagesWithinLimits([originalBase64]);
     const imageHash = await sha256Hex(originalBytes);
     const renditionPrefix = `${ownerPrefix}/${imageHash}`;
+    const geminiFile = `gemini-${MODERATION_GEMINI_IMAGE_MAX_DIMENSION}.webp`;
+    const sightengineFile =
+      `sightengine-${MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION}.webp`;
 
     const [geminiImage, sightengineImage] = await Promise.all([
-      loadTrustedRendition(`${renditionPrefix}/gemini.webp`),
-      loadTrustedRendition(`${renditionPrefix}/sightengine.webp`),
+      loadTrustedRendition(`${renditionPrefix}/${geminiFile}`),
+      loadTrustedRendition(`${renditionPrefix}/${sightengineFile}`),
     ]);
     return {
       originalBase64,

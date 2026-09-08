@@ -3,14 +3,8 @@
 import {
   LISTING_IMAGE_MAX_FILE_BYTES,
   LISTING_IMAGE_MAX_FILES,
-  MODERATION_IMAGE_RENDITION_BUCKET,
   MODERATION_IMAGE_STAGING_BUCKET,
 } from "@/config/app";
-import {
-  MODERATION_GEMINI_IMAGE_MAX_DIMENSION,
-  MODERATION_IMAGE_RENDITION_QUALITY,
-  MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION,
-} from "@/config/moderation";
 import { detectFileKindFromBytes } from "@/lib/files/magic-bytes";
 import { assertGuestUploadRateLimit } from "@/lib/guest/anonymous-rate-limit";
 import {
@@ -22,17 +16,15 @@ import {
   readGuestVisitorId,
   signGuestVisitorId,
 } from "@/lib/guest/visitor-id-server";
+import { prepareImageRenditionsFromOriginalBytes } from "@/lib/moderation/prepare-image-renditions";
 import type { ModerationImageReference } from "@/lib/moderation/prepare-moderation-images";
 import { readClientIpFromHeaders } from "@/lib/security/client-ip";
 import { verifyTurnstileTokenServer } from "@/lib/security/turnstile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { createHash } from "node:crypto";
 import { headers } from "next/headers";
-import sharp from "sharp";
 
 const ALLOWED_IMAGE_KINDS = new Set(["jpeg", "png", "webp"]);
-const MODERATION_IMAGE_MAX_INPUT_PIXELS = 40_000_000;
 
 type GuestUploadItemResult = {
   clientKey: string;
@@ -254,59 +246,11 @@ async function prepareGuestRenditions(
   }
 
   const originalBytes = Buffer.from(await original.arrayBuffer());
-  const imageHash = createHash("sha256").update(originalBytes).digest("hex");
-  const prefix = `${ownerPrefix}/${imageHash}`;
-  const geminiPath = `${prefix}/gemini.webp`;
-  const sightenginePath = `${prefix}/sightengine.webp`;
-
-  const { data: cachedFiles } = await admin.client.storage
-    .from(MODERATION_IMAGE_RENDITION_BUCKET)
-    .list(prefix, { limit: 2 });
-  const cachedNames = new Set((cachedFiles ?? []).map((file) => file.name));
-  if (cachedNames.has("gemini.webp") && cachedNames.has("sightengine.webp")) {
-    return;
-  }
-
-  const image = sharp(originalBytes, {
-    failOn: "error",
-    limitInputPixels: MODERATION_IMAGE_MAX_INPUT_PIXELS,
-  }).rotate();
-
-  const [geminiBytes, sightengineBytes] = await Promise.all([
-    image
-      .clone()
-      .resize({
-        width: MODERATION_GEMINI_IMAGE_MAX_DIMENSION,
-        height: MODERATION_GEMINI_IMAGE_MAX_DIMENSION,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .webp({ quality: MODERATION_IMAGE_RENDITION_QUALITY })
-      .toBuffer(),
-    image
-      .clone()
-      .resize({
-        width: MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION,
-        height: MODERATION_SIGHTENGINE_IMAGE_MAX_DIMENSION,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .webp({ quality: MODERATION_IMAGE_RENDITION_QUALITY })
-      .toBuffer(),
-  ]);
-
-  await Promise.all([
-    admin.client.storage.from(MODERATION_IMAGE_RENDITION_BUCKET).upload(
-      geminiPath,
-      geminiBytes,
-      { contentType: "image/webp", upsert: true },
-    ),
-    admin.client.storage.from(MODERATION_IMAGE_RENDITION_BUCKET).upload(
-      sightenginePath,
-      sightengineBytes,
-      { contentType: "image/webp", upsert: true },
-    ),
-  ]);
+  await prepareImageRenditionsFromOriginalBytes(
+    admin,
+    ownerPrefix,
+    originalBytes,
+  );
 }
 
 export type ClaimGuestImagesResult =

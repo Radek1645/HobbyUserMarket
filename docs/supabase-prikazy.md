@@ -54,6 +54,7 @@ group by 1,2 order by 1,2;
 -- 4. Sloupcová oprávnění u citlivých sloupců posts
 -- Očekávej po 078+079:
 --   contact_phone, location, original_*   anon=false  auth=false
+--   campaign_attribution (086)            obě false
 --   title, slug, location_text            obě true
 select c.column_name,
        bool_or(p.grantee = 'anon')          as anon_cte,
@@ -65,7 +66,8 @@ left join information_schema.column_privileges p
   and p.grantee in ('anon','authenticated')
 where c.table_schema = 'public' and c.table_name = 'posts'
   and c.column_name in ('contact_phone','location','original_title',
-                        'original_description','title','slug','location_text')
+                        'original_description','campaign_attribution',
+                        'title','slug','location_text')
 group by c.column_name order by c.column_name;
 
 -- 5. Přežil nějaký starý overload s grantem pro authenticated?
@@ -158,7 +160,7 @@ Kanon produktového modelu zůstává v [`PRD_v3.md`](./PRD_v3.md) §4; tady je 
 | `category_seo_pages` | SEO copy + `index_status` + `listing_count` kategoriálních landings (`072`) |
 | `bank_payments` | **Plánováno** (PRD monetizace) — v DB zatím není |
 
-**Storage buckety:** `post-images` (veřejné fotky inzerátů) · `moderation-evidence` (privátní NSFW / hard-reject snímky) · `moderation-image-staging` (privátní immutable originály před AI / publikací) · `moderation-image-renditions` (privátní Sharp WebP varianty 1024/512 px, jen service_role).
+**Storage buckety:** `post-images` (veřejné fotky inzerátů) · `moderation-evidence` (privátní NSFW / hard-reject snímky) · `moderation-image-staging` (privátní immutable originály před AI / publikací) · `moderation-image-renditions` (privátní Sharp WebP varianty 1920/512 px, jen service_role).
 
 ---
 
@@ -278,7 +280,7 @@ Bez platného tokenu inzerát zůstane `draft`.
 | Bucket | Účel | Kdo smí |
 |--------|------|---------|
 | `moderation-image-staging` | Immutable originál (≤ 1 MB) před AI a publikací | `authenticated` INSERT/SELECT jen vlastní `userId/…`; bez UPDATE/DELETE |
-| `moderation-image-renditions` | Sharp WebP pod `{userId}/{sha256}/gemini.webp` a `sightengine.webp` | jen `service_role` |
+| `moderation-image-renditions` | Sharp WebP pod `{userId}/{sha256}/gemini-1920.webp` a `sightengine-512.webp` | jen `service_role` |
 
 Úklid: cron `/api/cron/purge-moderation-image-staging` (24 h). Publish zkopíruje staging → `post-images`.
 

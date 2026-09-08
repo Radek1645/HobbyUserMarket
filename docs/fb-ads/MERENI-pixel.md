@@ -28,7 +28,7 @@ GA4 konverze stejného momentu: dataLayer event **`generate_lead`** (po analytic
 
 ## UTM
 
-Při prvním vstupu s `utm_*` / `fbclid` / `gclid` se uloží do `localStorage` (30 dní) a přiloží k `Lead`. CTA z landing page je táhnou v URL; guest login je připojí do `next`.
+Při prvním vstupu s `utm_*` / `fbclid` / `gclid` se uloží do `localStorage` (30 dní) a přiloží k `Lead`. CTA z landing page je táhnou v URL; guest login je připojí do `next`. Při založení inzerátu stejné hodnoty zapíše server do `posts.campaign_attribution` (first-touch; není ve veřejném SELECT).
 
 Formát odkazu v reklamě:
 ```

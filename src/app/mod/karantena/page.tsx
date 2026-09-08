@@ -92,6 +92,7 @@ export default async function ModKarantenaPage({
               <tr>
                 <th className="px-4 py-3 font-medium">Název</th>
                 <th className="px-4 py-3 font-medium">Důvod</th>
+                <th className="px-4 py-3 font-medium">Zdroj</th>
                 <th className="px-4 py-3 font-medium">Zobrazení</th>
                 <th className="px-4 py-3 font-medium">Poptávky</th>
                 <th className="px-4 py-3 font-medium">Nahlášení</th>
@@ -106,6 +107,9 @@ export default async function ModKarantenaPage({
                   <td className="px-4 py-3 text-gray-600">
                     {getPostStatusReasonMessage(listing.statusReasonCode) ??
                       "—"}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                    {listing.campaignSource}
                   </td>
                   <td className="px-4 py-3 tabular-nums">{listing.viewCount}</td>
                   <td className="px-4 py-3 tabular-nums">{listing.inquiryCount}</td>

@@ -16,6 +16,10 @@ import { getListingEditPath, getListingPath } from "@/lib/posts/listing-path";
 import { POST_STATUS } from "@/config/post-status";
 import { getPostStatusReasonMessage } from "@/config/listing-status-reasons";
 import type { ModeratorNoteRow } from "@/lib/mod/moderator-notes";
+import {
+  campaignAttributionEntries,
+  type CampaignAttribution,
+} from "@/lib/promo/campaign-query";
 import type { PostStatusReasonCode } from "@/types/post";
 import Link from "next/link";
 import { useState } from "react";
@@ -28,6 +32,7 @@ type ModeratorListingBarProps = {
   statusReasonCode: PostStatusReasonCode | null;
   notes: ModeratorNoteRow[];
   noteFlash?: "created" | "updated" | "error" | null;
+  campaignAttribution?: CampaignAttribution | null;
 };
 
 export function ModeratorListingBar({
@@ -38,6 +43,7 @@ export function ModeratorListingBar({
   statusReasonCode,
   notes,
   noteFlash = null,
+  campaignAttribution = null,
 }: ModeratorListingBarProps) {
   const [confirmAction, setConfirmAction] = useState<
     "block" | "delete" | "restore" | null
@@ -48,6 +54,7 @@ export function ModeratorListingBar({
   const returnPath = getListingPath(postSlug);
   const reasonMessage = getPostStatusReasonMessage(statusReasonCode);
   const notesCount = notes.length;
+  const campaignEntries = campaignAttributionEntries(campaignAttribution);
 
   return (
     <>
@@ -58,6 +65,21 @@ export function ModeratorListingBar({
           <span className="font-mono text-xs">{status}</span>
           {reasonMessage ? ` · ${reasonMessage}` : null}
         </p>
+        {campaignEntries.length > 0 ? (
+          <dl className="mt-2 grid gap-x-4 gap-y-1 text-xs text-amber-900/90 sm:grid-cols-2">
+            {campaignEntries.map((entry) => (
+              <div key={entry.key} className="min-w-0">
+                <dt className="font-medium">{entry.label}</dt>
+                <dd className="break-all font-mono">{entry.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="mt-2 text-xs text-amber-900/80">
+            Bez UTM při založení — organický vstup, nebo kampaň bez parametrů v
+            URL.
+          </p>
+        )}
         <div className="mt-3 flex flex-wrap gap-2">
           <Link
             href={getListingEditPath(postSlug)}
