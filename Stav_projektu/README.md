@@ -12,7 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
-| 2026-09-08 | [2026-09-08.md](./2026-09-08.md) — UTM `campaign_attribution` (086); Gemini rendice 1920; **Edge TODO** |
+| 2026-09-08 | [2026-09-08.md](./2026-09-08.md) — UTM `campaign_attribution` (086); Gemini rendice 1920; **Edge nasazeno** |
 | 2026-09-07 (pozdě) | [2026-09-07-pozde.md](./2026-09-07-pozde.md) — UI Moje inzeráty; **085 nasazeno**; Prefill v3.102 nápis na věci |
 | 2026-09-07 (noc) | [2026-09-07-noc.md](./2026-09-07-noc.md) — prefill `suggest_description` (084), GDPR 1.9-fo, PRD v3.100 |
 | 2026-09-07 (večer) | [2026-09-07-vecer.md](./2026-09-07-vecer.md) — prefill lab hydratace, mezery gitignore, PRD v3.99 |
