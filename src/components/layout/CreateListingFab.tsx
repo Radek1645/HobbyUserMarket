@@ -7,6 +7,9 @@ import { GTM_CTA, gtmCtaProps } from "@/config/gtm-ids";
 import {
   createListingCtaLabel,
   createListingFabClass,
+  createListingFabCollapsedClass,
+  createListingFabExpandedClass,
+  createListingFabTransitionClass,
   iconSmClass,
 } from "@/config/ui-primitives";
 import type { AppUser } from "@/types/auth";
@@ -73,9 +76,9 @@ export function CreateListingFab({ user }: CreateListingFabProps) {
       aria-label={createListingCtaLabel}
       className={[
         createListingFabClass,
-        collapsed ? "w-14 gap-0" : "w-auto gap-2 px-6",
+        collapsed ? createListingFabCollapsedClass : createListingFabExpandedClass,
         fabBottomClass,
-        "transition-[width,padding,gap,bottom] duration-300 ease-out",
+        createListingFabTransitionClass,
       ].join(" ")}
     >
       <Sparkles className={`${iconSmClass} shrink-0`} strokeWidth={2.5} />

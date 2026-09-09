@@ -76,7 +76,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 ### 2.1.3 Landing page pro Facebook reklamu (`/prodejte-snadno`)
 
 1. Kampaň míří na **`/prodejte-snadno`**, ne na homepage. Cíl: první inzerát (CTA → `/inzerat/novy`).
-2. Globální **header (vyhledávání, poloha, účet) je skrytý**. Stránka má vlastní lištu (logo + Jak to funguje + Vložit inzerát). **Patička webu zůstává** (`SiteFooter`). Mobilní FAB je skrytý — stránka má vlastní CTA.
+2. Globální **header (vyhledávání, poloha, účet) je skrytý**. Stránka má vlastní lištu (logo + Jak to funguje + Vložit inzerát). **Patička webu zůstává** (`SiteFooter`). Mobilní CTA je skryté — stránka má vlastní CTA.
 3. Cookie lišta, GTM a Pixel zůstávají. Po analytickém souhlasu jde do `dataLayer` event `lp_view`. Po **marketingovém** souhlasu Pixel pošle `ViewContent` (`content_name: landing_fb`). CTA mají `data-gtm-id` `cta_lp_header` / `cta_lp_hero` / `cta_lp_footer` a `data-gtm-position`.
 4. UTM a `fbclid` se uloží do `localStorage` (`persistCampaignQuery`) a CTA je po mountu připojí k `/inzerat/novy` (`FbPromoCtaLink`) — ne v prvním SSR HTML, jinak hydratační mismatch proti `localStorage`. Flag C je na produkci **zapnutý** — host jde rovnou do formuláře. Kdyby se vypnul, login wall je zachová v `next`. Přiloží se k Pixel události `Lead`. Při **založení** inzerátu (ne při úpravě) stejné parametry zapíše server do `posts.campaign_attribution` (first-touch, migrace `086`). God Mode je vidí ve sloupci **Zdroj** a v liště na detailu. Historické inzeráty mají prázdné pole.
 5. V patičce (sloupec **Co je zaPikolou?**) je odkaz **Prodejte snadno**.
@@ -114,10 +114,10 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 
 ### 2.3 Mobilní CTA „Vytvořit inzerát s AI“
 
-- Na mobilu (`md` breakpoint) je vpravo dole plovoucí zelené tlačítko (FAB).
-- Když je otevřená **cookie lišta**, FAB se posune **nad lištu** (výška banneru se měří dynamicky), aby nebylo utopené a zůstalo klikatelné.
-- Po souhlasu / odmítnutí cookies se FAB vrátí na standardní pozici u spodního okraje.
-- FAB (a desktop header CTA) se **nezobrazuje** na `/onboarding`, `/login`, `/prodejte-snadno` a dokud profil nemá přezdívku — jinak by Next.js prefetch `/inzerat/novy` nakešoval redirect na onboarding a po dokončení registrace by tlačítko „nefungovalo“ do obnovení stránky. Po `completeOnboarding` / přihlášení se volá `revalidatePath("/", "layout")`.
+- Na mobilu (`< sm`) je dole **lišta přes šířku** (zelené „Vytvořit inzerát“). Po scrollu > 80 px se stáhne na ikonu vpravo dole.
+- Když je otevřená **cookie lišta**, CTA se posune **nad ni** (výška banneru se měří dynamicky), aby nebylo utopené a zůstalo klikatelné.
+- Po souhlasu / odmítnutí cookies se CTA vrátí na standardní pozici u spodního okraje.
+- Mobilní CTA (a desktop header CTA) se **nezobrazuje** na `/onboarding`, `/login`, `/prodejte-snadno` a dokud profil nemá přezdívku — jinak by Next.js prefetch `/inzerat/novy` nakešoval redirect na onboarding a po dokončení registrace by tlačítko „nefungovalo“ do obnovení stránky. Po `completeOnboarding` / přihlášení se volá `revalidatePath("/", "layout")`.
 
 ### 2.4 Filtrování podle kategorie
 
@@ -1982,16 +1982,16 @@ Měření návštěvnosti běží přes **Google Tag Manager** (container `GTM-W
 
 ### 14.1 Co návštěvník vidí
 
-1. Při **první návštěvě** (bez uložené volby) se dole zobrazí **kompaktní** cookie lišta — nesmí překrývat hlavní obsah ani mobilní FAB (viz [§2.3](#23-mobilní-cta-vytvořit-inzerát-s-ai)).
-2. Text: *„Technické cookies pro provoz webu. Analytické cookies zapneme jen s vaším souhlasem.“* + odkaz **Zásady cookies**.
-3. Tlačítka **vedle sebe** i na mobilu: **Nezbytné** (outline) a **Přijmout** (zelené CTA). Kratší labely na úzkých displejích.
+1. Při **první návštěvě** (bez uložené volby) se dole zobrazí **kompaktní** cookie lišta — nesmí překrývat hlavní obsah ani mobilní CTA (viz [§2.3](#23-mobilní-cta-vytvořit-inzerát-s-ai)).
+2. Text: *„Technické cookies pro provoz webu. Analytiku a marketing (např. Meta Pixel) zapneme jen s vaším souhlasem.“* + odkaz **Zásady cookies**.
+3. Tlačítka **vedle sebe** i na mobilu: **Nezbytné** a **Analytika** (outline), **Přijmout** (tmavý outline, ne zelená — zelená zůstane jen „Vytvořit inzerát“). Kratší labely na úzkých displejích.
 4. **Pouze nezbytné** — analytika zůstane vypnutá (`analytics_storage: denied`).
 5. **Přijmout** — GTM dostane `gtag('consent', 'update', …)` a GA4 tag smí spustit měření.
 6. V patičce **Nastavení cookies** lištu kdykoli znovu otevře (změna nebo odvolání souhlasu).
 
 Volba se ukládá do `localStorage` (`cookie-consent:v1`), ne do cookie třetí strany.
 
-**Layout (mobil):** menší padding, text 13px, tlačítka v jednom řádku (`flex-row`). Výška banneru se zapisuje do CSS proměnné `--cookie-consent-banner-height` pro posun FAB.
+**Layout (mobil):** menší padding, text 13px, tlačítka v jednom řádku (`flex-row`). Výška banneru se zapisuje do CSS proměnné `--cookie-consent-banner-height` pro posun mobilního CTA.
 
 ### 14.2 Technický průběh (bez externího CMP)
 
@@ -2021,7 +2021,7 @@ gtag consent default (denied)  →  obnova z localStorage (pokud existuje)
 | `src/config/listing-form-ui.ts` | Povinná pole — hvězdička, legenda |
 | `src/config/listing-form-tips.ts` | Příklady v tipu u fotek podle kategorie |
 | `src/components/location/HeaderLocationPanel.tsx` | Panel polohy v hlavičce, zelená nápověda |
-| `src/components/layout/CreateListingFab.tsx` | Mobilní FAB, posun nad cookie lištu |
+| `src/components/layout/CreateListingFab.tsx` | Mobilní CTA (lišta / ikona), posun nad cookie lištu |
 
 **Env (volitelné):** `NEXT_PUBLIC_GTM_ID` přepíše default; prázdný string GTM vypne (např. lokální dev).
 

@@ -9,10 +9,11 @@ alwaysApply: false
 Při stylování opakujících se prvků (CTA, modály, pilulky) importuj konstanty z `src/config/ui-primitives.ts`. Dokumentace: `docs/ui-prvky.md`.
 
 - Zelená CTA: `emeraldPrimaryButtonClass`, `headerCreateListingButtonClass` (flat `bg-emerald-600`, Sparkles), `emeraldPrimaryButtonCompactClass`
+- Cookie **Přijmout**: `cookieAcceptButtonClass` (outline) — ne zelená, ať nekonkuruje „Vytvořit inzerát“
 - Pár (preferovaná + záložní, ne dvě plná zelená): `preferredSoftButtonClass` + `secondaryDashedButtonClass`
 - Modály: `modalOverlayClass`, `modalPanelClass`, tlačítka `modalCancel*` / `modalDangerButtonClass`
 - Homepage kategorie: `homeCategoryTabActiveClass`, `homeCategoryTabInactiveClass`, `iconSmClass`
 
-**Zakázáno** na zelených tlačítkách: `shadow-emerald-600/*`, `ring-emerald-*` (kromě `focus-visible:ring-emerald-500`), barevné `hover:shadow-lg`.
+**Zakázáno** na zelených tlačítkách: `shadow-emerald-600/*`, `ring-emerald-*` (kromě `focus-visible:ring-emerald-500`), barevné `hover:shadow-lg`. Na jednom uzlu neskládat dvě `transition-*` třídy (`transition-colors` přebije `transition-[width,…]`).
 
 Novou konstantu přidej do `ui-primitives.ts` a zapiš do `docs/ui-prvky.md`.

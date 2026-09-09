@@ -5,7 +5,7 @@ export const COOKIE_CONSENT_SCHEMA_VERSION = 2;
 
 export const COOKIE_CONSENT_STORAGE_KEY = `cookie-consent:v${COOKIE_CONSENT_SCHEMA_VERSION}`;
 
-/** Synchronizuje výšku banneru pro posun FAB nad lištu (CreateListingFab). */
+/** Synchronizuje výšku banneru pro posun mobilního CTA nad lištu (CreateListingFab). */
 export const COOKIE_CONSENT_BANNER_HEIGHT_CSS_VAR = "--cookie-consent-banner-height";
 
 export const COOKIE_CONSENT_UI = {

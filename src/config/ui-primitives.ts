@@ -19,6 +19,13 @@ export const emeraldPrimaryButtonCompactClass =
   `${emeraldPrimaryButtonClass} px-4 py-2 text-sm`;
 
 /**
+ * Primární volba v cookie liště.
+ * Outline, ne zelená — na první návštěvě (FB) nesmí konkurovat „Vytvořit inzerát“.
+ */
+export const cookieAcceptButtonClass =
+  "rounded-xl border border-gray-900 bg-white px-4 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900";
+
+/**
  * Preferovaná akce v páru (ne hlavní zelené CTA stránky).
  * Světlý emerald podklad, plný rámeček — navede, aniž by konkurovalo „Vytvořit inzerát“.
  */
@@ -32,9 +39,12 @@ export const preferredSoftButtonClass =
 export const secondaryDashedButtonClass =
   "flex items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-500 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
-/** Header CTA povrch — flat zelená shodná s `Pikolou` ve wordmarku, hover ztmaví. */
+/**
+ * Flat zelená shodná s `Pikolou` ve wordmarku. Bez `transition-*` —
+ * dvě `transition-property` na jednom uzlu se přebíjejí (vyhraje pozdější v CSS).
+ */
 export const headerCreateListingSurfaceClass =
-  "bg-emerald-600 text-white transition-colors duration-200 hover:bg-emerald-700";
+  "bg-emerald-600 text-white hover:bg-emerald-700";
 
 /** Sdílený text hlavního CTA pro tvorbu inzerátu (header + FAB). */
 export const createListingCtaLabel = "Vytvořit inzerát";
@@ -52,26 +62,37 @@ export const headerBrandControlPaddingXClass = "px-6";
  * ať na telefonu nepřekrývá vyhledávání.
  */
 export const headerCreateListingButtonClass =
-  `hidden ${headerBrandControlHeightClass} shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 text-[0.9375rem] font-semibold sm:inline-flex sm:px-6 [@media(max-height:36rem)]:!inline-flex ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+  `hidden ${headerBrandControlHeightClass} shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 text-[0.9375rem] font-semibold sm:inline-flex sm:px-6 [@media(max-height:36rem)]:!inline-flex ${headerCreateListingSurfaceClass} transition-colors duration-200 ${emeraldFocusRingClass}`;
 
 /** Text header CTA — na úzkém/zoomed viewportu jen ikona + aria-label. */
 export const headerCreateListingLabelClass = "ml-2 hidden min-[480px]:inline";
 
 /** FB landing — primární CTA v hero a závěru (pill, větší než header). */
-export const landingPrimaryCtaClass = `inline-flex items-center justify-center rounded-full px-[34px] py-[18px] text-lg font-bold ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+export const landingPrimaryCtaClass = `inline-flex items-center justify-center rounded-full px-[34px] py-[18px] text-lg font-bold ${headerCreateListingSurfaceClass} transition-colors duration-200 ${emeraldFocusRingClass}`;
 
 /** FB landing — CTA v lokální liště stránky. */
-export const landingHeaderCtaClass = `inline-flex items-center justify-center rounded-full px-[22px] py-3 text-[15px] font-bold ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+export const landingHeaderCtaClass = `inline-flex items-center justify-center rounded-full px-[22px] py-3 text-[15px] font-bold ${headerCreateListingSurfaceClass} transition-colors duration-200 ${emeraldFocusRingClass}`;
 
 /** FB landing — sekundární outline pill (dětský bazar). */
 export const landingSecondaryCtaClass = `inline-flex w-fit items-center justify-center rounded-full border-[1.5px] border-emerald-600 px-6 py-[13px] text-base font-bold text-emerald-800 transition hover:bg-emerald-50 ${emeraldFocusRingClass}`;
 
 /**
- * Mobilní FAB — jen úzký a dostatečně vysoký viewport.
+ * Mobilní CTA — jen úzký a dostatečně vysoký viewport.
  * Skrytý od `sm` a při nízké výšce (desktop + 150–200 % zoom).
+ * Pozici (lišta vs. ikona) skládá `CreateListingFab`.
  */
 export const createListingFabClass =
   `fixed right-4 z-[95] hidden h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 max-sm:flex [@media(max-height:36rem)]:!hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
+
+/** Roztažená lišta — `right-4` drží kotvu, šířka se animuje (ne `left: auto`). */
+export const createListingFabExpandedClass = "w-[calc(100%-2rem)] gap-2 px-6";
+
+/** Po scrollu jen ikona vpravo dole. */
+export const createListingFabCollapsedClass = "w-14 gap-0";
+
+/** Jediná `transition-property` na FAB — neskládat s `transition-colors`. */
+export const createListingFabTransitionClass =
+  "transition-[background-color,width,padding,gap,bottom] duration-300 ease-out";
 
 /** Primární brand zelená — `Pikolou` ve wordmarku a ikony. `!` přebije dědění barvy z odkazu. */
 export const emeraldBrandAccentClass = "!text-emerald-600";
@@ -100,7 +121,7 @@ export const modalCancelGhostButtonClass =
 
 /** Zrušit v modálu — s rámečkem (destruktivní dialogy). */
 export const modalCancelOutlineButtonClass =
-  "rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50";
+  "rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900";
 
 /** Destruktivní potvrzení v modálu (smazání účtu apod.). */
 export const modalDangerButtonClass =

@@ -18,11 +18,15 @@ Hlavní akce (vytvořit inzerát, potvrdit formulář, modál).
 | `emeraldSurfaceClass` | Pouze povrch (barva + stín + hover) — skládá se do variant |
 | `emeraldPrimaryButtonClass` | Obecné zelené CTA, `rounded-xl` |
 | `emeraldPrimaryButtonCompactClass` | Modály, kompaktní akční řádek |
-| `headerCreateListingSurfaceClass` | Flat zelený povrch header CTA (`bg-emerald-600`, hover `bg-emerald-700`) — shodně s logem zaPikolou |
+| `cookieAcceptButtonClass` | Cookie lišta — **Přijmout**; outline, ne zelená |
+| `headerCreateListingSurfaceClass` | Flat zelený povrch (`bg-emerald-600` / hover) — **bez** `transition-*` |
 | `createListingCtaLabel` | Text hlavního CTA — „Vytvořit inzerát“ (header + FAB) |
 | `headerCreateListingButtonClass` | Header CTA — od `sm`, nebo při nízké výšce (zoom) |
 | `headerCreateListingLabelClass` | Text CTA — skrytý pod ~480 px (jen ikona + `aria-label`) |
-| `createListingFabClass` | Mobilní FAB — jen `< sm` a výška viewportu > 36 rem |
+| `createListingFabClass` | Mobilní CTA — jen `< sm` a výška viewportu > 36 rem |
+| `createListingFabExpandedClass` | Lišta `right-4` + `w-[calc(100%-2rem)]` před scrollem |
+| `createListingFabCollapsedClass` | Po scrollu jen ikona vpravo dole |
+| `createListingFabTransitionClass` | Jediná `transition-property` na FAB (barva + rozměry) |
 | `landingPrimaryCtaClass` | FB landing `/prodejte-snadno` — velké pill CTA (hero, závěr) |
 | `landingHeaderCtaClass` | FB landing — menší pill v lokální liště stránky |
 | `landingSecondaryCtaClass` | FB landing — outline pill (dětský bazar) |
@@ -36,36 +40,42 @@ Hlavní akce (vytvořit inzerát, potvrdit formulář, modál).
 
 ### Header CTA (hlavní akce)
 
-Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani tloušťkou písma. Na telefonu (`< sm`) je místo něj FAB; v headeru zůstává jen při nízké výšce viewportu (browser zoom), kdy je FAB skrytý.
+Hlavní tlačítko v navbaru je **flat** — kontrast jen barvou, ne stínem ani tloušťkou písma. Na telefonu (`< sm`) je místo něj spodní lišta; v headeru zůstává jen při nízké výšce viewportu (browser zoom), kdy je mobilní CTA skryté.
 
-- Povrch: `headerCreateListingSurfaceClass` — `bg-emerald-600`, hover `bg-emerald-700` (stejná zelená jako `Pikolou` ve wordmarku)
+- Povrch: `headerCreateListingSurfaceClass` — jen barva (`bg-emerald-600`, hover `bg-emerald-700`); **bez** `transition-*`
 - Viditelnost: `hidden` → `sm:inline-flex` + `[@media(max-height:36rem)]:inline-flex`
 - Text: `headerCreateListingLabelClass` — `hidden` pod 480 px
-- Přechod: `transition-colors duration-200`
+- Přechod: `transition-colors duration-200` na `headerCreateListingButtonClass` / landing CTA, ne na povrchu
 - Typografie: `font-semibold`, bílý text
 - Ikona: `Sparkles` (`iconSmClass`)
 - Tvar: `rounded-full`, padding `px-3` / `sm:px-6`, `whitespace-nowrap`
 - **Bez stínu** — žádný `shadow-*` na tomto tlačítku
 
-### Mobilní FAB
+### Mobilní CTA (lišta)
 
 | Konstanta | Použití |
 |-----------|---------|
-| `createListingFabClass` | Plovoucí CTA vpravo dole, jen úzký + dostatečně vysoký viewport |
+| `createListingFabClass` | Společný povrch (zelená, výška, viditelnost) |
+| `createListingFabExpandedClass` | Lišta zprava, šířka `calc(100% - 2rem)` — vlastní zelený podklad, ne pillka v mint hero |
+| `createListingFabCollapsedClass` | Po scrollu > 80 px jen ikona vpravo dole |
+| `createListingFabTransitionClass` | `background-color, width, padding, gap, bottom` — neskládat s `transition-colors` |
 
-- Extended při načtení (plný text `createListingCtaLabel`), po scrollu > 80 px jen ikona
+- Extended při načtení (plný text `createListingCtaLabel` přes šířku), po scrollu > 80 px jen ikona
 - Viditelnost: `max-sm:flex` + skryté při `max-height: 36rem` — desktop s 150–200 % zoomem nesmí překrýt hero (pro seniory / zvětšené písmo)
-- `whitespace-nowrap`, horizontální padding `px-6` (24px)
+- `whitespace-nowrap`, horizontální padding `px-6` (24px) v rozšířeném stavu
 - Skrytý na `/inzerat/novy`, stránkách úpravy inzerátu, `/onboarding`, `/login`, `/prodejte-snadno` a dokud uživatel nemá dokončený profil (`needsNicknameSetup`) — zabrání stale prefetch redirectu po registraci
 - `prefetch={false}` — auth-gated cíl nesmí zůstat v Router Cache jako redirect na onboarding
-- Safe area: `bottom-[max(1rem,env(safe-area-inset-bottom))]`
+- Safe area: `bottom-[max(1rem,env(safe-area-inset-bottom))]`; otevřená cookie lišta posune CTA nad sebe
 - GTM: `GTM_CTA.FAB_CREATE_LISTING`
+- Kotva vpravo (`right-4`) je pořád; mění se jen `width` — CSS neumí animovat `left: auto`
+- Přechod jen přes `createListingFabTransitionClass` — `transition-colors` z povrchu by přebila `width`/`padding`/`gap`/`bottom`
+- **Bez bílého prstence** — kontrast drží šířka a vlastní zelený povrch, ne rámeček
 
 Ostatní zelená CTA (`emeraldSurfaceClass`) používají `bg-emerald-600` / hover `bg-emerald-700` a jemný stín.
 
 ### Párové CTA (preferovaná + záložní)
 
-Když na stránce už je plné zelené CTA (`emeraldPrimaryButtonClass` / header / FAB), druhá **doporučená** akce nesmí být další plná zelená. Pár je vždy naskládaný svisle, stejná šířka, `rounded-xl` (ne pill).
+Když na stránce už je plné zelené CTA (`emeraldPrimaryButtonClass` / header / mobilní lišta), druhá **doporučená** akce nesmí být další plná zelená. Pár je vždy naskládaný svisle, stejná šířka, `rounded-xl` (ne pill). Cookie **Přijmout** proto používá `cookieAcceptButtonClass` (tmavý outline), ne `emeraldPrimaryButtonCompactClass`.
 
 | Konstanta | Vzhled | Kdy |
 |-----------|--------|-----|
@@ -112,9 +122,10 @@ CTA prefillu se renderuje až po ≥1 fotce. Ruční cesta (reality / služby / 
 | `modalOverlayClass` | Tmavý overlay přes celou stránku |
 | `modalPanelClass` | Bílá karta dialogu |
 | `modalCancelGhostButtonClass` | „Zrušit“ bez rámečku |
-| `modalCancelOutlineButtonClass` | „Zrušit“ s rámečkem |
+| `modalCancelOutlineButtonClass` | „Zrušit“ s rámečkem; `focus-visible:ring-gray-900` (stejně jako cookie Přijmout) |
 | `modalDangerButtonClass` | Destruktivní potvrzení (červené) |
 | `emeraldPrimaryButtonCompactClass` | Primární potvrzení (zelené) |
+| `cookieAcceptButtonClass` | Cookie **Přijmout** — tmavý outline, ne zelená |
 
 Panel používá neutrální stín `shadow-xl shadow-gray-900/10` — ne barevný.
 

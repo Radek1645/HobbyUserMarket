@@ -6,7 +6,7 @@ import {
   COOKIE_CONSENT_UI,
 } from "@/config/cookie-consent";
 import {
-  emeraldPrimaryButtonCompactClass,
+  cookieAcceptButtonClass,
   modalCancelOutlineButtonClass,
 } from "@/config/ui-primitives";
 import { useCookieConsent } from "@/components/consent/CookieConsentProvider";
@@ -113,7 +113,7 @@ export function CookieConsentBanner() {
           <button
             type="button"
             onClick={acceptAll}
-            className={`${emeraldPrimaryButtonCompactClass} min-w-0 flex-1 px-2.5 py-2 text-xs sm:flex-none sm:px-4 sm:text-sm`}
+            className={`${cookieAcceptButtonClass} min-w-0 flex-1 px-2.5 py-2 text-xs sm:flex-none sm:px-4 sm:text-sm`}
           >
             <span className="sm:hidden">
               {COOKIE_CONSENT_UI.acceptAllLabelMobile}
