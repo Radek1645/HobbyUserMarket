@@ -48,6 +48,7 @@ yarn-error.log*
 /docs/Supabase_logy/
 /docs/Subreg/
 /docs/fb-ads/
+/docs/Claude outputs/
 
 # Pracovní koš — nikdy do gitu
 /koš/
@@ -63,6 +64,7 @@ yarn-error.log*
 
 # Instrukce pro Claude Code — lokální, nesdílet do repozitáře
 /CLAUDE.md
+/.claude/
 
 # API keys (nikdy do gitu)
 ../Key/

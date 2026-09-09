@@ -1,13 +1,13 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.103
+> **Verze dokumentu:** v3.106
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
 > **Branding a domény:** [`branding-a-domeny.md`](./branding-a-domeny.md) · konfigurace [`src/config/site.ts`](../src/config/site.ts)  
-> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql) · [`083_posts_location_nullable_for_pii_purge.sql`](../supabase/083_posts_location_nullable_for_pii_purge.sql) · [`084_moderation_checks_suggest_description.sql`](../supabase/084_moderation_checks_suggest_description.sql) · [`085_listing_expired_notice.sql`](../supabase/085_listing_expired_notice.sql) · [`086_posts_campaign_attribution.sql`](../supabase/086_posts_campaign_attribution.sql)  
+> **Migrace DB:** … · [`073_anonymous_rate_limits.sql`](../supabase/073_anonymous_rate_limits.sql) · [`074_suggest_from_photos_rate_limit.sql`](../supabase/074_suggest_from_photos_rate_limit.sql) · [`075_category_seo_hracky_miminka.sql`](../supabase/075_category_seo_hracky_miminka.sql) · [`076_moderation_checks_guest_suggest.sql`](../supabase/076_moderation_checks_guest_suggest.sql) · [`077_posts_external_url.sql`](../supabase/077_posts_external_url.sql) · [`078_posts_column_select_grants.sql`](../supabase/078_posts_column_select_grants.sql) · [`079_posts_edit_private_rpc.sql`](../supabase/079_posts_edit_private_rpc.sql) · [`080_event_expires_end_of_calendar_day.sql`](../supabase/080_event_expires_end_of_calendar_day.sql) · [`081_legal_retention_and_hidden_at.sql`](../supabase/081_legal_retention_and_hidden_at.sql) · [`082_posts_private_events.sql`](../supabase/082_posts_private_events.sql) · [`083_posts_location_nullable_for_pii_purge.sql`](../supabase/083_posts_location_nullable_for_pii_purge.sql) · [`084_moderation_checks_suggest_description.sql`](../supabase/084_moderation_checks_suggest_description.sql) · [`085_listing_expired_notice.sql`](../supabase/085_listing_expired_notice.sql) · [`086_posts_campaign_attribution.sql`](../supabase/086_posts_campaign_attribution.sql) · [`087_category_seo_sberatelstvi_damske.sql`](../supabase/087_category_seo_sberatelstvi_damske.sql)  
 > **Předchozí verze:** [`PRD_v2.md`](./PRD_v2.md) · [`PRD_v2_doplneni.md`](./PRD_v2_doplneni.md)  
-> **Datum:** 2026-09-08
+> **Datum:** 2026-09-09
 
 ---
 
@@ -548,7 +548,7 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
   * Vyhledávání pouze v `status = 'active'` a neexpirovaných inzerátech.
   * Filtry: Fulltextové výrazy (kategorie zboží/služby/události), lokalita (obec z našeptávače Mapy.cz), profil uživatele, typ ceny, stav/typ nabídky. *(Filtr `udalost` od v0.2.)*
   * Řazení: Kategorie, cena, datum přidání, vzdálenost (pokud je poloha aktivní). *(Události od v0.2: volitelně řazení podle `event_date` — nejbližší konání první.)*
-  * **Vlna 1 (implementováno) — kategoriální SEO výpisy:** Celostátní `/{slug}/` pro unikátní **goods** subcategory slugy (1:1 s `categories.ts`). Index při ≥ 3 aktivních + obousměrná hystereze (3 dny nahoru / 14 dní dolů); `generateMetadata` a sitemap čtou hotový `index_status` z tabulky `category_seo_pages` (migrace `072`), nepočítají práh za request. Lokalita `/{lokalita}/{kategorie}/` a brand filtr = později (práh ≥ 5). Události později `/udalosti/…`. Kanon: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md) v1.1 · [`seo/CATEGORY_SEO_WAVE1.md`](./seo/CATEGORY_SEO_WAVE1.md).
+  * **Vlna 1 (implementováno) — kategoriální SEO výpisy:** Celostátní `/{slug}/` pro unikátní **goods** subcategory slugy (1:1 s `categories.ts`). Index při ≥ 3 aktivních + obousměrná hystereze (3 dny nahoru / 14 dní dolů); `generateMetadata` a sitemap čtou hotový `index_status` z tabulky `category_seo_pages` (migrace `072` + seed `075`/`087`), nepočítají práh za request. Lokalita `/{lokalita}/{kategorie}/` a brand filtr = později (práh ≥ 5). Události později `/udalosti/…`. Kanon: [`seo/CATEGORY_SEO.md`](./seo/CATEGORY_SEO.md) v1.1 · [`seo/CATEGORY_SEO_WAVE1.md`](./seo/CATEGORY_SEO_WAVE1.md).
 * **Header & Footer:**
   * Header: Logo **zaPikolou.cz** (`AppLogo`), vyhledávání, stav přihlášení, dominantní CTA „Vytvořit inzerát s AI“.
   * **Footer — globální dostupnost:** Patička je součástí `AppShell` a zobrazuje se na **všech veřejných i autentizovaných stránkách** (včetně `/mod/*`). Tři sloupce (`src/config/footer.ts`):
@@ -928,6 +928,8 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.102 | 2026-09-07 | **Prefill nápis na věci:** čitelný model (štítek, panel, hlava nástroje, víko motoru) do názvu, ne `Doplňte typ/model:`. `Doplňte` jen na chybějící údaj. Výbava jen z fotky. Bez Made in / sériového čísla. Edge `suggest-listing-from-photos` + lab. |
 | v3.103 | 2026-09-08 | **UTM u inzerátu:** first-touch `posts.campaign_attribution` při založení (ne při editaci). Migrace [`086`](../supabase/086_posts_campaign_attribution.sql) — mimo REST SELECT. God Mode: sloupec Zdroj + detaily v liště na detailu. |
 | v3.104 | 2026-09-08 | **Gemini rendice 1920 px:** `gemini-1920.webp` / `sightengine-512.webp` (cache podle rozlišení); guest upload čte Storage `error` a 1 MB limit stejně jako přihlášený; WebP quality fallback pod 1 MB. Sightengine dál 512. |
+| v3.105 | 2026-09-09 | **Mobilní HP CTA vs. cookies:** Souhlas v liště je outline (ne emerald); mobilní „Vytvořit inzerát“ je lišta `right-4` s jednou `transition-property`. Metodika §2.3. |
+| v3.106 | 2026-09-09 | **Category SEO seed `087`:** `sberatelstvi-umeni` + `damske-panske` v `category_seo_pages` + WAVE1 priorita. |
 
 ---
 

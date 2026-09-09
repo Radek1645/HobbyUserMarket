@@ -22,6 +22,8 @@
 7. `mobily`
 8. `zahrada-naradi`
 9. `hracky-miminka` — seed `075` (2026-08-09)
+10. `sberatelstvi-umeni` — seed `087` (2026-09-09)
+11. `damske-panske` — seed `087` (2026-09-09)
 
 ### Audit slugů (2026-08-06)
 
