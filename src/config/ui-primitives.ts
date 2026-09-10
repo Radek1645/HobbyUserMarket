@@ -77,15 +77,15 @@ export const landingHeaderCtaClass = `inline-flex items-center justify-center ro
 export const landingSecondaryCtaClass = `inline-flex w-fit items-center justify-center rounded-full border-[1.5px] border-emerald-600 px-6 py-[13px] text-base font-bold text-emerald-800 transition hover:bg-emerald-50 ${emeraldFocusRingClass}`;
 
 /**
- * Mobilní CTA — jen úzký a dostatečně vysoký viewport.
+ * Mobilní FAB — jen úzký a dostatečně vysoký viewport.
  * Skrytý od `sm` a při nízké výšce (desktop + 150–200 % zoom).
- * Pozici (lišta vs. ikona) skládá `CreateListingFab`.
+ * Pozici (pill vs. ikona) skládá `CreateListingFab`.
  */
 export const createListingFabClass =
   `fixed right-4 z-[95] hidden h-14 items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold shadow-lg shadow-emerald-900/20 max-sm:flex [@media(max-height:36rem)]:!hidden ${headerCreateListingSurfaceClass} ${emeraldFocusRingClass}`;
 
-/** Roztažená lišta — `right-4` drží kotvu, šířka se animuje (ne `left: auto`). */
-export const createListingFabExpandedClass = "w-[calc(100%-2rem)] gap-2 px-6";
+/** Rozšířená pilulka vpravo dole. `11rem` ≈ přirozená šířka labelu — ne `auto`, ať `width` interpoluje s `w-14`. */
+export const createListingFabExpandedClass = "w-[11rem] gap-2 px-6";
 
 /** Po scrollu jen ikona vpravo dole. */
 export const createListingFabCollapsedClass = "w-14 gap-0";

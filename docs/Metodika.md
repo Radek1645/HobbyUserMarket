@@ -114,7 +114,7 @@ Když inzerát **nemá** hlavní fotku, karta na HP i detail inzerátu neukazuj�
 
 ### 2.3 Mobilní CTA „Vytvořit inzerát s AI“
 
-- Na mobilu (`< sm`) je dole **lišta přes šířku** (zelené „Vytvořit inzerát“). Po scrollu > 80 px se stáhne na ikonu vpravo dole.
+- Na mobilu (`< sm`) je vpravo dole plovoucí zelené tlačítko (FAB). Po scrollu > 80 px se stáhne na ikonu.
 - Když je otevřená **cookie lišta**, CTA se posune **nad ni** (výška banneru se měří dynamicky), aby nebylo utopené a zůstalo klikatelné.
 - Po souhlasu / odmítnutí cookies se CTA vrátí na standardní pozici u spodního okraje.
 - Mobilní CTA (a desktop header CTA) se **nezobrazuje** na `/onboarding`, `/login`, `/prodejte-snadno` a dokud profil nemá přezdívku — jinak by Next.js prefetch `/inzerat/novy` nakešoval redirect na onboarding a po dokončení registrace by tlačítko „nefungovalo“ do obnovení stránky. Po `completeOnboarding` / přihlášení se volá `revalidatePath("/", "layout")`.
