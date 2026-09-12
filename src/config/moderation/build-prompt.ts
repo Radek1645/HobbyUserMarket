@@ -67,15 +67,15 @@ Kontakty (e-mail, telefon) v textu nejsou důvod k zamítnutí — pouze je v cl
 
 Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - Cíl: pomoci prodat + vyhrát běžné Google dotazy (lidové názvy, use-case, lokalita). Mise hydratace: z hrubého nástřelu udělat úplný inzerát — včetně parametrů, které z identifikovaného výrobku vyplývají. Text čtivý, 1. osoba, bez marketingového spamu a emoji.
-- Lidové názvy v cleanedTitle i v úvodu cleanedDescription: rádio (ne rádiopřijímač), overal (ne kombinezon). Knižní termín nepatří do H1 ani do první věty; „disponuje“ → „má“.
+- Lidové názvy ve **všech** AI textech (cleanedTitle, cleanedDescription, metaDescription, imageAlt): rádio (ne rádiopřijímač), overal (ne kombinezon). Knižní termín nepatří do H1, SERP, altu ani první věty; „disponuje“ → „má“. Rádiopřijímač NENÍ SEO synonymum k dosazení do meta.
 - cleanedTitle = H1 (NE meta title — meta title skládá platforma zvlášť):
   1) Začni nejobecnějším pojmenováním (Baterie, Zimní pneu, Kočárek…), pak značka/model a klíčová specifikace.
   2) Max 45 znaků. Čistý nadpis bez závorek se synonymy — NE „Baterie (akumulátor)…“. Synonyma patří jen do cleanedDescription.
   3) Krátký use-case (např. „na elektrokolo“) POVOLEN, pokud se vejde do 45 znaků včetně. Jinak use-case jen do cleanedDescription — neobětuj značku/model kvůli use-case.
   4) Zákaz vaty („- málo používaný“, „super stav“, „cca 5,5 mm“).
   5) Do cleanedTitle NEVKLÁDEJ lokalitu ani značku webu.
-- metaDescription: SERP snippet — očekávání „klik → detail inzerátu“. Pořadí: produkt + lokalita + cena → benefit/use-case. Preferuj oznamovací věty (NE „Hledáte…?“). Ideálně 150–160 znaků (měkký cíl; klidně až ~200 — platforma zkrátí). Cena v meta JEN „za X Kč“ (bez „cca“, „orientační“, „dohodou“). ZAKÁZÁNO ve meta: CTA („napište prodejci“, „kontaktujte“, „detaily a kontakt“), brand webu — CTA jen v cleanedDescription. Když je text krátký, doplň fakt (stav, use-case), ne výzvu k akci. Nesnaž se trefit přesný počet znaků; piš přirozeně.
-- imageAlt: věcný alt hlavní fotky — klíčové slovo + podstatný atribut + případně use-case. BEZ lokality (např. „Černá Li-ion baterie 48V Samsung na elektrokolo"). Max 125 znaků.
+- metaDescription: SERP snippet — očekávání „klik → detail inzerátu“. Pořadí: produkt + lokalita + cena → benefit/use-case. Preferuj oznamovací věty (NE „Hledáte…?“). Ideálně 150–160 znaků (měkký cíl; klidně až ~200 — platforma zkrátí). Cena v meta JEN „za X Kč“ (bez „cca“, „orientační“, „dohodou“). ZAKÁZÁNO ve meta: CTA („napište prodejci“, „kontaktujte“, „detaily a kontakt“), brand webu — CTA jen v cleanedDescription. Když je text krátký, doplň fakt (stav, use-case), ne výzvu k akci. Nesnaž se trefit přesný počet znaků; piš přirozeně. Stejné lidové názvy jako v H1 (rádio, ne rádiopřijímač).
+- imageAlt: věcný alt hlavní fotky — klíčové slovo + podstatný atribut + případně use-case. BEZ lokality (např. „Černá Li-ion baterie 48V Samsung na elektrokolo"). Max 125 znaků. Lidový název (rádio, ne rádiopřijímač).
 - cleanedDescription — tón: 1. osoba, konkrétní benefity z faktů. Bez klišé „nezmeškejte“ / „jedinečná příležitost“ a bez vymyšlených superlativů.
 - Synonyma (SEO): do prvních 1–2 vět úvodu 2–3 lidové/synonymní výrazy (akumulátor → baterie, baterka). Běžné věty. ZAKÁZÁNO: hashtagy, seznamy klíčových slov, stuffing. Nevymýšlej příslušenství v balení (např. „včetně nabíječky“), pokud to inzerent neuvedl — to NENÍ zákaz katalogové výbavy identifikovaného modelu.
 - Zdroje faktů: popis, formulář, lokalita, fotky — a u jasně identifikovaného výrobku (značka + model / typ / motorizace) i běžně známé katalogové vlastnosti. Platí pro VŠECHNY kategorie zboží (elektronika, auta, kola, nábytek, sport, móda, ostatní…), ne jen elektroniku.
