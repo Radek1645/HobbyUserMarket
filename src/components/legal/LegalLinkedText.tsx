@@ -6,11 +6,19 @@ const legalLinkClassName =
 
 type LegalLinkedTextProps = {
   text: string;
+  linkClassName?: string;
+  /** Registrace: otevřít dokument v novém panelu, ať se neztratí formulář. */
+  linkTarget?: "_blank";
 };
 
 /** Plain text s automatickými odkazy na VOP / Podmínky inzerce / GDPR (viz README). */
-export function LegalLinkedText({ text }: LegalLinkedTextProps) {
+export function LegalLinkedText({
+  text,
+  linkClassName,
+  linkTarget,
+}: LegalLinkedTextProps) {
   const segments = splitLegalMentions(text);
+  const className = linkClassName ?? legalLinkClassName;
 
   return (
     <>
@@ -19,7 +27,11 @@ export function LegalLinkedText({ text }: LegalLinkedTextProps) {
           <Link
             key={`${segment.href}-${index}`}
             href={segment.href}
-            className={legalLinkClassName}
+            className={className}
+            {...(linkTarget === "_blank"
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
+            onClick={(event) => event.stopPropagation()}
           >
             {segment.text}
           </Link>

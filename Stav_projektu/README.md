@@ -12,6 +12,7 @@ Tato složka slouží k průběžnému ukládání snapshotů stavu vývoje.
 
 | Datum | Soubor |
 |-------|--------|
+| 2026-09-13 | [2026-09-13.md](./2026-09-13.md) — hydratace Vylepšený/Původní; prefill banner; VOP souhlas; PRD v3.110 |
 | 2026-09-09 | [2026-09-09.md](./2026-09-09.md) — HP CTA vs. cookies; Category SEO seed **087**; **087 nasazeno** |
 | 2026-09-08 | [2026-09-08.md](./2026-09-08.md) — UTM `campaign_attribution` (086); Gemini rendice 1920; **Edge nasazeno** |
 | 2026-09-07 (pozdě) | [2026-09-07-pozde.md](./2026-09-07-pozde.md) — UI Moje inzeráty; **085 nasazeno**; Prefill v3.102 nápis na věci |

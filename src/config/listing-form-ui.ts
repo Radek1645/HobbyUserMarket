@@ -75,6 +75,26 @@ export const listingFormSecondaryDashedButtonClass = secondaryDashedButtonClass;
 export const listingFormPrimaryButtonClass =
   `flex items-center justify-center px-4 py-3 text-sm ${emeraldPrimaryButtonClass} focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-neutral-400 disabled:text-white disabled:shadow-none`;
 
+/** Hydratace — přepínač Vylepšený / Původní. */
+export const listingPreviewVersionTabListClass =
+  "grid grid-cols-2 rounded-xl border border-neutral-300 bg-neutral-100 p-1";
+
+const listingPreviewVersionTabBaseClass =
+  "inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500";
+
+/** Doporučená cesta — černý pill jako Původní, navedení jen zeleným textem. */
+export const listingPreviewVersionTabAiActiveClass =
+  `${listingPreviewVersionTabBaseClass} bg-neutral-800 font-semibold text-emerald-300 shadow-sm`;
+
+export const listingPreviewVersionTabAiIdleClass =
+  `${listingPreviewVersionTabBaseClass} font-medium text-emerald-800 transition hover:bg-emerald-50`;
+
+export const listingPreviewVersionTabOriginalActiveClass =
+  `${listingPreviewVersionTabBaseClass} bg-neutral-800 font-semibold text-white shadow-sm`;
+
+export const listingPreviewVersionTabIdleClass =
+  `${listingPreviewVersionTabBaseClass} font-medium text-neutral-700 transition hover:bg-white/80 hover:text-neutral-900`;
+
 /** Poptávka / napsat prodejci — vždy černé, full-width (detail inzerátu). */
 export const listingInquiryCtaButtonClass =
   "flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";

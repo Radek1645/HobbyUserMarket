@@ -14,12 +14,16 @@ import {
 import { MODERATION_MAX_QUESTIONS, MODERATION_PREVIEW_UI } from "@/config/moderation";
 import {
   listingFormPrimaryButtonClass,
-  listingFormSecondaryButtonClass,
+  listingPreviewVersionTabAiActiveClass,
+  listingPreviewVersionTabAiIdleClass,
+  listingPreviewVersionTabIdleClass,
+  listingPreviewVersionTabListClass,
+  listingPreviewVersionTabOriginalActiveClass,
 } from "@/config/listing-form-ui";
 import { appendQuestionAnswersToDescription } from "@/lib/moderation/append-question-answers";
 import { computeListingQualityScore } from "@/lib/moderation/listing-quality-score";
 import type { ModerationQuestion } from "@/lib/moderation/types";
-import { ChevronDown, Info, Loader2, Pencil } from "lucide-react";
+import { ChevronDown, Info, Loader2, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 export type ModerationPreviewState = {
@@ -34,6 +38,8 @@ export type ModerationPreviewState = {
   imageCount: number;
 };
 
+export type ModerationPreviewTextVersion = "ai" | "original";
+
 type ModerationPreviewDialogProps = {
   preview: ModerationPreviewState | null;
   publishing?: boolean;
@@ -45,7 +51,7 @@ type ModerationPreviewDialogProps = {
     imageAlt?: string;
     questionAnswers: Record<string, string>;
   }) => void;
-  onPublishOriginal: () => void;
+  onPublishOriginal: (payload: { title: string; description: string }) => void;
 };
 
 function PreviewFieldInfo({
@@ -111,8 +117,12 @@ export function ModerationPreviewDialog({
   const descriptionId = useId();
   const publishAiRef = useRef<HTMLButtonElement>(null);
 
+  const [activeVersion, setActiveVersion] =
+    useState<ModerationPreviewTextVersion>("ai");
   const [aiTitle, setAiTitle] = useState("");
   const [aiDescription, setAiDescription] = useState("");
+  const [originalTitle, setOriginalTitle] = useState("");
+  const [originalDescription, setOriginalDescription] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [imageAlt, setImageAlt] = useState("");
   const [seoOpen, setSeoOpen] = useState(false);
@@ -124,6 +134,26 @@ export function ModerationPreviewDialog({
   const altFieldId = useId();
   const seoPanelId = useId();
   const metaInputRef = useRef<HTMLTextAreaElement>(null);
+  const onCloseRef = useRef(onClose);
+  const publishingRef = useRef(publishing);
+  onCloseRef.current = onClose;
+  publishingRef.current = publishing;
+
+  useEffect(() => {
+    if (!preview) return;
+
+    setActiveVersion("ai");
+    setAiTitle(preview.aiTitle ?? "");
+    setAiDescription(preview.aiDescription ?? "");
+    setOriginalTitle(preview.originalTitle ?? "");
+    setOriginalDescription(preview.originalDescription ?? "");
+    setMetaDescription(preview.metaDescription?.trim() ?? "");
+    setImageAlt(preview.imageAlt?.trim() ?? "");
+    setSeoOpen(false);
+    setSeoEditing(false);
+    setQuestionAnswers({});
+    publishAiRef.current?.focus();
+  }, [preview]);
 
   useEffect(() => {
     if (!preview) return;
@@ -133,17 +163,10 @@ export function ModerationPreviewDialog({
         ? document.activeElement
         : null;
 
-    setAiTitle(preview.aiTitle ?? "");
-    setAiDescription(preview.aiDescription ?? "");
-    setMetaDescription(preview.metaDescription?.trim() ?? "");
-    setImageAlt(preview.imageAlt?.trim() ?? "");
-    setSeoOpen(false);
-    setSeoEditing(false);
-    setQuestionAnswers({});
-    publishAiRef.current?.focus();
-
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !publishing) onClose();
+      if (event.key === "Escape" && !publishingRef.current) {
+        onCloseRef.current();
+      }
     }
 
     document.addEventListener("keydown", onKeyDown);
@@ -155,7 +178,11 @@ export function ModerationPreviewDialog({
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus();
     };
-  }, [preview, onClose, publishing]);
+  }, [preview]);
+
+  const isAiVersion = activeVersion === "ai";
+  const title = isAiVersion ? aiTitle : originalTitle;
+  const description = isAiVersion ? aiDescription : originalDescription;
 
   const visibleQuestions = useMemo(
     () => (preview?.questions ?? []).slice(0, MODERATION_MAX_QUESTIONS),
@@ -164,12 +191,20 @@ export function ModerationPreviewDialog({
 
   const projectedDescription = useMemo(
     () =>
-      appendQuestionAnswersToDescription(
-        aiDescription,
-        visibleQuestions,
-        questionAnswers,
-      ),
-    [aiDescription, visibleQuestions, questionAnswers],
+      isAiVersion
+        ? appendQuestionAnswersToDescription(
+            aiDescription,
+            visibleQuestions,
+            questionAnswers,
+          )
+        : originalDescription,
+    [
+      isAiVersion,
+      aiDescription,
+      originalDescription,
+      visibleQuestions,
+      questionAnswers,
+    ],
   );
 
   const quality = useMemo(
@@ -178,13 +213,15 @@ export function ModerationPreviewDialog({
         imageCount: preview?.imageCount ?? 0,
         description: projectedDescription,
         questions: visibleQuestions,
-        questionAnswers,
+        questionAnswers: isAiVersion ? questionAnswers : {},
+        omitQuestionBucket: !isAiVersion,
       }),
     [
       preview?.imageCount,
       projectedDescription,
       visibleQuestions,
       questionAnswers,
+      isAiVersion,
     ],
   );
 
@@ -193,13 +230,36 @@ export function ModerationPreviewDialog({
 
   if (!preview) return null;
 
-  function handlePublishAi() {
-    onPublishAi({
-      title: (aiTitle ?? "").trim(),
-      description: (aiDescription ?? "").trim(),
-      metaDescription: metaDescription.trim() || undefined,
-      imageAlt: imageAlt.trim() || undefined,
-      questionAnswers,
+  function selectVersion(next: ModerationPreviewTextVersion) {
+    setActiveVersion(next);
+    if (next === "original") setSeoEditing(false);
+  }
+
+  function handleTitleChange(value: string) {
+    if (isAiVersion) setAiTitle(value);
+    else setOriginalTitle(value);
+  }
+
+  function handleDescriptionChange(value: string) {
+    if (isAiVersion) setAiDescription(value);
+    else setOriginalDescription(value);
+  }
+
+  function handlePublish() {
+    if (isAiVersion) {
+      onPublishAi({
+        title: aiTitle.trim(),
+        description: aiDescription.trim(),
+        metaDescription: metaDescription.trim() || undefined,
+        imageAlt: imageAlt.trim() || undefined,
+        questionAnswers,
+      });
+      return;
+    }
+
+    onPublishOriginal({
+      title: originalTitle.trim(),
+      description: originalDescription.trim(),
     });
   }
 
@@ -210,6 +270,7 @@ export function ModerationPreviewDialog({
   }
 
   function toggleSeoEditing() {
+    if (!isAiVersion) return;
     if (seoEditing) {
       setSeoEditing(false);
       return;
@@ -290,6 +351,42 @@ export function ModerationPreviewDialog({
             </div>
           ) : null}
 
+          <div
+            role="tablist"
+            aria-label={MODERATION_PREVIEW_UI.versionSwitchAriaLabel}
+            className={listingPreviewVersionTabListClass}
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isAiVersion}
+              disabled={publishing}
+              onClick={() => selectVersion("ai")}
+              className={
+                isAiVersion
+                  ? listingPreviewVersionTabAiActiveClass
+                  : listingPreviewVersionTabAiIdleClass
+              }
+            >
+              <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {MODERATION_PREVIEW_UI.versionAiLabel}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isAiVersion}
+              disabled={publishing}
+              onClick={() => selectVersion("original")}
+              className={
+                isAiVersion
+                  ? listingPreviewVersionTabIdleClass
+                  : listingPreviewVersionTabOriginalActiveClass
+              }
+            >
+              {MODERATION_PREVIEW_UI.versionOriginalLabel}
+            </button>
+          </div>
+
           <div>
             <label htmlFor={titleId} className="block text-sm font-semibold text-neutral-900">
               {MODERATION_PREVIEW_UI.titleLabel}
@@ -297,9 +394,9 @@ export function ModerationPreviewDialog({
             <input
               id={titleId}
               type="text"
-              value={aiTitle}
+              value={title}
               disabled={publishing}
-              onChange={(event) => setAiTitle(event.target.value)}
+              onChange={(event) => handleTitleChange(event.target.value)}
               className="mt-1 w-full rounded-xl border border-neutral-500 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-600/35 disabled:opacity-60"
             />
           </div>
@@ -323,7 +420,9 @@ export function ModerationPreviewDialog({
               </p>
             </div>
             {quality.tip ? (
-              quality.tipScrollsToImprove && visibleQuestions.length > 0 ? (
+              quality.tipScrollsToImprove &&
+              isAiVersion &&
+              visibleQuestions.length > 0 ? (
                 <button
                   type="button"
                   disabled={publishing}
@@ -349,9 +448,9 @@ export function ModerationPreviewDialog({
             ) : null}
             <textarea
               id={descriptionId}
-              value={aiDescription}
+              value={description}
               disabled={publishing}
-              onChange={(event) => setAiDescription(event.target.value)}
+              onChange={(event) => handleDescriptionChange(event.target.value)}
               rows={8}
               maxLength={LISTING_DESCRIPTION_MAX_LENGTH}
               className="mt-1 min-h-[10rem] max-h-[min(20rem,42vh)] w-full resize-y overflow-y-auto rounded-xl border border-neutral-500 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-600/35 disabled:opacity-60"
@@ -376,7 +475,7 @@ export function ModerationPreviewDialog({
             </p>
           </div>
 
-          {showSeoSection ? (
+          {isAiVersion && showSeoSection ? (
             <div
               id={LISTING_SEO_SECTION_ID}
               className="rounded-xl border border-neutral-200 bg-neutral-50"
@@ -447,7 +546,7 @@ export function ModerationPreviewDialog({
                         help={MODERATION_PREVIEW_UI.metaDescriptionHelp}
                       />
                     </div>
-                    {seoEditing ? (
+                    {seoEditing && isAiVersion ? (
                       <>
                         <textarea
                           ref={metaInputRef}
@@ -481,7 +580,7 @@ export function ModerationPreviewDialog({
                         help={MODERATION_PREVIEW_UI.imageAltHelp}
                       />
                     </div>
-                    {seoEditing ? (
+                    {seoEditing && isAiVersion ? (
                       <>
                         <textarea
                           id={altFieldId}
@@ -508,7 +607,7 @@ export function ModerationPreviewDialog({
             </div>
           ) : null}
 
-          {visibleQuestions.length > 0 ? (
+          {isAiVersion && visibleQuestions.length > 0 ? (
             <fieldset
               id={IMPROVE_LISTING_SECTION_ID}
               className="scroll-mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4"
@@ -557,11 +656,11 @@ export function ModerationPreviewDialog({
             type="button"
             disabled={
               publishing ||
-              !(aiTitle ?? "").trim() ||
+              !title.trim() ||
               !projectedDescription.trim() ||
               descriptionOverLimit
             }
-            onClick={handlePublishAi}
+            onClick={handlePublish}
             className={`w-full ${listingFormPrimaryButtonClass}`}
           >
             {publishing ? (
@@ -569,22 +668,17 @@ export function ModerationPreviewDialog({
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                 Ukládám…
               </span>
-            ) : (
+            ) : isAiVersion ? (
               MODERATION_PREVIEW_UI.publishAiLabel
+            ) : (
+              MODERATION_PREVIEW_UI.publishOriginalLabel
             )}
           </button>
           <p className="px-1 text-center text-[11px] leading-snug text-neutral-500">
-            {MODERATION_PREVIEW_UI.publishAiKeepOriginalHint}
+            {isAiVersion
+              ? MODERATION_PREVIEW_UI.publishAiKeepOriginalHint
+              : MODERATION_PREVIEW_UI.publishOriginalHint}
           </p>
-
-          <button
-            type="button"
-            disabled={publishing}
-            onClick={onPublishOriginal}
-            className={`w-full ${listingFormSecondaryButtonClass}`}
-          >
-            {MODERATION_PREVIEW_UI.publishOriginalLabel}
-          </button>
 
           <button
             type="button"

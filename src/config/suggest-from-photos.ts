@@ -48,14 +48,10 @@ export const SUGGEST_FROM_PHOTOS_UI = {
   nsfwReject:
     "Fotografie porušuje podmínky webu. Nahrajte jiné snímky, nebo pokračujte ručně.",
   missingFieldsHint: {
-    beforeWorking:
-      "Připravili jsme návrh názvu, popisu a kategorie — ",
-    working: "zatím jde o pracovní verzi",
-    afterWorking:
-      ". Zkontrolujte ho a doplňte cenu, stav a lokalitu. ",
-    doplnte: "Řádky „Doplňte …:“ vyplňte za dvojtečku",
-    afterDoplnte:
-      ", nebo je smažte. Přidejte klidně další fotky a upřesněte popis — čím víc informací, tím líp. ",
-    nextStep: "V dalším kroku to AI zpracuje do finální podoby.",
+    lead: "Zkontrolujte návrh a doplňte cenu, stav a lokalitu. ",
+    /** Jen když popis obsahuje řádky „Doplňte …:“. */
+    doplnte: "Řádky „Doplňte …:“ vyplňte nebo smažte",
+    afterDoplnte: " — ",
+    nextStep: "AI to pak upraví.",
   },
 } as const;

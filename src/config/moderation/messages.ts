@@ -56,7 +56,10 @@ export const MODERATION_PREVIEW_UI = {
   subtitleCancelLead: "Je něco zásadně špatně? Klikněte na ",
   subtitleCancelRest: " a detaily doplňte sami.",
   subtitleChoice:
-    "Můžete publikovat vylepšený text, nebo ponechat původní – obojí je v pořádku. Kontakty v původním textu se skryjí.",
+    "Přepínačem zvolíte vylepšený nebo původní text — obojí je v pořádku. Kontakty v původním textu se skryjí.",
+  versionSwitchAriaLabel: "Verze textu inzerátu",
+  versionAiLabel: "Vylepšený",
+  versionOriginalLabel: "Původní",
   titleLabel: "Název inzerátu",
   descriptionLabel: "Popis inzerátu",
   seoSectionLabel: "Text pro vyhledávání",
@@ -78,7 +81,8 @@ export const MODERATION_PREVIEW_UI = {
   publishAiLabel: "Publikovat vylepšený text – zdarma",
   publishAiKeepOriginalHint:
     "Zveřejní se vylepšená verze. Popis můžete kdykoli později upravit.",
-  publishOriginalLabel: "Ponechat můj původní text bez AI vylepšení",
+  publishOriginalLabel: "Publikovat původní text",
+  publishOriginalHint: "Zveřejní se váš text.",
   descriptionLengthWarning: (current: number, max: number) =>
     `Popis včetně odpovědí má ${current} znaků — maximum je ${max}. Zkrácením textu nebo odpovědí to vejde.`,
   descriptionLengthCounter: (current: number, max: number) =>

@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) – Projekt: zaPikolou.cz
 
-> **Verze dokumentu:** v3.109
+> **Verze dokumentu:** v3.110
 > **Rozsah:** v0.1 (MVP) · v0.1.1 (Volitelná platnost) · v0.2 (Události) · v0.3 (Nemovitosti) · **v0.5 (Provoz, moderace a compliance)** · **v0.6 (Monetizace — bankovní převod + QR)**  
 > **Metodika procesů:** [`Metodika.md`](./Metodika.md) — lidsky čitelný popis všech uživatelských a provozních postupů  
 > **SEO dokumentace:** [`seo/README.md`](./seo/README.md) — index vrstev (detail inzerátu vs. kategorie/výpisy)  
@@ -637,18 +637,15 @@ Tabulka `profiles` **neobsahuje** čas posledního přihlášení. **Změna DB s
     4. **Limit délky:** `cleanedDescription` max **2000** znaků celkem; u `NEEDS_QUESTIONS` max **1600** znaků (rezerva **400** na odpovědi doplněné do Parametrů).
   * **UX Flow v modálním okně „AI náhled a doplnění“** (texty v `src/config/moderation/messages.ts`, tón §1.6):
     * **Učesaný text inzerátu** v editovatelné `textarea` (struktura úvod + `---` + Parametry).
-    * **Kvalita inzerátu (soft nudge):** Deterministické skóre 0–100 % vedle labelu popisu (fotky, struktura textu, zodpovězené otázky, SEO pole). Max. jeden tip; u nezodpovězených otázek odkaz na sekci níže. Nízké skóre **neblokuje** publikaci. Rubric: `src/config/listing-quality.ts`. Detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md).
-    * **Dynamický dotazník („Vylepšete svůj inzerát“):** Max 5 otázek; odpovědi **volitelné** (prázdné nezdrží publikaci, snižují skóre kvality); vyplněné se ukládají jako odrážky v sekci Parametry (ne celé věty otázek).
+    * **Kvalita inzerátu (soft nudge):** Deterministické skóre 0–100 % vedle labelu popisu (fotky, struktura textu, zodpovězené otázky). SEO pole skóre neovlivňují. Nezodpovězené otázky sundají nejvýš **10 bodů**. U **Původního** se otázky do skóre nepočítají a škála je fotky+popis přeškálovaná na 100. Max. jeden tip; u Vylepšeného s prázdnými otázkami odkaz na sekci níže. Nízké skóre **neblokuje** publikaci. Rubric: `src/config/listing-quality.ts`. Detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md).
+    * **Dynamický dotazník („Vylepšete svůj inzerát“):** Max 5 otázek; **jen u Vylepšeného**. Odpovědi **volitelné** (prázdné nezdrží publikaci); vyplněné se ukládají jako odrážky v sekci Parametry. U Původního se sekce i Text pro vyhledávání schovají.
     * Počítadlo znaků v modalu zahrnuje **projekovaný finální popis** včetně odpovědí (limit 2000).
     * Během volání AI: **full-screen overlay** se spinnerem (ne banner dole).
     * **Akce uživatele:**
-      1. **Doplnit, upravit a publikovat (Doporučeno):** Uživatel potvrdí finální text (smí ho v modalu upravit nebo přepsat) → **druhé** volání `moderate-listing` s `issueApproval: true` na **přesný odesílaný** text + bajty fotek → Edge vydá token → Server Action uloží `draft`, nahraje fotky a service-role `publish_approved_post` → `active`.
-      2. **Publikovat bez vylepšení:** Zahodí AI korektury textu, ale **vždy platí:**
-         - Bezpečnostní filtr (zbraně, drogy, porno, orgány) — neprůstřelný; bez approval tokenu zůstane inzerát `draft`.
-         - Finální `issueApproval` kontrola přesného odesílaného obsahu (stejný token flow) — přepsání po 1. kontrole se znovu posoudí; závadný text token nedostane.
-         - **Server-side strip kontaktů** v popisu (DB trigger + regex) — nahrazení `[SKRYTO – použij chráněné pole]`.
-         - **Server-side keyword scan** (`prohibited-scan.ts`) — rychlý filtr zjevných zakázaných výrazů před uložením.
-      3. **Zrušit:** Koncept zahozen, v DB nevzniká zápis (nebo zůstane `draft` při selhání publish).
+      1. Přepínač **Vylepšený** (výchozí, zelený text + jiskřička) / **Původní** — název i popis v dialogu editovatelné, dva nezávislé buffery. Jedno CTA **Publikovat** podle zvolené verze.
+      2. **Publikovat vylepšený text:** druhé volání `moderate-listing` s `issueApproval: true` na text z modalu (+ sloučené odpovědi, SEO) → token → `publish_approved_post`. `description_ai_assisted = true`.
+      3. **Publikovat původní text:** totéž druhé volání na (upravený) původní text; SEO `null`, odpovědi se nepřipojí, `description_ai_assisted = false`. Strip kontaktů platí.
+      4. **Zrušit:** návrat do formuláře.
 
 * **Dvě AI kontroly (proč):**
   1. **První** (`issueApproval` vypnuto) — hydratace a náhled. Token **nevzniká**. Model: preview (`GEMINI_MODEL` / default `gemini-2.5-flash`).
@@ -933,6 +930,7 @@ Kompletní seznam: export `GTM_CTA` v `gtm-ids.ts`.
 | v3.107 | 2026-09-12 | **HP výpis bez stropu 36:** pool a RPC `LEAST` 200 (`088`). Počítadlo nad mřížkou, „Zobrazit další“ projde celý načtený výpis. |
 | v3.108 | 2026-09-12 | **Category SEO seed `089`:** `knihy-hry-hudba` + `tv-foto-audio` v `category_seo_pages` + WAVE1 priorita. |
 | v3.109 | 2026-09-12 | **Ověření e-mailu bez PKCE:** `emailRedirectTo` → `/auth/potvrdit` + šablona `token_hash`; PKCE hláška je e-mail, ne Google. Šablona Confirm signup v Dashboardu. |
+| v3.110 | 2026-09-13 | **Hydratace přepínač Vylepšený / Původní** v `ModerationPreviewDialog`: dva buffery, jedno CTA, u Původního schované otázky i SEO. Kvalita: Původní `(fotky+popis)/75×100`; nezodpovězené otázky max −10 bodů. Prefill banner kratší + tučné `Doplňte` jen když je v popisu. Registrace: *se všeobecnými…*, odkaz jen na název VOP, klik na zbytek zaškrtne checkbox. |
 
 ---
 

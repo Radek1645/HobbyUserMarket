@@ -270,6 +270,15 @@ export function CreateListingGuideStep4Screen({
             AI může udělat chybu — před publikací si text zkontrolujte.
           </p>
 
+          <div className="mt-2 grid grid-cols-2 rounded-lg bg-gray-100 p-0.5">
+            <div className="rounded-md bg-gray-900 py-1 text-center text-[9px] font-semibold text-emerald-300">
+              {MODERATION_PREVIEW_UI.versionAiLabel}
+            </div>
+            <div className="py-1 text-center text-[9px] font-medium text-gray-600">
+              {MODERATION_PREVIEW_UI.versionOriginalLabel}
+            </div>
+          </div>
+
           <div className="mt-2">
             <p className="text-[9px] font-semibold text-gray-900">Název</p>
             <div className="mt-0.5 rounded-lg border border-blue-200 bg-blue-50/50 px-2 py-1 text-[10px] font-medium text-gray-900">
@@ -305,9 +314,6 @@ export function CreateListingGuideStep4Screen({
           <div className="mt-2 space-y-1">
             <div className="rounded-lg bg-emerald-600 py-1.5 text-center text-[10px] font-semibold text-white">
               {MODERATION_PREVIEW_UI.publishAiLabel}
-            </div>
-            <div className="rounded-lg border border-gray-200 py-1 text-center text-[9px] text-gray-600">
-              {MODERATION_PREVIEW_UI.publishOriginalLabel}
             </div>
           </div>
         </div>

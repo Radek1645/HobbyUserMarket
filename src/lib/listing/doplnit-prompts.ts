@@ -154,6 +154,11 @@ function hasDoplnitScaffold(text: string): boolean {
   );
 }
 
+/** True, když popis obsahuje řádky „Doplňte …:“ nebo starý token [DOPLNIT]. */
+export function descriptionHasDoplnitPrompts(description: string): boolean {
+  return hasDoplnitScaffold(description);
+}
+
 /**
  * Vytáhne výzvy z textu a dá je pod nabídku jako „Doplňte značku: “.
  * Funguje pro [DOPLNIT …] i už převedené řádky; vyplněnou hodnotu ponechá.

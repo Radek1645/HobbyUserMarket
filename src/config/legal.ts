@@ -97,13 +97,15 @@ export const LEGAL_UI = {
   cookiesLinkLabel: "Zásady cookies",
   dsaLinkLabel: "DSA kontaktní centrum",
   registrationVopConsent:
-    "Souhlasím s všeobecnými obchodními podmínkami. Bez tohoto souhlasu účet nezaložíme. (Povinné)",
+    "Souhlasím se všeobecnými obchodními podmínkami. Bez tohoto souhlasu účet nezaložíme. (Povinné)",
   registrationMarketingConsent:
     "Souhlasím se zasíláním novinek a tipů e-mailem (až je spustíme). Souhlas můžete kdykoli odvolat.",
   registrationAgeConsent:
     "Prohlašuji, že mi je alespoň 15 let. V případě věku 15–18 let mám k této činnosti souhlas zákonného zástupce, je-li vyžadován. (Povinné)",
   registrationAgeConsentError:
     "Pro založení účtu je nutné potvrdit, že vám je alespoň 15 let.",
+  registrationVopConsentError:
+    "Pro založení účtu je nutný souhlas se všeobecnými obchodními podmínkami.",
   reconsentTitle: "Aktualizovali jsme podmínky",
   reconsentBody:
     "Abychom mohli dál poskytovat inzerci, potřebujeme váš souhlas s aktuálním zněním VOP. Prohlížení webu, správa inzerátů a nastavení účtu fungují i bez nového souhlasu.",

@@ -150,7 +150,7 @@ export const CREATE_LISTING_GUIDE_UI = {
     {
       number: 2,
       title: "Doplňte cenu, stav a lokalitu",
-      body: "Text a kategorii už máte připravené — zatím jde o pracovní verzi. Zkontrolujte je, doplňte prázdné údaje (žlutě orámované) a klidně přidejte další fotky. Řádky „Doplňte …:“ vyplňte za dvojtečku, nebo je smažte. V dalším kroku to AI zpracuje do finální podoby.",
+      body: "Zkontrolujte návrh a doplňte cenu, stav a lokalitu. Řádky „Doplňte …:“ vyplňte nebo smažte — AI to pak upraví.",
     },
     {
       number: 3,

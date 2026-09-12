@@ -17,10 +17,7 @@ export function validateRegistrationConsents(
   formData: FormData,
 ): RegistrationConsentFormState | null {
   if (formData.get("consent_vop") !== "1") {
-    return {
-      error:
-        "Pro založení účtu je nutný souhlas s všeobecnými obchodními podmínkami.",
-    };
+    return { error: LEGAL_UI.registrationVopConsentError };
   }
 
   if (formData.get("consent_age") !== "1") {

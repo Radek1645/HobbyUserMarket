@@ -1,4 +1,5 @@
 export {
+  descriptionHasDoplnitPrompts,
   formatDoplnitPlaceholders,
   resolveDoplnitDescriptionForHydration,
   stripDoplnitPlaceholders,

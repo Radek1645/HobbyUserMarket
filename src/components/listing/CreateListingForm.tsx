@@ -75,6 +75,7 @@ import { invokeModerateListing } from "@/lib/moderation/moderate-listing-client"
 import { runListingModeration } from "@/lib/moderation/run-listing-moderation";
 import { stripContactInfo } from "@/lib/moderation/strip-contacts";
 import {
+  descriptionHasDoplnitPrompts,
   formatDoplnitPlaceholders,
   stripDoplnitPlaceholders,
 } from "@/lib/listing/strip-doplnit-placeholders";
@@ -941,6 +942,7 @@ export function CreateListingForm({
     (showPrefillConditionHighlight ||
       showPrefillLocationHighlight ||
       showPrefillPriceHighlight);
+  const showPrefillDoplnitHint = descriptionHasDoplnitPrompts(description);
 
   const missingPublishFields = (() => {
     const missing: string[] = [];
@@ -1063,12 +1065,12 @@ export function CreateListingForm({
     });
   }
 
-  function handlePreviewClose() {
+  const handlePreviewClose = useCallback(() => {
     if (pending || isModerating) return;
     setModerationPreview(null);
     setModerationApprovedOpen(false);
     pendingPublishFormRef.current = null;
-  }
+  }, [pending, isModerating]);
 
   function handleModerationApprovedContinue() {
     setModerationApprovedOpen(false);
@@ -1173,16 +1175,19 @@ export function CreateListingForm({
     }
   }
 
-  async function handlePublishOriginalFromPreview() {
+  async function handlePublishOriginalFromPreview(payload: {
+    title: string;
+    description: string;
+  }) {
     const form = pendingPublishFormRef.current;
     const preview = moderationPreview;
     if (!form || !preview) return;
 
     const finalTitle = stripDoplnitPlaceholders(
-      stripContactInfo(preview.originalTitle),
+      stripContactInfo(payload.title),
     );
     const finalDescription = stripDoplnitPlaceholders(
-      stripContactInfo(preview.originalDescription),
+      stripContactInfo(payload.description),
     );
 
     if (
@@ -1795,18 +1800,16 @@ export function CreateListingForm({
         >
           {showPrefillMissingFieldsHint ? (
             <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
-              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.beforeWorking}
-              <strong>
-                {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.working}
-              </strong>
-              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.afterWorking}
-              <strong>
-                {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.doplnte}
-              </strong>
-              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.afterDoplnte}
-              <strong>
-                {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.nextStep}
-              </strong>
+              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.lead}
+              {showPrefillDoplnitHint ? (
+                <>
+                  <strong>
+                    {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.doplnte}
+                  </strong>
+                  {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.afterDoplnte}
+                </>
+              ) : null}
+              {SUGGEST_FROM_PHOTOS_UI.missingFieldsHint.nextStep}
             </p>
           ) : null}
 

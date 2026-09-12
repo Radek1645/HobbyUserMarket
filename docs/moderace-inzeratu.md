@@ -462,9 +462,8 @@ npm run sync:moderation
 
 Po úspěšné AI kontrole (APPROVED / NEEDS_QUESTIONS) se zobrazí `ModerationPreviewDialog`:
 
-1. **Doplnit, upravit a publikovat** — editovatelný náhled AI textu + volitelné odpovědi na otázky
-2. **Ignorovat AI a publikovat původní** — původní název/popis (bezpečnostní filtr už proběhl), server-side strip kontaktů
-3. **Zrušit** — návrat do formuláře bez uložení
+1. Přepínač **Vylepšený / Původní** — jeden CTA **Publikovat** podle zvolené verze (vylepšený: editovatelný náhled + volitelné otázky a SEO; původní: editovatelný formulářový text, otázky a SEO skryté)
+2. **Zrušit** — návrat do formuláře bez uložení
 
 Při `REJECTED` se zobrazí `ModerationRejectedDialog` (inzerát se neuloží).
 

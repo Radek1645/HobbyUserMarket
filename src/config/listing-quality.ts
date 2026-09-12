@@ -22,6 +22,16 @@ export const LISTING_QUALITY_POINTS = {
   questions: 25,
 } as const;
 
+/**
+ * Max. srážka za nezodpovězené otázky (zbytek bucketu zůstane).
+ * Jinak Vylepšený s prázdnými otázkami padne pod Původní.
+ */
+export const LISTING_QUALITY_UNANSWERED_QUESTIONS_PENALTY = 10;
+
+/** Fotky + popis — škála, když otázky v UI nejsou (Původní v náhledu). */
+export const LISTING_QUALITY_POINTS_WITHOUT_QUESTIONS =
+  LISTING_QUALITY_POINTS.photos + LISTING_QUALITY_POINTS.description;
+
 export type ListingQualityBand =
   | "excellent"
   | "good"
@@ -48,6 +58,16 @@ export const LISTING_QUALITY_UI = {
     needs_longer_intro: "Tip: vylepšete svůj inzerát a doplňte detaily.",
     needs_params: "Tip: vylepšete svůj inzerát a doplňte detaily.",
     can_improve: "Tip: vylepšete svůj inzerát a doplňte detaily.",
+    perfect: "Inzerát je v pořádku.",
+  },
+  /** Původní verze — bez odkazu na schovanou sekci otázek. */
+  originalTips: {
+    missing_photo: "Chybí fotka — výrazně pomáhá.",
+    needs_answers: "Tip: vylepšená verze doplní detaily, které kupující hledají.",
+    needs_info: "Tip: vylepšená verze je úplnější.",
+    needs_longer_intro: "Tip: delší úvod popisu pomůže kupujícím.",
+    needs_params: "Tip: vylepšená verze doplní detaily, které kupující hledají.",
+    can_improve: "Tip: vylepšená verze je úplnější.",
     perfect: "Inzerát je v pořádku.",
   },
   scrollToImproveAriaLabel: "Přejít na sekci Vylepšete svůj inzerát",

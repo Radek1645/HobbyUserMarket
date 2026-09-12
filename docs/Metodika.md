@@ -385,7 +385,7 @@ flowchart TD
 
 Closed vocabulary do Edge generuje `npm run sync:moderation` → `goods-taxonomy.ts`. Anti-halucinace: brand/velikost/materiál jen pokud jsou na fotce čitelné; žádná cena; non-goods → `ostatni` + nízké confidence. Nejisté údaje jdou **pod** odstavec nabídky jako `Doplňte značku: ` (jeden na řádek, psát za dvojtečku) — prompt + `formatDoplnitPlaceholders` (řádky na stav/cenu/lokalitu se zahodí, mají pole formuláře). Při publikaci prázdné výzvy zmizí, vyplněné se změní na `Značka: …` (`stripDoplnitPlaceholders`).
 
-**Jazyk a štítky (2026-09-07):** prompt `suggest-listing.ts` píše **běžnou inzerátní češtinou** (jak na bazaru), ne knižní / sousedské tvary. U oblečení: **overal** / **kombinéza**, ne „kombinezon“. Čitelný štítek (velikost, kg, cm, newborn) se **zapíše do nabídky** — k němu už žádné `Doplňte velikost:`. Anglický nápis z cedulky se překládá, značka zůstane jak je. Čísla ze štítku model občas ještě překroutí (*56 cm* → *vel. 52/40*).
+**Jazyk a štítky (2026-09-07, rádio 2026-09-12):** prompt `suggest-listing.ts` píše **běžnou inzerátní češtinou** (jak na bazaru), ne knižní / sousedské tvary. U oblečení: **overal** / **kombinéza**, ne „kombinezon“. U rozhlasu: **rádio**, ne „rádiopřijímač“. Čitelný štítek (velikost, kg, cm, newborn) se **zapíše do nabídky** — k němu už žádné `Doplňte velikost:`. Anglický nápis z cedulky se překládá, značka zůstane jak je. Čísla ze štítku model občas ještě překroutí (*56 cm* → *vel. 52/40*).
 
 **Nápis na věci + výbava (2026-09-07 večer):** čitelný model platí i mimo krabici — zadní štítek, čelní panel, hlava nástroje, víko motoru, vyražení. Přečtený nápis → do názvu, ne `Doplňte přesný model:`. Řádek `Doplňte …:` jen na údaj, který v názvu/nabídce ještě není. Výbavu jen z fotky (ne korba ke kočárku, když je jen sportovní sedačka; přilba na motce ne). Země výroby a sériové číslo do inzerátu ne. Nasazeno: `suggest-listing-from-photos` + `compare-suggest-from-photos`. Hydratace (DualSense katalog, Volvo automat) a OCR 52/40 se touto vsuvkou **nemění**.
 
@@ -552,9 +552,8 @@ Formulář → klik „Publikovat“ / „Uložit“
            (včetně HARD_HIT_TEXT / NSFW_IMAGE z pre-brány)
         → NEEDS_QUESTIONS → modal s náhledem textu + doplňující otázky
         → APPROVED     → modal s náhledem upraveného textu
-    → uživatel volí v modalu
-        → Doplnit, upravit a publikovat
-        → Ignorovat AI a publikovat původní
+    → uživatel volí v modalu přepínačem **Vylepšený** / **Původní**
+        → Publikovat (podle zvolené verze)
         → Zrušit (návrat do formuláře)
     → finální moderate-listing(issueApproval: true)
         → kontroluje text/fotky, které uživatel právě odesílá
@@ -700,9 +699,9 @@ Povinné/deterministické otázky: [`src/config/moderation/required-category-que
 
 **Průběh pro uživatele:**
 
-1. Modal **„AI vám vylepšila inzerát!“** — náhled AI textu (textarea max. 6 řádků, scroll uvnitř).
+1. Modal **„AI vám vylepšila inzerát!“** — přepínač **Vylepšený** / **Původní** nad názvem (výchozí vylepšený; obě verze jsou v dialogu editovatelné). Textarea max. 6 řádků, scroll uvnitř.
 2. Vedle **„Popis inzerátu“** soft indikátor **Kvalita X %** (deterministicky z fotek, textu a odpovědí — ne predikce prodeje; SEO pole skóre neovlivňují). Max. jeden tip; u nezodpovězených otázek např. **„Tip: doplňte detaily níže.“** s odkazem na sekci níže. Nízké skóre **neblokuje** publikaci. Detail: [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) § Kvalita inzerátu.
-3. Sekce **„Vylepšete svůj inzerát“** — volitelné doplňující otázky (1–5). Nevyplněné otázky **publikaci neblokují**; vyplněné odpovědi se doplní do Parametrů (a zvednou skóre).
+3. Sekce **„Vylepšete svůj inzerát“** a **„Text pro vyhledávání“** — jen u **Vylepšeného** (odpovědi volitelné, sloučí se do Parametrů). U **Původního** se schovají; kvalita % zůstane (fotky + text, přeškálované na 100, bez bodů za otázky).
 4. Po potvrzení se odpovědi **automaticky doplní** do sekce Parametry (s jednotkami — rozměry v **cm**, objem v **ml**, pokud uživatel jednotku nevyplní).
 5. Odpovědi se **neukládají zvlášť** v databázi — jsou součástí finálního popisu.
 
@@ -717,13 +716,13 @@ Povinné/deterministické otázky: [`src/config/moderation/required-category-que
 
 | Tlačítko | Co se stane |
 |----------|-------------|
-| **Publikovat vylepšený inzerát** (doporučeno) | Uloží AI verzi (název, popis, `meta_description`, `image_alt`) i bez vyplněných otázek; vyplněné odpovědi se sloučí do Parametrů. Původní text → `original_title` / `original_description`. Na detailu **„Vytvořeno s pomocí AI: Ano“** (`description_ai_assisted = true`, migrace `043`). V náhledu jsou meta popis a alt jen ke kontrole (readonly). |
-| **Ponechat můj původní text** | Zahodí AI návrh; uloží text z formuláře; SEO pole `meta_description` / `image_alt` vymaže (fallback z popisu / title). `description_ai_assisted = false`. Strip kontaktů platí vždy. |
+| Přepínač **Vylepšený** (výchozí) + **Publikovat vylepšený text** | Uloží AI verzi (název, popis, `meta_description`, `image_alt`) i bez vyplněných otázek; vyplněné odpovědi se sloučí do Parametrů. Původní text z formuláře → `original_title` / `original_description`. Na detailu **„Vytvořeno s pomocí AI: Ano“** (`description_ai_assisted = true`, migrace `043`). |
+| Přepínač **Původní** + **Publikovat původní text** | Uloží název a popis z přepínače (výchozí = text z formuláře, v dialogu editovatelný); SEO pole `meta_description` / `image_alt` vymaže (fallback z popisu / title). Otázky a text pro vyhledávání se v dialogu **schovají** a neuloží. `description_ai_assisted = false`. Strip kontaktů platí vždy. |
 | **Zrušit** | Návrat do formuláře, inzerát se neuloží. |
 
 #### 6.8.1 Známá mezera: ruční edit textu v modalu vs. pole formuláře
 
-**Stav (záměrně neřešeno):** pravidlo „formulář má pravdu“ platí pro **AI hydrataci** (1. volání + Edge post-process). V modalu je popis editovatelný; při „Publikovat vylepšený inzerát“ se uloží **text z modalu** a strukturovaná pole (`event_date`, cena, lokalita…) zůstávají z **formuláře**.
+**Stav (záměrně neřešeno):** pravidlo „formulář má pravdu“ platí pro **AI hydrataci** (1. volání + Edge post-process). V modalu je popis editovatelný u **Vylepšeného i Původního**; při **Publikovat** se uloží **text z modalu** (zvolená verze) a strukturovaná pole (`event_date`, cena, lokalita…) zůstávají z **formuláře**.
 
 Důsledek: uživatel může v úvodu přepsat např. čas z 18:15 na 19:15, zatímco **Konání** / Parametry / sloupec `event_date` zůstanou 18:15. Druhá kontrola (`issueApproval`) ověří bezpečnost finálního textu, **nesrovnává** znovu text s polem formuláře a **nepřepisuje** čas/cenu z formuláře do uživatelem upraveného popisu.
 

@@ -2,6 +2,8 @@ import {
   LISTING_QUALITY_INTRO_GOOD_MIN_CHARS,
   LISTING_QUALITY_NO_PHOTO_SCORE_CAP,
   LISTING_QUALITY_POINTS,
+  LISTING_QUALITY_POINTS_WITHOUT_QUESTIONS,
+  LISTING_QUALITY_UNANSWERED_QUESTIONS_PENALTY,
   LISTING_QUALITY_UI,
   getListingQualityBand,
   type ListingQualityBand,
@@ -17,6 +19,11 @@ export type ListingQualityScoreInput = {
   description: string;
   questions: ReadonlyArray<{ id: string }>;
   questionAnswers: Record<string, string>;
+  /**
+   * Původní verze v náhledu — otázky v UI nejsou.
+   * Skóre jen z fotek a popisu, přeškálované na 100.
+   */
+  omitQuestionBucket?: boolean;
 };
 
 export type ListingQualityScoreResult = {
@@ -95,7 +102,12 @@ function scoreQuestions(
 ): number {
   const { total, answered } = countAnsweredQuestions(questions, questionAnswers);
   if (total === 0) return LISTING_QUALITY_POINTS.questions;
-  return Math.round((answered / total) * LISTING_QUALITY_POINTS.questions);
+  const floor =
+    LISTING_QUALITY_POINTS.questions -
+    LISTING_QUALITY_UNANSWERED_QUESTIONS_PENALTY;
+  return Math.round(
+    floor + (answered / total) * LISTING_QUALITY_UNANSWERED_QUESTIONS_PENALTY,
+  );
 }
 
 function resolveTipCode(input: {
@@ -124,17 +136,21 @@ export function computeListingQualityScore(
   input: ListingQualityScoreInput,
 ): ListingQualityScoreResult {
   const imageCount = Math.max(0, input.imageCount);
+  const omitQuestionBucket = Boolean(input.omitQuestionBucket);
   const { total: questionTotal, answered } = countAnsweredQuestions(
     input.questions,
     input.questionAnswers,
   );
-  const unansweredCount = questionTotal - answered;
+  const unansweredCount = omitQuestionBucket ? 0 : questionTotal - answered;
   const description = scoreDescription(input.description);
+  const photoPoints = imageCount > 0 ? LISTING_QUALITY_POINTS.photos : 0;
 
-  let raw =
-    (imageCount > 0 ? LISTING_QUALITY_POINTS.photos : 0) +
-    description.points +
-    scoreQuestions(input.questions, input.questionAnswers);
+  let raw = photoPoints + description.points;
+  if (omitQuestionBucket) {
+    raw = (raw / LISTING_QUALITY_POINTS_WITHOUT_QUESTIONS) * 100;
+  } else {
+    raw += scoreQuestions(input.questions, input.questionAnswers);
+  }
 
   if (imageCount <= 0) {
     raw = Math.min(raw, LISTING_QUALITY_NO_PHOTO_SCORE_CAP);
@@ -148,11 +164,15 @@ export function computeListingQualityScore(
     score,
     description,
   });
-  const tip = tipCode ? LISTING_QUALITY_UI.tips[tipCode] : null;
+  const tipTable = omitQuestionBucket
+    ? LISTING_QUALITY_UI.originalTips
+    : LISTING_QUALITY_UI.tips;
+  const tip = tipCode ? tipTable[tipCode] : null;
   const tipScrollsToImprove =
-    tipCode === "needs_answers" ||
-    tipCode === "can_improve" ||
-    (tipCode === "needs_info" && unansweredCount > 0);
+    !omitQuestionBucket &&
+    (tipCode === "needs_answers" ||
+      tipCode === "can_improve" ||
+      (tipCode === "needs_info" && unansweredCount > 0));
 
   return {
     score,

@@ -1,9 +1,9 @@
 "use client";
 
+import { LegalLinkedText } from "@/components/legal/LegalLinkedText";
 import {
   LEGAL_UI,
   MARKETING_CONSENT_PATH,
-  VOP_PATH,
 } from "@/config/legal";
 import Link from "next/link";
 
@@ -13,7 +13,7 @@ const checkboxClass =
 const labelClass = "text-sm leading-relaxed text-gray-600";
 
 const linkClass =
-  "font-medium text-gray-800 underline-offset-2 hover:text-gray-900 hover:underline";
+  "font-medium text-gray-800 underline underline-offset-2 hover:text-gray-900";
 
 export type RegistrationConsentValues = {
   age: boolean;
@@ -97,11 +97,11 @@ export function RegistrationConsentFields({
             : {})}
         />
         <span className={labelClass}>
-          Souhlasím s{" "}
-          <Link href={VOP_PATH} className={linkClass} target="_blank">
-            {LEGAL_UI.vopLinkLabel.toLowerCase()}
-          </Link>
-          . Bez tohoto souhlasu účet nezaložíme. (Povinné)
+          <LegalLinkedText
+            text={LEGAL_UI.registrationVopConsent}
+            linkClassName={linkClass}
+            linkTarget="_blank"
+          />
         </span>
       </label>
 
@@ -121,7 +121,13 @@ export function RegistrationConsentFields({
         />
         <span className={labelClass}>
           Souhlasím se{" "}
-          <Link href={MARKETING_CONSENT_PATH} className={linkClass} target="_blank">
+          <Link
+            href={MARKETING_CONSENT_PATH}
+            className={linkClass}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
+          >
             zasíláním marketingových sdělení
           </Link>
           . Souhlas můžete kdykoli odvolat.

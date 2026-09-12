@@ -36,9 +36,10 @@ Formulář (název, popis, kategorie, cena, lokalita, fotky…)
         → APPROVED / NEEDS_QUESTIONS  (bez approvalToken)
             → ModerationApprovedDialog („Inzerát je v pořádku“)
             → ModerationPreviewDialog („AI náhled a doplnění“)
-                → Doplnit, upravit a publikovat
+                → přepínač Vylepšený / Původní
+                → Publikovat vylepšený text
                     → appendQuestionAnswersToDescription()
-                → Ignorovat AI a publikovat původní
+                → Publikovat původní text
                 → Zrušit
             → 2. volání: moderate-listing(issueApproval: true)
                 → znovu kontrola přesného odesílaného textu + fotek
@@ -251,11 +252,11 @@ Krátké potvrzení „Inzerát je v pořádku“ → tlačítko **Pokračovat**
 
 | Prvek | Chování |
 |-------|---------|
-| Název | Editovatelný (`cleanedTitle`) |
-| Popis | Editovatelná `textarea` (`cleanedDescription` z AI) |
-| **Kvalita inzerátu** | Deterministické % vedle labelu popisu + max. 1 tip (fotka / odpovědi / doplnění). Soft nudge — neblokuje publikaci. Live přepočet při odpovědích a úpravě textu. |
-| Dotazník | Zobrazí se jen u `NEEDS_QUESTIONS`; odpovědi **volitelné** (prázdné nezdrží publikaci, ale snižují skóre) |
-| Počítadlo znaků | Počítá finální popis včetně odpovědí |
+| Přepínač **Vylepšený / Původní** | Dva nezávislé buffery názvu a popisu. Výchozí vylepšený. Obě verze editovatelné. |
+| Název / popis | Zobrazuje zvolenou verzi |
+| **Kvalita inzerátu** | Deterministické % vedle labelu popisu + max. 1 tip. U původního jen fotky + popis, přeškálované na 100 (`(fotky+popis)/75×100`) — bez 25 bodů za otázky zadarmo. Soft nudge — neblokuje publikaci. |
+| Dotazník + SEO | Jen u vylepšeného. U původního skryté (neuloží se). |
+| Počítadlo znaků | U vylepšeného finální popis včetně odpovědí; u původního jen zobrazený text |
 
 #### Kvalita inzerátu (score)
 
@@ -263,7 +264,7 @@ Nejde o predikci prodeje — jen **úplnost a připravenost** textu po hydrataci
 
 - Rubric: [`src/config/listing-quality.ts`](../src/config/listing-quality.ts)
 - Výpočet: [`src/lib/moderation/listing-quality-score.ts`](../src/lib/moderation/listing-quality-score.ts)
-- Signály: fotky (0 fotek → strop 25 %), struktura popisu (úvod + Parametry), zodpovězené otázky. **SEO (meta/alt) skóre neovlivňuje** — připravuje AI; tužka v náhledu je jen volitelný override.
+- Signály: fotky (0 fotek → strop 25 %), struktura popisu (úvod + Parametry), zodpovězené otázky. Nezodpovězené otázky sundají **nejvýš 10 bodů** (podlaha 15 z 25), ať Vylepšený nespadne pod Původní. **SEO (meta/alt) skóre neovlivňuje** — připravuje AI; tužka v náhledu je jen volitelný override.
 - Tip vždy ukáže *co* chybí do 100 % (fotka → odpovědi → krátký úvod / málo Parametrů). „Inzerát je v pořádku“ jen při 100 %.
 - Plné body za popis: úvod ≥ 80 znaků + aspoň 3 Parametry (ne jen dlouhý seznam odrážek bez úvodu).
 - Parser Parametrů (`parseListingDescription`) je **obecný**: z kandidátů oddělení (`\n\n---\n\n`, volný `---`, jen nadpis Parametry…) vybere split s nejvíce platnými odrážkami — ne na jeden inzerát.
@@ -274,12 +275,12 @@ Nejde o predikci prodeje — jen **úplnost a připravenost** textu po hydrataci
 
 AI nesmí vymýšlet fakta. Chybí-li kritická data → `NEEDS_QUESTIONS`. Meta title skládá kód (`buildListingMetaTitle`); meta description má fallback AI → úvod popisu → `title — lokalita` (`resolveListingMetaDescription`). Slabý vstup = nižší kvalita + tipy, ne hard block publikace.
 
-**Tři akce:**
+**Akce:**
 
 | Tlačítko | Co se uloží |
 |----------|-------------|
-| **Doplnit, upravit a publikovat** | Po 2. kontrole (`issueApproval: true`): `title` + `description` z modalu (včetně sloučených odpovědí). Do `original_title` / `original_description` jde text z formuláře před AI. |
-| **Ignorovat AI a publikovat původní** | Po 2. kontrole: původní název a popis z formuláře (+ server-side strip kontaktů). Bezpečnostní filtr už proběhl v 1. volání a znovu ve 2. |
+| **Publikovat vylepšený text** | Po 2. kontrole (`issueApproval: true`): `title` + `description` z modalu (včetně sloučených odpovědí). Do `original_title` / `original_description` jde text z formuláře před AI. |
+| **Publikovat původní text** | Po 2. kontrole: název a popis ze zvolené (editovatelné) původní verze (+ server-side strip kontaktů). Otázky a SEO se neuloží. Bezpečnostní filtr už proběhl v 1. volání a znovu ve 2. |
 | **Zrušit** | Návrat do formuláře, nic se neukládá |
 
 Texty tlačítek a hintů: `MODERATION_PREVIEW_UI` v `src/config/moderation/messages.ts` (tón PRD §1.6).

@@ -33,6 +33,14 @@ export const LEGAL_INLINE_LINK_PHRASES: readonly LegalInlineLinkPhrase[] = [
     href: VOP_PATH,
   },
   {
+    phrase: "Všeobecnými obchodními podmínkami",
+    href: VOP_PATH,
+  },
+  {
+    phrase: "všeobecnými obchodními podmínkami",
+    href: VOP_PATH,
+  },
+  {
     phrase: "Podmínkách inzerce",
     href: LISTING_TERMS_PATH,
   },
