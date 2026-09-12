@@ -29,3 +29,7 @@ export const TURNSTILE_FAILED_ERROR =
 
 export const TURNSTILE_UNAVAILABLE_ERROR =
   "Ochrana proti spamu není dostupná. Zkuste to později.";
+
+/** Výchozí widget `normal` — na úzkém mobilu se škáluje, ať nepřeteče kartu. */
+export const TURNSTILE_WIDGET_WIDTH_PX = 300;
+export const TURNSTILE_WIDGET_HEIGHT_PX = 65;

@@ -95,7 +95,7 @@ function AuthSuccessNotice({
   return (
     <div
       role="status"
-      className="rounded-xl border-2 border-emerald-400 bg-emerald-50 px-4 py-5 shadow-md shadow-emerald-900/10 ring-4 ring-emerald-100"
+      className="overflow-hidden rounded-xl border-2 border-emerald-400 bg-emerald-50 px-4 py-5 shadow-md shadow-emerald-900/10 ring-4 ring-emerald-100"
     >
       <div className="flex gap-3">
         <div
@@ -133,7 +133,7 @@ function AuthSuccessNotice({
           ) : null}
         </div>
       </div>
-      {captcha ? <div className="mt-4">{captcha}</div> : null}
+      {captcha ? <div className="mt-4 min-w-0 overflow-hidden">{captcha}</div> : null}
       {onResendVerification ? (
         <button
           type="button"

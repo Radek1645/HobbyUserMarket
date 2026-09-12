@@ -3,6 +3,8 @@
 import {
   resolveTurnstileSiteKey,
   TURNSTILE_UNAVAILABLE_ERROR,
+  TURNSTILE_WIDGET_HEIGHT_PX,
+  TURNSTILE_WIDGET_WIDTH_PX,
   type TurnstileAction,
 } from "@/config/turnstile";
 import {
@@ -87,10 +89,12 @@ export const TurnstileWidget = forwardRef<
   TurnstileWidgetHandle,
   TurnstileWidgetProps
 >(function TurnstileWidget({ onToken, onError, action, className }, ref) {
+  const measureRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
   const onErrorRef = useRef(onError);
+  const [scale, setScale] = useState(1);
   const siteKey = resolveTurnstileSiteKey();
 
   useEffect(() => {
@@ -175,11 +179,38 @@ export const TurnstileWidget = forwardRef<
     };
   }, [action, siteKey]);
 
+  useEffect(() => {
+    const el = measureRef.current;
+    if (!el || typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      if (width <= 0) return;
+      setScale(Math.min(1, width / TURNSTILE_WIDGET_WIDTH_PX));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [siteKey]);
+
   if (!siteKey) {
     return null;
   }
 
-  return <div ref={containerRef} className={className} />;
+  return (
+    <div ref={measureRef} className="w-full max-w-full overflow-hidden">
+      <div
+        className="origin-top-left"
+        style={{
+          width: TURNSTILE_WIDGET_WIDTH_PX,
+          height: TURNSTILE_WIDGET_HEIGHT_PX * scale,
+          transform: scale < 1 ? `scale(${scale})` : undefined,
+        }}
+      >
+        <div ref={containerRef} className={className} />
+      </div>
+    </div>
+  );
 });
 
 type TurnstileChallengeProps = {
@@ -210,7 +241,8 @@ export function TurnstileChallenge({
   return (
     <div
       className={
-        className ?? "rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+        className ??
+        "max-w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50 px-3 py-3"
       }
     >
       <p className="mb-2 text-xs text-gray-600">
