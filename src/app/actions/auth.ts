@@ -32,7 +32,12 @@ import {
   sessionHasFreshPasswordRecovery,
 } from "@/lib/auth/password-recovery-session";
 import {
+  buildPasswordRecoveryRedirectUrl,
+  buildSignupConfirmRedirectUrl,
+} from "@/lib/auth/email-confirm-url";
+import {
   DUPLICATE_EMAIL_MESSAGE,
+  GOOGLE_SIGNIN_FAILED_MESSAGE,
   mapAuthError,
 } from "@/lib/auth/map-auth-error";
 import { PENDING_REGISTRATION_METADATA_KEY } from "@/config/meta-pixel";
@@ -131,7 +136,7 @@ export async function signInWithGoogle(formData: FormData) {
 
   if (error) {
     redirect(
-      `/login?next=${encodeURIComponent(safeNextPath)}&error=${encodeURIComponent(mapAuthError(error.message))}`,
+      `/login?next=${encodeURIComponent(safeNextPath)}&error=${encodeURIComponent(mapAuthError(error.message, "oauth"))}`,
     );
   }
 
@@ -140,9 +145,7 @@ export async function signInWithGoogle(formData: FormData) {
   }
 
   redirect(
-    `/login?error=${encodeURIComponent(
-      mapAuthError("oauth"),
-    )}`,
+    `/login?error=${encodeURIComponent(GOOGLE_SIGNIN_FAILED_MESSAGE)}`,
   );
 }
 
@@ -197,9 +200,9 @@ export async function signUpWithEmail(
     email,
     password,
     options: {
-      // Klientská stránka — zvládne ?code= i #access_token= (serverový callback hash nevidí).
+      // `/auth/potvrdit` — šablona s token_hash (prefetch-safe). PKCE `?code=` je fallback.
       // `next` musí přežít e-mail verify (guest draft resume).
-      emailRedirectTo: `${getSiteUrl()}/auth/dokoncit?next=${encodeURIComponent(nextPath)}`,
+      emailRedirectTo: buildSignupConfirmRedirectUrl(nextPath),
       data: {
         ...buildPendingConsentMetadata(consentPayload),
         [PENDING_REGISTRATION_METADATA_KEY]: true,
@@ -259,14 +262,12 @@ export async function resendSignupVerificationEmail(
     return { error: rateLimit.error };
   }
 
-  const safeNext = sanitizeInternalPath(nextPath);
   const supabase = await createClient();
-  // Stejný cíl jako signUp — /auth/dokoncit čte PKCE code i implicit hash.
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: normalized,
     options: {
-      emailRedirectTo: `${getSiteUrl()}/auth/dokoncit?next=${encodeURIComponent(safeNext)}`,
+      emailRedirectTo: buildSignupConfirmRedirectUrl(nextPath),
     },
   });
 
@@ -292,7 +293,7 @@ export type ConfirmEmailResult = {
   redirectTo?: string;
 };
 
-/** Vymění PKCE `code` za session — pro klientskou stránku `/auth/dokoncit`. */
+/** Vymění PKCE `code` za session — `/auth/potvrdit` i `/auth/dokoncit`. */
 export async function exchangeAuthCodeForSession(
   code: string,
   nextPath?: string,
@@ -306,7 +307,11 @@ export async function exchangeAuthCodeForSession(
   const { error } = await supabase.auth.exchangeCodeForSession(trimmed);
 
   if (error) {
-    return { error: mapAuthError(error.message) };
+    console.error("exchangeAuthCodeForSession failed:", {
+      status: error.status,
+      message: error.message,
+    });
+    return { error: mapAuthError(error.message, "email_verify") };
   }
 
   const resolved = await resolvePostAuthNextPath(supabase, nextPath);
@@ -379,7 +384,7 @@ export async function requestPasswordReset(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${getSiteUrl()}/auth/dokoncit?next=${encodeURIComponent("/auth/nastavit-heslo")}`,
+    redirectTo: buildPasswordRecoveryRedirectUrl(),
   });
 
   if (error) {

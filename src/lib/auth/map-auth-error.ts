@@ -1,6 +1,14 @@
 export const DUPLICATE_EMAIL_MESSAGE =
   "Účet s tímto e-mailem už existuje. Přihlaste se nebo obnovte heslo.";
 
+export const GOOGLE_SIGNIN_FAILED_MESSAGE =
+  "Přihlášení přes Google se nezdařilo. Zkuste to prosím znovu.";
+
+export const EMAIL_VERIFY_FAILED_MESSAGE =
+  "Ověření e-mailu se nezdařilo. Otevřete odkaz ve stejném prohlížeči, kde jste se registrovali. Pokud účet už máte, přihlaste se — nebo na registraci použijte „Poslat znovu“.";
+
+export type AuthErrorKind = "generic" | "oauth" | "email_verify";
+
 function mapPasswordError(message: string): string {
   const lower = message.toLowerCase();
 
@@ -28,8 +36,34 @@ function mapPasswordError(message: string): string {
   return "Heslo nesplňuje bezpečnostní požadavky. Zkuste jiné.";
 }
 
+function isExchangeOrPkceError(lower: string): boolean {
+  return (
+    lower.includes("oauth") ||
+    lower.includes("provider") ||
+    lower.includes("exchange") ||
+    lower.includes("code verifier") ||
+    lower.includes("pkce") ||
+    lower.includes("flow state") ||
+    lower.includes("bad_oauth") ||
+    lower.includes("unable to exchange")
+  );
+}
+
+function mapExchangeOrPkceError(kind: AuthErrorKind): string {
+  if (kind === "email_verify") {
+    return EMAIL_VERIFY_FAILED_MESSAGE;
+  }
+  if (kind === "oauth") {
+    return GOOGLE_SIGNIN_FAILED_MESSAGE;
+  }
+  return "Přihlášení se nezdařilo. Zkuste to prosím znovu.";
+}
+
 /** Mapuje anglické hlášky Supabase/OAuth na CZ text pro UI (P24). */
-export function mapAuthError(message: string): string {
+export function mapAuthError(
+  message: string,
+  kind: AuthErrorKind = "generic",
+): string {
   const trimmed = message.trim();
   if (!trimmed) {
     return "Přihlášení se nezdařilo. Zkuste to prosím znovu.";
@@ -74,17 +108,8 @@ export function mapAuthError(message: string): string {
     return DUPLICATE_EMAIL_MESSAGE;
   }
 
-  if (
-    lower.includes("oauth") ||
-    lower.includes("provider") ||
-    lower.includes("exchange") ||
-    lower.includes("code verifier") ||
-    lower.includes("pkce") ||
-    lower.includes("flow state") ||
-    lower.includes("bad_oauth") ||
-    lower.includes("unable to exchange")
-  ) {
-    return "Přihlášení přes Google se nezdařilo. Zkuste to prosím znovu.";
+  if (isExchangeOrPkceError(lower)) {
+    return mapExchangeOrPkceError(kind);
   }
 
   if (lower.includes("access_denied") || lower.includes("access denied")) {

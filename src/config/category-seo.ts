@@ -40,6 +40,8 @@ export const CATEGORY_SEO_WAVE1_PRIORITY_SLUGS = [
   "hracky-miminka",
   "sberatelstvi-umeni",
   "damske-panske",
+  "knihy-hry-hudba",
+  "tv-foto-audio",
 ] as const;
 
 export type CategorySeoIndexStatus = "index" | "noindex";

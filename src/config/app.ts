@@ -17,8 +17,11 @@ export const HOME_LISTINGS_LIMIT_MOBILE = 8;
 export const HOME_LISTINGS_LIMIT = HOME_LISTINGS_LIMIT_DESKTOP;
 /** Tailwind `lg` breakpoint (px) — shodný s `lg:grid-cols-3` na výpisu. */
 export const HOME_LISTINGS_DESKTOP_MIN_WIDTH_PX = 1024;
-/** Kolik inzerátů načíst z API — větší pool pro filtrování podkategorií na klientovi. */
-export const HOME_LISTINGS_FETCH_LIMIT = 36;
+/**
+ * Kolik inzerátů načíst z API (HP pool + kategoriální landings).
+ * Musí sedět s RPC stropem v `088_listing_feed_limit.sql` (`LEAST(..., 200)`).
+ */
+export const HOME_LISTINGS_FETCH_LIMIT = 200;
 
 /** Fulltext vyhledávání — PRD §5.2 */
 export const SEARCH_QUERY_MIN_LENGTH = 3;

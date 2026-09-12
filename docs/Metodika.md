@@ -2,7 +2,7 @@
 
 > **Účel:** Srozumitelný přehled všech procesů a postupů, které v projektu mohou nastat. Dokument je určen pro vývojáře, moderátory, produktové vlastníky i kohokoliv, kdo potřebuje rychle pochopit, *co se na webu děje a proč*.  
 > **Technická specifikace:** [`PRD_v3.md`](./PRD_v3.md) · **Moderace (implementace):** [`moderace-inzeratu.md`](./moderace-inzeratu.md) · **Hydratace / kvalita inzerátu:** [`hydratace-inzeratu.md`](./hydratace-inzeratu.md) · **NSFW / hard-hit brána:** [`cursor-prompt-nsfw-gate.md`](./cursor-prompt-nsfw-gate.md) · **SEO inzerátů:** [`seo/SEO_BIBLE.md`](./seo/SEO_BIBLE.md)  
-> **Datum:** 2026-09-07 (poslední sync s kódem — Prefill: nápis na věci + Doplňte jen na chybějící)
+> **Datum:** 2026-09-12 (poslední sync s kódem — HP počítadlo + SQL stav inzerátů)
 
 ---
 
@@ -49,7 +49,7 @@ Každá nová uživatelská nebo provozní činnost v projektu **musí být zaps
 1. Návštěvník otevře úvodní stránku `/`.
 2. V hero sekci vidí hlavní sdělení: u záložky **Vše** H1 **„Online bazar, kde stačí fotka a pár slov.“** (copy v `home-themes.ts`); subline **„Vyfotit, párkrát kliknout, hotovo. AI se postará o zbytek. Rovnou pro lidi z vašeho okolí.“**; značka **zaPikolou.cz** a tagline v hlavičce.
 3. Nepřihlášený návštěvník pod hero textem vidí: **„Žádné zdlouhavé registrace. Přihlaste se na jeden klik přes Google nebo klasicky e-mailem.“** (`HomeBrowse.tsx` — tón §1.6 PRD, vykání). Těsně nad H1 skleněná pilulka **„20 inzerátů zdarma“** (`HOME_FREE_QUOTA_BADGE_LABEL`, ikona Sparkles v brand zelené); odkaz na `/balicky-inzerce`. Přihlášeným se nezobrazuje.
-4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem v patičce vpravo: **Vytvořeno** (`created_at`), u událostí místo toho **Konání** (`event_date`). Mřížka: **mobil 2×4** (8 karet), **desktop lg+ 3×3** (9 karet); tlačítko **„Zobrazit další“** doplní stejnou dávku (až do načtených 36).
+4. Pod hero sekcí se zobrazí **přehled inzerátů** — karty s náhledovou fotkou (nebo výchozí ilustrací bez fotky, viz §2.1.2), názvem, cenou, lokalitou a datem v patičce vpravo: **Vytvořeno** (`created_at`), u událostí místo toho **Konání** (`event_date`). Mřížka: **mobil 2×4** (8 karet), **desktop lg+ 3×3** (9 karet). Pod nadpisem je **počítadlo** aktuálního výpisu (po kategorii, filtru, okolí nebo hledání). Tlačítko **„Zobrazit další“** doplní stejnou dávku, dokud nedojdou načtené karty (pool `HOME_LISTINGS_FETCH_LIMIT` = 200, stejný strop v RPC — migrace `088`).
 5. Pod výpisem je krátký **SEO text** (`HomeSeoBlurb` / `home-seo.ts`) — lokální bazar a inzerce, odkazy na `/co-je-zapikolou` a `/jak-vytvorit-inzerat`.
 
 ### 2.1.1 Časté dotazy (`/faq`)
@@ -206,7 +206,7 @@ export const VOP_RECONSENT_REQUIRED = {
 ### 3.1 Způsoby přihlášení
 
 1. **Google** — jedním kliknutím (preferovaná cesta).
-2. **E-mail a heslo** — po registraci musí uživatel potvrdit e-mail odkazem; bez potvrzení není účet plně aktivní. Na success obrazovce může **znovu odeslat ověřovací e-mail** (UI cooldown 60 s) až po **Turnstile** („nejste robot“). Server navíc povolí nejvýše **10 resendů/h/IP a 3/h/e-mail**. „Poslat znovu“ **zneplatní** předchozí odkaz — platí jen nejnovější mail (Resend SMTP log je zdroj pravdy o doručení). Cíl odkazu je `/auth/dokoncit` (klient zvládne PKCE `?code=` i implicit `#access_token=`); volitelně šablona s `token_hash` → `/auth/potvrdit` + tlačítko.
+2. **E-mail a heslo** — po registraci musí uživatel potvrdit e-mail odkazem; bez potvrzení není účet plně aktivní. Na success obrazovce může **znovu odeslat ověřovací e-mail** (UI cooldown 60 s) až po **Turnstile** („nejste robot“). Server navíc povolí nejvýše **10 resendů/h/IP a 3/h/e-mail**. „Poslat znovu“ **zneplatní** předchozí odkaz — platí jen nejnovější mail (Resend SMTP log je zdroj pravdy o doručení). Cíl odkazu je `/auth/potvrdit`: šablona s `token_hash` + tlačítko **Potvrdit e-mail** (prefetch-safe, funguje i v jiném prohlížeči než registrace; `next` zachová návrat k inzerátu). Default `{{ .ConfirmationURL }}` pořád posílá PKCE `?code=` — fallback na stejné stránce i na `/auth/dokoncit`; v jiném prohlížeči výměna kódu selže a hláška je o e-mailu, ne o Google. Šablona v Dashboardu: `docs/supabase-prikazy.md` (Auth e-mailové šablony).
 
 **Povinné souhlasy při registraci (e-mail i Google):**
 
@@ -1376,6 +1376,145 @@ Auth: `Authorization: Bearer CRON_SECRET` (stejně jako ostatní crony). Rate-li
 2. U kategorie **zboží** systém zobrazí **exit poll** (2 cesty): **Prodáno na zaPikolou** / **Jiné**. Důvod se uloží do `posts.deletion_reason` (`sold_on_platform` | `other`). Ostatní kategorie: jednoduché potvrzení, `deletion_reason` zůstane `NULL`.
 3. Inzerát přejde do stavu `deleted` — zmizí z veřejného webu i z aktivního seznamu majitele. Migrace: `069_post_deletion_reason.sql`.
 
+### 9.4 SQL — stav inzerátů (provoz)
+
+Spouštět v **Supabase → SQL Editor**. God Mode `/mod/inzeraty` umí filtrovat stav, ale jen **100 nejnovějších** a bez data — na „co dnes zmizelo“ nestačí. Historie jednoho inzerátu: §11.4 SQL B/C.
+
+Časy bereme v **Europe/Prague**. Cron `archive-expired` běží **03:00 UTC** (v létě 05:00 Praha) — do té doby může být inzerát na webu už neviditelný (`expires_at` v minulosti), ale ve stavu pořád `active`.
+
+| Říkáme | `posts.status` | Audit `event_type` |
+|--------|----------------|-------------------|
+| na webu | `active` + neexpirovaný + ne `is_private` | — |
+| expiroval / stažený z webu | `archived` | `post_expired` |
+| pauza (majitel skryl) | `hidden` | `post_hidden` |
+| smazaný | `deleted` | `post_deleted_by_owner` / `post_deleted_by_mod` |
+| stopnutý | `blocked` | `post_blocked` / `post_auto_blocked_reports` |
+| koncept | `draft` | — |
+
+`hidden_at` se razítkuje jen u **archived/deleted**, ne u pauzy ani u blokace. Pauza a stop ber z auditu. `actor_role = system` = cron. `status_reason_code = lifetime_max` u smazaných = strop 365 dní, ne ruční smazání.
+
+Počty na HP (karty, „Zobrazit další“, počítadlo) jsou jen **aktuální výpis** — kategorie, filtr, okolí nebo hledání, max. 200 (`HOME_LISTINGS_FETCH_LIMIT` + migrace `088`). Nejsou to celkové stavy z tabulky níže.
+
+**A) Kolik čeho je**
+
+Veřejně živé = `active`, není soukromá událost, `expires_at` v budoucnu nebo NULL. Rozdíl `active` vs `verejne_zive` = soukromá událost nebo už po expiraci, cron ještě nearchivoval.
+
+```sql
+SELECT
+  count(*) FILTER (
+    WHERE status = 'active'
+      AND COALESCE(is_private, false) = false
+      AND (expires_at IS NULL OR expires_at > now())
+  ) AS verejne_zive,
+  count(*) FILTER (WHERE status = 'active') AS active,
+  count(*) FILTER (WHERE status = 'hidden') AS pauza,
+  count(*) FILTER (WHERE status = 'archived') AS archiv,
+  count(*) FILTER (WHERE status = 'blocked') AS stopnute,
+  count(*) FILTER (WHERE status = 'deleted') AS smazane,
+  count(*) FILTER (WHERE status = 'draft') AS koncepty
+FROM public.posts;
+```
+
+**B) Active, ale na webu není**
+
+Doplněk k rozdílu z A. Soukromá událost, nebo `expires_at` už prošlo.
+
+```sql
+SELECT id, title, slug, is_private, expires_at, event_date, event_end_date, created_at
+FROM public.posts
+WHERE status = 'active'
+  AND (
+    COALESCE(is_private, false) = true
+    OR (expires_at IS NOT NULL AND expires_at <= now())
+  );
+```
+
+**C) Co se dnes stalo** (expirace, pauza, smazání, stop)
+
+Zdroj pravdy *proč* to zmizelo. Prázdný výsledek ≠ nic se nestalo — viz B a E (zmizí z webu bez změny stavu, dokud neběží cron).
+
+```sql
+SELECT
+  ae.created_at AT TIME ZONE 'Europe/Prague' AS kdy,
+  ae.event_type,
+  ae.actor_role,
+  po.id,
+  po.title,
+  po.slug,
+  po.status,
+  po.status_reason_code,
+  po.deletion_reason,
+  po.expires_at AT TIME ZONE 'Europe/Prague' AS expires_at_prague,
+  ae.payload
+FROM public.audit_events ae
+JOIN public.posts po ON po.id::text = ae.entity_id
+WHERE ae.entity_type = 'post'
+  AND ae.event_type IN (
+    'post_expired',
+    'post_hidden',
+    'post_deleted_by_owner',
+    'post_deleted_by_mod',
+    'post_blocked',
+    'post_auto_blocked_reports'
+  )
+  AND ae.created_at >= date_trunc('day', now() AT TIME ZONE 'Europe/Prague')
+                    AT TIME ZONE 'Europe/Prague'
+ORDER BY ae.created_at DESC;
+```
+
+**D) Kdo je teď pryč a razítko je z dneška**
+
+Stav teď. U pauzy a stop ber `updated_at` — `hidden_at` tam není.
+
+```sql
+SELECT
+  id, title, slug, status, status_reason_code, deletion_reason,
+  expires_at AT TIME ZONE 'Europe/Prague' AS expires_at_prague,
+  hidden_at AT TIME ZONE 'Europe/Prague' AS hidden_at_prague,
+  updated_at AT TIME ZONE 'Europe/Prague' AS updated_at_prague
+FROM public.posts
+WHERE status IN ('archived', 'deleted', 'blocked', 'hidden')
+  AND COALESCE(hidden_at, updated_at) >= date_trunc('day', now() AT TIME ZONE 'Europe/Prague')
+                                        AT TIME ZONE 'Europe/Prague'
+ORDER BY COALESCE(hidden_at, updated_at) DESC;
+```
+
+**E) Expirované, ještě v `active` / `hidden`**
+
+Na webu už 404, cron je do `archived` překlopí až v noci.
+
+```sql
+SELECT id, title, slug, status, expires_at
+FROM public.posts
+WHERE status IN ('active', 'hidden')
+  AND expires_at IS NOT NULL
+  AND expires_at <= now()
+ORDER BY expires_at DESC;
+```
+
+**F) Archiv** (kdo už je `archived`, bez ohledu na den)
+
+```sql
+SELECT id, title, slug, expires_at, hidden_at, updated_at
+FROM public.posts
+WHERE status = 'archived'
+ORDER BY COALESCE(hidden_at, updated_at) DESC;
+```
+
+**G) Nejnovější veřejné** (stejné pořadí jako HP bez polohy)
+
+Řádek 1 = nejnovější. HP bere až 200; když je jich víc, starší z tohoto seznamu na HP bez „Zobrazit další“ neuvidíš, ale detail podle slugu žije.
+
+```sql
+SELECT id, title, slug, created_at, expires_at, status
+FROM public.posts
+WHERE status = 'active'
+  AND COALESCE(is_private, false) = false
+  AND (expires_at IS NULL OR expires_at > now())
+ORDER BY created_at DESC
+LIMIT 200;
+```
+
 ---
 
 ## 10. Nahlášení obsahu
@@ -1681,6 +1820,8 @@ ORDER BY ae.created_at ASC;
 ```
 
 `actor_role`: u staff účtu (`admin` / `moderator`) má přednost před `owner` — i když pauzuješ vlastní inzerát. Konkrétní kdo = `actor_user_id` (+ join na `profiles`). `system` = cron / service_role bez session.
+
+Dnešní expirace / pauza / smazání / stop + počty stavů: [§9.4](#94-sql--stav-inzerátů-provoz).
 
 ### 11.5 Rozdíl moderator vs. admin
 

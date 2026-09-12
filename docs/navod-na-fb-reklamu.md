@@ -5,6 +5,7 @@
 **🔴 2026-09-05: potvrzen živý crop bug na Instagramu (uříznuté foto, uťatý text) — doporučeno reklamy pozastavit, dokud není oprava. Viz sekce "Nálezy 2026-09-05" níž.**
 
 Kreativní brief + nastavení Ads Manageru.  
+Brand/HP sada (ukotvení headeru, ne produktová AI karta): [`fb-ads/brand-kreativa-layout.md`](./fb-ads/brand-kreativa-layout.md).  
 Technický funnel (flag, architektura, deploy): [`fb-promo-campaign.md`](./fb-promo-campaign.md).  
 Aktuální stav smoke / Pixel / mobil: [`TO-DO-dalsi-den.md`](./TO-DO-dalsi-den.md) § L.  
 Před první platbou Meta: [`pravni/povinnosti-urady-fb-reklama.md`](./pravni/povinnosti-urady-fb-reklama.md). **IČO přidělené (2026-09-01)** — Business Manager účet lze založit rovnou jako "Obchodní".

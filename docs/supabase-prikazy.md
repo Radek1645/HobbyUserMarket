@@ -343,9 +343,9 @@ Audit smazání: `target_profile_no`, `target_user_id`, `actor_id`, `source` (`s
 
 ### Category SEO
 
-#### `category_seo_pages` *(072, seed `075`, `087`)*
+#### `category_seo_pages` *(072, seed `075`, `087`, `089`)*
 
-SEO stav a copy kategoriálních landings. **Taxonomie zůstává v** `categories.ts` — tady jen slug 1:1 + meta. Seed Vlny 1 = `072`; `hracky-miminka` = `075`; `sberatelstvi-umeni` + `damske-panske` = `087`.
+SEO stav a copy kategoriálních landings. **Taxonomie zůstává v** `categories.ts` — tady jen slug 1:1 + meta. Seed Vlny 1 = `072`; `hracky-miminka` = `075`; `sberatelstvi-umeni` + `damske-panske` = `087`; `knihy-hry-hudba` + `tv-foto-audio` = `089`.
 
 | Atribut | Co v něm najdeš |
 |---------|-----------------|
@@ -805,9 +805,32 @@ Po změně secretu obvykle **stačí** — redeploy funkce není vždy nutný, a
 | Oblast | Kde v Dashboardu | Typické úkoly |
 |--------|------------------|---------------|
 | **Auth → URL Configuration** | Redirect URLs | Přidat Vercel doménu, `localhost:3000` |
+| **Auth → Email Templates** | Confirm signup | Odkaz musí jít na `token_hash` — viz [Auth e-mailové šablony](#auth-e-mailové-šablony) |
 | **Auth → Users** | Seznam účtů | Smazání testovacího uživatele |
 | **Storage → post-images** | Bucket fotek | Kontrola nahraných snímků |
 | **API → Project URL / anon key** | `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+
+### Auth e-mailové šablony
+
+Default `{{ .ConfirmationURL }}` jde přes PKCE `?code=` — výměna kódu potřebuje cookie z prohlížeče, kde běžela registrace. Seznam / in-app prohlížeč to shodí. Appka proto posílá `emailRedirectTo` = `/auth/potvrdit?next=…` a šablona musí doplnit `token_hash` (ověření až po kliknutí na tlačítko, bez té cookie).
+
+**Authentication → Email Templates → Confirm signup** — CTA odkaz:
+
+```
+{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup
+```
+
+`RedirectTo` nastavuje appka (`https://zapikolou.cz/auth/potvrdit?next=…`). Výsledný odkaz:
+
+`/auth/potvrdit?next=…&token_hash=…&type=signup`
+
+**Reset password** může zůstat na `{{ .ConfirmationURL }}` (cíl `/auth/dokoncit`). Volitelně stejně prefetch-safe:
+
+```
+{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery
+```
+
+Dokud Confirm signup šablona není přepnutá, nová registrace pořád padá na PKCE fallback (lepší hláška, ale Seznam WebView to neopraví).
 
 ### Projektové npm skripty
 

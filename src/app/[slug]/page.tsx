@@ -8,6 +8,7 @@ import {
 } from "@/config/category-seo";
 import { SITE_DISPLAY_NAME } from "@/config/site";
 import { ListingCard } from "@/components/listing/ListingCard";
+import { formatListingCount } from "@/lib/i18n/czech-plural";
 import { fetchCategorySeoListings } from "@/lib/seo/fetch-category-seo-listings";
 import { getCategorySeoPage } from "@/lib/seo/get-category-seo-page";
 import { getSiteUrl } from "@/lib/supabase/env";
@@ -132,7 +133,7 @@ export default async function CategorySeoLandingPage({
         <p className="mt-2 text-sm text-zinc-500">
           {listings.length === 0
             ? "Zatím žádné aktivní inzeráty v této kategorii."
-            : `${listings.length} ${listings.length === 1 ? "inzerát" : listings.length < 5 ? "inzeráty" : "inzerátů"}`}
+            : formatListingCount(listings.length)}
           {" · "}
           <Link
             href={homeFilterHref}

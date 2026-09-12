@@ -6,6 +6,7 @@ import {
 } from "@/app/actions/auth";
 import { ConfirmEmailPanel } from "@/components/auth/ConfirmEmailPanel";
 import { parseEmailOtpType } from "@/lib/auth/email-otp-types";
+import { EMAIL_VERIFY_FAILED_MESSAGE } from "@/lib/auth/map-auth-error";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,9 +23,9 @@ type Status = "working" | "confirm_button" | "error";
 
 /**
  * Dokončí session z e-mailového odkazu:
- * - `?code=` (PKCE) přes server action
+ * - `?token_hash=` → tlačítko (prefetch-safe, nepotřebuje cookie z registrace)
+ * - `?code=` (PKCE) jednou přes server action — kód je jednorázový
  * - `#access_token=` (implicit / starší resend) v prohlížeči
- * - `?token_hash=` → tlačítko (prefetch-safe)
  */
 export function AuthSessionFinisher({
   code,
@@ -42,7 +43,7 @@ export function AuthSessionFinisher({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "confirm_button") {
+    if (status !== "working") {
       return;
     }
 
@@ -52,16 +53,13 @@ export function AuthSessionFinisher({
       if (code) {
         const result = await exchangeAuthCodeForSession(code, nextPath);
         if (cancelled) return;
-        if (result.error || !result.redirectTo) {
-          setError(
-            result.error ??
-              "Ověření e-mailu se nezdařilo. Požádejte o nový odkaz (Poslat znovu).",
-          );
-          setStatus("error");
+        if (result.redirectTo) {
+          router.replace(result.redirectTo);
+          router.refresh();
           return;
         }
-        router.replace(result.redirectTo);
-        router.refresh();
+        setError(result.error ?? EMAIL_VERIFY_FAILED_MESSAGE);
+        setStatus("error");
         return;
       }
 
@@ -114,6 +112,10 @@ export function AuthSessionFinisher({
   }, [code, nextPath, router, status]);
 
   const otpType = parseEmailOtpType(otpTypeRaw);
+  const loginHref =
+    nextPath && nextPath !== "/"
+      ? `/login?next=${encodeURIComponent(nextPath)}`
+      : "/login";
 
   if (status === "confirm_button" && tokenHash && otpType) {
     return (
@@ -134,12 +136,20 @@ export function AuthSessionFinisher({
         >
           {error}
         </p>
-        <Link
-          href="/login?tab=register"
-          className="inline-flex text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
-        >
-          Zpět na registraci
-        </Link>
+        <div className="flex flex-col items-center gap-2">
+          <Link
+            href={loginHref}
+            className="inline-flex text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
+          >
+            Přihlásit se
+          </Link>
+          <Link
+            href="/login?tab=register"
+            className="inline-flex text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
+          >
+            Zpět na registraci
+          </Link>
+        </div>
       </div>
     );
   }

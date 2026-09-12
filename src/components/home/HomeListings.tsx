@@ -18,6 +18,7 @@ import {
 } from "@/config/app";
 import { getSubcategoryLabel } from "@/config/categories";
 import type { HomeBrowseCategory, HomeTheme } from "@/config/home-themes";
+import { formatListingCount } from "@/lib/i18n/czech-plural";
 import { formatPublicAreaLocation } from "@/lib/mapy/client";
 import { isSearchQueryValid } from "@/lib/posts/search-query";
 import type { VisitorLocation } from "@/lib/posts/visitor-location";
@@ -321,6 +322,14 @@ export function HomeListings({
             {sectionTitle}
           </h2>
           <p className="mt-0.5 text-sm text-gray-500">
+            {!loading && filteredListings.length > 0 ? (
+              <>
+                <span className="font-medium text-gray-700">
+                  {formatListingCount(filteredListings.length)}
+                </span>
+                {" · "}
+              </>
+            ) : null}
             {listingsSubtitle}
             {subcategoryLabel ? ` · ${subcategoryLabel}` : ""}
           </p>
@@ -369,7 +378,8 @@ export function HomeListings({
           {hasMoreListings ? (
             <div className="mt-4 flex flex-col items-center gap-2">
               <p className="text-xs text-gray-500">
-                Zobrazeno {visibleListings.length} z {filteredListings.length}
+                Zobrazeno {visibleListings.length} z{" "}
+                {formatListingCount(filteredListings.length)}
               </p>
               <button
                 type="button"

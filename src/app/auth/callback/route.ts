@@ -9,9 +9,9 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 /**
- * OAuth callback (`?code=`). E-mailové odkazy míří na `/auth/dokoncit`
- * (klient čte i `#access_token`). Když sem přijde e-mailový redirect bez code,
- * pošleme na dokoncit — prohlížeč obvykle zachová hash fragment.
+ * OAuth callback (`?code=`). E-mailové odkazy míří na `/auth/potvrdit`
+ * (token_hash) nebo `/auth/dokoncit` (PKCE / hash). Když sem přijde redirect
+ * bez code, pošleme na dokoncit — prohlížeč obvykle zachová hash fragment.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const nextQuery =
       safeNext !== "/" ? `&next=${encodeURIComponent(safeNext)}` : "";
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(mapAuthError(error.message))}${nextQuery}`,
+      `${origin}/login?error=${encodeURIComponent(mapAuthError(error.message, "oauth"))}${nextQuery}`,
     );
   }
 

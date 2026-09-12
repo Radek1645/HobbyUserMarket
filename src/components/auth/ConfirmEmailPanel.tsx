@@ -2,6 +2,7 @@
 
 import { confirmEmailWithTokenHash } from "@/app/actions/auth";
 import { emeraldPrimaryButtonClass } from "@/config/ui-primitives";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -39,10 +40,15 @@ export function ConfirmEmailPanel({
     });
   }
 
+  const loginHref =
+    nextPath && nextPath !== "/"
+      ? `/login?next=${encodeURIComponent(nextPath)}`
+      : "/login";
+
   return (
     <div className="space-y-4">
       <p className="text-center text-sm text-gray-600">
-        Pro dokončení registrace potvrďte e-mail tlačítkem níže. Ověření proběhne
+        Pro dokončení ověření potvrďte e-mail tlačítkem níže. Ověření proběhne
         až po vašem kliknutí — odolá automatickému načtení odkazu některými
         schránkami.
       </p>
@@ -66,8 +72,15 @@ export function ConfirmEmailPanel({
       </button>
 
       <p className="text-center text-xs text-gray-500">
-        Neplatný nebo vypršelý odkaz? Zaregistrujte se znovu a použijte „Poslat
-        znovu“ — předchozí odkaz se tím zneplatní.
+        Neplatný nebo vypršelý odkaz? Pokud účet už máte,{" "}
+        <Link
+          href={loginHref}
+          className="font-medium text-emerald-700 underline-offset-2 hover:underline"
+        >
+          přihlaste se
+        </Link>
+        . Jinak na registraci použijte „Poslat znovu“ — předchozí odkaz se tím
+        zneplatní.
       </p>
     </div>
   );

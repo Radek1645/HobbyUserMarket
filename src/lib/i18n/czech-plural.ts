@@ -1,15 +1,11 @@
-/** České skloňování počtů: 1 jedna, 2–4 few, 0/5+ / 11–14 many. */
+/** České skloňování počtů: 1 = one, 2–4 = few, jinak (0, 5+) = many. Ne modulo. */
 export function czechCountLabel(
   count: number,
   forms: { one: string; few: string; many: string },
 ): string {
   const abs = Math.abs(Math.trunc(count));
-  const mod100 = abs % 100;
-  const mod10 = abs % 10;
-
-  if (mod100 >= 11 && mod100 <= 14) return forms.many;
-  if (mod10 === 1) return forms.one;
-  if (mod10 >= 2 && mod10 <= 4) return forms.few;
+  if (abs === 1) return forms.one;
+  if (abs >= 2 && abs <= 4) return forms.few;
   return forms.many;
 }
 
@@ -20,5 +16,15 @@ export function formatInquiryCount(count: number): string {
     one: "poptávka",
     few: "poptávky",
     many: "poptávek",
+  })}`;
+}
+
+/** Např. „1 inzerát“, „3 inzeráty“, „12 inzerátů“. */
+export function formatListingCount(count: number): string {
+  const n = Math.max(0, Math.trunc(count));
+  return `${n} ${czechCountLabel(n, {
+    one: "inzerát",
+    few: "inzeráty",
+    many: "inzerátů",
   })}`;
 }

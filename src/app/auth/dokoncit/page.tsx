@@ -18,7 +18,8 @@ type AuthCompletePageProps = {
 };
 
 /**
- * Cíl `emailRedirectTo` po ověření e-mailu.
+ * Fallback dokončení session: obnova hesla, starší e-maily, implicit `#hash`.
+ * Nová registrace míří na `/auth/potvrdit`.
  * Musí být stránka (ne route handler) — implicit flow dává tokeny do `#hash`,
  * který server nikdy neuvidí.
  */
