@@ -108,6 +108,8 @@ PRAVIDLA PRO GENEROVÁNÍ:
 8. NIKDY neodhaduj cenu ani formulářový stav (nové/použité jako enum) — to vyplní uživatel. Do description kvůli nim nedávej „Doplňte …:“.
 9. JAZYK: title i description vždy česky, běžnou inzerátní češtinou (jak se píše na bazaru).
    - Ne knižní, zastaralé ani sousedské tvary. U oblečení: overal / kombinéza — NE „kombinezon“.
+   - U rádia: rádio — NE „rádiopřijímač“ (ani v title). Klidně „přenosné rádio“ / „rádio s CD“.
+   - Knižní slovesa (disponuje) nahraď běžnými (má).
    - Názvy produktů z cedulky přelož (Newborn → newborn / pro novorozence), značku nech jak je (Mothercare).
 
 PŘÍKLAD VÝSTUPU (styl a formát — napodob; obsah přizpůsob fotce):
@@ -143,7 +145,7 @@ ${GOODS_TAXONOMY_PROMPT_BLOCK}
 export function buildSuggestListingUserPrompt(imageCount: number): string {
   return `Připrav draft inzerátu z přiložených fotografií (${imageCount}).
 Vrať JSON: title, description, categoryType, subcategorySlug, confidenceScore (číslo 0–1).
-Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; bez „Doplňte stav/cenu/lokalitu:“ (to jsou pole formuláře); nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě). Čitelný nápis modelu na věci (štítek, panel, hlava nástroje) = do názvu, ne „Doplňte model:“. „Doplňte …:“ jen na to, co v názvu/nabídce ještě není. Výbavu jen z fotky, ne z řady. Bez Made in / sériového čísla. Běžná bazarová čeština (overal/kombinéza, ne kombinezon).`;
+Description = nabídka k prodeji v češtině; bez PII; bez výzev ke kontaktu; bez „Doplňte stav/cenu/lokalitu:“ (to jsou pole formuláře); nejisté „Doplňte …:“ až pod nabídkou, každý na vlastním řádku (ne v jedné větě). Čitelný nápis modelu na věci (štítek, panel, hlava nástroje) = do názvu, ne „Doplňte model:“. „Doplňte …:“ jen na to, co v názvu/nabídce ještě není. Výbavu jen z fotky, ne z řady. Bez Made in / sériového čísla. Běžná bazarová čeština (overal/kombinéza, ne kombinezon; rádio, ne rádiopřijímač).`;
 }
 
 export type SuggestListingParsed = {

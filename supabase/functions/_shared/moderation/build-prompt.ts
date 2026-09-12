@@ -81,6 +81,7 @@ Kontakty (e-mail, telefon) v textu nejsou důvod k zamítnutí — pouze je v cl
 
 Hydratace a SEO (pokud obsah NENÍ REJECTED) — kanon: SEO Bible v1.9:
 - Cíl: pomoci prodat + vyhrát běžné Google dotazy (lidové názvy, use-case, lokalita). Mise hydratace: z hrubého nástřelu udělat úplný inzerát — včetně parametrů, které z identifikovaného výrobku vyplývají. Text čtivý, 1. osoba, bez marketingového spamu a emoji.
+- Lidové názvy v cleanedTitle i v úvodu cleanedDescription: rádio (ne rádiopřijímač), overal (ne kombinezon). Knižní termín nepatří do H1 ani do první věty; „disponuje“ → „má“.
 - cleanedTitle = H1 (NE meta title — meta title skládá platforma zvlášť):
   1) Začni nejobecnějším pojmenováním (Baterie, Zimní pneu, Kočárek…), pak značka/model a klíčová specifikace.
   2) Max 45 znaků. Čistý nadpis bez závorek se synonymy — NE „Baterie (akumulátor)…“. Synonyma patří jen do cleanedDescription.
