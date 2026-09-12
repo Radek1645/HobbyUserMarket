@@ -1,3 +1,5 @@
+"use client";
+
 import { splitLegalMentions } from "@/lib/legal/split-legal-mentions";
 import Link from "next/link";
 
